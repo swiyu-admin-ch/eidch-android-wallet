@@ -120,8 +120,7 @@
     <string name="dataAnalysis_title">Analysis and Improvements</string>
     <string name="dataAnalysis_text">Help us to improve the app by allowing the following anonymised error messages to be made available to the development team:\n\n\n✓ General error messages\n✓ Communication errors\n✓ App crashes\n\n\nOnly anonymised data that does not allow any conclusions to be drawn about you will be analysed.</string>
     <string name="licences_title">Licences</string>
-    <string name="licences_text">Below is the list of software licenses used by this app.\n
-The licenses follow the BIT guidelines for compliance with privacy and the latest security standards. With this list we want to ensure transparency towards the users.</string>
+    <string name="licences_text">Below is the list of software licenses used by this app.\nThe licenses follow the BIT guidelines for compliance with privacy and the latest security standards. With this list we want to ensure transparency towards the users.</string>
     <string name="licences_more_information_text">More information</string>
     <string name="licences_more_information_link">https://www.eid.admin.ch/en/help-publicbeta-e</string>
     <string name="impressum_title">Publication details</string>
