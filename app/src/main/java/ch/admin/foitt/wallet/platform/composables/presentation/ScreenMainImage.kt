@@ -4,8 +4,10 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +52,8 @@ fun ScreenMainImage(
 fun ScreenMainImage(
     @DrawableRes iconRes: Int,
     modifier: Modifier = Modifier,
+    paddingValues: PaddingValues = PaddingValues(),
+    fillMaxWidth: Float = 0.4f,
     backgroundColor: Color = WalletTheme.colorScheme.surfaceContainerLow,
 ) = Box(
     modifier = modifier
@@ -60,7 +64,8 @@ fun ScreenMainImage(
     Image(
         modifier = Modifier
             .align(Alignment.Center)
-            .fillMaxWidth(0.4f),
+            .padding(paddingValues)
+            .fillMaxWidth(fillMaxWidth),
         painter = painterResource(id = iconRes),
         contentDescription = null,
     )

@@ -6,8 +6,12 @@ interface DaoProvider {
     val credentialDaoFlow: StateFlow<CredentialDao?>
     val verifiableCredentialDaoFlow: StateFlow<VerifiableCredentialDao?>
     val verifiableCredentialWithDisplaysAndClustersDaoFlow: StateFlow<VerifiableCredentialWithDisplaysAndClustersDao?>
-    val credentialWithKeyBindingDaoFlow: StateFlow<CredentialWithKeyBindingDao?>
-    val deferredCredentialDaoFlow: StateFlow<DeferredCredentialDao?>
+    val verifiableCredentialWithBundleItemsWithKeyBindingDaoFlow:
+        StateFlow<VerifiableCredentialWithBundleItemsWithKeyBindingDao?>
+    val bundleItemEntityDaoFlow: StateFlow<BundleItemEntityDao?>
+    val bundleItemWithKeyBindingDaoFlow: StateFlow<BundleItemWithKeyBindingDao?>
+    val deferredCredentialDao: StateFlow<DeferredCredentialDao?>
+    val deferredCredentialWithDisplaysDao: StateFlow<DeferredCredentialWithDisplaysDao?>
     val credentialDisplayDaoFlow: StateFlow<CredentialDisplayDao?>
     val credentialClaimDaoFlow: StateFlow<CredentialClaimDao?>
     val credentialClaimDisplayDaoFlow: StateFlow<CredentialClaimDisplayDao?>
@@ -18,6 +22,7 @@ interface DaoProvider {
     val credentialActivityEntityDao: StateFlow<CredentialActivityEntityDao?>
     val activityClaimEntityDao: StateFlow<ActivityClaimEntityDao?>
     val activityActorDisplayEntityDao: StateFlow<ActivityActorDisplayEntityDao?>
+    val activityActorDisplayWithImageDao: StateFlow<ActivityActorDisplayWithImageDao?>
     val activityWithDetailsDao: StateFlow<ActivityWithDetailsDao?>
     val activityWithDisplaysDao: StateFlow<ActivityWithDisplaysDao?>
     val imageEntityDao: StateFlow<ImageEntityDao?>
@@ -27,4 +32,5 @@ interface DaoProvider {
     val eIdRequestFileDaoFlow: StateFlow<EIdRequestFileDao?>
     val rawCredentialDataDao: StateFlow<RawCredentialDataDao?>
     val clientAttestationDaoFlow: StateFlow<ClientAttestationDao?>
+    val batchRefreshDataDao: StateFlow<BatchRefreshDataDao?>
 }

@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.data
 
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSchemaRepositoryError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.toVcSchemaRepositoryError
 import ch.admin.foitt.openid4vc.domain.repository.VcSchemaRepository
@@ -10,12 +11,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
-import io.ktor.http.append
 import java.net.URL
 import javax.inject.Inject
+import javax.inject.Named
 
 internal class VcSchemaRepositoryImpl @Inject constructor(
-    private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
 ) : VcSchemaRepository {
 
     override suspend fun fetchVcSchema(url: URL): Result<String, VcSchemaRepositoryError> = runSuspendCatching<String> {

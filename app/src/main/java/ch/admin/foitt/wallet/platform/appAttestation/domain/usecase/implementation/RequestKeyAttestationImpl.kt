@@ -4,7 +4,7 @@ import ch.admin.foitt.openid4vc.domain.model.CreateJwkError
 import ch.admin.foitt.openid4vc.domain.model.KeyStorageSecurityLevel
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.JWSKeyPair
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.Jwk
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.usecase.CreateJwk
 import ch.admin.foitt.openid4vc.utils.Constants
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AppAttestationRepositoryError
@@ -16,8 +16,8 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.AppAttest
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestKeyAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.ValidateKeyAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.util.getBase64CertificateChain
-import ch.admin.foitt.wallet.platform.holderBinding.domain.model.CreateJWSKeyPairError
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.CreateJWSKeyPairError
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError

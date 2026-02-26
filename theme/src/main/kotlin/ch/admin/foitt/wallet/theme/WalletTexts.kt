@@ -421,7 +421,7 @@ object WalletTexts {
         style = WalletTheme.typography.labelMedium,
         textAlign = TextAlign.Start,
         overflow = TextOverflow.Ellipsis,
-        modifier = modifier,
+        modifier = modifier
     )
 
 //endregion

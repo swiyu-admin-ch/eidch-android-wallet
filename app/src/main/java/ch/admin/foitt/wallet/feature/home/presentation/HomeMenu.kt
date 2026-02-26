@@ -138,7 +138,7 @@ private fun HomeMenuContent(
         title = helpTitle,
         titleAltText = "$helpTitle $helpLinkAltText",
         leadingIcon = R.drawable.wallet_ic_questionmark,
-        trailingIcon = R.drawable.wallet_ic_web_link,
+        trailingIcon = R.drawable.wallet_ic_external_link,
         onClick = onHelp,
     )
 }

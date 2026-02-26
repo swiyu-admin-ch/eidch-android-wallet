@@ -8,6 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface GetPresentationRequestCredentialListFlow {
     operator fun invoke(
-        compatibleCredentials: Array<CompatibleCredential>,
+        compatibleCredentials: Set<CompatibleCredential>,
     ): Flow<Result<PresentationCredentialDisplayData, GetPresentationRequestCredentialListFlowError>>
 }

@@ -4,20 +4,44 @@ import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnviron
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.implementation.GetActorEnvironmentImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockCredential
+import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import io.mockk.MockKAnnotations
+import io.mockk.coEvery
+import io.mockk.impl.annotations.MockK
+import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class GetActorEnvironmentImplTest {
 
+    @MockK
+    private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
+
     private lateinit var useCase: GetActorEnvironment
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        useCase = GetActorEnvironmentImpl()
+
+        coEvery {
+            mockEnvironmentSetupRepository.trustEnvironmentDidRegex
+        } returns "^did:(?:tdw|webvh):[^:]+:identifier-reg\\.trust-infra\\.swiyu\\.admin\\.ch:.*"
+
+        coEvery {
+            mockEnvironmentSetupRepository.demoTrustEnvironmentDidRegex
+        } returns "^did:(?:tdw|webvh):[^:]+:identifier-reg\\.trust-infra\\.swiyu-int\\.admin\\.ch:.*"
+
+        useCase = GetActorEnvironmentImpl(
+            environmentSetupRepository = mockEnvironmentSetupRepository,
+        )
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test

@@ -16,6 +16,7 @@ import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.simpleNestedOca
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
@@ -155,6 +156,7 @@ class GenerateNestedOcaDisplaysImplTest {
         coEvery { mockGetRootCaptureBase(captureBases) } returns Ok(mockRootCaptureBase)
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     private fun setupNestedOcaTests(inputOcaJson: String): OcaBundle {
         val bundle = json.safeDecodeStringTo<OcaBundle>(inputOcaJson).value
         val ocaClaimData = generateOcaClaimData(bundle.captureBases, bundle.overlays)

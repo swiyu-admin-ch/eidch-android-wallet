@@ -2,13 +2,14 @@ package ch.admin.foitt.wallet.feature.credentialOffer.presentation
 
 import android.content.Context
 import androidx.annotation.StringRes
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.credentialOffer.domain.model.CredentialOffer
+import ch.admin.foitt.wallet.feature.credentialOffer.domain.usecase.AcceptCredential
 import ch.admin.foitt.wallet.feature.credentialOffer.domain.usecase.GetCredentialOfferFlow
 import ch.admin.foitt.wallet.feature.credentialOffer.presentation.model.CredentialOfferUiState
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.SaveIssuanceActivity
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheIssuerDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.adapter.GetActorUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
@@ -22,19 +23,22 @@ import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialOffer
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialOfferEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
+import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteCredential
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.utils.openLink
-import ch.admin.foitt.walletcomposedestinations.destinations.CredentialOfferDeclinedScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.CredentialOfferScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.DeclineCredentialOfferScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.ErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.ReportWrongDataScreenDestination
 import com.github.michaelbull.result.mapBoth
+import com.github.michaelbull.result.onFailure
+import com.github.michaelbull.result.onSuccess
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,27 +48,32 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import timber.log.Timber
 
-@HiltViewModel
-class CredentialOfferViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = CredentialOfferViewModel.Factory::class)
+class CredentialOfferViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
-    savedStateHandle: SavedStateHandle,
     getCredentialOfferFlow: GetCredentialOfferFlow,
     private val navManager: NavigationManager,
     private val updateCredentialStatus: UpdateCredentialStatus,
     private val getCredentialCardState: GetCredentialCardState,
     private val saveFirstCredentialWasAdded: SaveFirstCredentialWasAdded,
+    private val deleteCredential: DeleteCredential,
     private val getActorUiState: GetActorUiState,
     getActorForScope: GetActorForScope,
     private val credentialOfferEventRepository: CredentialOfferEventRepository,
     private val saveIssuanceActivity: SaveIssuanceActivity,
+    private val acceptCredential: AcceptCredential,
+    private val fetchAndCacheIssuerDisplayData: FetchAndCacheIssuerDisplayData,
+    @Assisted private val credentialId: Long,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.None
 
-    private val navArgs = CredentialOfferScreenDestination.argsFrom(savedStateHandle)
-    private val credentialId = navArgs.credentialId
+    @AssistedFactory
+    interface Factory {
+        fun create(credentialId: Long): CredentialOfferViewModel
+    }
 
     private val _badgeBottomSheetUiState: MutableStateFlow<BadgeBottomSheetUiState?> = MutableStateFlow(null)
     val badgeBottomSheet = _badgeBottomSheetUiState.asStateFlow()
@@ -82,7 +91,7 @@ class CredentialOfferViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
-    private val credentialOffer: StateFlow<CredentialOffer?> = getCredentialOfferFlow(credentialId)
+    private val credentialOffer: StateFlow<CredentialOffer?> = getCredentialOfferFlow(credentialId = credentialId)
         .map { result ->
             result.mapBoth(
                 success = { credentialOffer ->
@@ -113,7 +122,8 @@ class CredentialOfferViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            updateCredentialStatus(credentialId)
+            launch { updateCredentialStatus(credentialId) }
+            launch { fetchAndCacheIssuerDisplayData(credentialId) }
         }
     }
 
@@ -124,6 +134,10 @@ class CredentialOfferViewModel @Inject constructor(
     }
 
     fun acceptCredential() = viewModelScope.launch {
+        acceptCredential(credentialId).onFailure {
+            navigateToErrorScreen()
+            return@launch
+        }
         saveFirstCredentialWasAdded()
         saveIssuanceActivity(
             credentialId = credentialId,
@@ -131,26 +145,30 @@ class CredentialOfferViewModel @Inject constructor(
             issuerFallbackName = appContext.getString(R.string.tk_credential_offer_issuer_name_unknown)
         )
         credentialOfferEventRepository.setEvent(CredentialOfferEvent.ACCEPTED)
-        navManager.navigateUpOrToRoot()
+        navManager.popBackStackOrToRoot()
     }
 
     fun onDeclineClicked() {
-        credentialOffer.value?.let { credentialOffer ->
-            navManager.navigateTo(
-                DeclineCredentialOfferScreenDestination(
-                    credentialId = credentialId,
-                )
+        navManager.navigateTo(
+            Destination.DeclineCredentialOfferScreen(
+                credentialId = credentialId,
             )
-        } ?: navigateToErrorScreen()
+        )
     }
 
     fun onDeclineBottomSheet() {
-        credentialOffer.value?.let { credentialOffer ->
-            navManager.navigateTo(
-                CredentialOfferDeclinedScreenDestination(
-                    credentialId = credentialId,
-                )
-            )
+        // User declined a VC from an unknown issuer. Delete immediately and navigate to home
+        credentialOffer.value?.let {
+            viewModelScope.launch {
+                deleteCredential(credentialId).onFailure { error ->
+                    when (error) {
+                        is SsiError.Unexpected -> Timber.e(error.cause)
+                    }
+                }.onSuccess {
+                    credentialOfferEventRepository.setEvent(CredentialOfferEvent.DECLINED)
+                }
+                navManager.navigateOutAndTo(DestinationGroup.CredentialOffer::class, Destination.HomeScreen)
+            }
         } ?: navigateToErrorScreen()
     }
 
@@ -177,11 +195,11 @@ class CredentialOfferViewModel @Inject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.navigateToAndClearCurrent(ErrorScreenDestination)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
     }
 
     fun onReportWrongDataClicked() {
-        navManager.navigateTo(ReportWrongDataScreenDestination)
+        navManager.navigateTo(Destination.ReportWrongDataScreen)
     }
 
     private fun onMoreInformation(@StringRes uriResource: Int) = appContext.openLink(uriResource)

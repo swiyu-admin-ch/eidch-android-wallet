@@ -12,11 +12,16 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithD
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedAndThemedDisplay
+import ch.admin.foitt.wallet.platform.ssi.domain.model.BundleItemRepositoryError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.toMapToCredentialDisplayDataError
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.BundleItemRepository
 import ch.admin.foitt.wallet.platform.theme.domain.model.Theme
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
+import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.mapError
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -24,6 +29,7 @@ class MapToCredentialDisplayDataImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val getLocalizedAndThemedDisplay: GetLocalizedAndThemedDisplay,
     private val getActorEnvironment: GetActorEnvironment,
+    private val bundleItemRepository: BundleItemRepository,
 ) : MapToCredentialDisplayData {
     override suspend fun invoke(
         verifiableCredential: VerifiableCredentialEntity,
@@ -34,10 +40,21 @@ class MapToCredentialDisplayDataImpl @Inject constructor(
 
         val resolvedDisplay = credentialDisplay.resolveTemplate(claims)
 
+        val bundleItems = bundleItemRepository.getAllByCredentialId(verifiableCredential.credentialId)
+            .mapError(BundleItemRepositoryError::toMapToCredentialDisplayDataError)
+            .bind()
+
+        val status = runSuspendCatching {
+            bundleItems.first().status
+        }.mapError {
+            CredentialError.Unexpected(it)
+        }.bind()
+
         CredentialDisplayData(
             credentialId = verifiableCredential.credentialId,
-            status = verifiableCredential.getDisplayStatus(verifiableCredential.status),
+            status = verifiableCredential.getDisplayStatus(status),
             credentialDisplay = resolvedDisplay,
+            progressionState = verifiableCredential.progressionState,
             actorEnvironment = getActorEnvironment(verifiableCredential.issuer)
         )
     }
@@ -48,7 +65,6 @@ class MapToCredentialDisplayDataImpl @Inject constructor(
         } else {
             Theme.LIGHT
         }
-
         return getLocalizedAndThemedDisplay(
             credentialDisplays = displays,
             preferredTheme = currentTheme,

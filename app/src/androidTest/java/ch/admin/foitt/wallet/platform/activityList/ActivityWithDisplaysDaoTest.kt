@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.platform.activityList
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.activityActorDisplay4
+import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.activityActorDisplayWithImage
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.credential1
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.credentialActivity2
 import ch.admin.foitt.wallet.platform.database.data.AppDatabase
@@ -54,7 +55,7 @@ class ActivityWithDisplaysDaoTest {
         val expected = listOf(
             ActivityWithActorDisplays(
                 activity = credentialActivity2,
-                actorDisplays = listOf(activityActorDisplay4)
+                actorDisplays = listOf(activityActorDisplayWithImage)
             )
         )
 

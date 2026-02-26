@@ -3,10 +3,12 @@ package ch.admin.foitt.wallet.platform.actorMetadata.di
 import ch.admin.foitt.wallet.platform.actorMetadata.data.repository.ActorRepositoryImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.repository.ActorRepository
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.CacheIssuerDisplayData
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheIssuerDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheVerifierDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.InitializeActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.CacheIssuerDisplayDataImpl
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.FetchAndCacheIssuerDisplayDataImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.FetchAndCacheVerifierDisplayDataImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.GetActorForScopeImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.InitializeActorForScopeImpl
@@ -29,9 +31,14 @@ internal interface ActorMetadataModule {
     ): CacheIssuerDisplayData
 
     @Binds
-    fun bindFetchVerifierDisplayData(
+    fun bindFetchAndCacheVerifierDisplayData(
         useCase: FetchAndCacheVerifierDisplayDataImpl
     ): FetchAndCacheVerifierDisplayData
+
+    @Binds
+    fun bindFetchAndCacheIssuerDisplayData(
+        useCase: FetchAndCacheIssuerDisplayDataImpl
+    ): FetchAndCacheIssuerDisplayData
 
     @Binds
     fun bindGetActorUiState(

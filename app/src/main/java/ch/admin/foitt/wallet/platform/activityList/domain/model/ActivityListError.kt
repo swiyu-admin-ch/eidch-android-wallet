@@ -11,11 +11,14 @@ interface ActivityListError {
         ActivityActorDisplayRepositoryError,
         ActivityWithDetailsRepositoryError,
         ActivityWithActorDisplaysRepositoryError,
+        ActivityActorDisplayWithImageRepositoryError,
+        GetActivityActorDisplaysWithImagesFlowError,
         ImageRepositoryError,
         ActivityRepositoryError,
         MapToActivityDisplayDataError,
         GetActivitiesWithDisplaysFlowError,
         GetActivityDetailFlowError,
+        GetActivityWithDetailsFlowError,
         DeleteActivityError
 }
 
@@ -24,11 +27,14 @@ sealed interface ActivityClaimRepositoryError
 sealed interface ActivityActorDisplayRepositoryError
 sealed interface ActivityWithDetailsRepositoryError
 sealed interface ActivityWithActorDisplaysRepositoryError
+sealed interface ActivityActorDisplayWithImageRepositoryError
 sealed interface ImageRepositoryError
 sealed interface ActivityRepositoryError
 sealed interface MapToActivityDisplayDataError
 sealed interface GetActivitiesWithDisplaysFlowError
+sealed interface GetActivityActorDisplaysWithImagesFlowError
 sealed interface GetActivityDetailFlowError
+sealed interface GetActivityWithDetailsFlowError
 sealed interface DeleteActivityError
 
 fun Throwable.toActivityWithDetailsRepositoryError(message: String): ActivityWithDetailsRepositoryError {
@@ -46,6 +52,11 @@ fun Throwable.toActivityRepositoryError(message: String): ActivityRepositoryErro
     return ActivityListError.Unexpected(this)
 }
 
+fun Throwable.toActivityActorDisplayWithImageRepositoryError(message: String): ActivityActorDisplayWithImageRepositoryError {
+    Timber.e(t = this, message = message)
+    return ActivityListError.Unexpected(this)
+}
+
 fun ActivityWithActorDisplaysRepositoryError.toGetActivitiesWithDisplaysFlowError(): GetActivitiesWithDisplaysFlowError = when (this) {
     is ActivityListError.Unexpected -> this
 }
@@ -55,5 +66,14 @@ internal fun MapToCredentialDisplayDataError.toGetActivityDetailFlowError(): Get
 }
 
 fun CredentialActivityRepositoryError.toDeleteActivityError(): DeleteActivityError = when (this) {
+    is ActivityListError.Unexpected -> this
+}
+
+fun ActivityActorDisplayWithImageRepositoryError.toGetActivityActorDisplaysWithImagesFlowError():
+    GetActivityActorDisplaysWithImagesFlowError = when (this) {
+    is ActivityListError.Unexpected -> this
+}
+
+fun ActivityWithDetailsRepositoryError.toGetActivityWithDetailsFlowError(): GetActivityWithDetailsFlowError = when (this) {
     is ActivityListError.Unexpected -> this
 }

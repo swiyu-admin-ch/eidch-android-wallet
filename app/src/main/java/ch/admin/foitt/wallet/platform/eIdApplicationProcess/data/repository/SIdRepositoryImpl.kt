@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess.data.repository
 
 import android.content.Context
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationPoP
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestation
@@ -14,6 +15,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWal
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdChallengeResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.WalletPairingStateResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toSIdRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toValidateAttestationsError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.repository.SIdRepository
@@ -34,9 +36,10 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import javax.inject.Inject
+import javax.inject.Named
 
 class SIdRepositoryImpl @Inject constructor(
-    private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
     private val environmentSetupRepo: EnvironmentSetupRepository,
     @param:ApplicationContext private val appContext: Context,
 ) : SIdRepository {
@@ -151,6 +154,23 @@ class SIdRepositoryImpl @Inject constructor(
             }.body()
         }.mapError { throwable ->
             throwable.toSIdRepositoryError("startAutoVerification error")
+        }
+
+    override suspend fun getWalletPairingState(
+        caseId: String,
+        walletPairingId: String,
+        clientAttestation: ClientAttestation,
+    ): Result<WalletPairingStateResponse, SIdRepositoryError> =
+        runSuspendCatching<WalletPairingStateResponse> {
+            httpClient.get(
+                environmentSetupRepo.sidBackendUrl + REST_API +
+                    "eid/$caseId/pair-wallet/$walletPairingId/state"
+            ) {
+                header(ClientAttestation.REQUEST_HEADER, clientAttestation.attestation.rawJwt)
+                contentType(ContentType.Application.Json)
+            }.body()
+        }.mapError { throwable ->
+            throwable.toSIdRepositoryError("getWalletPairingState error")
         }
 
     companion object {

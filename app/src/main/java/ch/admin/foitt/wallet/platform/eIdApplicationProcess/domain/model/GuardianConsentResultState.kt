@@ -1,5 +1,8 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class GuardianConsentResultState {
     QUEUEING_LEGAL_CONSENT_PENDING,
     QUEUEING_LEGAL_CONSENT_OK,

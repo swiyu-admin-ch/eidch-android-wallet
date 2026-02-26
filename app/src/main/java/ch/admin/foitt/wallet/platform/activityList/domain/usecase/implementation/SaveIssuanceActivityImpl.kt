@@ -19,6 +19,7 @@ class SaveIssuanceActivityImpl @Inject constructor(
             credentialId = credentialId,
             actorDisplayData = actorDisplayData,
             actorFallbackName = issuerFallbackName,
+            nonComplianceData = null,
         )
     }
 }

@@ -6,7 +6,7 @@ import ch.admin.foitt.wallet.platform.theme.domain.model.Theme
 interface GetLocalizedAndThemedDisplay {
     operator fun invoke(
         credentialDisplays: List<CredentialDisplay>,
-        preferredLocale: String? = null,
+        preferredLocaleString: String? = null,
         preferredTheme: Theme = Theme.LIGHT,
     ): CredentialDisplay?
 }

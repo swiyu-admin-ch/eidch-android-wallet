@@ -2,9 +2,12 @@ package ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model
 
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.CANCELLED
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.IN_ISSUANCE
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.IN_QUEUING
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.READY_FOR_ONLINE_SESSION
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.REFUSED
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.TIMEOUT
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.WAITING_FOR_VERIFICATION_APPROVAL
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.LegalRepresentativeConsent.NOT_REQUIRED
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.LegalRepresentativeConsent.NOT_VERIFIED
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.LegalRepresentativeConsent.VERIFIED
@@ -19,32 +22,47 @@ enum class SIdRequestDisplayStatus {
     AV_EXPIRED,
     AV_EXPIRED_LEGAL_CONSENT_OK,
     AV_EXPIRED_LEGAL_CONSENT_PENDING,
+    IN_AGENT_REVIEW,
+    IN_ISSUANCE,
+    REFUSED,
     UNKNOWN,
     OTHER,
 }
 
 fun StateResponse.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus =
-    Pair(state, toLegalRepresentativeConsent()).toSIdRequestDisplayStatus()
+    RequestStatusInput(state, toLegalRepresentativeConsent()).toSIdRequestDisplayStatus()
 
 fun EIdRequestState.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus =
-    Pair(state, legalRepresentativeConsent).toSIdRequestDisplayStatus()
+    RequestStatusInput(state, legalRepresentativeConsent).toSIdRequestDisplayStatus()
 
-private fun Pair<EIdRequestQueueState, LegalRepresentativeConsent>.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus = when (this) {
-    READY_FOR_ONLINE_SESSION to NOT_REQUIRED -> SIdRequestDisplayStatus.AV_READY
-    READY_FOR_ONLINE_SESSION to VERIFIED -> SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_OK
-    READY_FOR_ONLINE_SESSION to NOT_VERIFIED -> SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_PENDING
+private fun RequestStatusInput.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus = when (this.queueState) {
+    READY_FOR_ONLINE_SESSION -> handleReadyState(this.legalConsent)
+    IN_QUEUING -> handleQueueingState(this.legalConsent)
+    in listOf(TIMEOUT, CANCELLED) -> handleExpiredState(this.legalConsent)
+    WAITING_FOR_VERIFICATION_APPROVAL -> SIdRequestDisplayStatus.IN_AGENT_REVIEW
+    REFUSED -> SIdRequestDisplayStatus.REFUSED
+    // We currently do not try to differentiate if other devices are paired
+    IN_ISSUANCE -> SIdRequestDisplayStatus.IN_ISSUANCE
+    else -> SIdRequestDisplayStatus.OTHER
+}
 
-    IN_QUEUING to NOT_REQUIRED -> SIdRequestDisplayStatus.QUEUEING
-    IN_QUEUING to VERIFIED -> SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_OK
-    IN_QUEUING to NOT_VERIFIED -> SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_PENDING
+private fun handleReadyState(legalConsent: LegalRepresentativeConsent?): SIdRequestDisplayStatus = when (legalConsent) {
+    NOT_REQUIRED -> SIdRequestDisplayStatus.AV_READY
+    VERIFIED -> SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_OK
+    NOT_VERIFIED -> SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_PENDING
+    else -> SIdRequestDisplayStatus.OTHER
+}
 
-    TIMEOUT to NOT_REQUIRED -> SIdRequestDisplayStatus.AV_EXPIRED
-    TIMEOUT to VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK
-    TIMEOUT to NOT_VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING
+private fun handleQueueingState(legalConsent: LegalRepresentativeConsent?): SIdRequestDisplayStatus = when (legalConsent) {
+    NOT_REQUIRED -> SIdRequestDisplayStatus.QUEUEING
+    VERIFIED -> SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_OK
+    NOT_VERIFIED -> SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_PENDING
+    else -> SIdRequestDisplayStatus.OTHER
+}
 
-    CANCELLED to NOT_REQUIRED -> SIdRequestDisplayStatus.AV_EXPIRED
-    CANCELLED to VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK
-    CANCELLED to NOT_VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING
-
+private fun handleExpiredState(legalConsent: LegalRepresentativeConsent?): SIdRequestDisplayStatus = when (legalConsent) {
+    NOT_REQUIRED -> SIdRequestDisplayStatus.AV_EXPIRED
+    VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK
+    NOT_VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING
     else -> SIdRequestDisplayStatus.OTHER
 }

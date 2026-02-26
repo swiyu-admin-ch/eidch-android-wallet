@@ -2,13 +2,14 @@ package ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.implement
 
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
+import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import javax.inject.Inject
 
-class GetActorEnvironmentImpl @Inject constructor() : GetActorEnvironment {
-    private val prodPattern =
-        Regex(pattern = "^did:(?:tdw|webvh):[^:]+:identifier-reg(?:-[^:])?\\.trust-infra\\.swiyu\\.admin\\.ch:.*")
-    private val betaPattern =
-        Regex(pattern = "^did:(?:tdw|webvh):[^:]+:identifier-reg(?:-[^:])?\\.trust-infra\\.swiyu-int\\.admin\\.ch:.*")
+class GetActorEnvironmentImpl @Inject constructor(
+    environmentSetupRepository: EnvironmentSetupRepository,
+) : GetActorEnvironment {
+    private val prodPattern = Regex(pattern = environmentSetupRepository.trustEnvironmentDidRegex)
+    private val betaPattern = Regex(pattern = environmentSetupRepository.demoTrustEnvironmentDidRegex)
 
     override suspend fun invoke(credentialIssuer: String?): ActorEnvironment = when {
         credentialIssuer == null -> ActorEnvironment.EXTERNAL

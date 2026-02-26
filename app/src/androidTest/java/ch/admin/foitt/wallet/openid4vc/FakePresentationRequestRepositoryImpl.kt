@@ -1,8 +1,8 @@
 package ch.admin.foitt.wallet.openid4vc
 
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.FetchPresentationRequestError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitAnyCredentialPresentationError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitPresentationErrorError
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
@@ -20,7 +20,7 @@ class FakePresentationRequestRepositoryImpl @Inject constructor(
 
     override suspend fun submitPresentation(
         url: URL,
-        presentationRequestBody: PresentationRequestBody
+        presentationRequestType: PresentationRequestType
     ): Result<Unit, SubmitAnyCredentialPresentationError> {
         return Ok(Unit)
     }

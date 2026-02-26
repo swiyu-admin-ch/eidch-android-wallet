@@ -5,10 +5,16 @@ import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.home.domain.usecase.DeleteEIdRequestCase
 import ch.admin.foitt.wallet.feature.home.domain.usecase.GetEIdRequestsFlow
+import ch.admin.foitt.wallet.feature.home.presentation.model.HomeContainerState
+import ch.admin.foitt.wallet.feature.home.presentation.model.HomeScreenState
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
+import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayData
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayStatus
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.UpdateAllSIdStatuses
@@ -16,22 +22,16 @@ import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.Environ
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialOfferEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialOfferEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetCredentialsWithDetailsFlow
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetDeferredCredentialsWithDetailsFlow
 import ch.admin.foitt.wallet.platform.utils.openLink
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.BetaIdScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.CredentialDetailScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdGuardianSelectionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdIntroScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdStartAvSessionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.ErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.QrScanPermissionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.SettingsScreenDestination
-import com.ramcosta.composedestinations.spec.Direction
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -48,10 +48,12 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     getCredentialsWithDetailsFlow: GetCredentialsWithDetailsFlow,
+    getDeferredCredentialsWithDetailsFlow: GetDeferredCredentialsWithDetailsFlow,
     getEIdRequestsFlow: GetEIdRequestsFlow,
     private val getCredentialCardState: GetCredentialCardState,
     private val updateAllCredentialStatuses: UpdateAllCredentialStatuses,
     private val updateAllSIdStatuses: UpdateAllSIdStatuses,
+    private val refreshDeferredCredentials: RefreshDeferredCredentials,
     private val deleteEIdRequestCase: DeleteEIdRequestCase,
     environmentSetupRepository: EnvironmentSetupRepository,
     private val navManager: NavigationManager,
@@ -66,15 +68,22 @@ class HomeViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing = _isRefreshing.asStateFlow()
 
-    val screenState = refreshableStateFlow(initialData = HomeScreenState.Initial) {
+    @OptIn(UnsafeResultValueAccess::class)
+    val screenContentState = refreshableStateFlow(initialData = HomeScreenState.Initial) {
         combine(
-            getCredentialsWithDetailsFlow(),
             getEIdRequestsFlow(),
-        ) { homeDataFlow, eIdRequestsFlow ->
+            getCredentialsWithDetailsFlow(),
+            getDeferredCredentialsWithDetailsFlow(),
+        ) { eIdRequestsFlow, credentialsWithDetails, deferredCredential ->
             when {
-                homeDataFlow.isOk && eIdRequestsFlow.isOk -> mapToUiState(homeDataFlow.value, eIdRequestsFlow.value)
+                credentialsWithDetails.isOk && eIdRequestsFlow.isOk && deferredCredential.isOk -> mapToUiState(
+                    credentials = credentialsWithDetails.value,
+                    deferredCredentials = deferredCredential.value,
+                    eIdRequestCases = eIdRequestsFlow.value,
+                )
+
                 else -> {
-                    navigateTo(ErrorScreenDestination)
+                    navigateTo(Destination.GenericErrorScreen)
                     null
                 }
             }
@@ -86,10 +95,10 @@ class HomeViewModel @Inject constructor(
             showEIdRequestButton = environmentSetupRepository.eIdRequestEnabled,
             showBetaIdRequestButton = environmentSetupRepository.betaIdRequestEnabled,
             showMenu = false,
-            onScan = { navigateTo(QrScanPermissionScreenDestination) },
-            onGetEId = { navigateTo(EIdIntroScreenDestination) },
-            onGetBetaId = { navigateTo(BetaIdScreenDestination) },
-            onSettings = { navigateTo(SettingsScreenDestination) },
+            onScan = { navigateTo(Destination.QrScanPermissionScreen) },
+            onGetEId = { navigateTo(Destination.EIdIntroScreen) },
+            onGetBetaId = { navigateTo(Destination.BetaIdScreen) },
+            onSettings = { navigateTo(Destination.SettingsScreen) },
             onHelp = { onHelp() },
         )
     )
@@ -104,7 +113,7 @@ class HomeViewModel @Inject constructor(
                     CredentialOfferEvent.NONE -> null
                 }
                 if (_eventMessage.value != null) {
-                    delay(4000L)
+                    delay(TOAST_DISPLAY_TIME_MILLIS)
                     credentialOfferEventRepository.resetEvent()
                 }
             }
@@ -113,19 +122,25 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun mapToUiState(
         credentials: List<CredentialDisplayData>,
+        deferredCredentials: List<DeferredCredentialDisplayData>,
         eIdRequestCases: List<SIdRequestDisplayData>
     ): HomeScreenState = when {
-        credentials.isNotEmpty() -> {
+        credentials.isNotEmpty() || deferredCredentials.isNotEmpty() -> {
             HomeScreenState.CredentialList(
                 eIdRequests = filterEIdRequests(eIdRequestCases),
-                credentials = getCredentialStateList(credentials),
-                onCredentialClick = { id -> navigateTo(CredentialDetailScreenDestination(credentialId = id)) },
+                credentials = getCredentialStateList(
+                    credentialsDisplayData = credentials,
+                    deferredCredentialsDisplayData = deferredCredentials,
+                ),
+                onCredentialClick = ::handleCredentialClick,
             )
         }
 
-        else -> HomeScreenState.NoCredential(
+        eIdRequestCases.isNotEmpty() -> HomeScreenState.NoCredential(
             eIdRequests = filterEIdRequests(eIdRequestCases),
         )
+
+        else -> HomeScreenState.WalletEmpty
     }
 
     private fun filterEIdRequests(eIdRequestCases: List<SIdRequestDisplayData>): List<SIdRequestDisplayData> {
@@ -134,24 +149,50 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun getCredentialStateList(credentialDisplayData: List<CredentialDisplayData>): List<CredentialCardState> {
-        return credentialDisplayData.map { credentialPreview ->
-            getCredentialCardState(
-                credentialPreview
-            )
-        }
+    private suspend fun getCredentialStateList(
+        credentialsDisplayData: List<CredentialDisplayData>,
+        deferredCredentialsDisplayData: List<DeferredCredentialDisplayData>,
+    ): List<CredentialCardState> {
+        val deferredCredentials = deferredCredentialsDisplayData
+            .sortedWith { first, second ->
+                when (first.status) {
+                    second.status -> {
+                        when {
+                            first.credentialId > second.credentialId -> -1
+                            first.credentialId < second.credentialId -> 1
+                            else -> 0
+                        }
+                    }
+                    DeferredProgressionState.IN_PROGRESS -> -1
+                    DeferredProgressionState.INVALID -> 1
+                }
+            }
+            .map { deferredCredentialDisplayData ->
+                getCredentialCardState(deferredCredentialDisplayData)
+            }
+
+        val (unacceptedCredentials, acceptedCredential) = credentialsDisplayData
+            .map { credentialDisplayData ->
+                getCredentialCardState(credentialDisplayData)
+            }.partition {
+                it.isUnaccepted
+            }
+
+        return unacceptedCredentials + deferredCredentials + acceptedCredential
     }
 
     fun onRefresh() {
         viewModelScope.launch {
-            updateAllCredentialStatuses()
+            refreshDeferredCredentials()
             updateAllSIdStatuses()
+            updateAllCredentialStatuses()
         }.trackCompletion(_isRefreshing)
     }
 
     fun onRefreshSIdStatuses() {
         if (!isRefreshing.value) {
             viewModelScope.launch {
+                refreshDeferredCredentials()
                 updateAllSIdStatuses()
             }.trackCompletion(_isRefreshing)
         }
@@ -163,11 +204,11 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onStartOnlineIdentification(caseId: String) {
-        navigateTo(EIdStartAvSessionScreenDestination(caseId = caseId))
+        navigateTo(Destination.EIdStartAvSessionScreen(caseId = caseId))
     }
 
     fun onObtainConsent(caseId: String) {
-        navigateTo(EIdGuardianSelectionScreenDestination(caseId = caseId))
+        navigateTo(Destination.EIdGuardianSelectionScreen(caseId = caseId))
     }
 
     fun onCloseEId(caseId: String) {
@@ -176,22 +217,38 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun onLearnMore() = appContext.openLink(R.string.tk_getEid_notification_declined_faqLink)
+
     fun onMenu(showMenu: Boolean) {
         _homeContainerState.update { currentState ->
             currentState.copy(showMenu = showMenu)
         }
     }
 
-    fun navigateTo(direction: Direction) {
+    private fun handleCredentialClick(id: Long, progressState: VerifiableProgressionState) {
+        when (progressState) {
+            VerifiableProgressionState.ACCEPTED -> navigateTo(
+                Destination.CredentialDetailScreen(credentialId = id)
+            )
+            VerifiableProgressionState.UNACCEPTED -> navigateTo(
+                Destination.CredentialOfferScreen(credentialId = id)
+            )
+        }
+    }
+
+    private fun navigateTo(destination: Destination) {
         // hide menu on navigation, so when coming back it is closed
         onMenu(false)
-
-        navManager.navigateTo(direction)
+        navManager.navigateTo(destination)
     }
 
     fun onHelp() {
         // hide menu on navigation, so when coming back it is closed
         onMenu(false)
         appContext.openLink(R.string.tk_settings_general_help_link_value)
+    }
+
+    companion object {
+        private const val TOAST_DISPLAY_TIME_MILLIS = 4000L
     }
 }

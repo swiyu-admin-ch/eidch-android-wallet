@@ -16,8 +16,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.platform.composables.ScalableContentLayout
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTheme
@@ -50,8 +51,8 @@ fun WalletLayouts.ScrollableColumnWithPicture(
     val stickyBottomHorizontalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.End)
     val contentScrollState = rememberScrollState()
 
-    when (currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass) {
-        WindowWidthSizeClass.COMPACT -> CompactContainer(
+    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+        WindowWidthClass.COMPACT -> CompactContainer(
             modifier = modifier,
             stickyBottomHorizontalArrangement = stickyBottomHorizontalArrangement,
             stickyBottomBackgroundColor = stickyBottomBackgroundColor,

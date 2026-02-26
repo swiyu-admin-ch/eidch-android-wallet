@@ -7,9 +7,10 @@ import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.Presentati
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.SubmitPresentation
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.implementation.SubmitPresentationImpl
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
-import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAnyCredential
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentialsByCredentialId
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestField
+import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -28,10 +29,13 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationReq
 class SubmitPresentationImplTest {
 
     @MockK
-    private lateinit var mockGetAnyCredential: GetAnyCredential
+    private lateinit var mockGetAllAnyCredentialsByCredentialId: GetAllAnyCredentialsByCredentialId
 
     @MockK
     private lateinit var mockSubmitAnyCredentialPresentation: SubmitAnyCredentialPresentation
+
+    @MockK
+    private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
 
     @MockK
     private lateinit var mockPresentationRequest: PresentationRequest
@@ -46,8 +50,9 @@ class SubmitPresentationImplTest {
         MockKAnnotations.init(this)
 
         submitPresentationUseCase = SubmitPresentationImpl(
-            getAnyCredential = mockGetAnyCredential,
+            getAllAnyCredentialsByCredentialId = mockGetAllAnyCredentialsByCredentialId,
             submitAnyCredentialPresentation = mockSubmitAnyCredentialPresentation,
+            environmentSetupRepository = mockEnvironmentSetupRepository,
         )
 
         success()
@@ -71,7 +76,7 @@ class SubmitPresentationImplTest {
     @Test
     fun `Submitting a presentation maps errors from getting any credential`() = runTest {
         val exception = IllegalStateException()
-        coEvery { mockGetAnyCredential.invoke(any()) } returns Err(CredentialError.Unexpected(exception))
+        coEvery { mockGetAllAnyCredentialsByCredentialId.invoke(any()) } returns Err(CredentialError.Unexpected(exception))
 
         val result = submitPresentationUseCase(
             presentationRequest = mockPresentationRequest,
@@ -89,7 +94,8 @@ class SubmitPresentationImplTest {
             mockSubmitAnyCredentialPresentation(
                 anyCredential = any(),
                 requestedFields = any(),
-                presentationRequest = any()
+                presentationRequest = any(),
+                usePayloadEncryption = any(),
             )
         } returns Err(OpenIdPresentationRequestError.Unexpected(exception))
 
@@ -103,15 +109,18 @@ class SubmitPresentationImplTest {
     }
 
     private fun success() {
-        coEvery { mockGetAnyCredential.invoke(CREDENTIAL_ID) } returns Ok(mockAnyCredential)
+        coEvery { mockGetAllAnyCredentialsByCredentialId.invoke(CREDENTIAL_ID) } returns Ok(listOf(mockAnyCredential))
 
         coEvery {
             mockSubmitAnyCredentialPresentation(
                 anyCredential = mockAnyCredential,
                 requestedFields = listOf(FIELD_KEY_1, FIELD_KEY_2),
                 presentationRequest = mockPresentationRequest,
+                usePayloadEncryption = true,
             )
         } returns Ok(Unit)
+
+        coEvery { mockEnvironmentSetupRepository.payloadEncryptionEnabled } returns true
     }
 
     private companion object {
@@ -122,6 +131,7 @@ class SubmitPresentationImplTest {
         val requestedFields = listOf(FIELD_1, FIELD_2)
 
         const val CREDENTIAL_ID = 1L
+        const val ISSUER = "issuer"
         val compatibleCredential = CompatibleCredential(CREDENTIAL_ID, requestedFields)
     }
 }

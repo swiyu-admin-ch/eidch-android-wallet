@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.appAttestation
 
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.Jwk
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestationJwt

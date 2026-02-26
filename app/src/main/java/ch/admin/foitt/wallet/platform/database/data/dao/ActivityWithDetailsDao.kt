@@ -10,5 +10,9 @@ import kotlinx.coroutines.flow.Flow
 interface ActivityWithDetailsDao {
     @Transaction
     @Query("SELECT * FROM credentialactivityentity WHERE id = :activityId")
-    fun getByIdFlow(activityId: Long): Flow<ActivityWithDetails?>
+    fun getNullableByIdFlow(activityId: Long): Flow<ActivityWithDetails?>
+
+    @Transaction
+    @Query("SELECT * FROM credentialactivityentity WHERE id = :activityId")
+    fun getByIdFlow(activityId: Long): Flow<ActivityWithDetails>
 }

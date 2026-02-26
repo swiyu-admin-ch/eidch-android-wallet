@@ -1,18 +1,20 @@
+@file:Suppress("TooManyFunctions")
+
 package ch.admin.foitt.wallet.platform.credentialPresentation.domain.model
 
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
-import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
-import ch.admin.foitt.wallet.platform.credential.domain.model.GetAnyCredentialsError
-import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialRepositoryError
+import ch.admin.foitt.wallet.platform.batch.domain.error.RefreshBatchCredentialsError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialWithKeyBindingRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.VerifiableCredentialRepositoryError
 import ch.admin.foitt.wallet.platform.utils.JsonError
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
 import timber.log.Timber
 
 internal interface CredentialPresentationError {
-    data object EmptyWallet : ProcessPresentationRequestError
-    data object NoCompatibleCredential : ProcessPresentationRequestError
+    data class EmptyWallet(val responseUri: String? = null) : ProcessPresentationRequestError
+    data class NoCompatibleCredential(val responseUri: String? = null) : ProcessPresentationRequestError
     data class InvalidPresentation(val responseUri: String) :
         ProcessPresentationRequestError,
         ValidatePresentationRequestError
@@ -30,6 +32,10 @@ sealed interface ValidatePresentationRequestError
 sealed interface GetCompatibleCredentialsError
 sealed interface GetRequestedFieldsError
 
+internal fun VerifiableCredentialRepositoryError.toRefreshBatchCredentialsError(): RefreshBatchCredentialsError = when (this) {
+    is SsiError.Unexpected -> RefreshBatchCredentialsError.Unexpected(cause)
+}
+
 internal fun ValidatePresentationRequestError.toProcessPresentationRequestError(): ProcessPresentationRequestError = when (this) {
     is CredentialPresentationError.InvalidPresentation -> this
     is CredentialPresentationError.Unexpected -> this
@@ -37,7 +43,7 @@ internal fun ValidatePresentationRequestError.toProcessPresentationRequestError(
     is CredentialPresentationError.NetworkError -> this
 }
 
-internal fun CredentialRepositoryError.toProcessPresentationRequestError(): ProcessPresentationRequestError = when (this) {
+internal fun VerifiableCredentialRepositoryError.toProcessPresentationRequestError(): ProcessPresentationRequestError = when (this) {
     is SsiError.Unexpected -> CredentialPresentationError.Unexpected(cause)
 }
 
@@ -49,8 +55,8 @@ internal fun GetRequestedFieldsError.toGetCompatibleCredentialsError(): GetCompa
     is CredentialPresentationError.Unexpected -> this
 }
 
-internal fun GetAnyCredentialsError.toGetCompatibleCredentialsError(): GetCompatibleCredentialsError = when (this) {
-    is CredentialError.Unexpected -> CredentialPresentationError.Unexpected(cause)
+internal fun CredentialWithKeyBindingRepositoryError.toGetCompatibleCredentialsError(): GetCompatibleCredentialsError = when (this) {
+    is SsiError.Unexpected -> CredentialPresentationError.Unexpected(cause)
 }
 
 internal fun Throwable.toGetCompatibleCredentialsError(message: String): GetCompatibleCredentialsError {

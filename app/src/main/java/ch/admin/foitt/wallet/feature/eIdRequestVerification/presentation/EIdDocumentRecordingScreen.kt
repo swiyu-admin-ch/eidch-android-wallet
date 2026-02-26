@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -41,26 +40,37 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerCamera
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerInfoBox
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.DocumentTypeDrawable
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.SDKInfoState
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdOnlineSessionNavArg
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.IdentityType
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.scaffold.presentation.TopBarTitleOnly
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.platform.utils.OnPauseEventHandler
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
-import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = EIdOnlineSessionNavArg::class,
-)
 @Composable
 fun EIdDocumentRecordingScreen(
     viewModel: EIdDocumentRecordingViewModel,
 ) {
     val currentActivity = LocalActivity.current
+
+    val documentType by viewModel.documentType.collectAsStateWithLifecycle()
+
+    val documentTypeDrawables = when (documentType) {
+        IdentityType.SWISS_PASS -> DocumentTypeDrawable(
+            front = R.drawable.wallet_passport_front_overlay,
+            back = R.drawable.wallet_passport_back_overlay
+        )
+
+        else -> DocumentTypeDrawable(
+            front = R.drawable.wallet_id_card_front_overlay,
+            back = R.drawable.wallet_id_card_back_overlay
+        )
+    }
+
     OnResumeEventHandler(viewModel::onResume)
     OnPauseEventHandler(viewModel::onPause)
     BackHandler(enabled = true, viewModel::onBack)
@@ -76,7 +86,7 @@ fun EIdDocumentRecordingScreen(
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         getScannerView = viewModel::getScannerView,
         onAfterViewLayout = viewModel::onAfterViewLayout,
-        onCloseToast = viewModel::onCloseToast,
+        documentTypeDrawables = documentTypeDrawables,
     )
 }
 
@@ -85,14 +95,14 @@ fun EIdDocumentRecordingScreen(
 @Composable
 private fun EIdDocumentRecordingScreenContent(
     infoState: SDKInfoState,
-    infoText: String,
+    infoText: Int?,
     showSecondSide: Boolean,
     isLoading: Boolean,
     getScannerView: suspend (width: Int, height: Int) -> View,
     onAfterViewLayout: (width: Int, height: Int) -> Unit,
-    onCloseToast: () -> Unit,
+    documentTypeDrawables: DocumentTypeDrawable,
 ) = Column(
-    modifier = Modifier.Companion
+    modifier = Modifier
         .background(color = WalletTheme.colorScheme.surface)
         .fillMaxSize()
         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
@@ -114,15 +124,14 @@ private fun EIdDocumentRecordingScreenContent(
         if (!isLoading) {
             ScanBox(
                 showSecondSide = showSecondSide,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.align(Alignment.Center),
+                documentTypeDrawables = documentTypeDrawables
             )
             ScannerInfoBox(
                 infoState = infoState,
-                onClose = onCloseToast,
                 infoText = infoText,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = Sizes.s05)
+                    .align(Alignment.TopCenter)
             )
         }
     }
@@ -133,6 +142,7 @@ private fun EIdDocumentRecordingScreenContent(
 private fun ScanBox(
     showSecondSide: Boolean,
     modifier: Modifier,
+    documentTypeDrawables: DocumentTypeDrawable,
 ) {
     val rotation = remember { Animatable(0f) }
     var currentCardFront by remember { mutableStateOf(true) }
@@ -155,9 +165,9 @@ private fun ScanBox(
     }
 
     val overlayRes = if (showSecondSide) {
-        R.drawable.wallet_id_card_back_overlay
+        documentTypeDrawables.back
     } else {
-        R.drawable.wallet_id_card_front_overlay
+        documentTypeDrawables.front
     }
 
     Box(
@@ -172,7 +182,7 @@ private fun ScanBox(
             contentDescription = null,
             contentScale = ContentScale.Fit,
             colorFilter = ColorFilter.tint(WalletTheme.colorScheme.onPrimaryFixed),
-            modifier = Modifier.Companion
+            modifier = Modifier
                 .sizeIn(maxWidth = 1200.dp, maxHeight = 1200.dp)
                 .graphicsLayer {
                     rotationY = rotation.value
@@ -189,12 +199,15 @@ private fun EIdDocumentRecordingPreview() {
         val currentContext = LocalContext.current
         EIdDocumentRecordingScreenContent(
             infoState = SDKInfoState.InfoData,
-            infoText = "Please look straight at the camera",
+            infoText = R.string.avbeam_error_unknown,
             showSecondSide = false,
             isLoading = false,
             getScannerView = { _, _ -> View(currentContext) },
             onAfterViewLayout = { _, _ -> },
-            onCloseToast = {},
+            documentTypeDrawables = DocumentTypeDrawable(
+                front = R.drawable.wallet_id_card_front_overlay,
+                back = R.drawable.wallet_id_card_back_overlay
+            )
         )
     }
 }

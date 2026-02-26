@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.feature.sessionTimeout.domain
 
-import com.ramcosta.composedestinations.spec.Direction
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 
 interface SessionTimeoutNavigation {
-    suspend operator fun invoke(): Direction?
+    suspend operator fun invoke(): Destination?
 }

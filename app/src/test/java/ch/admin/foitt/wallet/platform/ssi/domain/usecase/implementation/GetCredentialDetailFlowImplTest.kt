@@ -20,6 +20,7 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.github.michaelbull.result.getError
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -84,6 +85,7 @@ class GetCredentialDetailFlowImplTest {
         result?.assertOk()
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     @Test
     fun `Getting the credential detail flow with updates returns a flow with the credential detail`() = runTest {
         coEvery {

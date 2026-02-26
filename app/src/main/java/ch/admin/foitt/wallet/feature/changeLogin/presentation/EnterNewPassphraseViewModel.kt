@@ -2,15 +2,14 @@ package ch.admin.foitt.wallet.feature.changeLogin.presentation
 
 import androidx.compose.ui.text.input.TextFieldValue
 import ch.admin.foitt.wallet.R
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.ConfirmNewPassphraseNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseValidationState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.usecase.ValidatePassphrase
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.ConfirmNewPassphraseScreenDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +23,7 @@ class EnterNewPassphraseViewModel @Inject constructor(
     private val validatePassphrase: ValidatePassphrase,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Details(navManager::navigateUp, R.string.tk_global_newpassword)
+    override val topBarState = TopBarState.Details(navManager::popBackStack, R.string.tk_global_newpassword)
 
     private val _textFieldValue = MutableStateFlow(TextFieldValue(""))
     val textFieldValue = _textFieldValue.asStateFlow()
@@ -50,5 +49,7 @@ class EnterNewPassphraseViewModel @Inject constructor(
     }
 
     private fun navigateToConfirmNewPassphraseScreen() =
-        navManager.navigateTo(ConfirmNewPassphraseScreenDestination(navArgs = ConfirmNewPassphraseNavArg(textFieldValue.value.text)))
+        navManager.navigateTo(
+            Destination.ConfirmNewPassphraseScreen(originalPassphrase = textFieldValue.value.text)
+        )
 }

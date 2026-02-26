@@ -15,6 +15,7 @@ class SavePresentationAcceptedActivityImpl @Inject constructor(
         actorDisplayData: ActorDisplayData,
         verifierFallbackName: String,
         claimIds: List<Long>,
+        nonComplianceData: String?,
     ) {
         activityRepository.saveActivity(
             activityType = ActivityType.PRESENTATION_ACCEPTED,
@@ -22,6 +23,7 @@ class SavePresentationAcceptedActivityImpl @Inject constructor(
             actorDisplayData = actorDisplayData,
             actorFallbackName = verifierFallbackName,
             claimIds = claimIds,
+            nonComplianceData = nonComplianceData,
         )
     }
 }

@@ -2,8 +2,8 @@ package ch.admin.foitt.openid4vc.domain.repository
 
 import androidx.annotation.CheckResult
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.FetchPresentationRequestError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitAnyCredentialPresentationError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitPresentationErrorError
 import com.github.michaelbull.result.Result
@@ -15,7 +15,7 @@ interface PresentationRequestRepository {
 
     suspend fun submitPresentation(
         url: URL,
-        presentationRequestBody: PresentationRequestBody,
+        presentationRequestType: PresentationRequestType,
     ): Result<Unit, SubmitAnyCredentialPresentationError>
 
     suspend fun submitPresentationError(

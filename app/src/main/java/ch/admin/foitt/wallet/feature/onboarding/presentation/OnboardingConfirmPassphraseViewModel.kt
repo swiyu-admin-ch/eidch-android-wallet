@@ -1,15 +1,15 @@
 package ch.admin.foitt.wallet.feature.onboarding.presentation
 
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.onboarding.domain.Constants.MAX_CONFIRMATION_ATTEMPTS
 import ch.admin.foitt.wallet.feature.onboarding.domain.usecase.SaveOnboardingState
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricManagerResult
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.BiometricsStatus
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.RegisterBiometricsNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.InitializePassphrase
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseValidationState
@@ -18,13 +18,10 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.OnboardingConfirmPassphraseScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.OnboardingErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.OnboardingIntroScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.OnboardingPassphraseConfirmationFailedScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.OnboardingSuccessScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.RegisterBiometricsScreenDestination
 import com.github.michaelbull.result.mapBoth
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,21 +29,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class OnboardingConfirmPassphraseViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = OnboardingConfirmPassphraseViewModel.Factory::class)
+class OnboardingConfirmPassphraseViewModel @AssistedInject constructor(
     private val biometricsStatus: BiometricsStatus,
     private val initializePassphrase: InitializePassphrase,
     private val saveOnboardingState: SaveOnboardingState,
     private val validatePassphrase: ValidatePassphrase,
     private val navManager: NavigationManager,
     private val setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle,
+    @Assisted private val originalPassphrase: String,
 ) : ScreenViewModel(setTopBarState, systemBarsFixedLightColor = true) {
-    override val topBarState = TopBarState.OnGradient(navManager::navigateUp, R.string.tk_onboarding_passwordConfirmation_title)
+    @AssistedFactory
+    interface Factory {
+        fun create(originalPassphrase: String): OnboardingConfirmPassphraseViewModel
+    }
 
-    private val originalPassphrase = OnboardingConfirmPassphraseScreenDestination.argsFrom(savedStateHandle).pin
+    override val topBarState = TopBarState.OnGradient(navManager::popBackStack, R.string.tk_onboarding_passwordConfirmation_title)
 
     private val isBiometricAuthenticationAvailable: Boolean by lazy {
         biometricsStatus() != BiometricManagerResult.Unsupported
@@ -110,9 +109,9 @@ class OnboardingConfirmPassphraseViewModel @Inject constructor(
             failure = { error ->
                 Timber.e(t = error.throwable, message = "Passphrase registration: Initialization error")
                 _passphraseInputFieldState.value = PassphraseInputFieldState.Error
-                navManager.navigateToAndPopUpTo(
-                    direction = OnboardingErrorScreenDestination,
-                    route = OnboardingIntroScreenDestination.route,
+                navManager.popUpToAndNavigate(
+                    popToInclusive = Destination.OnboardingIntroScreen::class,
+                    destination = Destination.OnboardingErrorScreen
                 )
             }
         )
@@ -122,18 +121,13 @@ class OnboardingConfirmPassphraseViewModel @Inject constructor(
         if (isBiometricAuthenticationAvailable) {
             navigateToBiometrics(passphrase)
         } else {
-            navManager.navigateToAndPopUpTo(
-                direction = OnboardingSuccessScreenDestination,
-                route = OnboardingIntroScreenDestination.route,
-            )
+            navManager.navigateOutAndTo(DestinationGroup.Onboarding::class, Destination.OnboardingSuccessScreen)
         }
     }
 
     private fun navigateToBiometrics(passphrase: String) {
-        navManager.navigateToAndClearCurrent(
-            RegisterBiometricsScreenDestination(
-                navArgs = RegisterBiometricsNavArg(passphrase = passphrase)
-            )
+        navManager.replaceCurrentWith(
+            Destination.OnboardingRegisterBiometricsScreen(passphrase = passphrase)
         )
     }
 
@@ -160,8 +154,8 @@ class OnboardingConfirmPassphraseViewModel @Inject constructor(
         }
     }
 
-    private fun navigateToConfirmationFailedScreen() = navManager.navigateToAndClearCurrent(
-        direction = OnboardingPassphraseConfirmationFailedScreenDestination,
+    private fun navigateToConfirmationFailedScreen() = navManager.replaceCurrentWith(
+        destination = Destination.OnboardingConfirmPassphraseFailureScreen
     )
 
     fun onClosePassphraseError() {

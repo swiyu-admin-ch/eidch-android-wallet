@@ -22,10 +22,8 @@ import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletListItems
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 import java.util.Locale
 
-@Destination
 @Composable
 fun LanguageScreen(
     viewModel: LanguageViewModel

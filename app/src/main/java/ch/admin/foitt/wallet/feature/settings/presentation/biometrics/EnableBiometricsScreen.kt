@@ -15,16 +15,11 @@ import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EnableBiometricsNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = EnableBiometricsNavArg::class,
-)
 @Composable
 fun EnableBiometricsScreen(viewModel: EnableBiometricsViewModel) {
     val currentActivity = LocalActivity.current
@@ -84,7 +79,7 @@ private fun BiometricsDisabledContent(
         Buttons.FilledPrimary(
             text = stringResource(id = R.string.change_biometrics_goToSettings_button),
             onClick = onOpenSettings,
-            endIcon = painterResource(id = R.drawable.pilot_ic_link),
+            endIcon = painterResource(id = R.drawable.wallet_ic_external_link),
         )
     },
     content = {

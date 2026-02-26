@@ -2,14 +2,15 @@ package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implement
 
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
-import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAnyCredential
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentialsByCredentialId
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusListProperties
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.FetchCredentialStatus
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
-import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialRepo
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.BundleItemRepository
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialRepository
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -32,10 +33,13 @@ class UpdateCredentialStatusImplTest {
     private val testDispatcher = StandardTestDispatcher()
 
     @MockK
-    private lateinit var mockCredentialRepository: CredentialRepo
+    private lateinit var mockVerifiableCredentialRepo: VerifiableCredentialRepository
 
     @MockK
-    private lateinit var mockGetAnyCredential: GetAnyCredential
+    private lateinit var mockBundleItemRepo: BundleItemRepository
+
+    @MockK
+    private lateinit var mockGetAllAnyCredentialsByCredentialId: GetAllAnyCredentialsByCredentialId
 
     @MockK
     private lateinit var mockFetchCredentialStatus: FetchCredentialStatus
@@ -48,8 +52,9 @@ class UpdateCredentialStatusImplTest {
 
         useCase = UpdateCredentialStatusImpl(
             ioDispatcher = testDispatcher,
-            credentialRepository = mockCredentialRepository,
-            getAnyCredential = mockGetAnyCredential,
+            verifiableCredentialRepository = mockVerifiableCredentialRepo,
+            bundleItemRepository = mockBundleItemRepo,
+            getAllAnyCredentialsByCredentialId = mockGetAllAnyCredentialsByCredentialId,
             fetchCredentialStatus = mockFetchCredentialStatus,
             safeJson = SafeJsonTestInstance.safeJson,
         )
@@ -70,31 +75,31 @@ class UpdateCredentialStatusImplTest {
         useCase(CREDENTIAL_ID).assertOk()
 
         coVerify {
-            mockCredentialRepository.updateStatusByCredentialId(CREDENTIAL_ID, newStatus)
+            mockBundleItemRepo.updateStatusByCredentialId(CREDENTIAL_ID, newStatus)
         }
     }
 
     @Test
     fun `Updating credential status when credential is expired does not update anything`() = runTest(testDispatcher) {
-        coEvery { mockGetAnyCredential(CREDENTIAL_ID) } returns Ok(expiredVcSdJwtCredential)
+        coEvery { mockGetAllAnyCredentialsByCredentialId(CREDENTIAL_ID) } returns Ok(listOf(expiredVcSdJwtCredential))
 
         useCase(CREDENTIAL_ID).assertOk()
 
         coVerify(exactly = 0) {
             mockFetchCredentialStatus.invoke(any(), any())
-            mockCredentialRepository.updateStatusByCredentialId(any(), any())
+            mockBundleItemRepo.updateStatusByCredentialId(any(), any())
         }
     }
 
     @Test
     fun `Updating credential status when credential is not yet valid does not update anything`() = runTest(testDispatcher) {
-        coEvery { mockGetAnyCredential(CREDENTIAL_ID) } returns Ok(notYetValidVcSdJwtCredential)
+        coEvery { mockGetAllAnyCredentialsByCredentialId(CREDENTIAL_ID) } returns Ok(listOf(notYetValidVcSdJwtCredential))
 
         useCase(CREDENTIAL_ID).assertOk()
 
         coVerify(exactly = 0) {
             mockFetchCredentialStatus.invoke(any(), any())
-            mockCredentialRepository.updateStatusByCredentialId(any(), any())
+            mockBundleItemRepo.updateStatusByCredentialId(any(), any())
         }
     }
 
@@ -107,14 +112,16 @@ class UpdateCredentialStatusImplTest {
         useCase(CREDENTIAL_ID).assertOk()
 
         coVerify(exactly = 0) {
-            mockCredentialRepository.updateStatusByCredentialId(CREDENTIAL_ID, any())
+            mockBundleItemRepo.updateStatusByCredentialId(CREDENTIAL_ID, any())
         }
     }
 
     @Test
     fun `Updating credential status maps errors from getting any credential`() = runTest(testDispatcher) {
         val exception = Exception("exception")
-        coEvery { mockGetAnyCredential(any()) } returns Err(CredentialError.Unexpected(exception))
+        coEvery {
+            mockGetAllAnyCredentialsByCredentialId(any())
+        } returns Err(CredentialError.Unexpected(exception))
 
         val result = useCase(CREDENTIAL_ID)
 
@@ -124,12 +131,14 @@ class UpdateCredentialStatusImplTest {
 
     @Test
     fun `Updating credential status where properties parsing fails does not update the status`() = runTest(testDispatcher) {
-        coEvery { mockGetAnyCredential(CREDENTIAL_ID) } returns Ok(vcSdJwtCredentialWithInvalidStatusClaim)
+        coEvery {
+            mockGetAllAnyCredentialsByCredentialId(CREDENTIAL_ID)
+        } returns Ok(listOf(vcSdJwtCredentialWithInvalidStatusClaim))
 
         useCase(CREDENTIAL_ID).assertOk()
 
         coVerify(exactly = 0) {
-            mockCredentialRepository.updateStatusByCredentialId(CREDENTIAL_ID, any())
+            mockBundleItemRepo.updateStatusByCredentialId(CREDENTIAL_ID, any())
         }
     }
 
@@ -148,7 +157,7 @@ class UpdateCredentialStatusImplTest {
     fun `Updating credential status maps errors from credential update`() = runTest(testDispatcher) {
         val exception = Exception("exception")
         coEvery {
-            mockCredentialRepository.updateStatusByCredentialId(CREDENTIAL_ID, any())
+            mockBundleItemRepo.updateStatusByCredentialId(CREDENTIAL_ID, any())
         } returns Err(SsiError.Unexpected(exception))
 
         val result = useCase(CREDENTIAL_ID)
@@ -158,9 +167,14 @@ class UpdateCredentialStatusImplTest {
     }
 
     private fun setupDefaultMocks() {
-        coEvery { mockGetAnyCredential(CREDENTIAL_ID) } returns Ok(validVcSdJwtCredential)
+        coEvery { mockGetAllAnyCredentialsByCredentialId(CREDENTIAL_ID) } returns Ok(listOf(validVcSdJwtCredential))
         coEvery { mockFetchCredentialStatus(any(), credentialStatusProperties) } returns Ok(CredentialStatus.VALID)
-        coEvery { mockCredentialRepository.updateStatusByCredentialId(CREDENTIAL_ID, any()) } returns Ok(CREDENTIAL_ID.toInt())
+        coEvery {
+            mockVerifiableCredentialRepo.onBundleItemUpdate(CREDENTIAL_ID)
+        } returns Ok(CREDENTIAL_ID.toInt())
+        coEvery {
+            mockBundleItemRepo.updateStatusByCredentialId(CREDENTIAL_ID, any())
+        } returns Ok(CREDENTIAL_ID.toInt())
     }
 
     private companion object {

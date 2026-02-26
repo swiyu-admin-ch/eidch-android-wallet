@@ -2,10 +2,11 @@ package ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation
 
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
+import ch.admin.foitt.wallet.platform.locale.LocaleCompat
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedAndThemedDisplay
-import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay
 import ch.admin.foitt.wallet.platform.theme.domain.model.Theme
+import java.util.Locale
 import javax.inject.Inject
 
 class GetLocalizedAndThemedDisplayImpl @Inject constructor(
@@ -13,84 +14,109 @@ class GetLocalizedAndThemedDisplayImpl @Inject constructor(
 ) : GetLocalizedAndThemedDisplay {
     override fun invoke(
         credentialDisplays: List<CredentialDisplay>,
-        preferredLocale: String?,
+        preferredLocaleString: String?,
         preferredTheme: Theme,
     ): CredentialDisplay? {
         val appLocale = getCurrentAppLocale()
         val theme = preferredTheme.value
-        val language = appLocale.language // e.g. "de"
-        val country = appLocale.country // e.g. "CH"
 
-        val perfectMatchingDisplay = credentialDisplays.getPerfectMatch(
-            language = language,
-            country = country,
-            theme = theme
-        )
+        val preferredLocale = preferredLocaleString?.let {
+            LocaleCompat.ofUnknownFormat(it)
+        } ?: appLocale
 
-        val almostPerfectMatchingDisplay = credentialDisplays.getWithLocale(language = language, country = country)
-
-        val bestMatchingDisplay = credentialDisplays.bestMatchingLocaleAndTheme(
-            language = language,
-            preferredLocale = preferredLocale,
-            preferredTheme = theme
-        )
-
-        return perfectMatchingDisplay ?: almostPerfectMatchingDisplay ?: bestMatchingDisplay ?: credentialDisplays.firstOrNull()
+        // Preferred Locale in this example is "fr-CH", theme is "dark"
+        // Search for Display with a perfect match, f. ex. "fr-CH" and "dark" (might return "light" if "dark" not found)
+        return credentialDisplays.getWithLocaleAndTheme(preferredLocale = preferredLocale, theme = theme)
+            // Next: language match, but different country, f. ex. "fr-FR" (might return "light" if "dark" not found)
+            ?: credentialDisplays.getWithLanguageAndDifferentCountryAndTheme(preferredLocale = preferredLocale, theme = theme)
+            // Next: language match, country not available, f. ex. "fr" (might return "light" if "dark" not found)
+            ?: credentialDisplays.getWithLanguageAndTheme(preferredLocale = preferredLocale, theme = theme)
+            // Next: check for default languages, f. e "en" etc. (see prioritized list) (might return "light" if "dark" not found)
+            ?: credentialDisplays.getWithDefaultAndTheme(theme = theme)
+            // Last resort: take first if available
+            ?: credentialDisplays.firstOrNull()
     }
 
-    // display contains "de-CH" and theme
-    private fun List<CredentialDisplay>.getPerfectMatch(
-        language: String,
-        country: String,
+    /**
+     * Looks for display containing a complete locale and theme match
+     * Ex: preferred locale: "fr-CH" and theme: "dark"
+     * Display with "fr-CH" and theme "dark" -> return this perfect match
+     * Display with "fr-CH" but theme "light" -> return this one as at least the locale matches
+     * No display with "fr-CH" -> null
+     */
+    private fun List<CredentialDisplay>.getWithLocaleAndTheme(
+        preferredLocale: Locale,
         theme: String,
-    ) = firstOrNull { display ->
-        display.locale.formatLocale().equals("$language-$country", ignoreCase = true) && display.theme == theme
-    }
-
-    // display contains "de-CH" but not correct theme
-    private fun List<CredentialDisplay>.getWithLocale(
-        language: String,
-        country: String,
-    ) = firstOrNull { display ->
-        display.locale.formatLocale().equals("$language-$country", ignoreCase = true)
-    }
-
-    private fun String.formatLocale() = replace("_", "-")
-
-    private fun List<CredentialDisplay>.bestMatchingLocaleAndTheme(
-        language: String,
-        preferredLocale: String?,
-        preferredTheme: String
     ): CredentialDisplay? {
-        // Create a map of preferred languages with the provided language in the first place.
-        // The map value indicates the preference order (lower index => higher priority)
-        val preferredLanguages = setOf(language)
-            .plus(DisplayLanguage.PRIORITIES)
-            .mapIndexed { index: Int, s: String -> s to index }
-            .toMap()
+        val displays = this.filter { LocaleCompat.ofUnknownFormat(it.locale) == preferredLocale }
 
-        val bestMatchingLanguage = this.minByOrNull { display ->
-            preferredLanguages.getOrDefault(
-                display.locale.language(),
-                Int.MAX_VALUE
-            )
-        }?.locale?.language()
-
-        val displaysWithBestLanguage = this.filter { it.locale.language() == bestMatchingLanguage }
-        val themedDisplayWithBestLanguage = displaysWithBestLanguage.firstOrNull { it.theme == preferredTheme }
-            ?: displaysWithBestLanguage.firstOrNull()
-
-        val displaysWithLanguage = this.filter { display ->
-            display.locale.language().equals(preferredLocale?.language(), ignoreCase = true)
-        }
-        val themedDisplayWithLanguage = displaysWithLanguage.firstOrNull {
-            it.theme == preferredTheme
-        } ?: displaysWithLanguage.firstOrNull {
-            it.theme == BrandingOverlay.DEFAULT_THEME
-        }
-
-        return themedDisplayWithBestLanguage ?: themedDisplayWithLanguage
+        return displays.firstOrNull { it.theme == theme } ?: displays.firstOrNull()
     }
 
-    private fun String.language() = split("-", "_").first()
+    /**
+     * Looks for display containing a language-(anyCountry) and theme match
+     * Ex: preferred locale: "fr-CH" and theme: "dark"
+     * Display with "fr-(anyCountry)" and theme "dark" -> return this match
+     * Display with "fr-(anyCountry)" but theme "light" -> return this one as at least the language matches
+     * No display with "fr-(anyCountry)" -> null
+     */
+    private fun List<CredentialDisplay>.getWithLanguageAndDifferentCountryAndTheme(
+        preferredLocale: Locale,
+        theme: String,
+    ): CredentialDisplay? {
+        val displays = this.filter { display ->
+            val displayLocale = LocaleCompat.ofUnknownFormat(display.locale)
+            displayLocale.language == preferredLocale.language && displayLocale.country != null
+        }
+
+        return displays.firstOrNull { it.theme == theme } ?: displays.firstOrNull()
+    }
+
+    /**
+     * Looks for display containing a language and theme match
+     * Ex: preferred locale: "fr-CH" and theme: "dark"
+     * Display with "fr" and theme "dark" -> return this match
+     * Display with "fr" but theme "light" -> return this one as at least the language matches
+     * No display with "fr" -> null
+     */
+    private fun List<CredentialDisplay>.getWithLanguageAndTheme(
+        preferredLocale: Locale,
+        theme: String,
+    ): CredentialDisplay? {
+        val displays = this.filter { display ->
+            LocaleCompat.ofUnknownFormat(display.locale).language == preferredLocale.language
+        }
+
+        return displays.firstOrNull { it.theme == theme } ?: displays.firstOrNull()
+    }
+
+    /**
+     * Looks for display containing a (prioritized) default language and theme match
+     * Ex: preferred locale: "fr-CH" and theme: "dark"
+     * Display with "de" and theme "dark" -> return this match
+     * Display with "de" but theme "light" -> return this one as at least the language matches the highest fallback prio
+     * No display with match in prio list -> null
+     */
+    private fun List<CredentialDisplay>.getWithDefaultAndTheme(
+        theme: String,
+    ): CredentialDisplay? {
+        // Create a map of preferred languages
+        // The map value indicates the preference order (lower index => higher priority)
+        val prioritizedLocales: Map<Locale, Int> = DisplayLanguage.PRIORITIES
+            .withIndex()
+            .associate { it.value to it.index }
+
+        val bestMatchingLocaleString = this.minByOrNull { display ->
+            prioritizedLocales[LocaleCompat.ofUnknownFormat(display.locale)] ?: Int.MAX_VALUE
+        }?.locale
+        val bestMatchingLocale = bestMatchingLocaleString?.let {
+            LocaleCompat.ofUnknownFormat(it)
+        }
+
+        val displaysWithBestMatchingLocale = this.filter { display ->
+            LocaleCompat.ofUnknownFormat(display.locale).toLanguageTag() == bestMatchingLocale?.toLanguageTag()
+        }
+
+        return displaysWithBestMatchingLocale.firstOrNull { it.theme == theme } ?: displaysWithBestMatchingLocale.firstOrNull()
+    }
 }

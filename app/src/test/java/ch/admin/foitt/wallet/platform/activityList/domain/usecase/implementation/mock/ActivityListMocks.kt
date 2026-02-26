@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock
 
+import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityActorDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
@@ -15,6 +16,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClust
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClusterWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialWithDisplaysAndClusters
 import ch.admin.foitt.wallet.platform.locale.LocaleCompat
@@ -27,7 +29,9 @@ import io.mockk.mockk
 object ActivityListMocks {
     const val CREDENTIAL_ID = 1L
     const val ACTIVITY_ID = 1L
+    const val NON_COMPLIANCE_DATA = "nonComplianceData"
     val locale = LocaleCompat.of("de", "CH")
+    val imageData1 = byteArrayOf(0, 1)
 
     val activity = CredentialActivityEntity(
         id = 1,
@@ -35,7 +39,7 @@ object ActivityListMocks {
         credentialId = CREDENTIAL_ID,
         actorTrust = TrustStatus.TRUSTED,
         vcSchemaTrust = VcSchemaTrustStatus.TRUSTED,
-        nonComplianceData = null,
+        nonComplianceData = NON_COMPLIANCE_DATA,
         createdAt = 1759837408,
     )
 
@@ -45,26 +49,42 @@ object ActivityListMocks {
         claimId = 1,
     )
 
+    val activityActorDisplay1 = ActivityActorDisplayEntity(
+        id = 1,
+        activityId = ACTIVITY_ID,
+        imageHash = "imageHash1",
+        name = "issuerName de",
+        locale = "de-CH",
+    )
+
+    val imageEntity1 = ImageEntity(
+        id = 1,
+        hash = "imageHash1",
+        image = imageData1
+    )
+
+    val activityActorDisplay2 = ActivityActorDisplayEntity(
+        id = 2,
+        activityId = ACTIVITY_ID,
+        imageHash = "imageHash2",
+        name = "issuerName fr",
+        locale = "fr-CH"
+    )
+
+    val imageEntity2 = ImageEntity(
+        id = 2,
+        hash = "imageHash2",
+        image = byteArrayOf(1, 0)
+    )
+
     val actorDisplay1 = ActivityActorDisplayWithImage(
-        actorDisplay = ActivityActorDisplayEntity(
-            id = 1,
-            activityId = 1,
-            imageHash = null,
-            name = "issuerName de",
-            locale = "de-CH",
-        ),
-        image = null
+        actorDisplay = activityActorDisplay1,
+        image = imageEntity1,
     )
 
     val actorDisplay2 = ActivityActorDisplayWithImage(
-        actorDisplay = ActivityActorDisplayEntity(
-            id = 2,
-            activityId = 1,
-            imageHash = null,
-            name = "issuerName fr",
-            locale = "fr-CH"
-        ),
-        image = null,
+        actorDisplay = activityActorDisplay2,
+        image = imageEntity2,
     )
 
     val activityWithActorDisplays = ActivityWithActorDisplays(
@@ -82,7 +102,14 @@ object ActivityListMocks {
         id = activity.id,
         activityType = activity.type,
         date = "07.10.2025 13:43",
+        nonComplianceData = NON_COMPLIANCE_DATA,
         localizedActorName = actorDisplay1.actorDisplay.name
+    )
+
+    val activityActorDisplayData = ActivityActorDisplayData(
+        id = activity.id,
+        localizedActorName = actorDisplay1.actorDisplay.name,
+        actorImageData = actorDisplay1.image?.image,
     )
 
     val mockVerifiableCredential = mockk<VerifiableCredentialEntity>()

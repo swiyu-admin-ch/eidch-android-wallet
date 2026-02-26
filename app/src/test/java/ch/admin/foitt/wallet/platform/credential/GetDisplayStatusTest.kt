@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.platform.credential
 import ch.admin.foitt.wallet.platform.credential.domain.model.getDisplayStatus
 import ch.admin.foitt.wallet.platform.credential.domain.model.toDisplayStatus
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
+import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import io.mockk.MockKAnnotations
@@ -24,10 +25,13 @@ class GetDisplayStatusTest {
     @MockK
     lateinit var mockVerifiableCredential: VerifiableCredentialEntity
 
+    @MockK
+    lateinit var mockBundleItem: BundleItemEntity
+
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        every { mockVerifiableCredential.status } returns CredentialStatus.VALID
+        every { mockBundleItem.status } returns CredentialStatus.VALID
         every { mockVerifiableCredential.validFrom } returns 0
         every { mockVerifiableCredential.validUntil } returns 17768026519L
     }
@@ -39,7 +43,7 @@ class GetDisplayStatusTest {
 
     @Test
     fun `A valid credential returns a valid result`() {
-        val status = mockVerifiableCredential.getDisplayStatus(mockVerifiableCredential.status)
+        val status = mockVerifiableCredential.getDisplayStatus(mockBundleItem.status)
         assertEquals(CredentialDisplayStatus.Valid, status)
     }
 
@@ -49,7 +53,7 @@ class GetDisplayStatusTest {
         every { mockVerifiableCredential.validUntil } returns validUntil
         val expectedInstant = Instant.ofEpochSecond(validUntil)
 
-        val status = mockVerifiableCredential.getDisplayStatus(mockVerifiableCredential.status)
+        val status = mockVerifiableCredential.getDisplayStatus(mockBundleItem.status)
         assertTrue(status is CredentialDisplayStatus.Expired)
         val expectedStatus = status as CredentialDisplayStatus.Expired
         assertEquals(expectedInstant, expectedStatus.expiredAt)
@@ -62,7 +66,7 @@ class GetDisplayStatusTest {
         every { mockVerifiableCredential.validFrom } returns validFrom
         val expectedInstant = Instant.ofEpochSecond(validFrom)
 
-        val status = mockVerifiableCredential.getDisplayStatus(mockVerifiableCredential.status)
+        val status = mockVerifiableCredential.getDisplayStatus(mockBundleItem.status)
         assertTrue(status is CredentialDisplayStatus.NotYetValid)
         val expectedStatus = status as CredentialDisplayStatus.NotYetValid
         assertEquals(expectedInstant, expectedStatus.validFrom)
@@ -73,9 +77,9 @@ class GetDisplayStatusTest {
         val validUntil = 1516183639L
         every { mockVerifiableCredential.validUntil } returns validUntil
         val expectedInstant = Instant.ofEpochSecond(validUntil)
-        coEvery { mockVerifiableCredential.status } returns CredentialStatus.REVOKED
+        coEvery { mockBundleItem.status } returns CredentialStatus.REVOKED
 
-        val status = mockVerifiableCredential.getDisplayStatus(mockVerifiableCredential.status)
+        val status = mockVerifiableCredential.getDisplayStatus(mockBundleItem.status)
         assertTrue(status is CredentialDisplayStatus.Expired)
         val expectedStatus = status as CredentialDisplayStatus.Expired
         assertEquals(expectedInstant, expectedStatus.expiredAt)
@@ -86,8 +90,8 @@ class GetDisplayStatusTest {
         value = CredentialStatus::class,
     )
     fun `Given a valid validity, the status is returned`(credentialStatus: CredentialStatus) {
-        coEvery { mockVerifiableCredential.status } returns credentialStatus
-        val displayStatus = mockVerifiableCredential.getDisplayStatus(mockVerifiableCredential.status)
+        coEvery { mockBundleItem.status } returns credentialStatus
+        val displayStatus = mockVerifiableCredential.getDisplayStatus(mockBundleItem.status)
         assertEquals(credentialStatus.toDisplayStatus(), displayStatus)
     }
 }

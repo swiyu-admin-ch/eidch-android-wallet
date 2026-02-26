@@ -1,16 +1,20 @@
 package ch.admin.foitt.openid4vc.domain.model.presentationRequest
 
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwks
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 
 internal class ClientMetaDataSerializer : KSerializer<ClientMetaData> {
@@ -46,9 +50,26 @@ internal class ClientMetaDataSerializer : KSerializer<ClientMetaData> {
             }
         }
 
+        val jwksJson = clientMetaDataMap[JWKS]
+        val jwks = if (jwksJson != null && jwksJson != JsonNull) {
+            decoder.json.decodeFromJsonElement(Jwks.serializer(), jwksJson)
+        } else {
+            null
+        }
+
+        val encryptedResponseEncValuesSupportedJson = clientMetaDataMap[ENCRYPTED_RESPONSE_ENC_VALUES_SUPPORTED]
+        val encryptedResponseEncValuesSupported =
+            if (encryptedResponseEncValuesSupportedJson != null && encryptedResponseEncValuesSupportedJson != JsonNull) {
+                encryptedResponseEncValuesSupportedJson.jsonArray.map { it.jsonPrimitive.content }
+            } else {
+                null
+            }
+
         return ClientMetaData(
             clientNameList = clientNameList,
-            logoUriList = logoUriList
+            logoUriList = logoUriList,
+            jwks = jwks,
+            encryptedResponseEncValuesSupported = encryptedResponseEncValuesSupported,
         )
     }
 
@@ -62,6 +83,17 @@ internal class ClientMetaDataSerializer : KSerializer<ClientMetaData> {
             value.logoUriList.forEach {
                 put(if (it.locale != FALLBACK) "$LOGO_URI#${it.locale}" else LOGO_URI, JsonPrimitive(it.logoUri))
             }
+            value.jwks?.let {
+                put(JWKS, encoder.json.encodeToJsonElement(Jwks.serializer(), it))
+            }
+            value.encryptedResponseEncValuesSupported?.let {
+                if (it.isNotEmpty()) {
+                    put(
+                        key = ENCRYPTED_RESPONSE_ENC_VALUES_SUPPORTED,
+                        element = JsonArray(it.map { encValue -> JsonPrimitive(encValue) })
+                    )
+                }
+            }
         }
         encoder.encodeJsonElement(element)
     }
@@ -71,5 +103,7 @@ internal class ClientMetaDataSerializer : KSerializer<ClientMetaData> {
         private const val FALLBACK = "fallback"
         private const val LOGO_URI = "logo_uri"
         private const val CLIENT_NAME = "client_name"
+        private const val JWKS = "jwks"
+        private const val ENCRYPTED_RESPONSE_ENC_VALUES_SUPPORTED = "encrypted_response_enc_values_supported"
     }
 }

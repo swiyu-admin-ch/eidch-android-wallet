@@ -1,13 +1,18 @@
 package ch.admin.foitt.wallet.platform.login.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.batch.domain.usecase.RefreshBatchCredentials
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseState
 import ch.admin.foitt.wallet.platform.database.domain.repository.DatabaseRepository
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.UpdateAllSIdStatuses
+import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.login.domain.usecase.AfterLoginWork
+import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.impl.annotations.MockK
 import io.mockk.just
 import io.mockk.runs
@@ -32,6 +37,15 @@ class AfterLoginWorkImplTest {
     @MockK
     private lateinit var mockUpdateAllSIdStatuses: UpdateAllSIdStatuses
 
+    @MockK
+    private lateinit var mockRefreshDeferredCredentials: RefreshDeferredCredentials
+
+    @MockK
+    private lateinit var mockRefreshBatchCredentials: RefreshBatchCredentials
+
+    @MockK
+    private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
+
     private lateinit var stateFlow: MutableStateFlow<DatabaseState>
 
     private lateinit var useCase: AfterLoginWork
@@ -42,11 +56,17 @@ class AfterLoginWorkImplTest {
 
         coEvery { mockUpdateAllCredentialStatuses() } just runs
         coEvery { mockUpdateAllSIdStatuses() } just runs
+        coEvery { mockRefreshDeferredCredentials() } returns Ok(Unit)
+        coEvery { mockRefreshBatchCredentials() } returns Ok(Unit)
+        coEvery { mockEnvironmentSetupRepository.batchIssuanceEnabled } returns true
 
         useCase = AfterLoginWorkImpl(
             databaseRepository = mockDatabaseRepository,
             updateAllCredentialStatuses = mockUpdateAllCredentialStatuses,
-            updateAllSIdStatuses = mockUpdateAllSIdStatuses
+            updateAllSIdStatuses = mockUpdateAllSIdStatuses,
+            refreshDeferredCredentials = mockRefreshDeferredCredentials,
+            refreshBatchCredentials = mockRefreshBatchCredentials,
+            environmentSetupRepository = mockEnvironmentSetupRepository,
         )
     }
 
@@ -73,9 +93,11 @@ class AfterLoginWorkImplTest {
         advanceUntilIdle()
         job.cancel()
 
-        coVerify(exactly = 1) {
-            mockUpdateAllCredentialStatuses()
+        coVerifyOrder {
+            mockRefreshDeferredCredentials()
+            mockRefreshBatchCredentials()
             mockUpdateAllSIdStatuses()
+            mockUpdateAllCredentialStatuses()
         }
     }
 
@@ -98,8 +120,10 @@ class AfterLoginWorkImplTest {
         job.cancel()
 
         coVerify(exactly = 0) {
-            mockUpdateAllCredentialStatuses()
+            mockRefreshBatchCredentials()
+            mockRefreshDeferredCredentials()
             mockUpdateAllSIdStatuses()
+            mockUpdateAllCredentialStatuses()
         }
     }
 }

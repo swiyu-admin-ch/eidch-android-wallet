@@ -10,5 +10,6 @@ fun interface SubmitAnyCredentialPresentation {
         anyCredential: AnyCredential,
         requestedFields: List<String>,
         presentationRequest: PresentationRequest,
+        usePayloadEncryption: Boolean,
     ): Result<Unit, SubmitAnyCredentialPresentationError>
 }

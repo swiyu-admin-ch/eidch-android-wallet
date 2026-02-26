@@ -9,6 +9,7 @@ import android.nfc.NfcAdapter
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.annotation.StringRes
+import androidx.core.net.toUri
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.onFailure
 import timber.log.Timber
@@ -43,7 +44,7 @@ fun Context.openLink(@StringRes uriResource: Int) {
 
 fun Context.openLink(uri: String) {
     runSuspendCatching {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+        val intent = Intent(Intent.ACTION_VIEW, uri.toUri())
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
     }.onFailure {

@@ -38,6 +38,7 @@ fun EIdRequestCard(
     onStartOnlineIdentification: () -> Unit,
     onRefresh: () -> Unit,
     onObtainConsent: () -> Unit,
+    onLearnMore: () -> Unit,
     onCloseClick: (() -> Unit)?,
 ) = when (eIdRequest.status) {
     SIdRequestDisplayStatus.AV_READY,
@@ -100,6 +101,33 @@ fun EIdRequestCard(
         useTertiaryButton = false,
         buttonText = stringResource(R.string.tk_getEid_notification_unknown_button_refresh),
         onButtonClick = onRefresh,
+    )
+    SIdRequestDisplayStatus.IN_AGENT_REVIEW -> EIdRequestCardGeneric(
+        title = stringResource(
+            R.string.tk_getEid_notification_agentReview_primary,
+            "${eIdRequest.firstName} ${eIdRequest.lastName}"
+        ),
+        body = stringResource(
+            R.string.tk_getEid_notification_agentReview_secondary
+        )
+    )
+    SIdRequestDisplayStatus.IN_ISSUANCE -> EIdRequestCardGeneric(
+        title = stringResource(
+            R.string.tk_getEid_notification_issuing_primary,
+            "${eIdRequest.firstName} ${eIdRequest.lastName}"
+        ),
+        body = stringResource(R.string.tk_getEid_notification_issuing_secondary),
+    )
+    SIdRequestDisplayStatus.REFUSED -> EIdRequestCardGeneric(
+        title = stringResource(
+            R.string.tk_getEid_notification_declined_primary,
+            "${eIdRequest.firstName} ${eIdRequest.lastName}"
+        ),
+        body = stringResource(
+            R.string.tk_getEid_notification_declined_secondary
+        ),
+        buttonText = stringResource(R.string.tk_getEid_notification_declined_primaryButton),
+        onButtonClick = onLearnMore,
     )
     SIdRequestDisplayStatus.OTHER -> { /* Nothing to show */ }
 }
@@ -190,6 +218,8 @@ private class EIdRequestCardPreviewParams : PreviewParameterProvider<SIdRequestD
         getEIdRequestForPreview(SIdRequestDisplayStatus.AV_EXPIRED),
         getEIdRequestForPreview(SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK),
         getEIdRequestForPreview(SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING),
+        getEIdRequestForPreview(SIdRequestDisplayStatus.IN_AGENT_REVIEW),
+        getEIdRequestForPreview(SIdRequestDisplayStatus.IN_ISSUANCE),
         getEIdRequestForPreview(SIdRequestDisplayStatus.UNKNOWN),
         getEIdRequestForPreview(SIdRequestDisplayStatus.OTHER),
     )
@@ -216,6 +246,7 @@ private fun EIdRequestCardPreview(
             onRefresh = {},
             onObtainConsent = {},
             onCloseClick = {},
+            onLearnMore = {}
         )
     }
 }

@@ -1,7 +1,5 @@
 package ch.admin.foitt.wallet.platform.composables
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -23,7 +21,7 @@ fun NavigationHomeIcon(
             onClick = onBackbuttonClick
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                painterResource(R.drawable.wallet_ic_back_navigation),
                 contentDescription = "Back"
             )
         }

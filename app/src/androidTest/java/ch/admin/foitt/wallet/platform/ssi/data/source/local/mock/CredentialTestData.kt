@@ -2,24 +2,23 @@ package ch.admin.foitt.wallet.platform.ssi.data.source.local.mock
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
-import ch.admin.foitt.wallet.feature.credentialOffer.mock.CredentialOfferMocks.CREDENTIAL_PAYLOAD
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterDisplayEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterDisplayEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
+import java.net.URL
 
 object CredentialTestData {
-    private const val PAYLOAD = "PAYLOAD"
     private val FORMAT = CredentialFormat.VC_SD_JWT
+    private const val ISSUER_URL = "https://issuer.example.com"
     const val VALUE = "VALUE"
     private const val VALUE2 = "VALUE2"
     const val KEY = "KEY"
@@ -59,13 +58,12 @@ object CredentialTestData {
     val credential1 = Credential(
         id = 1,
         format = FORMAT,
+        issuerUrl = URL(ISSUER_URL),
         createdAt = 1,
     )
 
     val verifiableCredential1 = VerifiableCredentialEntity(
         credentialId = 1,
-        status = CredentialStatus.VALID,
-        payload = PAYLOAD,
         createdAt = 1,
         updatedAt = 1,
         issuer = "issuer",
@@ -87,13 +85,12 @@ object CredentialTestData {
     val credential2 = Credential(
         id = 2,
         format = FORMAT,
+        issuerUrl = URL(ISSUER_URL),
         createdAt = 2
     )
 
     val verifiableCredential2 = VerifiableCredentialEntity(
         credentialId = 2,
-        status = CredentialStatus.VALID,
-        payload = PAYLOAD,
         createdAt = 2,
         updatedAt = 2,
         issuer = "issuer",
@@ -103,13 +100,12 @@ object CredentialTestData {
     val credentialWithPayload = Credential(
         id = 3,
         format = CredentialFormat.VC_SD_JWT,
+        issuerUrl = URL(ISSUER_URL),
         createdAt = 3
     )
 
     val verifiableCredentialWithPayload = VerifiableCredentialEntity(
         credentialId = 3,
-        status = CredentialStatus.VALID,
-        payload = CREDENTIAL_PAYLOAD,
         createdAt = 3,
         updatedAt = 3,
         issuer = "issuer",

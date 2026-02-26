@@ -17,16 +17,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
+import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.utils.TestTags
 import ch.admin.foitt.wallet.platform.utils.TraversalIndex
@@ -51,7 +53,7 @@ private fun WalletTopAppBarContent(
     when (topBarState) {
         is TopBarState.DetailsWithCloseButton -> TopBarBackArrow(
             titleId = topBarState.titleId,
-            colors = if (topBarState.useTransparentBackground) WalletTopBarColors.transparent() else WalletTopBarColors.clusterScreen(),
+            colors = getBackgroundColor(topBarState.topBarBackground),
             onUp = topBarState.onUp,
             actionButton = {
                 CloseButton(
@@ -62,7 +64,8 @@ private fun WalletTopAppBarContent(
 
         is TopBarState.Details -> TopBarBackArrow(
             titleId = topBarState.titleId,
-            colors = if (topBarState.useTransparentBackground) WalletTopBarColors.transparent() else WalletTopBarColors.clusterScreen(),
+            titleAltTextId = topBarState.titleAltTextId,
+            colors = getBackgroundColor(topBarState.topBarBackground),
             onUp = topBarState.onUp,
             actionButton = {},
         )
@@ -107,6 +110,7 @@ private fun TopBarEmpty() = TopAppBar(
 internal fun TopBarBackArrow(
     modifier: Modifier = Modifier,
     @StringRes titleId: Int?,
+    @StringRes titleAltTextId: Int? = null,
     showButtonBackground: Boolean = false,
     colors: TopAppBarColors = WalletTopBarColors.transparent(),
     onUp: () -> Unit,
@@ -115,13 +119,21 @@ internal fun TopBarBackArrow(
     TopAppBar(
         title = {
             titleId?.let {
+                val altText = titleAltTextId?.let {
+                    stringResource(it)
+                }
+
                 WalletTexts.TitleTopBar(
                     text = stringResource(id = titleId),
                     color = colors.titleContentColor,
-                    modifier = Modifier.semantics {
-                        heading()
-                        traversalIndex = TraversalIndex.HIGH2.value
-                    }
+                    modifier = Modifier
+                        .semantics {
+                            heading()
+                            traversalIndex = TraversalIndex.HIGH2.value
+                            if (altText != null) {
+                                contentDescription = altText
+                            }
+                        }
                 )
             }
         },
@@ -194,7 +206,7 @@ private fun BackButton(
     onUp: () -> Unit,
 ) = TopBarButton(
     onClick = onUp,
-    icon = R.drawable.pilot_ic_back_navigation,
+    icon = R.drawable.wallet_ic_back_navigation,
     iconTint = iconTint,
     contentDescription = stringResource(id = R.string.tk_global_back_alt),
     modifier = modifier,
@@ -247,10 +259,18 @@ fun TopBarButton(
     }
 }
 
+@Composable
+private fun getBackgroundColor(topBarBackground: TopBarBackground) = when (topBarBackground) {
+    TopBarBackground.DEFAULT -> WalletTopBarColors.default()
+    TopBarBackground.TRANSPARENT -> WalletTopBarColors.transparent()
+    TopBarBackground.CLUSTER -> WalletTopBarColors.clusterScreen()
+}
+
 private class TopBarPreviewParamsProvider : PreviewParameterProvider<TopBarState> {
     override val values = sequenceOf(
         TopBarState.DetailsWithCloseButton(onUp = {}, titleId = R.string.tk_present_result_success_primary, onClose = {}),
         TopBarState.Details(onUp = {}, titleId = R.string.tk_settings_imprint_title),
+        TopBarState.Details(onUp = {}, titleId = null),
         TopBarState.None
     )
 }

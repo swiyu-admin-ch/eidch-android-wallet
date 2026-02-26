@@ -9,7 +9,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialD
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.MapToCredentialClaimCluster
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestField
 import ch.admin.foitt.wallet.platform.database.domain.model.ClusterWithDisplaysAndClaims
-import ch.admin.foitt.wallet.platform.ssi.domain.model.VerifiableCredentialWithDisplaysAndClustersRepositoryError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialWithDisplaysRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithDisplaysAndClustersRepository
 import ch.admin.foitt.wallet.platform.utils.andThen
 import ch.admin.foitt.wallet.platform.utils.mapError
@@ -29,7 +29,7 @@ class GetPresentationRequestFlowImpl @Inject constructor(
         requestedFields: List<PresentationRequestField>,
     ): Flow<Result<PresentationRequestDisplayData, GetPresentationRequestFlowError>> =
         verifiableCredentialWithDisplaysAndClustersRepository.getVerifiableCredentialWithDisplaysAndClustersFlowById(id)
-            .mapError(VerifiableCredentialWithDisplaysAndClustersRepositoryError::toGetPresentationRequestFlowError)
+            .mapError(CredentialWithDisplaysRepositoryError::toGetPresentationRequestFlowError)
             .andThen { credentialWithDisplaysAndClusters ->
                 coroutineBinding {
                     val credentialDisplayData = mapToCredentialDisplayData(

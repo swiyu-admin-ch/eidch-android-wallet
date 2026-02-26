@@ -12,6 +12,7 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
@@ -46,6 +47,7 @@ class OcaCaptureBaseValidatorImplTest {
         unmockkAll()
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     @Test
     fun `Capture bases are validated successfully`(): Unit = runTest {
         val bundle = json.safeDecodeStringTo<OcaBundle>(elfaExample).value
@@ -53,6 +55,7 @@ class OcaCaptureBaseValidatorImplTest {
         ocaCaptureBaseValidator(bundle.captureBases).assertOk()
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     @Test
     fun `Validating capture bases maps errors from getting the root capture base`() = runTest {
         coEvery { mockGetRootCaptureBase(any()) } returns Err(OcaError.InvalidRootCaptureBase)

@@ -1,0 +1,10 @@
+package ch.admin.foitt.wallet.platform.ssi.domain.usecase
+
+import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
+import ch.admin.foitt.wallet.platform.ssi.domain.model.GetCredentialsWithDetailsFlowError
+import com.github.michaelbull.result.Result
+import kotlinx.coroutines.flow.Flow
+
+interface GetDeferredCredentialsWithDetailsFlow {
+    suspend operator fun invoke(): Flow<Result<List<DeferredCredentialDisplayData>, GetCredentialsWithDetailsFlowError>>
+}

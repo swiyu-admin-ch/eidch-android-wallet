@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.platform.invitation.domain.usecase.implementation
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialError
+import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProcessPresentationRequestError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProcessPresentationRequestResult
@@ -49,8 +50,11 @@ internal class ProcessInvitationImpl @Inject constructor(
 
     private suspend fun processCredentialOffer(credentialOffer: CredentialOffer): Result<ProcessInvitationResult, ProcessInvitationError> =
         fetchAndSaveCredential(credentialOffer)
-            .map { credentialId ->
-                ProcessInvitationResult.CredentialOffer(credentialId)
+            .map { fetchResult ->
+                when (fetchResult) {
+                    is FetchCredentialResult.Credential -> ProcessInvitationResult.CredentialOffer(fetchResult.credentialId)
+                    is FetchCredentialResult.DeferredCredential -> ProcessInvitationResult.DeferredCredential(fetchResult.credentialId)
+                }
             }.mapError(FetchCredentialError::toProcessInvitationError)
 
     private fun ProcessPresentationRequestResult.toProcessInvitationResult(): ProcessInvitationResult =

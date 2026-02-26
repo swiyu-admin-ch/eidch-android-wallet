@@ -16,10 +16,8 @@ import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination
 @Composable
 fun PresentationDeclinedScreen(viewModel: PresentationDeclinedViewModel) {
     val badgeBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)

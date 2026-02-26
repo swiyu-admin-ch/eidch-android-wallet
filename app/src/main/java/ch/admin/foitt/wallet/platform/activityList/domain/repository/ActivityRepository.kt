@@ -12,5 +12,6 @@ interface ActivityRepository {
         actorDisplayData: ActorDisplayData,
         actorFallbackName: String,
         claimIds: List<Long>? = null,
+        nonComplianceData: String?,
     ): Result<Long?, ActivityRepositoryError>
 }

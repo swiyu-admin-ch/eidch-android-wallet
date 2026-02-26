@@ -1,39 +1,65 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 
-import androidx.lifecycle.SavedStateHandle
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdNfcSummaryNavArg
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdNfcSummaryScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdStartSelfieVideoScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import timber.log.Timber
 
-@HiltViewModel
-class EIdNfcSummaryViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = EIdNfcSummaryViewModel.Factory::class)
+class EIdNfcSummaryViewModel @AssistedInject constructor(
+    private val getStartAutoVerificationResult: GetStartAutoVerificationResult,
     private val navManager: NavigationManager,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted("caseId") private val caseId: String,
+    @Assisted internal val picture: ByteArray,
+    @Assisted("givenName") internal val givenName: String,
+    @Assisted("surname") internal val surname: String,
+    @Assisted("documentId") internal val documentId: String,
+    @Assisted("expiryDate") internal val expiryDate: String,
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.EmptyWithCloseButton(::onClose)
 
-    private val navArgs: EIdNfcSummaryNavArg = EIdNfcSummaryScreenDestination.argsFrom(savedStateHandle)
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            @Assisted("caseId") caseId: String,
+            picture: ByteArray,
+            @Assisted("givenName") givenName: String,
+            @Assisted("surname") surname: String,
+            @Assisted("documentId") documentId: String,
+            @Assisted("expiryDate") expiryDate: String,
+        ): EIdNfcSummaryViewModel
+    }
 
-    val picture = navArgs.picture
-    val givenName = navArgs.givenName
-    val surname = navArgs.surname
-    val documentId = navArgs.documentId
-    val expiryDate = navArgs.expiryDate
+    fun onContinue() {
+        val startAutoVerificationResult = getStartAutoVerificationResult().value
 
-    fun onContinue() = navManager.navigateToAndClearCurrent(
-        EIdStartSelfieVideoScreenDestination(
-            caseId = navArgs.caseId
-        )
-    )
+        when {
+            startAutoVerificationResult == null -> {
+                Timber.e("Nfc Summary: Start auto verification result is null")
+                navManager.replaceCurrentWith(
+                    Destination.EIdStartSelfieVideoScreen(caseId = caseId)
+                )
+            }
+
+            startAutoVerificationResult.recordDocumentVideo -> navManager.replaceCurrentWith(
+                Destination.EIdDocumentRecordingScreen(caseId = caseId)
+            )
+
+            else -> navManager.replaceCurrentWith(
+                Destination.EIdStartSelfieVideoScreen(caseId = caseId)
+            )
+        }
+    }
 
     private fun onClose() {
-        navManager.navigateBackToHome(popUntil = EIdNfcSummaryScreenDestination)
+        navManager.navigateBackToHomeScreen(popUntil = Destination.EIdNfcSummaryScreen::class)
     }
 }

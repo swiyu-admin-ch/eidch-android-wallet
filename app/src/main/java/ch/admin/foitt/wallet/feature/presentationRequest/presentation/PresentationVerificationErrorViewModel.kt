@@ -13,7 +13,6 @@ import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,7 +41,7 @@ class PresentationVerificationErrorViewModel @Inject constructor(
     private val _badgeBottomSheetUiState: MutableStateFlow<BadgeBottomSheetUiState?> = MutableStateFlow(null)
     val badgeBottomSheet = _badgeBottomSheetUiState.asStateFlow()
 
-    fun onClose() = navManager.navigateUpOrToRoot()
+    fun onClose() = navManager.popBackStackOrToRoot()
 
     fun onBadge(badgeType: BadgeType) {
         _badgeBottomSheetUiState.value = when (badgeType) {

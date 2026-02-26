@@ -24,10 +24,12 @@ class MainEnvironmentSetupRepositoryImpl @Inject constructor() : EnvironmentSetu
         "did:tdw:QmWrXWFEDenvoYWFXxSQGFCa6Pi22Cdsg2r6weGhY2ChiQ:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:2e246676-209a-4c21-aceb-721f8a90b212",
     )
 
+    override val trustEnvironmentDidRegex: String = "^did:(?:tdw|webvh):[^:]+:identifier-reg\\.trust-infra\\.swiyu\\.admin\\.ch:.*"
+
+    override val demoTrustEnvironmentDidRegex: String = "^did:(?:tdw|webvh):[^:]+:identifier-reg\\.trust-infra\\.swiyu-int\\.admin\\.ch:.*"
+
     override val baseTrustDomainRegex =
         Regex("^did:tdw:[^:]+:([^:]+\\.swiyu(-int)?\\.admin\\.ch):[^:]+", setOf(RegexOption.MULTILINE))
-
-    override val useMetadataV1TrustStatement = true
 
     override val betaIdRequestEnabled = true
 
@@ -46,4 +48,10 @@ class MainEnvironmentSetupRepositoryImpl @Inject constructor() : EnvironmentSetu
     override val avBeamLoggingEnabled: Boolean = false
 
     override val nonComplianceEnabled: Boolean = false
+
+    override val nonComplianceBaseUrl: String = "https://noncompliance.trust-infra.swiyu.admin.ch/non-compliance-service"
+
+    override val batchIssuanceEnabled: Boolean = false
+
+    override val payloadEncryptionEnabled: Boolean = false
 }

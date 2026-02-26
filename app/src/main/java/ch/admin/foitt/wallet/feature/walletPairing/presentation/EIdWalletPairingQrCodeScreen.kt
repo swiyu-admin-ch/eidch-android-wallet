@@ -35,112 +35,151 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.QrBoxUiState
+import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.WalletPairingQrCodeUiState
 import ch.admin.foitt.wallet.platform.composables.Buttons
+import ch.admin.foitt.wallet.platform.composables.NetworkErrorContent
+import ch.admin.foitt.wallet.platform.composables.StandardErrorScreen
+import ch.admin.foitt.wallet.platform.composables.UnexpectedErrorContent
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdOnlineSessionNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
+import ch.admin.foitt.wallet.platform.utils.OnPauseEventHandler
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
 import ch.admin.foitt.wallet.platform.utils.generateQRBitmap
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = EIdOnlineSessionNavArg::class
-)
 @Composable
 internal fun EIdWalletPairingQrCodeScreen(
     viewModel: EIdWalletPairingQrCodeViewModel,
 ) {
-    EIdWalletPairingQrCodeScreenContent(
-        isRequestLoading = viewModel.isRequestLoading.collectAsStateWithLifecycle().value,
-        isRequestStatusLoading = viewModel.isRequestStatusLoading.collectAsStateWithLifecycle().value,
-        qrBoxState = viewModel.qrBoxState.collectAsStateWithLifecycle().value,
-        waitingForDevicePairing = viewModel.isWaitingForDevicePairing.collectAsStateWithLifecycle().value,
-        onRefresh = viewModel::onRefreshRequest,
-        onClose = viewModel::onClose,
-    )
+    OnResumeEventHandler(viewModel::onResume)
+    OnPauseEventHandler(viewModel::onPause)
 
-    OnResumeEventHandler {
-        viewModel.onRefreshRequest()
-    }
+    EIdWalletPairingQrCodeScreenContent(
+        screenState = viewModel.screenUiState.collectAsStateWithLifecycle().value,
+        qrBoxState = viewModel.qrBoxState.collectAsStateWithLifecycle().value,
+        onRefresh = viewModel::onResume,
+        onClose = viewModel::onBack,
+    )
 }
 
 @Composable
 private fun EIdWalletPairingQrCodeScreenContent(
-    isRequestLoading: Boolean,
-    isRequestStatusLoading: Boolean,
+    screenState: WalletPairingQrCodeUiState,
     qrBoxState: QrBoxUiState,
-    waitingForDevicePairing: Boolean,
     onRefresh: () -> Unit,
     onClose: () -> Unit,
 ) {
-    WalletLayouts.ScrollableColumnWithPicture(
-        stickyStartContent = {
-            QrBox(
-                state = qrBoxState,
-                onRefresh = onRefresh,
-            )
-        },
-        stickyBottomBackgroundColor = Color.Transparent,
-        stickyBottomContent = {
-            if (waitingForDevicePairing) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .clip(WalletTheme.shapes.extraLarge)
-                            .background(WalletTheme.colorScheme.background)
-                            .padding(horizontal = Sizes.s04, vertical = Sizes.s02)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .semantics(mergeDescendants = true) {}
-                        ) {
-                            CircularProgressIndicator(
-                                color = WalletTheme.colorScheme.primary,
-                                trackColor = WalletTheme.colorScheme.secondaryContainer,
-                                strokeWidth = Sizes.s01,
-                                strokeCap = StrokeCap.Round,
-                                modifier = Modifier.size(Sizes.s05)
-                                    .clearAndSetSemantics {}
-                            )
-                            Spacer(modifier = Modifier.width(Sizes.s02))
-                            WalletTexts.BodyLarge(
-                                text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_fetchDevice_body),
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(Sizes.s06))
-            }
-            Buttons.FilledPrimary(
-                modifier = Modifier.fillMaxWidth(),
-                text = stringResource(R.string.tk_walletPairing_devicePairingQRCode_button_close),
-                onClick = onClose,
-                enabled = !isRequestStatusLoading && !isRequestLoading,
-                isActive = isRequestStatusLoading
-            )
-        },
-    ) {
-        Spacer(modifier = Modifier.height(Sizes.s06))
-        WalletTexts.TitleScreen(
-            text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_primary),
+    when (screenState) {
+        WalletPairingQrCodeUiState.Done,
+        WalletPairingQrCodeUiState.LoadingInvitation,
+        WalletPairingQrCodeUiState.LoadingInvitationError,
+        WalletPairingQrCodeUiState.PairingTimeout -> WalletPairingContent(
+            qrBoxState = qrBoxState,
+            waitingForDevicePairing = false,
+            onRefresh = onRefresh,
+            onCloseScreen = onClose,
         )
-        Spacer(modifier = Modifier.height(Sizes.s06))
-        WalletTexts.BodyLarge(
-            modifier = Modifier.fillMaxWidth(),
-            text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_secondary),
+        WalletPairingQrCodeUiState.Polling -> WalletPairingContent(
+            qrBoxState = qrBoxState,
+            waitingForDevicePairing = true,
+            onRefresh = onRefresh,
+            onCloseScreen = onClose,
+        )
+        WalletPairingQrCodeUiState.NetworkError -> WalletLayouts.NetworkErrorContent(
+            onCloseError = onClose,
+            onRetry = onRefresh,
+        )
+        WalletPairingQrCodeUiState.PairingFailure -> WalletPairingRejectedContent(
+            onRetry = onRefresh,
+        )
+        WalletPairingQrCodeUiState.UnexpectedError -> WalletLayouts.UnexpectedErrorContent(
+            onCloseError = onClose,
         )
     }
 }
+
+@Composable
+private fun WalletPairingContent(
+    qrBoxState: QrBoxUiState,
+    waitingForDevicePairing: Boolean,
+    onRefresh: () -> Unit,
+    onCloseScreen: () -> Unit,
+) = WalletLayouts.ScrollableColumnWithPicture(
+    stickyStartContent = {
+        QrBox(
+            state = qrBoxState,
+            onRefresh = onRefresh,
+        )
+    },
+    stickyBottomBackgroundColor = Color.Transparent,
+    stickyBottomContent = {
+        if (waitingForDevicePairing) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .clip(WalletTheme.shapes.extraLarge)
+                        .background(WalletTheme.colorScheme.background)
+                        .padding(horizontal = Sizes.s04, vertical = Sizes.s02)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .semantics(mergeDescendants = true) {}
+                    ) {
+                        CircularProgressIndicator(
+                            color = WalletTheme.colorScheme.primary,
+                            trackColor = WalletTheme.colorScheme.secondaryContainer,
+                            strokeWidth = Sizes.s01,
+                            strokeCap = StrokeCap.Round,
+                            modifier = Modifier.size(Sizes.s05)
+                                .clearAndSetSemantics {}
+                        )
+                        Spacer(modifier = Modifier.width(Sizes.s02))
+                        WalletTexts.BodyLarge(
+                            text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_fetchDevice_body),
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(Sizes.s06))
+        }
+        Buttons.FilledPrimary(
+            modifier = Modifier.fillMaxWidth(),
+            text = stringResource(R.string.tk_walletPairing_devicePairingQRCode_button_close),
+            onClick = onCloseScreen,
+            enabled = qrBoxState !is QrBoxUiState.Loading,
+        )
+    },
+) {
+    Spacer(modifier = Modifier.height(Sizes.s06))
+    WalletTexts.TitleScreen(
+        text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_primary),
+    )
+    Spacer(modifier = Modifier.height(Sizes.s06))
+    WalletTexts.BodyLarge(
+        modifier = Modifier.fillMaxWidth(),
+        text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_secondary),
+    )
+}
+
+@Composable
+private fun WalletPairingRejectedContent(
+    onRetry: () -> Unit
+) = WalletLayouts.StandardErrorScreen(
+    primaryText = R.string.tk_eidRequest_walletPairing_offer_rejected_primary,
+    secondaryText = R.string.tk_eidRequest_walletPairing_offer_rejected_secondary,
+    primaryActionText = R.string.tk_eidRequest_walletPairing_offer_rejected_button_primary,
+    primaryAction = onRetry,
+    tertiaryActionText = R.string.tk_eidRequest_walletPairing_offer_rejected_tertiary,
+)
 
 @Composable
 private fun QrBox(
@@ -217,29 +256,30 @@ private fun QrBoxFailure(
     Spacer(modifier = Modifier.height(Sizes.s02))
 }
 
-private class EIdWalletPairingQrCodePreviewParams : PreviewParameterProvider<QrBoxUiState> {
-    override val values: Sequence<QrBoxUiState> = sequenceOf(
-        QrBoxUiState.Failure,
-        QrBoxUiState.Loading,
+private typealias PreviewParams = Pair<QrBoxUiState, WalletPairingQrCodeUiState>
+private class EIdWalletPairingQrCodePreviewParams : PreviewParameterProvider<PreviewParams> {
+    override val values: Sequence<PreviewParams> = sequenceOf(
         QrBoxUiState.Success(
             qrBitmap = "This is my QR code data".generateQRBitmap()
-        ),
+        ) to WalletPairingQrCodeUiState.Polling,
+        QrBoxUiState.Failure to WalletPairingQrCodeUiState.LoadingInvitationError,
+        QrBoxUiState.Loading to WalletPairingQrCodeUiState.LoadingInvitation,
+        QrBoxUiState.Loading to WalletPairingQrCodeUiState.NetworkError,
+        QrBoxUiState.Loading to WalletPairingQrCodeUiState.PairingFailure,
     )
 }
 
 @WalletAllScreenPreview
 @Composable
 private fun EIdWalletPairingQrCodeScreenPreview(
-    @PreviewParameter(EIdWalletPairingQrCodePreviewParams::class) state: QrBoxUiState,
+    @PreviewParameter(EIdWalletPairingQrCodePreviewParams::class) params: PreviewParams,
 ) {
     WalletTheme {
         EIdWalletPairingQrCodeScreenContent(
-            qrBoxState = state,
-            isRequestLoading = false,
-            isRequestStatusLoading = false,
+            qrBoxState = params.first,
+            screenState = params.second,
             onClose = {},
             onRefresh = {},
-            waitingForDevicePairing = true,
         )
     }
 }

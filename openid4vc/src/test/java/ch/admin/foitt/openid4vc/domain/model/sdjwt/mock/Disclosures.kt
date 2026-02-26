@@ -11,4 +11,8 @@ internal const val Disclosure3 = "WyJ0ZXN0X3NhbHRfMyIsICJ0ZXN0X2tleV8zIiwgInRlc3
 
 internal const val SdJwtSeparator = "~"
 
-internal val FlatDisclosures = listOf("", Disclosure1, Disclosure2, Disclosure3, "").joinToString(SdJwtSeparator)
+internal val FlatDisclosures = listOf(
+    Disclosure1,
+    Disclosure2,
+    Disclosure3
+).joinToString(prefix = SdJwtSeparator, separator = SdJwtSeparator, postfix = SdJwtSeparator)

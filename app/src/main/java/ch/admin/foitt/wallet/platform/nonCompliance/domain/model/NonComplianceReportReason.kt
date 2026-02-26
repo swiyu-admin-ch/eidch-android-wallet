@@ -1,5 +1,8 @@
 package ch.admin.foitt.wallet.platform.nonCompliance.domain.model
 
-enum class NonComplianceReportReason {
-    EXCESSIVE_DATA_REQUEST
+import kotlinx.serialization.Serializable
+
+@Serializable
+enum class NonComplianceReportReason(val type: String) {
+    EXCESSIVE_DATA_REQUEST("ExcessiveDataRequest")
 }

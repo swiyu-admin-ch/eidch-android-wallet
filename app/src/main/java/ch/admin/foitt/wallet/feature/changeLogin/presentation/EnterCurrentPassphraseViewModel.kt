@@ -9,6 +9,7 @@ import ch.admin.foitt.wallet.platform.login.domain.usecase.GetRemainingLoginAtte
 import ch.admin.foitt.wallet.platform.login.domain.usecase.IncreaseFailedLoginAttemptsCounter
 import ch.admin.foitt.wallet.platform.login.domain.usecase.ResetLockout
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseValidationState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.usecase.ValidatePassphrase
@@ -16,8 +17,6 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.EnterNewPassphraseScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.LockoutScreenDestination
 import com.github.michaelbull.result.mapBoth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +36,7 @@ class EnterCurrentPassphraseViewModel @Inject constructor(
     private val increaseFailedLoginAttemptsCounter: IncreaseFailedLoginAttemptsCounter,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Details(navManager::navigateUp, R.string.tk_global_changepassword)
+    override val topBarState = TopBarState.Details(navManager::popBackStack, R.string.tk_global_changepassword)
 
     private val _textFieldValue = MutableStateFlow(TextFieldValue(text = ""))
     val textFieldValue = _textFieldValue.asStateFlow()
@@ -102,9 +101,9 @@ class EnterCurrentPassphraseViewModel @Inject constructor(
         }
     }
 
-    private fun navigateToEnterNewPassphraseScreen() = navManager.navigateTo(EnterNewPassphraseScreenDestination)
+    private fun navigateToEnterNewPassphraseScreen() = navManager.navigateTo(Destination.EnterNewPassphraseScreen)
 
     private fun navigateToLockoutScreen() = viewModelScope.launch {
-        navManager.navigateToAndClearCurrent(LockoutScreenDestination)
+        navManager.replaceCurrentWith(Destination.LockoutScreen)
     }
 }

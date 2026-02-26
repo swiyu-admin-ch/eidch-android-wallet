@@ -39,6 +39,7 @@ sealed interface OcaError {
     data object InvalidClusterOverlay : OcaOverlayValidationError
     data object InvalidEntryCodeOverlay : OcaOverlayValidationError
     data object InvalidEntryOverlay : OcaOverlayValidationError
+    data object UnsupportedCredentialFormat : FetchVcMetadataByFormatError
 
     data class InvalidCESRHash(val msg: String) : OcaCesrHashValidatorError, OcaBundlerError
 

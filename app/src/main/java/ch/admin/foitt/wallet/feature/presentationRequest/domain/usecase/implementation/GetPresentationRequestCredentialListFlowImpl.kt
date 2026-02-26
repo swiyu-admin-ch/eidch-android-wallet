@@ -18,7 +18,7 @@ class GetPresentationRequestCredentialListFlowImpl @Inject constructor(
     private val getCredentialsWithDetailsFlow: GetCredentialsWithDetailsFlow,
 ) : GetPresentationRequestCredentialListFlow {
     override fun invoke(
-        compatibleCredentials: Array<CompatibleCredential>,
+        compatibleCredentials: Set<CompatibleCredential>,
     ): Flow<Result<PresentationCredentialDisplayData, GetPresentationRequestCredentialListFlowError>> =
         getCredentialsWithDetailsFlow()
             .mapError(GetCredentialsWithDetailsFlowError::toGetPresentationRequestCredentialListFlowError)

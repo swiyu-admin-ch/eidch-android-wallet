@@ -67,8 +67,10 @@ internal object WalletColors {
 
     val transparentWhite01 = Color(0x66FFFFFF)
     val transparentWhite02 = Color(0x26FFFFFF)
+    val transparentWhite03 = white.copy(alpha = 0.6f)
     val transparentBlack01 = Color(0x66000000)
     val transparentBlack02 = Color(0x26121315)
+    val tansparentBlack03 = grey10.copy(alpha = 0.6f)
 }
 
 // The light scrim color used in the platform API 29+

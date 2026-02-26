@@ -11,18 +11,13 @@ import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiSt
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialActionFeedbackCard
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.DeclineCredentialOfferNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination(
-    navArgsDelegate = DeclineCredentialOfferNavArg::class,
-)
 @Composable
 fun DeclineCredentialOfferScreen(
     viewModel: DeclineCredentialOfferViewModel,

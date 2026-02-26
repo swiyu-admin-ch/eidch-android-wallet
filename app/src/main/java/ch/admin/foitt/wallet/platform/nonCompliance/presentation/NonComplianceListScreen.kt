@@ -7,15 +7,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -28,18 +29,13 @@ import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDra
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.NonComplianceListNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = NonComplianceListNavArg::class,
-)
 @Composable
 fun NonComplianceListScreen(viewModel: NonComplianceListViewModel) {
     NonComplianceListScreenContent(
@@ -59,8 +55,9 @@ private fun NonComplianceListScreenContent(
 ) {
     WalletLayouts.LazyColumn(
         modifier = Modifier
-            .fillMaxWidth()
-            .horizontalSafeDrawing(),
+            .widthIn(max = Sizes.contentMaxWidth)
+            .horizontalSafeDrawing()
+            .align(Alignment.TopCenter),
         state = rememberLazyListState(),
         contentPadding = PaddingValues(start = Sizes.s04, top = Sizes.s02, end = Sizes.s04, bottom = Sizes.s04),
         useTopInsets = false,
@@ -86,7 +83,7 @@ private fun NonComplianceListScreenContent(
         item {
             WalletTexts.LabelMedium(
                 modifier = Modifier.padding(horizontal = Sizes.s04),
-                text = stringResource(R.string.tk_nonComplianceList_footer),
+                text = stringResource(R.string.tk_nonCompliance_list_footer),
             )
         }
     }
@@ -103,7 +100,7 @@ private fun LazyListScope.nonComplianceListItem(
 ) {
     val (title, subtitle) = when (nonComplianceReportReason) {
         NonComplianceReportReason.EXCESSIVE_DATA_REQUEST ->
-            R.string.tk_nonComplianceList_excessiveData_title to R.string.tk_nonComplianceList_excessiveData_body
+            R.string.tk_nonCompliance_list_excessiveData_title to R.string.tk_nonCompliance_list_excessiveData_body
     }
     ListItem(
         modifier = Modifier

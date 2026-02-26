@@ -19,11 +19,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.presentation.PassphraseInputComponent
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
@@ -33,9 +34,7 @@ import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTextFieldColors
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination
 @Composable
 fun EnterCurrentPassphraseScreen(viewModel: EnterCurrentPassphraseViewModel) {
     OnResumeEventHandler {
@@ -75,8 +74,8 @@ private fun EnterCurrentPassphraseScreenContent(
     onTextFieldValueChange: (TextFieldValue) -> Unit,
     onCheckPassphrase: () -> Unit,
 ) {
-    when (currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass) {
-        WindowWidthSizeClass.COMPACT -> WalletLayouts.CompactContainerFloatingBottom(
+    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+        WindowWidthClass.COMPACT -> WalletLayouts.CompactContainerFloatingBottom(
             modifier = Modifier.background(WalletTheme.colorScheme.surfaceContainerLow),
             shouldScrollUnderTopBar = false,
             verticalArrangement = Arrangement.Top,

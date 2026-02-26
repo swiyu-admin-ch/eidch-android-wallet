@@ -6,16 +6,18 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Credential
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.toDisplayStatus
+import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
-import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialDetail
+import java.net.URL
 
 object MockCredentialDetail {
 
@@ -24,23 +26,19 @@ object MockCredentialDetail {
     private const val CLUSTER_ID = 1L
     private const val CLAIM_ID_1 = 1L
     private const val CLAIM_ID_2 = 2L
-    private const val ISSUER = "issuer"
+    private const val ISSUER_URL = "https://example.com/issuer"
 
     private val credential = Credential(
         id = CREDENTIAL_ID,
         format = CredentialFormat.VC_SD_JWT,
         createdAt = 1700463600000,
+        issuerUrl = URL(ISSUER_URL),
     )
 
-    private val verifiableCredential = VerifiableCredentialEntity(
-        status = CredentialStatus.VALID,
-        payload = "payload",
-        createdAt = 1700463600000,
-        updatedAt = null,
-        issuer = ISSUER,
-        validFrom = 0,
+    private val bundleItem = BundleItemEntity(
         credentialId = CREDENTIAL_ID,
-        validUntil = 17768026519L,
+        payload = "payload",
+        status = CredentialStatus.VALID,
     )
 
     @OptIn(ExperimentalStdlibApi::class)
@@ -157,9 +155,10 @@ object MockCredentialDetail {
 
     val credentialDisplayData = CredentialDisplayData(
         credentialId = credential.id,
-        status = verifiableCredential.status.toDisplayStatus(),
+        status = bundleItem.status.toDisplayStatus(),
         credentialDisplay = credentialDisplay1,
         actorEnvironment = ActorEnvironment.PRODUCTION,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     val credentialDetail = CredentialDetail(
@@ -177,6 +176,7 @@ object MockCredentialDetail {
         status = CredentialStatus.VALID.toDisplayStatus(),
         credentialDisplay = credentialDisplay1,
         actorEnvironment = ActorEnvironment.PRODUCTION,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     val credentialDisplayData2 = CredentialDisplayData(
@@ -184,5 +184,6 @@ object MockCredentialDetail {
         status = CredentialStatus.VALID.toDisplayStatus(),
         credentialDisplay = credentialDisplay2,
         actorEnvironment = ActorEnvironment.BETA,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 }

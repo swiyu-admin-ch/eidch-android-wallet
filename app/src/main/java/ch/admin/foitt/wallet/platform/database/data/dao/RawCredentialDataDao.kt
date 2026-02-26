@@ -16,4 +16,10 @@ interface RawCredentialDataDao {
 
     @Query("SELECT * FROM RawCredentialData WHERE credentialId = :credentialId")
     fun getRawCredentialDataByCredentialId(credentialId: Long): List<RawCredentialData>
+
+    @Query("DELETE FROM RawCredentialData WHERE credentialId = :credentialId")
+    fun deleteByCredentialId(credentialId: Long): Int
+
+    @Query("UPDATE RawCredentialData SET rawOIDMetadata = :metadata WHERE credentialId = :credentialId")
+    fun updateMetadataByCredentialId(credentialId: Long, metadata: ByteArray): Int
 }

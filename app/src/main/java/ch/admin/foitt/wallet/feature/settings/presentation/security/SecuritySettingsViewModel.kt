@@ -9,17 +9,14 @@ import ch.admin.foitt.wallet.platform.login.domain.model.CanUseBiometricsForLogi
 import ch.admin.foitt.wallet.platform.login.domain.usecase.CanUseBiometricsForLogin
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.PassphraseChangeEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.PassphraseChangeEventRepository
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.AuthWithPassphraseNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.GetPassphraseWasDeleted
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.SavePassphraseWasDeleted
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
-import ch.admin.foitt.walletcomposedestinations.destinations.AuthWithPassphraseScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.DataAnalysisScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EnterCurrentPassphraseScreenDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -43,7 +40,7 @@ class SecuritySettingsViewModel @Inject constructor(
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
 
-    override val topBarState = TopBarState.Details(navManager::navigateUp, R.string.tk_settings_securityPrivacy_title)
+    override val topBarState = TopBarState.Details(navManager::popBackStack, R.string.tk_settings_securityPrivacy_title)
 
     val biometricsHardwareIsAvailable: Flow<Boolean> = flow {
         emit(
@@ -97,20 +94,20 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     private fun toggleBiometricsOn() {
-        navManager.navigateTo(AuthWithPassphraseScreenDestination(navArgs = AuthWithPassphraseNavArg(enableBiometrics = true)))
+        navManager.navigateTo(Destination.AuthWithPassphraseScreen(enableBiometrics = true))
     }
 
     private fun toggleBiometricsOff() {
-        navManager.navigateTo(AuthWithPassphraseScreenDestination(navArgs = AuthWithPassphraseNavArg(enableBiometrics = false)))
+        navManager.navigateTo(Destination.AuthWithPassphraseScreen(enableBiometrics = false))
     }
 
     fun onDataProtection() = appContext.openLink(R.string.tk_settings_securityPrivacy_dataProtection_privacyPolicy_link_value)
 
-    fun onChangePassphrase() = navManager.navigateTo(EnterCurrentPassphraseScreenDestination)
+    fun onChangePassphrase() = navManager.navigateTo(Destination.EnterCurrentPassphraseScreen)
 
     fun onShareAnalysisChange(isEnabled: Boolean) {
         applyUserPrivacyPolicy(isEnabled)
     }
 
-    fun onDataAnalysis() = navManager.navigateTo(DataAnalysisScreenDestination)
+    fun onDataAnalysis() = navManager.navigateTo(Destination.DataAnalysisScreen)
 }

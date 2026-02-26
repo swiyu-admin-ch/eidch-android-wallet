@@ -1,6 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation
 
-import ch.admin.eid.didresolver.didtoolbox.Jwk
+import ch.admin.eid.didresolver.did_sidekicks.Jwk
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.VerifyPublicKey
 import ch.admin.foitt.openid4vc.util.assertErr
 import ch.admin.foitt.openid4vc.util.assertOk

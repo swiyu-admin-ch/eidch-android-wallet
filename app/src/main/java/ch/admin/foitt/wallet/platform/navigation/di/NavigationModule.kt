@@ -15,7 +15,7 @@ import dagger.hilt.android.scopes.ActivityRetainedScoped
 internal interface NavigationModule {
     @Binds
     @ActivityRetainedScoped
-    fun provideNavigationManager(
+    fun provideNavigation3Manager(
         manager: NavigationManagerImpl,
     ): NavigationManager
 

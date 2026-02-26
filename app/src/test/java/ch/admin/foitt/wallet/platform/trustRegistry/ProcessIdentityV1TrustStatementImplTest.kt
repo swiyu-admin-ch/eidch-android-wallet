@@ -14,6 +14,7 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
@@ -57,6 +58,7 @@ class ProcessIdentityV1TrustStatementImplTest {
         unmockkAll()
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     @Test
     fun `A IdentityV1 trust statement is correctly processed`() = runTest {
         val result = useCase(issuerDid).assertOk()

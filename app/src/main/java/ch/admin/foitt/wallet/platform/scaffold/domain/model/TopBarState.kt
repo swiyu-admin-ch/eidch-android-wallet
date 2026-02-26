@@ -10,15 +10,15 @@ sealed interface TopBarState {
         val onUp: () -> Unit,
         @param:StringRes
         val titleId: Int?,
-        val useTransparentBackground: Boolean = true,
+        val topBarBackground: TopBarBackground = TopBarBackground.TRANSPARENT,
         val onClose: () -> Unit,
     ) : TopBarState
 
     data class Details(
         val onUp: () -> Unit,
-        @param:StringRes
-        val titleId: Int?,
-        val useTransparentBackground: Boolean = true,
+        @param:StringRes val titleId: Int?,
+        @param:StringRes val titleAltTextId: Int? = null,
+        val topBarBackground: TopBarBackground = TopBarBackground.TRANSPARENT,
     ) : TopBarState
 
     data class EmptyWithCloseButton(

@@ -7,6 +7,7 @@ import ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation.Local
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation.LocalizedAndThemedDisplayTestData.withFallbackAndNoSupportedLocale
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation.LocalizedAndThemedDisplayTestData.withSupportedLocaleNoCountryCode
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation.LocalizedAndThemedDisplayTestData.withSupportedLocaleWithCountryCode
+import ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation.LocalizedAndThemedDisplayTestData.withSupportedLocaleWithDifferentCountryCode
 import ch.admin.foitt.wallet.platform.theme.domain.model.Theme
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -49,6 +50,13 @@ class GetLocalizedAndThemedDisplayImplTest {
         assertEquals("de-CH", displayWithSupportedLocaleWithCountryCode?.locale)
         assertEquals("dark", displayWithSupportedLocaleWithCountryCode?.theme)
 
+        val displayWithSupportedLocaleWithDifferentCountryCode = getLocalizedAndThemedDisplay(
+            credentialDisplays = withSupportedLocaleWithDifferentCountryCode,
+            preferredTheme = Theme.DARK
+        )
+        assertEquals("de-DE", displayWithSupportedLocaleWithDifferentCountryCode?.locale)
+        assertEquals("dark", displayWithSupportedLocaleWithDifferentCountryCode?.theme)
+
         val displayWithSupportedLocaleNoCountryCode = getLocalizedAndThemedDisplay(
             credentialDisplays = withSupportedLocaleNoCountryCode,
             preferredTheme = Theme.DARK
@@ -80,6 +88,13 @@ class GetLocalizedAndThemedDisplayImplTest {
         )
         assertEquals("de-CH", displayWithSupportedLocaleWithCountryCode?.locale)
         assertEquals("dark", displayWithSupportedLocaleWithCountryCode?.theme)
+
+        val displayWithSupportedLocaleWithDifferentCountryCode = getLocalizedAndThemedDisplay(
+            credentialDisplays = withSupportedLocaleWithDifferentCountryCode,
+            preferredTheme = Theme.LIGHT
+        )
+        assertEquals("de-DE", displayWithSupportedLocaleWithDifferentCountryCode?.locale)
+        assertEquals("dark", displayWithSupportedLocaleWithDifferentCountryCode?.theme)
 
         val displayWithSupportedLocaleNoCountryCode = getLocalizedAndThemedDisplay(
             credentialDisplays = withSupportedLocaleNoCountryCode,
@@ -113,6 +128,13 @@ class GetLocalizedAndThemedDisplayImplTest {
         assertEquals("de-CH", displayWithSupportedLocaleWithCountryCode?.locale)
         assertEquals("dark", displayWithSupportedLocaleWithCountryCode?.theme)
 
+        val displayWithSupportedLocaleWithDifferentCountryCode = getLocalizedAndThemedDisplay(
+            credentialDisplays = withSupportedLocaleWithDifferentCountryCode,
+            preferredTheme = Theme.DARK
+        )
+        assertEquals("de-DE", displayWithSupportedLocaleWithDifferentCountryCode?.locale)
+        assertEquals("dark", displayWithSupportedLocaleWithDifferentCountryCode?.theme)
+
         val displayWithSupportedLocaleNoCountryCode = getLocalizedAndThemedDisplay(
             credentialDisplays = withSupportedLocaleNoCountryCode,
             preferredTheme = Theme.DARK
@@ -144,6 +166,13 @@ class GetLocalizedAndThemedDisplayImplTest {
         )
         assertEquals("de-CH", displayWithSupportedLocaleWithCountryCode?.locale)
         assertEquals("dark", displayWithSupportedLocaleWithCountryCode?.theme)
+
+        val displayWithSupportedLocaleWithDifferentCountryCode = getLocalizedAndThemedDisplay(
+            credentialDisplays = withSupportedLocaleWithDifferentCountryCode,
+            preferredTheme = Theme.LIGHT
+        )
+        assertEquals("de-DE", displayWithSupportedLocaleWithDifferentCountryCode?.locale)
+        assertEquals("dark", displayWithSupportedLocaleWithDifferentCountryCode?.theme)
 
         val displayWithSupportedLocaleNoCountryCode = getLocalizedAndThemedDisplay(
             credentialDisplays = withSupportedLocaleNoCountryCode,
@@ -177,6 +206,13 @@ class GetLocalizedAndThemedDisplayImplTest {
         assertEquals("de-CH", displayWithSupportedLocaleWithCountryCode?.locale)
         assertEquals("dark", displayWithSupportedLocaleWithCountryCode?.theme)
 
+        val displayWithSupportedLocaleWithDifferentCountryCode = getLocalizedAndThemedDisplay(
+            credentialDisplays = withSupportedLocaleWithDifferentCountryCode,
+            preferredTheme = Theme.DARK
+        )
+        assertEquals("de-DE", displayWithSupportedLocaleWithDifferentCountryCode?.locale)
+        assertEquals("dark", displayWithSupportedLocaleWithDifferentCountryCode?.theme)
+
         val displayWithSupportedLocaleNoCountryCode = getLocalizedAndThemedDisplay(
             credentialDisplays = withSupportedLocaleNoCountryCode,
             preferredTheme = Theme.DARK
@@ -208,6 +244,13 @@ class GetLocalizedAndThemedDisplayImplTest {
         )
         assertEquals("de-CH", displayWithSupportedLocaleWithCountryCode?.locale)
         assertEquals("dark", displayWithSupportedLocaleWithCountryCode?.theme)
+
+        val displayWithSupportedLocaleWithDifferentCountryCode = getLocalizedAndThemedDisplay(
+            credentialDisplays = withSupportedLocaleWithDifferentCountryCode,
+            preferredTheme = Theme.LIGHT
+        )
+        assertEquals("de-DE", displayWithSupportedLocaleWithDifferentCountryCode?.locale)
+        assertEquals("dark", displayWithSupportedLocaleWithDifferentCountryCode?.theme)
 
         val displayWithSupportedLocaleNoCountryCode = getLocalizedAndThemedDisplay(
             credentialDisplays = withSupportedLocaleNoCountryCode,

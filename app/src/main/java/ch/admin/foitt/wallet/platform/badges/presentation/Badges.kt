@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.unit.Dp
 import ch.admin.foitt.wallet.R
@@ -132,6 +134,7 @@ fun SensitiveClaimInfoBadge(
     claimLabel: String,
     onClick: ((BadgeType) -> Unit)? = null,
 ) {
+    val textDescription = "${stringResource(R.string.tk_global_sensitive_data)}: $claimLabel"
     Badge(
         icon = R.drawable.wallet_ic_warning,
         text = claimLabel,
@@ -143,7 +146,10 @@ fun SensitiveClaimInfoBadge(
                     claimLabel = claimLabel,
                 )
             )
-        }
+        },
+        textModifier = Modifier.semantics {
+            contentDescription = textDescription
+        },
     )
 }
 
@@ -153,7 +159,7 @@ fun SensitiveBadge() {
         text = stringResource(R.string.tk_global_sensitive_data),
         contentColor = WalletTheme.colorScheme.onSensitiveBadge,
         backgroundColor = WalletTheme.colorScheme.sensitiveBadge,
-        onClick = null
+        onClick = null,
     )
 }
 
@@ -175,6 +181,7 @@ private fun Badge(
     contentColor: Color,
     backgroundColor: Color,
     onClick: (() -> Unit)?,
+    textModifier: Modifier = Modifier
 ) = Box(
     modifier = Modifier
         .padding(top = Sizes.s02, bottom = Sizes.s02),
@@ -219,6 +226,7 @@ private fun Badge(
         WalletTexts.LabelMedium(
             text = text,
             color = contentColor,
+            modifier = textModifier
         )
     }
 }

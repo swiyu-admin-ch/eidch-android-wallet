@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.data
 
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.FetchStatusFromTokenStatusListError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.repository.CredentialStatusRepository
@@ -14,9 +15,10 @@ import io.ktor.http.HttpHeaders
 import timber.log.Timber
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Named
 
 class CredentialStatusRepositoryImpl @Inject constructor(
-    private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
 ) : CredentialStatusRepository {
     override suspend fun fetchTokenStatusListJwt(url: String): Result<String, FetchStatusFromTokenStatusListError> =
         runSuspendCatching<String> {

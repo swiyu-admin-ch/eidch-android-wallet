@@ -4,9 +4,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import ch.admin.foitt.openid4vc.domain.model.KeyStorageSecurityLevel
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.CreateJWSKeyPairInHardware
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.implementation.CreateJWSKeyPairInHardwareImpl
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.implementation.CreateKeyGenSpecImpl
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateJWSKeyPairInHardwareImpl
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateKeyGenSpecImpl
 import ch.admin.foitt.wallet.util.assertOk
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery

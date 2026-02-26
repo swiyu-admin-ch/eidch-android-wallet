@@ -16,6 +16,7 @@ import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredential
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
+import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.mapError
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -33,34 +34,35 @@ class GetActivityDetailFlowImpl @Inject constructor(
         activityId: Long,
     ): Flow<Result<ActivityDetail?, GetActivityDetailFlowError>> = combine(
         verifiableCredentialWithDisplaysAndClustersRepository.getVerifiableCredentialWithDisplaysAndClustersFlowById(credentialId),
-        activityWithDetailsRepository.getByIdFlow(activityId)
+        activityWithDetailsRepository.getNullableByIdFlow(activityId)
     ) { verifiableCredentialResult, activityWithDisplaysResult ->
-        when {
-            verifiableCredentialResult.isOk && activityWithDisplaysResult.isOk -> coroutineBinding {
-                activityWithDisplaysResult.value?.let { activityWithDetails ->
-                    val activityDisplayData = mapToActivityDisplayData(activityWithDetails)
+        val credentialWithDisplaysAndClusters = verifiableCredentialResult.getOrElse {
+            return@combine Err(ActivityListError.Unexpected(IllegalStateException("Error getting Credential with Displays and Clusters")))
+        }
+        val activityWithDisplays = activityWithDisplaysResult.getOrElse {
+            return@combine Err(ActivityListError.Unexpected(IllegalStateException("Error getting Activity with Displays")))
+        }
 
-                    val credentialWithDisplaysAndClusters = verifiableCredentialResult.value
-                    val credentialDisplayData = mapToCredentialDisplayData(
-                        verifiableCredential = credentialWithDisplaysAndClusters.verifiableCredential,
-                        credentialDisplays = credentialWithDisplaysAndClusters.credentialDisplays,
-                        claims = credentialWithDisplaysAndClusters.clusters.flatMap { it.claimsWithDisplays }
-                    ).mapError(MapToCredentialDisplayDataError::toGetActivityDetailFlowError)
-                        .bind()
+        coroutineBinding {
+            activityWithDisplays?.let { activityWithDetails ->
+                val activityDisplayData = mapToActivityDisplayData(activityWithDetails)
+                val credentialDisplayData = mapToCredentialDisplayData(
+                    verifiableCredential = credentialWithDisplaysAndClusters.verifiableCredential,
+                    credentialDisplays = credentialWithDisplaysAndClusters.credentialDisplays,
+                    claims = credentialWithDisplaysAndClusters.clusters.flatMap { it.claimsWithDisplays }
+                ).mapError(MapToCredentialDisplayDataError::toGetActivityDetailFlowError)
+                    .bind()
 
-                    val claims = mapToCredentialClaimCluster(
-                        credentialWithDisplaysAndClusters.clusters.filterFor(activityWithDetails.claims)
-                    )
+                val claims = mapToCredentialClaimCluster(
+                    credentialWithDisplaysAndClusters.clusters.filterFor(activityWithDetails.claims)
+                )
 
-                    ActivityDetail(
-                        activity = activityDisplayData,
-                        credential = credentialDisplayData,
-                        claims = claims,
-                    )
-                }
+                ActivityDetail(
+                    activity = activityDisplayData,
+                    credential = credentialDisplayData,
+                    claims = claims,
+                )
             }
-
-            else -> Err(ActivityListError.Unexpected(IllegalStateException("error getting activity detail data")))
         }
     }
 

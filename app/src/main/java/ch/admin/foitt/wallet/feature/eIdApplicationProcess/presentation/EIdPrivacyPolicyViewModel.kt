@@ -9,12 +9,11 @@ import ch.admin.foitt.avwrapper.config.AVBeamConfigLogLevel
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdAttestationScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdIntroScreenDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +32,7 @@ class EIdPrivacyPolicyViewModel @Inject constructor(
     override val topBarState = TopBarState.DetailsWithCloseButton(
         titleId = null,
         onUp = navManager::popBackStack,
-        onClose = { navManager.navigateBackToHome(EIdIntroScreenDestination) }
+        onClose = { navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class) }
     )
 
     fun onEIdPrivacyPolicy() = context.openLink(R.string.tk_getEid_dataPrivacy_link_value)
@@ -50,9 +49,9 @@ class EIdPrivacyPolicyViewModel @Inject constructor(
             }
         }
 
-        navManager.navigateToAndPopUpTo(
-            direction = EIdAttestationScreenDestination,
-            route = EIdIntroScreenDestination.route,
+        navManager.popUpToAndNavigate(
+            popToInclusive = Destination.EIdIntroScreen::class,
+            destination = Destination.EIdAttestationScreen
         )
     }
 }

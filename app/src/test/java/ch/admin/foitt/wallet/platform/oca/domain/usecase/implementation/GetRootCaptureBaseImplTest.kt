@@ -9,6 +9,7 @@ import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.elfaExample
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import io.mockk.MockKAnnotations
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
@@ -34,6 +35,7 @@ class GetRootCaptureBaseImplTest {
         unmockkAll()
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     @Test
     fun `Capture bases are validated successfully`(): Unit = runTest {
         val bundle = json.safeDecodeStringTo<OcaBundle>(elfaExample).value

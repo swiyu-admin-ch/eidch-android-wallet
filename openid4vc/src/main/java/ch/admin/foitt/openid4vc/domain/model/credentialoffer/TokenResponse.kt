@@ -7,12 +7,8 @@ import kotlinx.serialization.Serializable
 data class TokenResponse(
     @SerialName("access_token")
     val accessToken: String,
-    @SerialName("c_nonce")
-    val cNonce: String? = null,
-    @SerialName("c_nonce_expires_in")
-    val cNonceExpiresIn: Int? = null,
     @SerialName("expires_in")
-    val expiresIn: Int,
+    val expiresIn: Int? = null,
     @SerialName("refresh_token")
     val refreshToken: String? = null,
     @SerialName("scope")

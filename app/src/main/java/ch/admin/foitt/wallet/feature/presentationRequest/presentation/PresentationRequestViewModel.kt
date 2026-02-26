@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.feature.presentationRequest.presentation
 
 import android.content.Context
 import androidx.annotation.StringRes
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
 import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
@@ -23,9 +22,12 @@ import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.badges.presentation.model.ClaimBadgeUiState
 import ch.admin.foitt.wallet.platform.badges.presentation.model.toBadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.di.IoDispatcherScope
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
@@ -39,17 +41,11 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.utils.launchWithDelayedLoading
 import ch.admin.foitt.wallet.platform.utils.openLink
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.ErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationDeclinedScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationFailureScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationInvalidCredentialErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationRequestScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationSuccessScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationValidationErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationVerificationErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.ReportWrongDataScreenDestination
 import com.github.michaelbull.result.mapBoth
 import com.github.michaelbull.result.onFailure
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -59,10 +55,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class PresentationRequestViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = PresentationRequestViewModel.Factory::class)
+class PresentationRequestViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val navManager: NavigationManager,
     getPresentationRequestFlow: GetPresentationRequestFlow,
@@ -75,14 +70,22 @@ class PresentationRequestViewModel @Inject constructor(
     getActorForScope: GetActorForScope,
     private val savePresentationAcceptedActivity: SavePresentationAcceptedActivity,
     private val savePresentationDeclinedActivity: SavePresentationDeclinedActivity,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted private val compatibleCredential: CompatibleCredential,
+    @Assisted private val presentationRequestWithRaw: PresentationRequestWithRaw,
+    @Assisted private val shouldFetchTrustStatement: Boolean,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState: TopBarState = TopBarState.None
 
-    private val navArgs = PresentationRequestScreenDestination.argsFrom(savedStateHandle)
-    private val compatibleCredential = navArgs.compatibleCredential
-    private val presentationRequest = navArgs.presentationRequest
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            compatibleCredential: CompatibleCredential,
+            presentationRequestWithRaw: PresentationRequestWithRaw,
+            shouldFetchTrustStatement: Boolean
+        ): PresentationRequestViewModel
+    }
+
+    override val topBarState: TopBarState = TopBarState.None
 
     private val verifierDisplayData = getActorForScope(ComponentScope.Verifier)
     val verifierUiState = verifierDisplayData.map { verifierDisplayData ->
@@ -147,10 +150,11 @@ class PresentationRequestViewModel @Inject constructor(
                     actorDisplayData = verifierDisplayData.value,
                     verifierFallbackName = appContext.getString(R.string.presentation_verifier_name_unknown),
                     claimIds = presentationRequestUiState.stateFlow.value.requestedClaims.getClaimIds(),
+                    nonComplianceData = presentationRequestWithRaw.rawPresentationRequest,
                 )
 
                 submitPresentation(
-                    presentationRequest = presentationRequest,
+                    presentationRequest = presentationRequestWithRaw.presentationRequest,
                     compatibleCredential = compatibleCredential,
                 ).mapBoth(
                     success = { navigateToSuccess() },
@@ -178,60 +182,61 @@ class PresentationRequestViewModel @Inject constructor(
                 actorDisplayData = verifierDisplayData.value,
                 verifierFallbackName = appContext.getString(R.string.presentation_verifier_name_unknown),
                 claimIds = presentationRequestUiState.stateFlow.value.requestedClaims.getClaimIds(),
+                nonComplianceData = presentationRequestWithRaw.rawPresentationRequest,
             )
 
             declinePresentation(
-                url = presentationRequest.responseUri,
+                url = presentationRequestWithRaw.presentationRequest.responseUri,
                 reason = PresentationRequestErrorBody.ErrorType.CLIENT_REJECTED,
             ).onFailure { error ->
                 Timber.w("Decline presentation error: $error")
             }
         }
-        navManager.navigateToAndClearCurrent(
-            direction = PresentationDeclinedScreenDestination
+        navManager.replaceCurrentWith(
+            destination = Destination.PresentationDeclinedScreen
         )
     }
 
     private suspend fun updateVerifierDisplayData() {
-        if (navArgs.shouldFetchTrustStatement) {
+        if (shouldFetchTrustStatement) {
             fetchAndCacheVerifierDisplayData(
-                navArgs.presentationRequest,
+                presentationRequestWithRaw.presentationRequest,
                 true,
             )
         }
     }
 
     private fun navigateToSuccess() {
-        navManager.navigateToAndClearCurrent(
-            direction = PresentationSuccessScreenDestination(
+        navManager.replaceCurrentWith(
+            destination = Destination.PresentationSuccessScreen(
                 sentFields = getSentFields(),
             )
         )
     }
 
     private fun navigateToValidationError() {
-        navManager.navigateToAndClearCurrent(
-            direction = PresentationValidationErrorScreenDestination
+        navManager.replaceCurrentWith(
+            destination = Destination.PresentationValidationErrorScreen
         )
     }
 
     private fun navigateToInvalidCredentialError() {
-        navManager.navigateToAndClearCurrent(
-            direction = PresentationInvalidCredentialErrorScreenDestination(
+        navManager.replaceCurrentWith(
+            destination = Destination.PresentationInvalidCredentialErrorScreen(
                 sentFields = getSentFields(),
             )
         )
     }
 
     private fun navigateToVerificationError() {
-        navManager.navigateToAndClearCurrent(
-            direction = PresentationVerificationErrorScreenDestination
+        navManager.replaceCurrentWith(
+            destination = Destination.PresentationVerificationErrorScreen
         )
     }
 
     private fun getSentFields() = presentationRequestUiState.stateFlow.value.requestedClaims.flatMap { item ->
         getClusterFields(item.items)
-    }.toTypedArray()
+    }
 
     private fun getClusterFields(items: MutableList<CredentialClaimItem>): List<String> {
         val fields = mutableListOf<String>()
@@ -244,16 +249,16 @@ class PresentationRequestViewModel @Inject constructor(
         return fields
     }
 
-    private fun navigateToFailure() = navManager.navigateToAndClearCurrent(
-        PresentationFailureScreenDestination(
+    private fun navigateToFailure() = navManager.replaceCurrentWith(
+        Destination.PresentationFailureScreen(
             compatibleCredential = compatibleCredential,
-            presentationRequest = presentationRequest,
-            shouldFetchTrustStatement = navArgs.shouldFetchTrustStatement,
+            presentationRequestWithRaw = presentationRequestWithRaw,
+            shouldFetchTrustStatement = shouldFetchTrustStatement,
         )
     )
 
     private fun navigateToErrorScreen() {
-        navManager.navigateToAndClearCurrent(ErrorScreenDestination)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
     }
 
     private suspend fun PresentationRequestDisplayData.toUiState(): PresentationRequestUiState {
@@ -284,7 +289,7 @@ class PresentationRequestViewModel @Inject constructor(
     }
 
     fun onReportWrongData() {
-        navManager.navigateTo(ReportWrongDataScreenDestination)
+        navManager.navigateTo(Destination.ReportWrongDataScreen)
     }
 
     fun onBadge(badgeType: BadgeType) {

@@ -1,12 +1,13 @@
 package ch.admin.foitt.wallet.platform.invitation.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
+import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProcessPresentationRequestResult
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ProcessPresentationRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
@@ -20,6 +21,7 @@ import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -52,6 +54,8 @@ class ProcessInvitationImplTest {
     fun setUp() {
         MockKAnnotations.init(this)
 
+        setupDefaultMocks()
+
         useCase = ProcessInvitationImpl(
             validateInvitation = mockValidateInvitation,
             fetchAndSaveCredential = mockFetchAndSaveCredential,
@@ -66,9 +70,6 @@ class ProcessInvitationImplTest {
 
     @Test
     fun `Processing a valid credential offer returns a credential id`() = runTest {
-        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockCredentialOffer)
-        coEvery { mockFetchAndSaveCredential(mockCredentialOffer) } returns Ok(CREDENTIAL_ID)
-
         val result = useCase(INVITATION_URI)
 
         val expected = ProcessInvitationResult.CredentialOffer(CREDENTIAL_ID)
@@ -88,7 +89,7 @@ class ProcessInvitationImplTest {
 
     @Test
     fun `Processing a valid presentation request matching one credential returns the credential and request`() = runTest {
-        val request = mockk<PresentationRequest>()
+        val request = mockk<PresentationRequestWithRaw>()
         val credential = mockk<CompatibleCredential>()
         val requestResult = ProcessPresentationRequestResult.Credential(credential, request, true)
         coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockJwtPresentationRequestContainer)
@@ -103,8 +104,8 @@ class ProcessInvitationImplTest {
 
     @Test
     fun `Processing a valid presentation request matching multiple credential returns the credentials and request`() = runTest {
-        val request = mockk<PresentationRequest>()
-        val credentials = listOf(mockk<CompatibleCredential>())
+        val request = mockk<PresentationRequestWithRaw>()
+        val credentials = setOf(mockk<CompatibleCredential>())
         val requestResult = ProcessPresentationRequestResult.CredentialList(credentials, request, true)
         coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockJwtPresentationRequestContainer)
         coEvery { mockProcessPresentationRequest(mockJwtPresentationRequestContainer) } returns Ok(requestResult)
@@ -143,12 +144,33 @@ class ProcessInvitationImplTest {
     }
 
     @Test
-    fun `Processing an unsupported invitation returns an error`() = runTest {
+    fun `Processing an unsupported invitation type returns an error`() = runTest {
         coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockk())
 
         val result = useCase(INVITATION_URI)
 
         result.assertErrorType(InvitationError.Unexpected::class)
+    }
+
+    @Test
+    fun `Processing a valid deferred credential succeeds`() = runTest {
+        val deferredCredential = FetchCredentialResult.DeferredCredential(CREDENTIAL_ID)
+
+        coEvery { mockFetchAndSaveCredential(credentialOffer = mockCredentialOffer) } returns Ok(deferredCredential)
+
+        val result = useCase(INVITATION_URI).assertSuccessType(ProcessInvitationResult.DeferredCredential::class)
+
+        assertEquals(deferredCredential.credentialId, result.credentialId)
+
+        coVerifyOrder {
+            mockValidateInvitation(INVITATION_URI)
+            mockFetchAndSaveCredential(mockCredentialOffer)
+        }
+    }
+
+    private fun setupDefaultMocks() {
+        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockCredentialOffer)
+        coEvery { mockFetchAndSaveCredential(mockCredentialOffer) } returns Ok(FetchCredentialResult.Credential(CREDENTIAL_ID))
     }
 
     private companion object {

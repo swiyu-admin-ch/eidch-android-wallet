@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.feature.login.presentation
 
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.platform.deeplink.domain.usecase.HandleDeeplink
 import ch.admin.foitt.wallet.platform.login.domain.model.CanUseBiometricsForLoginResult
@@ -14,6 +13,7 @@ import ch.admin.foitt.wallet.platform.login.domain.usecase.IncreaseFailedLoginAt
 import ch.admin.foitt.wallet.platform.login.domain.usecase.LoginWithPassphrase
 import ch.admin.foitt.wallet.platform.login.domain.usecase.ResetLockout
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
@@ -21,11 +21,10 @@ import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersionInfo
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.FetchAppVersionInfo
-import ch.admin.foitt.walletcomposedestinations.destinations.AppVersionBlockedScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.BiometricLoginScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.LockoutScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PassphraseLoginScreenDestination
 import com.github.michaelbull.result.mapBoth
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,10 +34,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.Duration
-import javax.inject.Inject
 
-@HiltViewModel
-class PassphraseLoginViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = PassphraseLoginViewModel.Factory::class)
+class PassphraseLoginViewModel @AssistedInject constructor(
     private val navigationManager: NavigationManager,
     private val fetchAppVersionInfo: FetchAppVersionInfo,
     private val loginWithPassphrase: LoginWithPassphrase,
@@ -49,11 +47,14 @@ class PassphraseLoginViewModel @Inject constructor(
     private val getLockoutDuration: GetLockoutDuration,
     private val canUseBiometricsForLogin: CanUseBiometricsForLogin,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle,
+    @Assisted private val biometricsLocked: Boolean,
 ) : ScreenViewModel(setTopBarState, systemBarsFixedLightColor = true) {
     override val topBarState = TopBarState.None
 
-    private val biometricsLocked = PassphraseLoginScreenDestination.argsFrom(savedStateHandle).biometricsLocked
+    @AssistedFactory
+    interface Factory {
+        fun create(biometricsLocked: Boolean): PassphraseLoginViewModel
+    }
 
     private var appVersionInfo = flow {
         emit(fetchAppVersionInfo())
@@ -125,7 +126,7 @@ class PassphraseLoginViewModel @Inject constructor(
     private fun checkForLockout() {
         val lockoutDuration = getLockoutDuration()
         if (lockoutDuration > Duration.ZERO) {
-            navigationManager.navigateToAndClearCurrent(LockoutScreenDestination)
+            navigationManager.replaceCurrentWith(Destination.LockoutScreen)
         }
     }
 
@@ -141,10 +142,10 @@ class PassphraseLoginViewModel @Inject constructor(
     }
 
     private fun navigateToAppVersionBlocked(title: String?, text: String?) {
-        navigationManager.navigateToAndPopUpTo(
-            direction = AppVersionBlockedScreenDestination(title = title, text = text),
-            route = PassphraseLoginScreenDestination.route,
-            inclusivePop = true,
+        Timber.d("AppVersionBlocked: $title, $text")
+        navigationManager.popUpToAndNavigate(
+            popToInclusive = Destination.PassphraseLoginScreen::class,
+            destination = Destination.AppVersionBlockedScreen(title = title, text = text)
         )
     }
 
@@ -152,7 +153,7 @@ class PassphraseLoginViewModel @Inject constructor(
         handleDeeplink(fromOnboarding = false).navigate()
     }.trackCompletion(_isLoading)
 
-    fun onLoginWithBiometrics() = navigationManager.navigateToAndClearCurrent(BiometricLoginScreenDestination)
+    fun onLoginWithBiometrics() = navigationManager.replaceCurrentWith(Destination.BiometricLoginScreen)
 
     fun navigateBack(activity: FragmentActivity) = if (showBiometricLoginButton.value) {
         onLoginWithBiometrics()

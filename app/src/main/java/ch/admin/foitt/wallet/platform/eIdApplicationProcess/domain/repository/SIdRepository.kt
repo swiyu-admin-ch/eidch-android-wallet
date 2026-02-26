@@ -13,6 +13,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdChal
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.ValidateAttestationsError
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.WalletPairingStateResponse
 import com.github.michaelbull.result.Result
 
 interface SIdRepository {
@@ -50,4 +51,9 @@ interface SIdRepository {
         clientAttestation: ClientAttestation,
         clientAttestationPoP: ClientAttestationPoP,
     ): Result<AutoVerificationResponse, SIdRepositoryError>
+    suspend fun getWalletPairingState(
+        caseId: String,
+        walletPairingId: String,
+        clientAttestation: ClientAttestation,
+    ): Result<WalletPairingStateResponse, SIdRepositoryError>
 }

@@ -1,41 +1,78 @@
 package ch.admin.foitt.wallet.app.presentation
 
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
+import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenContainer
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.animations.defaults.RootNavGraphDefaultAnimations
-import com.ramcosta.composedestinations.rememberNavHostEngine
 
 @Composable
 fun MainScreen(
     activity: AppCompatActivity,
+    entryProviderBuilders: Set<@JvmSuppressWildcards EntryProviderInstaller>,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
+    val backstack = viewModel.getBackStack()
     WalletTheme {
-        val engine = rememberNavHostEngine(
-            navHostContentAlignment = Alignment.Center,
-            rootDefaultAnimations = rootNavigationAnimations,
-            defaultAnimationsForNestedNavGraph = mapOf()
-        )
-
-        val navController = engine.rememberNavController()
-        viewModel.initNavHost(navController)
-
         CompositionLocalProvider(LocalActivity provides activity) {
             ScreenContainer {
-                NavigationHost(
-                    engine = engine,
-                    navController = navController,
+                NavDisplay(
+                    backStack = backstack,
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                    onBack = {
+                        backstack.removeLastOrNull()
+                    },
+                    entryProvider = entryProvider<NavKey> {
+                        entryProviderBuilders.forEach { builder ->
+                            this.builder()
+                        }
+                    },
+                    transitionSpec = {
+                        // Slide in from right when navigating forward
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(300)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { -it },
+                            animationSpec = tween(300)
+                        )
+                    },
+                    popTransitionSpec = {
+                        // Slide in from left when navigating back
+                        slideInHorizontally(
+                            initialOffsetX = { -it },
+                            animationSpec = tween(300)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(300)
+                        )
+                    },
+                    predictivePopTransitionSpec = {
+                        // Slide in from left when navigating back
+                        slideInHorizontally(
+                            initialOffsetX = { -it },
+                            animationSpec = tween(300)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(300)
+                        )
+                    }
                 )
             }
         }
@@ -45,46 +82,3 @@ fun MainScreen(
         }
     }
 }
-
-private val rootNavigationAnimations = RootNavGraphDefaultAnimations(
-    enterTransition = {
-        slideIntoContainer(
-            towards = AnimatedContentTransitionScope.SlideDirection.Start,
-            animationSpec = tween(durationMillis = 300)
-        ) + fadeIn(
-            tween(
-                durationMillis = 300
-            )
-        )
-    },
-    exitTransition = {
-        slideOutOfContainer(
-            towards = AnimatedContentTransitionScope.SlideDirection.Start,
-            animationSpec = tween(durationMillis = 300)
-        ) + fadeOut(
-            tween(
-                durationMillis = 300
-            )
-        )
-    },
-    popExitTransition = {
-        slideOutOfContainer(
-            towards = AnimatedContentTransitionScope.SlideDirection.End,
-            animationSpec = tween(durationMillis = 300)
-        ) + fadeOut(
-            tween(
-                durationMillis = 300
-            )
-        )
-    },
-    popEnterTransition = {
-        slideIntoContainer(
-            towards = AnimatedContentTransitionScope.SlideDirection.End,
-            animationSpec = tween(durationMillis = 300)
-        ) + fadeIn(
-            tween(
-                durationMillis = 300
-            )
-        )
-    },
-)

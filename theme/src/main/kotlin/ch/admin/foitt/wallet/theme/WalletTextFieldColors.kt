@@ -17,6 +17,33 @@ object WalletTextFieldColors {
     )
 
     @Composable
+    fun textFieldColorsInCluster() = TextFieldDefaults.colors().copy(
+        focusedContainerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        unfocusedContainerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        disabledContainerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        errorContainerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        focusedTextColor = WalletTheme.colorScheme.onSurface,
+        unfocusedTextColor = WalletTheme.colorScheme.onSurface,
+        disabledTextColor = WalletTheme.colorScheme.onSurface,
+        errorTextColor = WalletTheme.colorScheme.onSurface,
+        cursorColor = WalletTheme.colorScheme.onSurface,
+        errorCursorColor = WalletTheme.colorScheme.onSurface,
+        focusedSupportingTextColor = WalletTheme.colorScheme.onSurfaceVariant,
+        unfocusedSupportingTextColor = WalletTheme.colorScheme.onSurfaceVariant,
+        disabledSupportingTextColor = WalletTheme.colorScheme.onSurfaceVariant,
+        errorSupportingTextColor = WalletTheme.colorScheme.error,
+        focusedPlaceholderColor = WalletTheme.colorScheme.onSurfaceVariant,
+        unfocusedPlaceholderColor = WalletTheme.colorScheme.onSurfaceVariant,
+        disabledPlaceholderColor = WalletTheme.colorScheme.onSurfaceVariant,
+        errorPlaceholderColor = WalletTheme.colorScheme.onSurfaceVariant,
+        focusedTrailingIconColor = WalletTheme.colorScheme.onSurface,
+        unfocusedTrailingIconColor = WalletTheme.colorScheme.onSurface,
+        disabledTrailingIconColor = WalletTheme.colorScheme.onSurface,
+        errorTrailingIconColor = WalletTheme.colorScheme.error,
+
+    )
+
+    @Composable
     fun textFieldColorsFixed() = TextFieldDefaults.colors().copy(
         focusedTextColor = WalletTheme.colorScheme.onSurfaceVariantFixed,
         unfocusedTextColor = WalletTheme.colorScheme.onSurfaceVariantFixed,

@@ -36,6 +36,7 @@ class GetLocalizedDisplayImplTest {
         coEvery { mockGetCurrentAppLocale() } returns LocaleCompat.of("de", "CH")
 
         assertEquals("de-CH", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleWithCountryCode)?.locale)
+        assertEquals("de-DE", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleWithDifferentCountryCode)?.locale)
         assertEquals("en", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleNoCountryCode)?.locale)
         assertEquals("xx", getLocalizedDisplay(LocalizedDisplayTestData.noSupportedLocaleAndNoFallback)?.locale)
         assertEquals("fallback", getLocalizedDisplay(LocalizedDisplayTestData.withFallbackAndNoSupportedLocale)?.locale)
@@ -46,6 +47,7 @@ class GetLocalizedDisplayImplTest {
         coEvery { mockGetCurrentAppLocale() } returns LocaleCompat.of("de", "XX")
 
         assertEquals("de-CH", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleWithCountryCode)?.locale)
+        assertEquals("de-DE", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleWithDifferentCountryCode)?.locale)
         assertEquals("en", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleNoCountryCode)?.locale)
         assertEquals("xx", getLocalizedDisplay(LocalizedDisplayTestData.noSupportedLocaleAndNoFallback)?.locale)
         assertEquals("fallback", getLocalizedDisplay(LocalizedDisplayTestData.withFallbackAndNoSupportedLocale)?.locale)
@@ -56,6 +58,7 @@ class GetLocalizedDisplayImplTest {
         coEvery { mockGetCurrentAppLocale() } returns LocaleCompat.of("de")
 
         assertEquals("de-CH", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleWithCountryCode)?.locale)
+        assertEquals("de-DE", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleWithDifferentCountryCode)?.locale)
         assertEquals("en", getLocalizedDisplay(LocalizedDisplayTestData.withSupportedLocaleNoCountryCode)?.locale)
         assertEquals("xx", getLocalizedDisplay(LocalizedDisplayTestData.noSupportedLocaleAndNoFallback)?.locale)
         assertEquals("fallback", getLocalizedDisplay(LocalizedDisplayTestData.withFallbackAndNoSupportedLocale)?.locale)

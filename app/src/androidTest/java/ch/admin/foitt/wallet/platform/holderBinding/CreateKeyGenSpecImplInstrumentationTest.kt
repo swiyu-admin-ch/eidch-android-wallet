@@ -2,8 +2,8 @@ package ch.admin.foitt.wallet.platform.holderBinding
 
 import android.security.keystore.KeyProperties
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.CreateKeyGenSpec
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.implementation.CreateKeyGenSpecImpl
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateKeyGenSpec
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateKeyGenSpecImpl
 import ch.admin.foitt.wallet.util.assertOk
 import io.mockk.MockKAnnotations
 import io.mockk.unmockkAll

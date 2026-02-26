@@ -114,6 +114,14 @@ object WalletButtonColors {
     )
 
     @Composable
+    fun brandRed(): ButtonColors = ButtonDefaults.buttonColors(
+        containerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        contentColor = WalletTheme.colorScheme.errorFixed,
+        disabledContainerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        disabledContentColor = WalletTheme.colorScheme.onLightPrimary,
+    )
+
+    @Composable
     fun feedbackFailurePrimary(): ButtonColors = ButtonDefaults.textButtonColors(
         containerColor = WalletTheme.colorScheme.primary,
         contentColor = WalletTheme.colorScheme.surfaceContainerHighest,

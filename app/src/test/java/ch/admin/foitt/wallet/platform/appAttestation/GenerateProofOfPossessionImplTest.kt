@@ -11,6 +11,7 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.nimbusds.jwt.SignedJWT
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -52,6 +53,8 @@ class GenerateProofOfPossessionImplTest {
 
     private val testChallenge = "testChallenge"
     private val testAudience = "testAudience"
+
+    @OptIn(UnsafeResultValueAccess::class)
     private val testRequestBody = testSafeJson.safeDecodeStringTo<JsonElement>(
         """
         {

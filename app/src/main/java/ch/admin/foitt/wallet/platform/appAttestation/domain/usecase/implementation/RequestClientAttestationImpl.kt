@@ -2,9 +2,9 @@ package ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.implementat
 
 import ch.admin.foitt.openid4vc.domain.model.CreateJwkError
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.openid4vc.domain.model.anycredential.CredentialValidity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.JWSKeyPair
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.Jwk
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.toSignatureName
 import ch.admin.foitt.openid4vc.domain.usecase.CreateJwk
 import ch.admin.foitt.openid4vc.utils.Constants
@@ -21,13 +21,12 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.CurrentCl
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.ValidateClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.util.getBase64CertificateChain
-import ch.admin.foitt.wallet.platform.holderBinding.domain.model.CreateJWSKeyPairError
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.CreateJWSKeyPairError
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
 import ch.admin.foitt.wallet.platform.utils.toBase64StringUrlEncodedWithoutPadding
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
-import com.github.michaelbull.result.get
 import com.github.michaelbull.result.mapError
 import java.security.KeyPair
 import java.security.Signature
@@ -50,7 +49,7 @@ class RequestClientAttestationImpl @Inject constructor(
             keyPairAlias = keyAlias
         ).mapError(ClientAttestationRepositoryError::toRequestClientAttestationError).bind()
 
-        if (currentClientAttestation != null && currentClientAttestation.attestation.jwtValidity !is CredentialValidity.Expired) {
+        if (currentClientAttestation != null && currentClientAttestation.attestation.jwtValidity !is Validity.Expired) {
             return@coroutineBinding currentClientAttestation
         }
 

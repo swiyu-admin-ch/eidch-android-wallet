@@ -39,6 +39,31 @@ class EIdRequestCaseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun setEIdRequestCaseCredentialId(
+        caseId: String,
+        credentialId: Long,
+    ): Result<Unit, EIdRequestCaseRepositoryError> = withContext(ioDispatcher) {
+        runSuspendCatching {
+            eIdRequestCaseDao().setRequestCredentialId(
+                caseId,
+                credentialId,
+            )
+            Unit
+        }.mapError { throwable ->
+            throwable.toEIdRequestCaseRepositoryError("EIdRequestCaseRepository setCredentialId error")
+        }
+    }
+
+    override suspend fun getEIdRequestCase(
+        caseId: String
+    ): Result<EIdRequestCase, EIdRequestCaseRepositoryError> = withContext(ioDispatcher) {
+        runSuspendCatching {
+            eIdRequestCaseDao().getEIdRequestCaseById(caseId)
+        }.mapError { throwable ->
+            throwable.toEIdRequestCaseRepositoryError("EIdRequestCaseRepository getEIdRequestCase error")
+        }
+    }
+
     private val eIdRequestCaseDaoFlow = daoProvider.eIdRequestCaseDaoFlow
     private suspend fun eIdRequestCaseDao(): EIdRequestCaseDao = suspendUntilNonNull { eIdRequestCaseDaoFlow.value }
 }

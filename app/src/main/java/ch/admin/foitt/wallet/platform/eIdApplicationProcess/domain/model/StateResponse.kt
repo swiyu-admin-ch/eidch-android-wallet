@@ -13,6 +13,8 @@ data class StateResponse(
     val legalRepresentant: LegalRepresentant?,
     @SerialName("onlineSessionStartTimeout")
     val onlineSessionStartTimeout: String?,
+    @SerialName("targetWallets")
+    val targetWallets: TargetWallets?,
 )
 
 @Serializable
@@ -31,4 +33,22 @@ data class LegalRepresentant(
     val verified: Boolean,
     @SerialName("verificationLink")
     val verificationLink: String
+)
+
+@Serializable
+data class TargetWallets(
+    @SerialName("limitReached")
+    val limitReached: Boolean,
+    @SerialName("pairedWallets")
+    val pairedWallets: List<PairedWallets>
+)
+
+@Serializable
+data class PairedWallets(
+    @SerialName("walletPairingId")
+    val walletPairingId: String,
+    @SerialName("timestampPairing")
+    val timestampPairing: String,
+    @SerialName("timestampCollecting")
+    val timestampCollecting: String?,
 )

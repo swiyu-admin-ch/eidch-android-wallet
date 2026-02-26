@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.feature.settings.presentation.biometrics
 
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricManagerResult
@@ -14,6 +13,7 @@ import ch.admin.foitt.wallet.platform.biometrics.domain.model.toEnableBiometrics
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.InitializeCipherWithBiometrics
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.SaveUseBiometricLogin
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.StorePassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.StorePassphrase
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
@@ -22,37 +22,39 @@ import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.map
 import ch.admin.foitt.wallet.platform.utils.openSecuritySettings
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.EnableBiometricsErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EnableBiometricsLockoutScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EnableBiometricsScreenDestination
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.andThen
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class EnableBiometricsViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = EnableBiometricsViewModel.Factory::class)
+class EnableBiometricsViewModel @AssistedInject constructor(
     private val biometricsStatus: BiometricsStatus,
     private val initializeCipherWithBiometrics: InitializeCipherWithBiometrics,
     private val storePassphrase: StorePassphrase,
     private val saveUseBiometricLogin: SaveUseBiometricLogin,
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle,
+    @Assisted private val pin: String,
     @param:ApplicationContext private val appContext: Context,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Details(::close, R.string.change_biometrics_title)
 
-    private val navArgs = EnableBiometricsScreenDestination.argsFrom(savedStateHandle)
-    private val pin = navArgs.pin
+    @AssistedFactory
+    interface Factory {
+        fun create(pin: String): EnableBiometricsViewModel
+    }
+
+    override val topBarState = TopBarState.Details(::close, R.string.change_biometrics_title)
 
     private val _initializationInProgress = MutableStateFlow(false)
     val initializationInProgress = _initializationInProgress.asStateFlow()
@@ -63,6 +65,7 @@ class EnableBiometricsViewModel @Inject constructor(
             BiometricManagerResult.Available -> true
             BiometricManagerResult.CanEnroll,
             BiometricManagerResult.Disabled -> false
+
             BiometricManagerResult.Unsupported -> {
                 Timber.w(message = "Biometrics unsupported on the enabling screen")
                 false
@@ -107,13 +110,15 @@ class EnableBiometricsViewModel @Inject constructor(
                 when (enableBiometricsError) {
                     BiometricsError.Locked -> {
                         Timber.w("Enable biometric error: Lockout")
-                        navManager.navigateToAndClearCurrent(EnableBiometricsLockoutScreenDestination)
+                        navManager.replaceCurrentWith(Destination.EnableBiometricsLockoutScreen)
                     }
+
                     is BiometricsError.Unexpected -> {
                         Timber.e(enableBiometricsError.cause, "Enable biometric error")
-                        navManager.navigateToAndClearCurrent(EnableBiometricsErrorScreenDestination)
+                        navManager.replaceCurrentWith(Destination.EnableBiometricsErrorScreen)
                     }
-                    BiometricsError.Cancelled -> { }
+
+                    BiometricsError.Cancelled -> {}
                 }
             }
     }

@@ -21,13 +21,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.onboarding.presentation.composables.OnboardingLoadingScreenContent
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.PassphraseValidationErrorToastFixed
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.ConfirmPassphraseNavArg
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.presentation.PassphraseInputComponent
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
@@ -38,11 +38,7 @@ import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTextFieldColors
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = ConfirmPassphraseNavArg::class,
-)
 @Composable
 fun OnboardingConfirmPassphraseScreen(
     viewModel: OnboardingConfirmPassphraseViewModel,
@@ -114,8 +110,8 @@ private fun OnboardingConfirmPassphraseContent(
 ) {
     FullscreenGradient()
 
-    when (currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass) {
-        WindowWidthSizeClass.COMPACT -> WalletLayouts.CompactContainerFloatingBottom(
+    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+        WindowWidthClass.COMPACT -> WalletLayouts.CompactContainerFloatingBottom(
             verticalArrangement = Arrangement.Top,
             shouldScrollUnderTopBar = false,
             content = {

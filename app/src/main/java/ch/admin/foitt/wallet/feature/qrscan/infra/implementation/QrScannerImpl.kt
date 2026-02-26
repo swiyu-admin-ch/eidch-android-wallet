@@ -208,7 +208,7 @@ class QrScannerImpl @Inject constructor() : QrScanner {
                 tryHarder = true,
 
                 // Support inverted qr codes
-                tryInvert = false,
+                tryInvert = true,
 
                 // Downscale image to increase the detection rate with noisy input (e.g. monitor scans) and high-resolution images
                 tryDownscale = true,

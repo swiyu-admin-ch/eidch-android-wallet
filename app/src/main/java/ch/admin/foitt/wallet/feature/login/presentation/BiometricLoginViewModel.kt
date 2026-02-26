@@ -11,16 +11,14 @@ import ch.admin.foitt.wallet.platform.login.domain.model.LoginError
 import ch.admin.foitt.wallet.platform.login.domain.usecase.CanUseBiometricsForLogin
 import ch.admin.foitt.wallet.platform.login.domain.usecase.LoginWithBiometrics
 import ch.admin.foitt.wallet.platform.login.domain.usecase.ResetLockout
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PassphraseLoginNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersionInfo
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.FetchAppVersionInfo
-import ch.admin.foitt.walletcomposedestinations.destinations.AppVersionBlockedScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PassphraseLoginScreenDestination
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -112,9 +110,9 @@ class BiometricLoginViewModel @Inject constructor(
 
     fun navigateToLoginWithPassphrase(
         biometricsLocked: Boolean = false
-    ) = navManager.navigateToAndClearCurrent(direction = PassphraseLoginScreenDestination(PassphraseLoginNavArg(biometricsLocked)))
+    ) = navManager.replaceCurrentWith(destination = Destination.PassphraseLoginScreen(biometricsLocked = biometricsLocked))
 
     private fun navigateToAppVersionBlocked(title: String?, text: String?) {
-        navManager.navigateToAndClearCurrent(AppVersionBlockedScreenDestination(title = title, text = text))
+        navManager.replaceCurrentWith(Destination.AppVersionBlockedScreen(title = title, text = text))
     }
 }

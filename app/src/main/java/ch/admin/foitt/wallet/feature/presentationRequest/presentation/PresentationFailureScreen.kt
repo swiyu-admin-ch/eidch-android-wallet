@@ -11,19 +11,14 @@ import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiSt
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialActionFeedbackCardError
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PresentationFailureNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Destination(
-    navArgsDelegate = PresentationFailureNavArg::class,
-)
 fun PresentationFailureScreen(viewModel: PresentationFailureViewModel) {
     val badgeBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val badgeBottomSheet = viewModel.badgeBottomSheet.collectAsStateWithLifecycle().value

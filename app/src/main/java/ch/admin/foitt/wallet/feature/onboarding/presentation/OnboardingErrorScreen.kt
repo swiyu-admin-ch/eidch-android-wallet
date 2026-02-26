@@ -16,9 +16,7 @@ import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination
 @Composable
 fun OnboardingErrorScreen(
     @Suppress("UNUSED_PARAMETER") viewModel: OnboardingErrorViewModel

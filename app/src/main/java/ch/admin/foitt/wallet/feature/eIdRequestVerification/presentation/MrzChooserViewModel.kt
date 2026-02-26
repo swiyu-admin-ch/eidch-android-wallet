@@ -2,14 +2,12 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.TestMrzData
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdMrzSubmissionNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.SafeJson
-import ch.admin.foitt.walletcomposedestinations.destinations.MrzSubmissionScreenDestination
 import com.github.michaelbull.result.getOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -21,7 +19,7 @@ class MrzChooserViewModel @Inject constructor(
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Details(navManager::navigateUp, null)
+    override val topBarState = TopBarState.Details(navManager::popBackStack, null)
 
     private val mockUnderAge = safeJson.safeDecodeStringTo<List<TestMrzData>>(MockMRZData.underAgeMock)
     private val mockAdult = safeJson.safeDecodeStringTo<List<TestMrzData>>(MockMRZData.adultMock)
@@ -29,16 +27,12 @@ class MrzChooserViewModel @Inject constructor(
 
     val mrzData = mockUnderAge.getOr(emptyList()) + mockAdult.getOr(emptyList()) + mockOther.getOr(emptyList())
 
-    fun onBack() = navManager.navigateUpOrToRoot()
+    fun onBack() = navManager.popBackStackOrToRoot()
 
     fun onMrzItemClick(index: Int) {
         viewModelScope.launch {
-            navManager.navigateToAndClearCurrent(
-                MrzSubmissionScreenDestination(
-                    navArgs = EIdMrzSubmissionNavArg(
-                        mrzLines = mrzData[index].mrz.toTypedArray()
-                    )
-                )
+            navManager.replaceCurrentWith(
+                Destination.MrzSubmissionScreen(mrzLines = mrzData[index].mrz)
             )
         }
     }

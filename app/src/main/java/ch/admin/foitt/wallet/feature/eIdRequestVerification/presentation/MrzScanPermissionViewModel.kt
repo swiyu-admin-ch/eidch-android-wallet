@@ -9,14 +9,17 @@ import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.Permi
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.CheckCameraPermission
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.ShouldAutoTriggerPermissionPrompt
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.hasCameraPermission
 import ch.admin.foitt.wallet.platform.scaffold.extension.shouldShowRationale
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openAppDetailsSettings
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdIntroScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.SDKScannerScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,13 +28,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.ref.WeakReference
-import javax.inject.Inject
 
-@HiltViewModel
-class MrzScanPermissionViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = MrzScanPermissionViewModel.Factory::class)
+class MrzScanPermissionViewModel @AssistedInject constructor(
     private val checkCameraPermission: CheckCameraPermission,
     private val shouldAutoTriggerPermissionPrompt: ShouldAutoTriggerPermissionPrompt,
     private val navManager: NavigationManager,
+    @Assisted private val caseId: String,
     @param:ApplicationContext private val appContext: Context,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
@@ -39,8 +42,13 @@ class MrzScanPermissionViewModel @Inject constructor(
     override val topBarState = TopBarState.DetailsWithCloseButton(
         titleId = null,
         onUp = navManager::popBackStack,
-        onClose = { navManager.navigateBackToHome(EIdIntroScreenDestination) }
+        onClose = ::onClose
     )
+
+    @AssistedFactory
+    interface Factory {
+        fun create(caseId: String): MrzScanPermissionViewModel
+    }
 
     private val cameraPermission by lazy { Manifest.permission.CAMERA }
 
@@ -74,7 +82,6 @@ class MrzScanPermissionViewModel @Inject constructor(
 
     fun onOpenSettings() {
         appContext.openAppDetailsSettings()
-        navManager.navigateUp()
     }
 
     fun navigateToFirstScreen(activity: FragmentActivity) {
@@ -94,10 +101,13 @@ class MrzScanPermissionViewModel @Inject constructor(
         }
     }
 
-    fun onClose() = navManager.navigateUp()
+    private fun onClose() = when {
+        caseId.isEmpty() -> navManager.navigateOutOf(DestinationGroup.EIdApplicationProcess::class)
+        else -> navManager.navigateOutOf(DestinationGroup.EIdRequestVerification::class)
+    }
 
     private fun handleNewState(newState: PermissionState) = when (newState) {
-        PermissionState.Granted -> navManager.navigateToAndClearCurrent(SDKScannerScreenDestination)
+        PermissionState.Granted -> navManager.replaceCurrentWith(Destination.EIdDocumentScannerScreen(caseId = caseId))
         PermissionState.Blocked,
         PermissionState.Initial,
         PermissionState.Intro,

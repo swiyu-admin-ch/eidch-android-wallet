@@ -39,11 +39,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.window.core.layout.WindowHeightSizeClass
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowHeightClass
 import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.topSafeDrawing
+import ch.admin.foitt.wallet.platform.composables.presentation.windowHeightClass
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.theme.Sizes
 
@@ -75,7 +76,7 @@ object WalletLayouts {
     //endregion
 
     @Composable
-    fun isHeightCompact() = currentWindowAdaptiveInfo().windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
+    fun isHeightCompact() = currentWindowAdaptiveInfo().windowHeightClass() == WindowHeightClass.COMPACT
 
     @Composable
     private fun getCardScreenRatio() = if (isHeightCompact()) {
@@ -96,7 +97,8 @@ object WalletLayouts {
                 } else {
                     this
                 }
-            }.imePadding()
+            }
+            .imePadding()
 
     @Composable
     fun TopInsetSpacer(
@@ -107,7 +109,8 @@ object WalletLayouts {
             .run {
                 if (shouldScrollUnderTopBar) {
                     val topPadding = scaffoldPaddings.calculateTopPadding()
-                    this.padding(top = topPadding)
+                    this
+                        .padding(top = topPadding)
                         .consumeWindowInsets(WindowInsets(top = topPadding))
                 } else {
                     this.topSafeDrawing()

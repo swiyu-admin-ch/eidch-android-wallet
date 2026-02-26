@@ -16,11 +16,9 @@ import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Destination
 fun PresentationVerificationErrorScreen(viewModel: PresentationVerificationErrorViewModel) {
     val badgeBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val badgeBottomSheet = viewModel.badgeBottomSheet.collectAsStateWithLifecycle().value

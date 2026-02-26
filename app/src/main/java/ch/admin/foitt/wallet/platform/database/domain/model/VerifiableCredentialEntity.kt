@@ -24,8 +24,6 @@ data class VerifiableCredentialEntity(
     @PrimaryKey
     val credentialId: Long, // Foreign key
     val progressionState: VerifiableProgressionState = VerifiableProgressionState.UNACCEPTED,
-    val status: CredentialStatus = CredentialStatus.UNKNOWN,
-    val payload: String,
     val issuer: String?,
     val validFrom: Long?,
     val validUntil: Long?,

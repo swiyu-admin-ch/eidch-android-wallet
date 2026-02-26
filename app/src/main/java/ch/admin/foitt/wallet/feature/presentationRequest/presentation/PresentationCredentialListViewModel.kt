@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.feature.presentationRequest.presentation
 
 import android.content.Context
 import androidx.annotation.StringRes
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.GetPresentationRequestCredentialListFlow
@@ -15,19 +14,20 @@ import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.badges.presentation.model.toBadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PresentationRequestNavArg
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
-import ch.admin.foitt.walletcomposedestinations.destinations.ErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationCredentialListScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationRequestScreenDestination
 import com.github.michaelbull.result.mapBoth
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,10 +35,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class PresentationCredentialListViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = PresentationCredentialListViewModel.Factory::class)
+class PresentationCredentialListViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val navManager: NavigationManager,
     getPresentationRequestCredentialListFlow: GetPresentationRequestCredentialListFlow,
@@ -46,12 +45,22 @@ class PresentationCredentialListViewModel @Inject constructor(
     private val getCredentialCardState: GetCredentialCardState,
     private val getActorUiState: GetActorUiState,
     getActorForScope: GetActorForScope,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted private val compatibleCredentials: Set<CompatibleCredential>,
+    @Assisted private val presentationRequestWithRaw: PresentationRequestWithRaw,
+    @Assisted private val shouldFetchTrustStatement: Boolean,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.None
 
-    private val navArgs = PresentationCredentialListScreenDestination.argsFrom(savedStateHandle)
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            compatibleCredentials: Set<CompatibleCredential>,
+            presentationRequestWithRaw: PresentationRequestWithRaw,
+            shouldFetchTrustStatement: Boolean
+        ): PresentationCredentialListViewModel
+    }
+
+    override val topBarState = TopBarState.None
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
@@ -68,7 +77,7 @@ class PresentationCredentialListViewModel @Inject constructor(
 
     val presentationCredentialListUiState = refreshableStateFlow(PresentationCredentialListUiState.EMPTY) {
         getPresentationRequestCredentialListFlow(
-            compatibleCredentials = navArgs.compatibleCredentials,
+            compatibleCredentials = compatibleCredentials,
         ).map { result ->
             result.mapBoth(
                 success = { presentationCredentialListUi ->
@@ -92,31 +101,29 @@ class PresentationCredentialListViewModel @Inject constructor(
     }
 
     fun onCredentialSelected(credentialId: Long) {
-        val compatibleCredential = navArgs.compatibleCredentials.find { it.credentialId == credentialId }
+        val compatibleCredential = compatibleCredentials.find { it.credentialId == credentialId }
         compatibleCredential?.let {
-            navManager.navigateToAndClearCurrent(
-                direction = PresentationRequestScreenDestination(
-                    navArgs = PresentationRequestNavArg(
-                        compatibleCredential,
-                        navArgs.presentationRequest,
-                        false,
-                    )
+            navManager.replaceCurrentWith(
+                destination = Destination.PresentationRequestScreen(
+                    compatibleCredential = compatibleCredential,
+                    presentationRequestWithRaw = presentationRequestWithRaw,
+                    shouldFetchTrustStatement = false,
                 )
             )
         } ?: navigateToErrorScreen()
     }
 
-    fun onBack() = navManager.navigateUpOrToRoot()
+    fun onBack() = navManager.popBackStackOrToRoot()
 
     private suspend fun updateVerifierDisplayData() {
         fetchAndCacheVerifierDisplayData(
-            presentationRequest = navArgs.presentationRequest,
-            shouldFetchTrustStatement = navArgs.shouldFetchTrustStatement,
+            presentationRequest = presentationRequestWithRaw.presentationRequest,
+            shouldFetchTrustStatement = shouldFetchTrustStatement,
         )
     }
 
     private fun navigateToErrorScreen() {
-        navManager.navigateToAndClearCurrent(ErrorScreenDestination)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
     }
 
     fun onBadge(badgeType: BadgeType) {

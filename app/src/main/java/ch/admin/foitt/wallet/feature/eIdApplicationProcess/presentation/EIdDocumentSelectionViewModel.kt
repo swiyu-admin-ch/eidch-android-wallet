@@ -5,12 +5,10 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocu
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetDocumentType
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdIntroScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.MrzChooserScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.MrzScanPermissionScreenDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -27,7 +25,7 @@ class EIdDocumentSelectionViewModel @Inject constructor(
         onUp = navManager::popBackStack,
         onClose = {
             avBeam.shutDown()
-            navManager.navigateBackToHome(EIdIntroScreenDestination)
+            navManager.navigateBackToHomeScreen(popUntil = Destination.EIdIntroScreen::class)
         }
     )
 
@@ -35,10 +33,10 @@ class EIdDocumentSelectionViewModel @Inject constructor(
 
     fun onDocumentSelected(documentType: EIdDocumentType) {
         setDocumentType(documentType)
-        navManager.navigateTo(MrzScanPermissionScreenDestination)
+        navManager.navigateTo(Destination.EIdDocumentScannerInfoScreen(caseId = ""))
     }
 
     fun onClickMock() {
-        navManager.navigateTo(MrzChooserScreenDestination)
+        navManager.navigateTo(Destination.MrzChooserScreen)
     }
 }

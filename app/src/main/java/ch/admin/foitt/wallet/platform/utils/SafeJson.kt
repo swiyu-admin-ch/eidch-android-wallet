@@ -3,7 +3,6 @@ package ch.admin.foitt.wallet.platform.utils
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.mapError
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -20,6 +19,14 @@ class SafeJson @Inject constructor(
         json.decodeFromString<T>(string)
     }.mapError { throwable ->
         throwable.toJsonError("safeDecodeStringTo error")
+    }
+
+    inline fun <reified T> safeDecodeFromJsonElement(
+        objectToDecode: JsonElement,
+    ): Result<T, JsonParsingError> = runSuspendCatching {
+        json.decodeFromJsonElement<T>(objectToDecode)
+    }.mapError { throwable ->
+        throwable.toJsonError("safeDecodeFromJsonElement error")
     }
 
     inline fun <reified T> safeEncodeObjectToString(objectToEncode: T): Result<String, JsonParsingError> = runSuspendCatching {

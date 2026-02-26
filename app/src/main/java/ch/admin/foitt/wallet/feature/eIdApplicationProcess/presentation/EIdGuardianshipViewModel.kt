@@ -3,11 +3,10 @@ package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetHasLegalGuardian
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdDocumentSelectionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdIntroScreenDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -25,13 +24,13 @@ class EIdGuardianshipViewModel @Inject constructor(
         },
         onClose = {
             avBeam.shutDown()
-            navManager.navigateBackToHome(EIdIntroScreenDestination)
+            navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class)
         },
     )
 
     fun onDeclareGuardianship(hasGuardianship: Boolean) {
         setHasLegalGuardian(hasGuardianship)
-        navManager.navigateTo(EIdDocumentSelectionScreenDestination)
+        navManager.navigateTo(Destination.EIdDocumentSelectionScreen)
     }
 
     fun shutDownLibraryAndGoBack() {

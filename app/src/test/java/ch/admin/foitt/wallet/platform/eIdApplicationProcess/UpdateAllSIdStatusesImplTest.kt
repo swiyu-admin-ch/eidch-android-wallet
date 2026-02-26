@@ -49,7 +49,8 @@ class UpdateAllSIdStatusesImplTest {
             state = EIdRequestQueueState.READY_FOR_ONLINE_SESSION,
             queueInformation = null,
             legalRepresentant = null,
-            onlineSessionStartTimeout = "2100-02-19T21:14:52Z"
+            onlineSessionStartTimeout = "2100-02-19T21:14:52Z",
+            targetWallets = null
         )
 
         coEvery { mockEIdRequestStateRepository.getAllCaseIds() } returns Ok(listOf("caseID"))

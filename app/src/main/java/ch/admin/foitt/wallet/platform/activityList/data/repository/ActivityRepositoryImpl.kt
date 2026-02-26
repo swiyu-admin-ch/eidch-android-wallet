@@ -38,6 +38,7 @@ class ActivityRepositoryImpl @Inject constructor(
         actorDisplayData: ActorDisplayData,
         actorFallbackName: String,
         claimIds: List<Long>?,
+        nonComplianceData: String?,
     ): Result<Long?, ActivityRepositoryError> = withContext(ioDispatcher) {
         runSuspendCatching {
             val activity = CredentialActivityEntity(
@@ -45,7 +46,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 type = activityType,
                 actorTrust = actorDisplayData.trustStatus,
                 vcSchemaTrust = actorDisplayData.vcSchemaTrustStatus,
-                nonComplianceData = null,
+                nonComplianceData = nonComplianceData,
             )
 
             val activityId = runInTransaction {

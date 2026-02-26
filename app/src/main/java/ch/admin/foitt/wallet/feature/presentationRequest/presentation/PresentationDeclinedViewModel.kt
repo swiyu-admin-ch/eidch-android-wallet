@@ -13,7 +13,6 @@ import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,7 +41,7 @@ class PresentationDeclinedViewModel @Inject constructor(
         getActorUiState(actorDisplayData = it)
     }.toStateFlow(ActorUiState.EMPTY, 0)
 
-    fun onBack() = navManager.navigateUpOrToRoot()
+    fun onBack() = navManager.popBackStackOrToRoot()
 
     fun onBadge(badgeType: BadgeType) {
         _badgeBottomSheetUiState.value = when (badgeType) {

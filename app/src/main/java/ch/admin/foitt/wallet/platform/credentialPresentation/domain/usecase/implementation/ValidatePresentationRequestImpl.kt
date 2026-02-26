@@ -1,12 +1,13 @@
 package ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.openid4vc.domain.model.anycredential.CredentialValidity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ValidatePresentationRequestError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.toValidatePresentationRequestError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ValidatePresentationRequest
@@ -15,6 +16,7 @@ import ch.admin.foitt.wallet.platform.utils.SafeJson
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.mapError
@@ -28,13 +30,13 @@ class ValidatePresentationRequestImpl @Inject constructor(
 ) : ValidatePresentationRequest {
     override suspend fun invoke(
         presentationRequestContainer: PresentationRequestContainer
-    ): Result<PresentationRequest, ValidatePresentationRequestError> = coroutineBinding {
-        val presentationRequest: PresentationRequest = when (presentationRequestContainer) {
+    ): Result<PresentationRequestWithRaw, ValidatePresentationRequestError> = coroutineBinding {
+        val presentationRequest = when (presentationRequestContainer) {
             is PresentationRequestContainer.Jwt -> validateJwtPresentationRequest(presentationRequestContainer).bind()
             is PresentationRequestContainer.Json -> presentationRequestContainer.toPresentationRequest().bind()
         }
         validatePresentationRequest(
-            presentationRequest = presentationRequest,
+            presentationRequest = presentationRequest.presentationRequest,
             clientId = presentationRequestContainer.clientId
         ).bind()
 
@@ -49,7 +51,8 @@ class ValidatePresentationRequestImpl @Inject constructor(
         return when {
             clientId != null && clientId != presentationRequest.clientId -> validationError
             presentationRequest.responseType != VP_TOKEN -> validationError
-            presentationRequest.responseMode != DIRECT_POST -> validationError
+            presentationRequest.responseMode !in SUPPORTED_RESPONSE_MODES -> validationError
+            presentationRequest.responseMode == DIRECT_POST_JWT && presentationRequest.clientMetaData == null -> validationError
             presentationRequest.clientIdScheme == null -> validationError
             presentationRequest.clientIdScheme != ID_SCHEME_DID -> validationError
             !presentationRequest.clientId.matches(DID_REGEX) -> validationError
@@ -81,7 +84,7 @@ class ValidatePresentationRequestImpl @Inject constructor(
 
     private suspend fun validateJwtPresentationRequest(
         container: PresentationRequestContainer.Jwt,
-    ): Result<PresentationRequest, ValidatePresentationRequestError> = coroutineBinding {
+    ): Result<PresentationRequestWithRaw, ValidatePresentationRequestError> = coroutineBinding {
         val jwt = container.jwt
         val responseUri = runSuspendCatching {
             checkNotNull(jwt.payloadJson[CLAIM_RESPONSE_URI]?.jsonPrimitive?.content)
@@ -103,7 +106,7 @@ class ValidatePresentationRequestImpl @Inject constructor(
 
             val keyId = checkNotNull(jwt.keyId) { "keyId is missing" }
 
-            check(jwt.jwtValidity == CredentialValidity.Valid) { "jwt is not yet valid or expired" }
+            check(jwt.jwtValidity == Validity.Valid) { "jwt is not yet valid or expired" }
 
             verifyJwtSignature(
                 did = issuerDid,
@@ -117,20 +120,35 @@ class ValidatePresentationRequestImpl @Inject constructor(
             throwable.toValidatePresentationRequestError(responseUri = responseUri, message = "validateJwtPresentationRequest error")
         }.bind()
 
-        safeJson.safeDecodeElementTo<PresentationRequest>(jwt.payloadJson).mapError {
+        val presentationRequest = safeJson.safeDecodeElementTo<PresentationRequest>(jwt.payloadJson).mapError {
             CredentialPresentationError.Unexpected(null)
         }.bind()
+
+        PresentationRequestWithRaw(
+            presentationRequest = presentationRequest,
+            rawPresentationRequest = jwt.rawJwt,
+        )
     }
 
-    private fun PresentationRequestContainer.Json.toPresentationRequest(): Result<PresentationRequest, ValidatePresentationRequestError> =
-        safeJson.safeDecodeElementTo<PresentationRequest>(json)
+    private fun PresentationRequestContainer.Json.toPresentationRequest():
+        Result<PresentationRequestWithRaw, ValidatePresentationRequestError> = binding {
+        val presentationRequest = safeJson.safeDecodeElementTo<PresentationRequest>(json)
             .mapError(JsonParsingError::toValidatePresentationRequestError)
+            .bind()
+
+        PresentationRequestWithRaw(
+            presentationRequest = presentationRequest,
+            rawPresentationRequest = json.toString()
+        )
+    }
 
     private companion object {
         const val ID_SCHEME_DID = "did"
         const val VP_TOKEN = "vp_token"
         val DID_REGEX = Regex("^did:[a-z0-9]+:[a-zA-Z0-9.\\-_:]+$")
         const val DIRECT_POST = "direct_post"
+        const val DIRECT_POST_JWT = "direct_post.jwt"
+        val SUPPORTED_RESPONSE_MODES = listOf(DIRECT_POST, DIRECT_POST_JWT)
         const val CLAIM_RESPONSE_URI = "response_uri"
     }
 }

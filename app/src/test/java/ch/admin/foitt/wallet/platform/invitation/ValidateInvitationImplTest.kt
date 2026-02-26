@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.platform.invitation
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.Grant
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockFetchCredential.CREDENTIAL_ISSUER
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetCredentialOfferFromUri
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetPresentationRequestFromUri
@@ -35,7 +36,7 @@ class ValidateInvitationImplTest {
     private lateinit var mockGetPresentationRequestFromUri: GetPresentationRequestFromUri
 
     private val mockCredentialOffer = CredentialOffer(
-        credentialIssuer = "",
+        credentialIssuer = CREDENTIAL_ISSUER,
         credentialConfigurationIds = listOf(),
         grants = Grant(),
     )
@@ -118,7 +119,7 @@ class ValidateInvitationImplTest {
     fun `a credential offer validation failure should return an error`() = runTest {
         coEvery {
             mockGetCredentialOfferFromUri.invoke(uri = any())
-        } returns Err(InvitationError.CredentialOfferDeserializationFailed)
+        } returns Err(InvitationError.CredentialOfferDeserializationFailed(Throwable()))
 
         val input = "openid-credential-offer://whatever"
         val useCaseResult = validateInvitationUseCase(input = input)

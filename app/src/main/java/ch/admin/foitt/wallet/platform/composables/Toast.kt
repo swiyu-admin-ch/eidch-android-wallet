@@ -41,21 +41,16 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 fun ScanInfoToast(
     modifier: Modifier = Modifier,
     shouldRequestFocus: Boolean = false,
-    text: String,
-    @StringRes iconEndContentDescription: Int? = R.string.tk_global_closewarning_alt,
-    onIconEnd: () -> Unit,
+    text: Int
 ) = Toast(
     modifier = modifier,
+    modifierRow = Modifier,
     shouldRequestFocus = shouldRequestFocus,
     isSnackBarDesign = false,
     backgroundColor = WalletTheme.colorScheme.surface,
     iconStart = null,
-    textAsString = text,
-    textColor = WalletTheme.colorScheme.onSurfaceVariant,
-    iconEnd = R.drawable.wallet_ic_cross,
-    iconEndColor = WalletTheme.colorScheme.onSurfaceVariant,
-    iconEndContentDescription = iconEndContentDescription,
-    onIconEnd = onIconEnd
+    text = text,
+    textColor = WalletTheme.colorScheme.onSurfaceVariant
 )
 
 @Composable
@@ -101,6 +96,7 @@ fun PassphraseValidationErrorToast(
 @Composable
 fun Toast(
     modifier: Modifier = Modifier,
+    modifierRow: Modifier = Modifier.fillMaxWidth(),
     shouldRequestFocus: Boolean = false,
     isSnackBarDesign: Boolean = false,
     backgroundColor: Color = WalletTheme.colorScheme.surface,
@@ -112,7 +108,7 @@ fun Toast(
     @StringRes linkText: Int? = null,
     @DrawableRes iconStart: Int? = null,
     iconStartColor: Color = WalletTheme.colorScheme.onSurfaceVariant,
-    @DrawableRes iconEnd: Int? = R.drawable.wallet_ic_cross,
+    @DrawableRes iconEnd: Int? = null,
     iconEndColor: Color = WalletTheme.colorScheme.onSurfaceVariant,
     @StringRes iconEndContentDescription: Int? = null,
     onLink: () -> Unit = {},
@@ -127,8 +123,7 @@ fun Toast(
         color = backgroundColor,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = modifierRow
                 .then(
                     if (isSnackBarDesign) {
                         Modifier.padding(start = Sizes.s04, top = Sizes.s01, bottom = Sizes.s01, end = Sizes.s01)
@@ -151,7 +146,7 @@ fun Toast(
             Column(
                 modifier = Modifier
                     .then(if (shouldRequestFocus) Modifier.requestFocus(focusRequester) else Modifier)
-                    .weight(1f)
+                    .weight(1f, fill = false)
             ) {
                 headline?.let {
                     WalletTexts.TitleSmall(
@@ -178,8 +173,8 @@ fun Toast(
                     )
                 }
             }
+            Spacer(modifier = Modifier.width(Sizes.s03))
             iconEnd?.let {
-                Spacer(modifier = Modifier.width(Sizes.s02))
                 IconButton(
                     onClick = onIconEnd,
                     modifier = Modifier.spaceBarKeyClickable(onIconEnd),

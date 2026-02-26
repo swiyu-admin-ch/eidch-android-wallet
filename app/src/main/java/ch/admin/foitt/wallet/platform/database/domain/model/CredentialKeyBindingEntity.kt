@@ -14,16 +14,25 @@ import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
             childColumns = arrayOf("credentialId"),
             onDelete = ForeignKey.CASCADE,
             onUpdate = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = BundleItemEntity::class,
+            parentColumns = arrayOf("id"),
+            childColumns = arrayOf("bundleItemId"),
+            onDelete = ForeignKey.CASCADE,
+            onUpdate = ForeignKey.CASCADE,
         )
     ],
     indices = [
         Index("credentialId"),
+        Index("bundleItemId"),
     ]
 )
 data class CredentialKeyBindingEntity(
     @PrimaryKey
     val id: String,
     val credentialId: Long, // Foreign key
+    val bundleItemId: Long? = null,
     val algorithm: String,
     val bindingType: KeyBindingType,
     val publicKey: ByteArray? = null,

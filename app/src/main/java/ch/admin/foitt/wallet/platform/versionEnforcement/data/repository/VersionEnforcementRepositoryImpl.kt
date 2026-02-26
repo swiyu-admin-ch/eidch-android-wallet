@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.versionEnforcement.data.repository
 
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
-import ch.admin.foitt.wallet.platform.versionEnforcement.di.VersionEnforcementModule
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.FetchVersionEnforcementError
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcement
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcementError
@@ -21,7 +21,7 @@ import javax.inject.Inject
 import javax.inject.Named
 
 class VersionEnforcementRepositoryImpl @Inject constructor(
-    @param:Named(VersionEnforcementModule.NAME_SCOPE) private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
     private val environmentSetupRepo: EnvironmentSetupRepository
 ) : VersionEnforcementRepository {
     override suspend fun fetchLatestHighPriority(): Result<VersionEnforcement?, FetchVersionEnforcementError> =

@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.feature.presentationRequest.presentation
 
 import android.content.Context
 import androidx.annotation.StringRes
-import androidx.lifecycle.SavedStateHandle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.adapter.GetActorUiState
@@ -10,36 +9,46 @@ import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiSt
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.badges.presentation.model.toBadgeBottomSheetUiState
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationFailureScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationRequestScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-@HiltViewModel
-class PresentationFailureViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = PresentationFailureViewModel.Factory::class)
+class PresentationFailureViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val navManager: NavigationManager,
     private val getActorUiState: GetActorUiState,
     getActorForScope: GetActorForScope,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted private val compatibleCredential: CompatibleCredential,
+    @Assisted private val presentationRequestWithRaw: PresentationRequestWithRaw,
+    @Assisted private val shouldFetchTrustStatement: Boolean
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.None
 
-    private val navArgs = PresentationFailureScreenDestination.argsFrom(savedStateHandle)
-    private val compatibleCredential = navArgs.compatibleCredential
-    private val presentationRequest = navArgs.presentationRequest
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            compatibleCredential: CompatibleCredential,
+            presentationRequestWithRaw: PresentationRequestWithRaw,
+            shouldFetchTrustStatement: Boolean
+        ): PresentationFailureViewModel
+    }
+
+    override val topBarState = TopBarState.None
 
     private val _badgeBottomSheetUiState: MutableStateFlow<BadgeBottomSheetUiState?> = MutableStateFlow(null)
     val badgeBottomSheet = _badgeBottomSheetUiState.asStateFlow()
@@ -49,15 +58,15 @@ class PresentationFailureViewModel @Inject constructor(
         getActorUiState(actorDisplayData = it)
     }.toStateFlow(ActorUiState.EMPTY, 0)
 
-    fun onRetry() = navManager.navigateToAndClearCurrent(
-        direction = PresentationRequestScreenDestination(
+    fun onRetry() = navManager.replaceCurrentWith(
+        destination = Destination.PresentationRequestScreen(
             compatibleCredential = compatibleCredential,
-            presentationRequest = presentationRequest,
-            shouldFetchTrustStatement = navArgs.shouldFetchTrustStatement,
+            presentationRequestWithRaw = presentationRequestWithRaw,
+            shouldFetchTrustStatement = shouldFetchTrustStatement,
         )
     )
 
-    fun onClose() = navManager.navigateUpOrToRoot()
+    fun onClose() = navManager.popBackStackOrToRoot()
 
     fun onBadge(badgeType: BadgeType) {
         _badgeBottomSheetUiState.value = when (badgeType) {

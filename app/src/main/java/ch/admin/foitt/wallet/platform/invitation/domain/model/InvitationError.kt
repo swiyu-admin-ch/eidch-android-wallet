@@ -17,10 +17,10 @@ interface InvitationError {
     data object InvalidCredentialOffer : ProcessInvitationError
     data object NoCredentialsFound : GetCredentialOfferError, ValidateInvitationError
     data class UnsupportedGrantType(val message: String) : GetCredentialOfferError, ValidateInvitationError
-    data object CredentialOfferDeserializationFailed : GetCredentialOfferError, ValidateInvitationError
+    data class CredentialOfferDeserializationFailed(val throwable: Throwable) : GetCredentialOfferError, ValidateInvitationError
     data object NetworkError : ProcessInvitationError, GetPresentationRequestError, ValidateInvitationError
-    data object EmptyWallet : ProcessInvitationError
-    data object NoCompatibleCredential : ProcessInvitationError
+    data class EmptyWallet(val responseUri: String? = null) : ProcessInvitationError
+    data class NoCompatibleCredential(val responseUri: String? = null) : ProcessInvitationError
     data object InvalidInput : ProcessInvitationError
     data object InvalidPresentationRequest : GetPresentationRequestError, ValidateInvitationError, ProcessInvitationError
     data class InvalidPresentation(val responseUri: String) : ProcessInvitationError
@@ -29,6 +29,7 @@ interface InvitationError {
     data object UnknownVerifier : ProcessInvitationError
     data object UnsupportedKeyStorageSecurityLevel : ProcessInvitationError
     data object IncompatibleDeviceKeyStorage : ProcessInvitationError
+    data class MetadataMisconfiguration(val message: String) : ProcessInvitationError
     data object Unexpected : ProcessInvitationError, GetPresentationRequestError, ValidateInvitationError
 }
 
@@ -67,6 +68,8 @@ internal fun FetchCredentialError.toProcessInvitationError(): ProcessInvitationE
     CredentialError.UnsupportedCryptographicSuite,
     CredentialError.CredentialParsingError,
     CredentialError.InvalidJsonScheme,
+    is CredentialError.InvalidSignedMetadata,
+    CredentialError.InvalidIssuerCredentialInfo,
     CredentialError.InvalidGenerateMetadataClaims -> InvitationError.InvalidCredentialOffer
     CredentialError.NetworkError -> InvitationError.NetworkError
     CredentialError.DatabaseError,
@@ -74,6 +77,7 @@ internal fun FetchCredentialError.toProcessInvitationError(): ProcessInvitationE
     CredentialError.UnknownIssuer -> InvitationError.UnknownIssuer
     CredentialError.UnsupportedKeyStorageSecurityLevel -> InvitationError.UnsupportedKeyStorageSecurityLevel
     CredentialError.IncompatibleDeviceKeyStorage -> InvitationError.IncompatibleDeviceKeyStorage
+    is CredentialError.MetadataMisconfiguration -> InvitationError.MetadataMisconfiguration(message)
 }
 
 internal fun ValidateInvitationError.toProcessInvitationError(): ProcessInvitationError = when (this) {
@@ -89,20 +93,40 @@ internal fun ValidateInvitationError.toProcessInvitationError(): ProcessInvitati
 
 internal fun Throwable.toGetCredentialOfferError(message: String): GetCredentialOfferError {
     Timber.e(t = this, message = message)
-    return InvitationError.CredentialOfferDeserializationFailed
+    return InvitationError.CredentialOfferDeserializationFailed(this)
 }
 
 internal fun JsonParsingError.toGetCredentialOfferError(): GetCredentialOfferError = when (this) {
-    is JsonError.Unexpected -> InvitationError.CredentialOfferDeserializationFailed
+    is JsonError.Unexpected -> InvitationError.CredentialOfferDeserializationFailed(throwable)
 }
 
 internal fun ProcessPresentationRequestError.toProcessInvitationError(): ProcessInvitationError = when (this) {
-    CredentialPresentationError.EmptyWallet -> InvitationError.EmptyWallet
-    CredentialPresentationError.NoCompatibleCredential -> InvitationError.NoCompatibleCredential
+    is CredentialPresentationError.EmptyWallet -> InvitationError.EmptyWallet(responseUri)
+    is CredentialPresentationError.NoCompatibleCredential -> InvitationError.NoCompatibleCredential(responseUri)
     is CredentialPresentationError.InvalidPresentation -> InvitationError.InvalidPresentation(responseUri)
     is CredentialPresentationError.Unexpected -> InvitationError.Unexpected
     is CredentialPresentationError.UnknownVerifier -> InvitationError.UnknownVerifier
     CredentialPresentationError.NetworkError -> InvitationError.NetworkError
+}
+
+internal fun ProcessInvitationError.toErrorDisplay(): InvitationErrorScreenState = when (this) {
+    InvitationError.NetworkError -> InvitationErrorScreenState.NETWORK_ERROR
+    InvitationError.InvalidCredentialOffer,
+    InvitationError.InvalidInput,
+    is InvitationError.MetadataMisconfiguration,
+    InvitationError.CredentialOfferExpired -> InvitationErrorScreenState.INVALID_CREDENTIAL
+    InvitationError.InvalidPresentationRequest,
+    is InvitationError.InvalidPresentation -> InvitationErrorScreenState.INVALID_PRESENTATION
+    is InvitationError.EmptyWallet -> InvitationErrorScreenState.EMPTY_WALLET
+    is InvitationError.NoCompatibleCredential -> InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL
+    InvitationError.UnknownVerifier,
+    InvitationError.Unexpected -> {
+        Timber.w("Unexpected state on processing deeplink")
+        InvitationErrorScreenState.UNEXPECTED
+    }
+    InvitationError.UnknownIssuer -> InvitationErrorScreenState.UNKNOWN_ISSUER
+    InvitationError.UnsupportedKeyStorageSecurityLevel -> InvitationErrorScreenState.UNSUPPORTED_KEY_STORAGE
+    InvitationError.IncompatibleDeviceKeyStorage -> InvitationErrorScreenState.UNSUPPORTED_KEY_STORAGE_CAPABILITIES
 }
 
 internal fun Throwable.toGetPresentationRequestError(uri: URI): GetPresentationRequestError {

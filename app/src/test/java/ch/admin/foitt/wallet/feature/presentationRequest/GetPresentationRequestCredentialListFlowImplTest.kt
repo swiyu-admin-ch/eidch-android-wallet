@@ -62,7 +62,7 @@ class GetPresentationRequestCredentialListFlowImplTest {
     @Test
     fun `Getting the presentation request credential list flow returns a flow with one credential preview`() = runTest {
         val result = getPresentationRequestCredentialListFlow(
-            compatibleCredentials = arrayOf(mockCompatibleCredential),
+            compatibleCredentials = setOf(mockCompatibleCredential),
         ).firstOrNull()
 
         assertNotNull(result)
@@ -80,7 +80,7 @@ class GetPresentationRequestCredentialListFlowImplTest {
         } returns flowOf(Err(SsiError.Unexpected(exception)))
 
         val result = getPresentationRequestCredentialListFlow(
-            compatibleCredentials = arrayOf(mockCompatibleCredential),
+            compatibleCredentials = setOf(mockCompatibleCredential),
         ).firstOrNull()
 
         assertNotNull(result)

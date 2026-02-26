@@ -3,9 +3,7 @@ package ch.admin.foitt.wallet.platform.ssi.data.repository
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialDao
 import ch.admin.foitt.wallet.platform.database.data.dao.DaoProvider
 import ch.admin.foitt.wallet.platform.database.data.dao.ImageEntityDao
-import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
@@ -17,7 +15,6 @@ import com.github.michaelbull.result.mapError
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.time.Instant
 import javax.inject.Inject
 
 class CredentialRepoImpl @Inject constructor(
@@ -28,15 +25,6 @@ class CredentialRepoImpl @Inject constructor(
     override suspend fun getAll(): Result<List<Credential>, CredentialRepositoryError> = runSuspendCatching {
         withContext(ioDispatcher) {
             credentialDao().getAll()
-        }
-    }.mapError { throwable ->
-        Timber.e(throwable)
-        SsiError.Unexpected(throwable)
-    }
-
-    override suspend fun getAllIds(): Result<List<Long>, CredentialRepositoryError> = runSuspendCatching {
-        withContext(ioDispatcher) {
-            credentialDao().getAllIds()
         }
     }.mapError { throwable ->
         Timber.e(throwable)
@@ -63,27 +51,9 @@ class CredentialRepoImpl @Inject constructor(
         SsiError.Unexpected(throwable)
     }
 
-    override suspend fun updateStatusByCredentialId(credentialId: Long, status: CredentialStatus): Result<Int, CredentialRepositoryError> =
-        runSuspendCatching {
-            withContext(ioDispatcher) {
-                verifiableCredentialDao().updateStatusByCredentialId(
-                    id = credentialId,
-                    status = status,
-                    updatedAt = Instant.now().epochSecond,
-                )
-            }
-        }.mapError { throwable ->
-            Timber.e(throwable)
-            SsiError.Unexpected(throwable)
-        }
-
     private suspend fun credentialDao(): CredentialDao = suspendUntilNonNull { credentialDaoFlow.value }
-    private suspend fun verifiableCredentialDao(): VerifiableCredentialDao = suspendUntilNonNull {
-        verifiableCredentialDaoFlow.value
-    }
     private suspend fun imageDao(): ImageEntityDao = suspendUntilNonNull { imageDaoFlow.value }
 
     private val credentialDaoFlow = daoProvider.credentialDaoFlow
-    private val verifiableCredentialDaoFlow = daoProvider.verifiableCredentialDaoFlow
     private val imageDaoFlow = daoProvider.imageEntityDao
 }

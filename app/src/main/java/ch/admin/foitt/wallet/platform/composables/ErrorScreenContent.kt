@@ -16,10 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.centerHorizontallyOnFullscreen
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
@@ -38,8 +39,8 @@ internal fun ErrorScreenContent(
     val modifier = Modifier
         .background(WalletTheme.colorScheme.surfaceContainerHigh)
         .centerHorizontallyOnFullscreen()
-    when (currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass) {
-        WindowWidthSizeClass.COMPACT -> WalletLayouts.CompactContainerFloatingBottom(
+    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+        WindowWidthClass.COMPACT -> WalletLayouts.CompactContainerFloatingBottom(
             modifier = modifier,
             content = {
                 MainContent(

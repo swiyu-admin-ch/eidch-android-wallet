@@ -7,9 +7,11 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerConfigur
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerCredentialInfoError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.PrepareFetchVerifiableCredentialError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.AnyCredentialConfiguration
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.ProofType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toPrepareFetchVerifiableCredentialError
 import ch.admin.foitt.openid4vc.domain.repository.CredentialOfferRepository
+import ch.admin.foitt.openid4vc.domain.usecase.FetchIssuerConfiguration
 import ch.admin.foitt.openid4vc.domain.usecase.GetVerifiableCredentialParams
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
@@ -17,10 +19,12 @@ import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
 import javax.inject.Inject
 
-class GetVerifiableCredentialParamsImpl @Inject constructor(
+internal class GetVerifiableCredentialParamsImpl @Inject constructor(
     private val credentialOfferRepository: CredentialOfferRepository,
+    private val fetchIssuerConfiguration: FetchIssuerConfiguration,
 ) : GetVerifiableCredentialParams {
     override suspend fun invoke(
+        issuerCredentialInfo: IssuerCredentialInfo,
         credentialConfiguration: AnyCredentialConfiguration,
         credentialOffer: CredentialOffer,
     ): Result<VerifiableCredentialParams, PrepareFetchVerifiableCredentialError> = coroutineBinding {
@@ -43,7 +47,7 @@ class GetVerifiableCredentialParamsImpl @Inject constructor(
             }
         }
 
-        val issuerConfig = credentialOfferRepository.fetchIssuerConfiguration(issuerEndpoint = issuerEndpoint)
+        val issuerConfig = fetchIssuerConfiguration(issuerEndpoint)
             .mapError(FetchIssuerConfigurationError::toPrepareFetchVerifiableCredentialError)
             .bind()
 
@@ -59,9 +63,12 @@ class GetVerifiableCredentialParamsImpl @Inject constructor(
             proofTypeConfig = proofTypeConfig,
             tokenEndpoint = issuerConfig.tokenEndpoint,
             grants = credentialOffer.grants,
-            issuerEndpoint = issuerEndpoint,
+            issuerEndpoint = issuerInfo.credentialIssuer,
             credentialEndpoint = issuerInfo.credentialEndpoint,
             credentialConfiguration = credentialConfiguration,
+            deferredCredentialEndpoint = issuerInfo.deferredCredentialEndpoint,
+            nonceEndpoint = issuerInfo.nonceEndpoint,
+            isBatch = issuerCredentialInfo.batchCredentialIssuance != null
         )
     }
 

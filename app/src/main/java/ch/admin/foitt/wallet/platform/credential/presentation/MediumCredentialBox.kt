@@ -16,8 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.window.core.layout.WindowWidthSizeClass
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.verticalSafeDrawing
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.preview.ComposableWrapper
@@ -35,13 +36,12 @@ fun MediumCredentialBox(
         .clip(WalletTheme.shapes.large)
         .background(WalletTheme.colorScheme.background),
 ) {
-    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
-        CredentialIssuerPortrait(
+    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+        WindowWidthClass.COMPACT -> CredentialIssuerPortrait(
             credentialState = credentialCardState,
         )
-    } else {
-        CredentialIssuerLandscape(
+
+        else -> CredentialIssuerLandscape(
             credentialState = credentialCardState,
         )
     }
@@ -70,7 +70,12 @@ private fun CredentialIssuerLandscape(
 ) {
     Row(
         modifier = modifier
-            .padding(start = Sizes.s04, top = Sizes.s12, end = Sizes.s06, bottom = Sizes.s12)
+            .padding(
+                start = Sizes.s04,
+                top = Sizes.s12,
+                end = Sizes.s06,
+                bottom = Sizes.s12
+            )
             .fillMaxWidth()
             .verticalSafeDrawing(),
         horizontalArrangement = Arrangement.Center

@@ -14,7 +14,6 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.AnyIssuerDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1TrustStatement
-import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.MetadataV1TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustCheckResult
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
@@ -38,9 +37,6 @@ class CacheIssuerDisplayDataImplTest {
     private lateinit var mockInitializeActorForScope: InitializeActorForScope
 
     @MockK
-    private lateinit var mockMetadataTrustStatement: MetadataV1TrustStatement
-
-    @MockK
     private lateinit var mockIdentityTrustStatement: IdentityV1TrustStatement
 
     private lateinit var useCase: CacheIssuerDisplayData
@@ -51,9 +47,6 @@ class CacheIssuerDisplayDataImplTest {
         useCase = CacheIssuerDisplayDataImpl(
             initializeActorForScope = mockInitializeActorForScope,
         )
-
-        coEvery { mockMetadataTrustStatement.orgName } returns mockTrustedNames
-        coEvery { mockMetadataTrustStatement.preferredLanguage } returns mockPreferredLanguage
 
         coEvery { mockIdentityTrustStatement.entityName } returns mockTrustedNames
 
@@ -166,24 +159,6 @@ class CacheIssuerDisplayDataImplTest {
     }
 
     @Test
-    fun `A MetadataV1 trust statement will have the preferred language set`() = runTest {
-        val trustCheckResult = TrustCheckResult(
-            actorTrustStatement = mockMetadataTrustStatement,
-            vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
-            actorEnvironment = ActorEnvironment.PRODUCTION,
-        )
-
-        useCase(trustCheckResult, credentialIssuerDisplays, nonComplianceData)
-
-        val capturedDisplayData = slot<ActorDisplayData>()
-        coVerify {
-            mockInitializeActorForScope.invoke(actorDisplayData = capture(capturedDisplayData), any())
-        }
-
-        assertEquals(mockPreferredLanguage, capturedDisplayData.captured.preferredLanguage)
-    }
-
-    @Test
     fun `A trusted statement for an actor in our prod ecosystem is displayed correctly`() = runTest {
         val trustCheckResult = TrustCheckResult(
             actorTrustStatement = mockIdentityTrustStatement,
@@ -292,8 +267,6 @@ class CacheIssuerDisplayDataImplTest {
     }
 
     //region mock data
-    private val mockPreferredLanguage = "en-us"
-
     private val mockTrustedNames = mapOf(
         "de-de" to "name DeDe",
         "en-gb" to "name EnGb"

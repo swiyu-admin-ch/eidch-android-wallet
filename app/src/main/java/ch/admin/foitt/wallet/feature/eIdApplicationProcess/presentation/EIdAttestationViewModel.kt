@@ -21,14 +21,15 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequ
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.ValidateAttestationsError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.ValidateAttestations
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdGuardianshipScreenDestination
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
+import com.github.michaelbull.result.get
 import com.github.michaelbull.result.unwrapError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -91,6 +92,7 @@ internal class EIdAttestationViewModel @Inject constructor(
         }
     }.toStateFlow(AttestationUiState.Loading)
 
+    @OptIn(UnsafeResultValueAccess::class)
     fun onRefreshState() {
         if (isLoading.value) {
             return
@@ -114,7 +116,7 @@ internal class EIdAttestationViewModel @Inject constructor(
 
             val currentKeyAttestation = keyAttestationResult.value ?: requestKeyAttestation()
             keyAttestationResult.value = currentKeyAttestation
-            Timber.d(message = "Key Attestation result: ${currentKeyAttestation.value}")
+            Timber.d(message = "Key Attestation result: ${currentKeyAttestation.get()}")
 
             if (currentClientAttestation.isOk && currentKeyAttestation.isOk) {
                 val currentSIdValidation = sIdValidationResult.value ?: validateAttestations(
@@ -125,7 +127,7 @@ internal class EIdAttestationViewModel @Inject constructor(
 
                 Timber.d(message = "Validation result: ${sIdValidationResult.value}")
                 if (currentSIdValidation.isOk) {
-                    navManager.navigateToAndClearCurrent(EIdGuardianshipScreenDestination)
+                    navManager.replaceCurrentWith(Destination.EIdGuardianshipScreen)
                 }
             }
         }.trackCompletion(isLoading)
@@ -135,7 +137,7 @@ internal class EIdAttestationViewModel @Inject constructor(
         onRefreshState()
     }
 
-    fun onClose() = navManager.navigateUpOrToRoot()
+    fun onClose() = navManager.popBackStackOrToRoot()
 
     fun onHelp() = context.openLink(context.getString(R.string.tk_eidRequest_attestation_helpLink_url))
 

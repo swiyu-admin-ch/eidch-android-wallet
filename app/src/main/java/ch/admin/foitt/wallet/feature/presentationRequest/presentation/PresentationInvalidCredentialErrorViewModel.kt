@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.feature.presentationRequest.presentation
 
 import android.content.Context
 import androidx.annotation.StringRes
-import androidx.lifecycle.SavedStateHandle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.adapter.GetActorUiState
@@ -14,30 +13,33 @@ import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationInvalidCredentialErrorScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-@HiltViewModel
-class PresentationInvalidCredentialErrorViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = PresentationInvalidCredentialErrorViewModel.Factory::class)
+class PresentationInvalidCredentialErrorViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val navManager: NavigationManager,
     private val getActorUiState: GetActorUiState,
     getActorForScope: GetActorForScope,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted val sentFields: List<String>,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.None
 
-    private val navArgs = PresentationInvalidCredentialErrorScreenDestination.argsFrom(savedStateHandle)
-    val sentFields = navArgs.sentFields.toList()
+    @AssistedFactory
+    interface Factory {
+        fun create(sentFields: List<String>): PresentationInvalidCredentialErrorViewModel
+    }
+
+    override val topBarState = TopBarState.None
 
     private val _badgeBottomSheetUiState: MutableStateFlow<BadgeBottomSheetUiState?> = MutableStateFlow(null)
     val badgeBottomSheet = _badgeBottomSheetUiState.asStateFlow()
@@ -47,7 +49,7 @@ class PresentationInvalidCredentialErrorViewModel @Inject constructor(
         getActorUiState(actorDisplayData = it)
     }.toStateFlow(ActorUiState.EMPTY, 0)
 
-    fun onClose() = navManager.navigateUpOrToRoot()
+    fun onClose() = navManager.popBackStackOrToRoot()
 
     fun onBadge(badgeType: BadgeType) {
         _badgeBottomSheetUiState.value = when (badgeType) {

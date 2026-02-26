@@ -40,7 +40,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.qrscan.domain.model.FlashLightState
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.QrScannerNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.scaffold.presentation.TopBarBackArrow
 import ch.admin.foitt.wallet.platform.scaffold.presentation.TopBarButton
@@ -49,13 +48,9 @@ import ch.admin.foitt.wallet.theme.FadingVisibility
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTheme
 import ch.admin.foitt.wallet.theme.WalletTopBarColors
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.delay
 
 @Composable
-@Destination(
-    navArgsDelegate = QrScannerNavArg::class
-)
 fun QrScannerScreen(
     viewModel: QrScannerViewModel,
 ) {
@@ -169,8 +164,6 @@ private fun InfoBox(
             QrInfoState.InvalidCredentialOffer -> QrToastInvalidCredentialOffer(onClose = onClose)
             QrInfoState.Loading -> LoadingIndicator(modifier)
             QrInfoState.NetworkError -> QrToastNetworkError(onClose = onClose)
-            QrInfoState.NoCompatibleCredential -> QrToastNoCompatibleCredential(onClose = onClose)
-            QrInfoState.EmptyWallet -> QrToastEmptyWallet(onClose = onClose)
             QrInfoState.InvalidPresentation -> QrToastInvalidPresentation(onClose = onClose)
             QrInfoState.ExpiredCredentialOffer -> QrToastExpiredCredentialOffer(onClose = onClose)
             QrInfoState.UnknownIssuer -> QrToastUnknownIssuer(onClose = onClose)

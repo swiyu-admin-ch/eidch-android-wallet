@@ -43,7 +43,7 @@ class DeferredCredentialDaoTest {
 
         val deferredCredential = deferredCredentialDao.getById(id)
 
-        assertEquals(deferredCredential1, deferredCredential)
+        assertEquals(deferredCredential1, deferredCredential.deferredCredential)
     }
 
     @Test(expected = SQLiteConstraintException::class)

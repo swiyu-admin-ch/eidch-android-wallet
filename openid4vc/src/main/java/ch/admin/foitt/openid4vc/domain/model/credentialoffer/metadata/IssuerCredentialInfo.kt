@@ -1,17 +1,31 @@
 package ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata
 
 import ch.admin.foitt.openid4vc.domain.model.AnyCredentialConfigurationListSerializer
+import ch.admin.foitt.openid4vc.domain.model.BatchSize
+import ch.admin.foitt.openid4vc.domain.model.HttpsURLAsStringSerializer
 import ch.admin.foitt.openid4vc.domain.model.KeyStorageSecurityLevel
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwks
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.net.URL
 
 @Serializable
 data class IssuerCredentialInfo(
+    @Serializable(with = HttpsURLAsStringSerializer::class)
     @SerialName("credential_endpoint")
-    val credentialEndpoint: String,
+    val credentialEndpoint: URL,
+    @Serializable(with = HttpsURLAsStringSerializer::class)
+    @SerialName("deferred_credential_endpoint")
+    val deferredCredentialEndpoint: URL? = null,
+    @SerialName("nonce_endpoint")
+    @Serializable(with = HttpsURLAsStringSerializer::class)
+    val nonceEndpoint: URL? = null,
+    @Serializable(with = HttpsURLAsStringSerializer::class)
     @SerialName("credential_issuer")
-    val credentialIssuer: String,
+    val credentialIssuer: URL,
+    @SerialName("credential_request_encryption")
+    val credentialRequestEncryption: CredentialRequestEncryption?,
     @SerialName("credential_response_encryption")
     val credentialResponseEncryption: CredentialResponseEncryption?,
     @Serializable(with = AnyCredentialConfigurationListSerializer::class)
@@ -19,17 +33,27 @@ data class IssuerCredentialInfo(
     val credentialConfigurations: List<AnyCredentialConfiguration>,
     @SerialName("display")
     val display: List<OidIssuerDisplay>?,
-) {
-    companion object {
-        val EMPTY = IssuerCredentialInfo(
-            credentialEndpoint = "",
-            credentialIssuer = "",
-            credentialResponseEncryption = null,
-            credentialConfigurations = emptyList(),
-            display = emptyList(),
-        )
-    }
-}
+    @SerialName("batch_credential_issuance")
+    val batchCredentialIssuance: BatchCredentialIssuance? = null,
+)
+
+@Serializable
+data class BatchCredentialIssuance(
+    @SerialName("batch_size")
+    val batchSize: BatchSize,
+)
+
+@Serializable
+data class CredentialRequestEncryption(
+    @SerialName("jwks")
+    val jwks: Jwks,
+    @SerialName("enc_values_supported")
+    val encValuesSupported: List<String>,
+    @SerialName("zip_values_supported")
+    val zipValuesSupported: List<String>?,
+    @SerialName("encryption_required")
+    val encryptionRequired: Boolean
+)
 
 @Serializable
 data class CredentialResponseEncryption(
@@ -37,6 +61,8 @@ data class CredentialResponseEncryption(
     val algValuesSupported: List<String>,
     @SerialName("enc_values_supported")
     val encValuesSupported: List<String>,
+    @SerialName("zip_values_supported")
+    val zipValuesSupported: List<String>?,
     @SerialName("encryption_required")
     val encryptionRequired: Boolean
 )
@@ -54,6 +80,8 @@ sealed class AnyCredentialConfiguration {
 
     abstract val cryptographicBindingMethodsSupported: List<String>?
     abstract val credentialSigningAlgValuesSupported: List<SigningAlgorithm>
+
+    // fixme: this should be nullable for claim based credentials
     abstract val proofTypesSupported: Map<ProofType, ProofTypeConfig>
     abstract val display: List<OidCredentialDisplay>?
     abstract val order: List<String>?

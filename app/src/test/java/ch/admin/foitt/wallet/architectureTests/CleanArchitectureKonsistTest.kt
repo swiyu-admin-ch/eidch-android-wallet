@@ -214,7 +214,7 @@ class CleanArchitectureKonsistTest {
         )
 
     private val testClasses = Konsist.scopeFromTest().classes()
-    private val useCases = Konsist.scopeFromProduction().classes().withPackage("..domain.usecase..") - useCasesWithoutCompleteCoverage
+    private val useCases = Konsist.scopeFromProduction().classes().withPackage("..domain.usecase..") - useCasesWithoutCompleteCoverage.toSet()
 
     @TestFactory
     fun `use cases should have tests`(): Stream<DynamicTest> =

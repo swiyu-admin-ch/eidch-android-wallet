@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.platform.appAttestation.domain.repository
 
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.Jwk
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AppAttestationRepositoryError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationChallengeResponse
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationResponse

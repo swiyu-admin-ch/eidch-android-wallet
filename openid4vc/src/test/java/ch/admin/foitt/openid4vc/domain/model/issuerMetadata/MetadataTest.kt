@@ -1,11 +1,18 @@
 package ch.admin.foitt.openid4vc.domain.model.issuerMetadata
 
+import android.webkit.URLUtil
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.ProofType
 import ch.admin.foitt.openid4vc.util.SafeJsonTestInstance
+import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
+import ch.admin.foitt.openid4vc.utils.JsonError
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -13,13 +20,22 @@ class MetadataTest {
 
     private val json = SafeJsonTestInstance.safeJson
 
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
+    }
+
     @Test
     fun `issuer metadata test`() = runTest {
+        mockkStatic(URLUtil::class)
+        every { URLUtil.isHttpsUrl(any()) } returns true
         json.safeDecodeStringTo<IssuerCredentialInfo>(createMetadata()).assertOk()
     }
 
     @Test
     fun `unsupported signing algorithm is ignored`() = runTest {
+        mockkStatic(URLUtil::class)
+        every { URLUtil.isHttpsUrl(any()) } returns true
         val result = json.safeDecodeStringTo<IssuerCredentialInfo>(
             createMetadata(listOf(SigningAlgorithm.ES256.stdName, "unsupportedAlgo"))
         ).assertOk()
@@ -28,6 +44,16 @@ class MetadataTest {
             result.credentialConfigurations.first().proofTypesSupported[ProofType.JWT]?.proofSigningAlgValuesSupported
 
         assertEquals(listOf(SigningAlgorithm.ES256), parsedSigningAlgorithms)
+    }
+
+    @Test
+    fun `issuer metadata test with not valid https url returns error`() = runTest {
+        mockkStatic(URLUtil::class)
+        every { URLUtil.isHttpsUrl(any()) } returns false
+
+        val result = json.safeDecodeStringTo<IssuerCredentialInfo>(createMetadata())
+
+        result.assertErrorType(JsonError.Unexpected::class)
     }
 
     fun createMetadata(

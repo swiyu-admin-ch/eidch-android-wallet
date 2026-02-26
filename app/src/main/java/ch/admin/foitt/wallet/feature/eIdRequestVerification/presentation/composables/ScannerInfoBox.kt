@@ -13,19 +13,19 @@ import ch.admin.foitt.wallet.theme.Sizes
 @Composable
 internal fun ScannerInfoBox(
     infoState: SDKInfoState,
-    onClose: () -> Unit,
-    infoText: String,
+    infoText: Int?,
     modifier: Modifier,
 ) = Box(
     modifier = modifier
         .padding(all = Sizes.s04)
         .navigationBarsPadding()
 ) {
-    FadingVisibility(visible = infoState != SDKInfoState.Empty) {
-        ScanInfoToast(
-            modifier = Modifier,
-            text = infoText,
-            onIconEnd = onClose,
-        )
+    FadingVisibility(visible = infoState != SDKInfoState.Empty && infoText != null) {
+        infoText?.let {
+            ScanInfoToast(
+                modifier = Modifier,
+                text = it
+            )
+        }
     }
 }

@@ -1,12 +1,15 @@
 package ch.admin.foitt.openid4vc.util
 
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.annotation.UnsafeResultErrorAccess
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.github.michaelbull.result.asErr
 import com.github.michaelbull.result.asOk
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
 import kotlin.reflect.KClass
 
+@OptIn(UnsafeResultErrorAccess::class)
 fun <T, V> Result<T, V>.assertOk(): T {
     assertTrue(isOk) { "an error occurred: ${asErr<T, V, V>().error}" }
     return get()!!
@@ -18,6 +21,7 @@ inline fun <T : Any, V, reified U : T> Result<T, V>.assertSuccessType(type: KCla
     return success as U
 }
 
+@OptIn(UnsafeResultValueAccess::class)
 fun <T, V> Result<T, V>.assertErr(): V {
     assertTrue(isErr) { "an unexpected success occurred: ${(asOk<T, V, T>()).value}" }
     return getError()!!

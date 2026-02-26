@@ -3,13 +3,8 @@ package ch.admin.foitt.wallet.platform.activityList.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -24,17 +19,12 @@ import ch.admin.foitt.wallet.platform.composables.ToastAnimated
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.ActivityListNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.platform.utils.OnPauseEventHandler
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = ActivityListNavArg::class,
-)
 @Composable
 fun ActivityListScreen(viewModel: ActivityListViewModel) {
     OnPauseEventHandler {
@@ -90,13 +80,11 @@ fun ActivityListScreenContent(
             }
         }
     }
-    val bottomPadding = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
     ToastAnimated(
         isVisible = isSnackbarVisible,
         isSnackBarDesign = true,
         messageToast = R.string.tk_activity_activityList_entryDeleted_title,
         iconEnd = R.drawable.wallet_ic_cross,
-        contentBottomPadding = bottomPadding + Sizes.s06,
         onCloseToast = onCloseSnackbar,
     )
     LoadingOverlay(isLoading)

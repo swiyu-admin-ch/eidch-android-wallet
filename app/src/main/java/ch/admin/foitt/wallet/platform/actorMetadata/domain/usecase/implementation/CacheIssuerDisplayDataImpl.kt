@@ -11,7 +11,6 @@ import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceData
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReasonDisplay
-import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.MetadataV1TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustCheckResult
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import javax.inject.Inject
@@ -24,16 +23,10 @@ internal class CacheIssuerDisplayDataImpl @Inject constructor(
         issuerDisplays: List<AnyIssuerDisplay>,
         nonComplianceData: NonComplianceData,
     ) {
-        val trustStatement = trustCheckResult.actorTrustStatement
-
         val trustStatus = getTrustStatus(trustCheckResult)
 
-        val issuerTrustNameDisplay: List<ActorField<String>>? = issuerDisplays.toIssuerName()
-        val issuerTrustLogoDisplay: List<ActorField<String>>? = issuerDisplays.toIssuerLogo()
-        val preferredLanguage = when (trustStatement) {
-            is MetadataV1TrustStatement -> trustStatement.preferredLanguage
-            else -> null
-        }
+        val issuerTrustNameDisplay: List<ActorField<String>> = issuerDisplays.toIssuerName()
+        val issuerTrustLogoDisplay: List<ActorField<String>> = issuerDisplays.toIssuerLogo()
 
         val reasonDisplay: List<ActorField<String>>? = nonComplianceData.reasonDisplays?.toNonComplianceReason()
 
@@ -42,7 +35,7 @@ internal class CacheIssuerDisplayDataImpl @Inject constructor(
             image = issuerTrustLogoDisplay,
             trustStatus = trustStatus,
             vcSchemaTrustStatus = trustCheckResult.vcSchemaTrustStatus,
-            preferredLanguage = preferredLanguage,
+            preferredLanguage = null,
             actorType = ActorType.ISSUER,
             nonComplianceState = nonComplianceData.state,
             nonComplianceReason = reasonDisplay

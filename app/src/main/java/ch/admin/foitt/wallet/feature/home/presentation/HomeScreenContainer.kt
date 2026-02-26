@@ -19,10 +19,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.feature.home.presentation.composables.HomeBarHorizontal
 import ch.admin.foitt.wallet.feature.home.presentation.composables.HomeBarVertical
+import ch.admin.foitt.wallet.feature.home.presentation.model.HomeContainerState
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.endSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -34,12 +35,12 @@ import ch.admin.foitt.wallet.theme.Sizes
 
 @Composable
 fun WalletLayouts.HomeContainer(
-    windowWidthClass: WindowWidthSizeClass,
+    windowWidthClass: WindowWidthClass,
     containerState: HomeContainerState,
     onMenu: (Boolean) -> Unit,
     content: @Composable BoxScope.(stickyBottomHeightDp: Dp) -> Unit,
 ) = when (windowWidthClass) {
-    WindowWidthSizeClass.COMPACT -> HomeCompactContainer(
+    WindowWidthClass.COMPACT -> HomeCompactContainer(
         containerState = containerState,
         onMenu = onMenu,
         content = content,

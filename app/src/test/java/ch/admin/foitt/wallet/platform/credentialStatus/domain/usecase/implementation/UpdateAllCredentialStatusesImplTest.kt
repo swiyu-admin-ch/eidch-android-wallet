@@ -3,9 +3,9 @@ package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implement
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
-import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.mock.MockCredentials.credentials
+import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.mock.MockCredentialsWithBundleItems.verifiableCredentialsWithBundleItems
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
-import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialRepo
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialRepository
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
 
 class UpdateAllCredentialStatusesImplTest {
     @MockK
-    private lateinit var mockCredentialRepository: CredentialRepo
+    private lateinit var mockVerifiableCredentialRepo: VerifiableCredentialRepository
 
     @MockK
     private lateinit var mockUpdateCredentialStatus: UpdateCredentialStatus
@@ -32,7 +32,7 @@ class UpdateAllCredentialStatusesImplTest {
         MockKAnnotations.init(this)
 
         useCase = UpdateAllCredentialStatusesImpl(
-            credentialRepo = mockCredentialRepository,
+            verifiableCredentialRepository = mockVerifiableCredentialRepo,
             updateCredentialStatus = mockUpdateCredentialStatus
         )
 
@@ -55,7 +55,7 @@ class UpdateAllCredentialStatusesImplTest {
 
     @Test
     fun `Updating all credential statuses when getting credentials fails silently fails`() = runTest {
-        coEvery { mockCredentialRepository.getAllIds() } returns Err(SsiError.Unexpected(Exception()))
+        coEvery { mockVerifiableCredentialRepo.getAllIds() } returns Err(SsiError.Unexpected(Exception()))
 
         useCase()
 
@@ -66,7 +66,11 @@ class UpdateAllCredentialStatusesImplTest {
 
     @Test
     fun `Updating all credential statuses when updating of one credential fails silently fails`() = runTest {
-        coEvery { mockUpdateCredentialStatus(credentials[1].id) } returns Err(CredentialStatusError.Unexpected(Exception()))
+        coEvery { mockUpdateCredentialStatus(verifiableCredentialsWithBundleItems[1].credential.id) } returns Err(
+            CredentialStatusError.Unexpected(
+                Exception()
+            )
+        )
 
         useCase()
 
@@ -76,7 +80,11 @@ class UpdateAllCredentialStatusesImplTest {
     }
 
     private fun success() {
-        coEvery { mockCredentialRepository.getAllIds() } returns Ok(credentials.map { it.id })
-        coEvery { mockUpdateCredentialStatus(any()) } returns Ok(Unit)
+        coEvery {
+            mockVerifiableCredentialRepo.getAllIds()
+        } returns Ok(verifiableCredentialsWithBundleItems.map { it.credential.id })
+        coEvery {
+            mockUpdateCredentialStatus(any())
+        } returns Ok(Unit)
     }
 }

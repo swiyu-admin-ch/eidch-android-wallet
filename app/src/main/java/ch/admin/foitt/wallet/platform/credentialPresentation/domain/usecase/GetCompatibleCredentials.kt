@@ -8,5 +8,5 @@ import com.github.michaelbull.result.Result
 
 fun interface GetCompatibleCredentials {
     @CheckResult
-    suspend operator fun invoke(inputDescriptors: List<InputDescriptor>): Result<List<CompatibleCredential>, GetCompatibleCredentialsError>
+    suspend operator fun invoke(inputDescriptors: List<InputDescriptor>): Result<Set<CompatibleCredential>, GetCompatibleCredentialsError>
 }

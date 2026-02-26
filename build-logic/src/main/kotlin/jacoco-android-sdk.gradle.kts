@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation("org.jacoco:org.jacoco.core:0.8.13")
+    implementation("org.jacoco:org.jacoco.core:0.8.14")
 }
 
 project.afterEvaluate {

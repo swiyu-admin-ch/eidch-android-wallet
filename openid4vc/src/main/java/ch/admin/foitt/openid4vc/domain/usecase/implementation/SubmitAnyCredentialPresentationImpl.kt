@@ -3,6 +3,7 @@ package ch.admin.foitt.openid4vc.domain.usecase.implementation
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.CreateAnyVerifiablePresentationError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.DescriptorMap
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.GetPresentationRequestTypeError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptor
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
@@ -14,6 +15,7 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.toSubmitAnyCred
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
 import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyDescriptorMaps
 import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyVerifiablePresentation
+import ch.admin.foitt.openid4vc.domain.usecase.GetPresentationRequestType
 import ch.admin.foitt.openid4vc.domain.usecase.SubmitAnyCredentialPresentation
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -29,12 +31,14 @@ import javax.inject.Inject
 internal class SubmitAnyCredentialPresentationImpl @Inject constructor(
     private val createAnyVerifiablePresentation: CreateAnyVerifiablePresentation,
     private val createAnyDescriptorMaps: CreateAnyDescriptorMaps,
+    private val getPresentationRequestType: GetPresentationRequestType,
     private val presentationRequestRepository: PresentationRequestRepository,
 ) : SubmitAnyCredentialPresentation {
     override suspend fun invoke(
         anyCredential: AnyCredential,
         requestedFields: List<String>,
         presentationRequest: PresentationRequest,
+        usePayloadEncryption: Boolean,
     ): Result<Unit, SubmitAnyCredentialPresentationError> = coroutineBinding {
         val descriptors = presentationRequest.presentationDefinition.inputDescriptors
         descriptors.checkCredentialFormat().bind()
@@ -55,9 +59,17 @@ internal class SubmitAnyCredentialPresentationImpl @Inject constructor(
             verifiablePresentation = verifiablePresentation,
             descriptorMap = descriptorMaps
         )
+
+        val presentationRequestType = getPresentationRequestType(
+            presentationRequest = presentationRequest,
+            presentationRequestBody = body,
+            usePayloadEncryption = usePayloadEncryption,
+        ).mapError(GetPresentationRequestTypeError::toSubmitAnyCredentialPresentationError)
+            .bind()
+
         presentationRequestRepository.submitPresentation(
             url = responseURL,
-            presentationRequestBody = body,
+            presentationRequestType = presentationRequestType,
         ).bind()
     }
 

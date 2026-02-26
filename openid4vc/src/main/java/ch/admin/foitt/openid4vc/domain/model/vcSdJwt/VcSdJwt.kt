@@ -14,7 +14,8 @@ import java.time.Instant
  */
 open class VcSdJwt(
     rawVcSdJwt: String,
-) : SdJwt(rawVcSdJwt) {
+    reservedClaimNames: Set<String> = emptySet()
+) : SdJwt(rawSdJwt = rawVcSdJwt, reservedClaimNames = reservedClaimNames) {
     val vcIssuer: String = iss ?: error("missing iss claim")
     val kid: String = keyId ?: error("missing keyId claim")
     val vct = sdJwtJson.jsonObject[CLAIM_KEY_VCT]?.jsonPrimitive?.content ?: error("missing vct claim")

@@ -1,6 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.usecase
 
-import ch.admin.eid.didresolver.didtoolbox.DidDoc
+import ch.admin.eid.didresolver.did_sidekicks.DidDoc
 import ch.admin.foitt.openid4vc.domain.model.ResolveDidError
 import com.github.michaelbull.result.Result
 

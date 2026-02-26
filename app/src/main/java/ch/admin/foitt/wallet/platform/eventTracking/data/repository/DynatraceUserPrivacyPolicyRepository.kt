@@ -18,7 +18,7 @@ class DynatraceUserPrivacyPolicyRepository @Inject constructor() : UserPrivacyPo
             UserPrivacyOptions.builder()
                 .withDataCollectionLevel(if (hasAccepted) DataCollectionLevel.PERFORMANCE else DataCollectionLevel.OFF)
                 .withCrashReportingOptedIn(hasAccepted)
-                .withCrashReplayOptedIn(false) // always disable crash replay
+                .withScreenRecordOptedIn(false) // always disable crash replay
                 .build()
         )
         _isUserPrivacyPolicyAcceptedFlow.value = isDynatraceEnabled

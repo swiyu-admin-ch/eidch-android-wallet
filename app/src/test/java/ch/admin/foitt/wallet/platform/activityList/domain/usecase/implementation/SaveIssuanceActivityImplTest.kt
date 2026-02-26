@@ -31,7 +31,7 @@ class SaveIssuanceActivityImplTest {
         )
 
         coEvery {
-            mockActivityRepository.saveActivity(any(), any(), any(), any())
+            mockActivityRepository.saveActivity(any(), any(), any(), any(), any(), any())
         } returns Ok(1)
     }
 
@@ -58,6 +58,7 @@ class SaveIssuanceActivityImplTest {
                 credentialId = credentialId,
                 actorDisplayData = actorDisplayData,
                 actorFallbackName = actorFallbackName,
+                nonComplianceData = null,
             )
         }
     }

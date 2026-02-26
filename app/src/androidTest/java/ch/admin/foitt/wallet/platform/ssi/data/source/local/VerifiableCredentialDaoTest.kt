@@ -6,7 +6,6 @@ import androidx.test.core.app.ApplicationProvider
 import ch.admin.foitt.wallet.platform.database.data.AppDatabase
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.credential1
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.verifiableCredential1
 import junit.framework.TestCase
@@ -54,16 +53,14 @@ class VerifiableCredentialDaoTest {
     }
 
     @Test
-    fun updateVerifiableCredentialStatusByCredentialIdTest() = runTest {
+    fun updateVerifiableCredentialByCredentialIdTest() = runTest {
         val id = credentialDao.insert(credential1)
         verifiableCredentialDao.insert(verifiableCredential1)
-        val newStatus = CredentialStatus.REVOKED
         val updatedAt = 2L
 
-        verifiableCredentialDao.updateStatusByCredentialId(id, newStatus, updatedAt)
+        verifiableCredentialDao.updatedAt(id, updatedAt)
 
         val verifiableCredential = verifiableCredentialDao.getById(id)
-        TestCase.assertEquals("Credential status should be updated", newStatus, verifiableCredential.status)
         TestCase.assertEquals("UpdatedAt should be updated", updatedAt, verifiableCredential.updatedAt)
     }
 

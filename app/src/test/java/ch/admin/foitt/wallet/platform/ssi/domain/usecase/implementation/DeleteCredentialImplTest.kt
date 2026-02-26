@@ -1,13 +1,16 @@
 package ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemWithKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialWithKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialWithBundleItemsWithKeyBinding
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialRepo
-import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialWithKeyBindingRepository
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithBundleItemsWithKeyBindingRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteCredential
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteKeyStoreEntry
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -29,7 +32,8 @@ class DeleteCredentialImplTest {
     private lateinit var mockCredentialRepository: CredentialRepo
 
     @MockK
-    private lateinit var mockCredentialWithKeyBindingRepository: CredentialWithKeyBindingRepository
+    private lateinit var mockCredentialWithKeyBindingRepository:
+        VerifiableCredentialWithBundleItemsWithKeyBindingRepository
 
     @MockK
     private lateinit var mockCredential: Credential
@@ -38,7 +42,13 @@ class DeleteCredentialImplTest {
     private lateinit var mockVerifiableCredential: VerifiableCredentialEntity
 
     @MockK
+    private lateinit var mockBundleItem: BundleItemEntity
+
+    @MockK
     private lateinit var mockKeyBinding: CredentialKeyBindingEntity
+
+    @MockK
+    private lateinit var deleteKeyStoreEntry: DeleteKeyStoreEntry
 
     private lateinit var useCase: DeleteCredential
 
@@ -46,23 +56,32 @@ class DeleteCredentialImplTest {
     fun setUp() {
         MockKAnnotations.init(this)
 
+        every { mockCredential.id } returns CREDENTIAL_ID
         every { mockKeyBinding.id } returns PRIVATE_KEY_IDENTIFIER
 
-        val credentialWithKeyBinding = CredentialWithKeyBinding(
+        val verifiableCredentialWithBundleItemsWithKeyBinding = VerifiableCredentialWithBundleItemsWithKeyBinding(
             credential = mockCredential,
-            keyBinding = mockKeyBinding,
+            bundleItemsWithKeyBinding = listOf(
+                BundleItemWithKeyBinding(
+                    bundleItem = mockBundleItem,
+                    keyBinding = mockKeyBinding
+                )
+            ),
             verifiableCredential = mockVerifiableCredential,
         )
         coEvery {
             mockCredentialWithKeyBindingRepository.getByCredentialId(
                 CREDENTIAL_ID
             )
-        } returns Ok(credentialWithKeyBinding)
+        } returns Ok(verifiableCredentialWithBundleItemsWithKeyBinding)
         coEvery { mockCredentialRepository.deleteById(CREDENTIAL_ID) } returns Ok(Unit)
+
+        coEvery { deleteKeyStoreEntry(PRIVATE_KEY_IDENTIFIER) } returns Unit
 
         useCase = DeleteCredentialImpl(
             credentialRepo = mockCredentialRepository,
-            credentialWithKeyBindingRepository = mockCredentialWithKeyBindingRepository,
+            verifiableCredentialWithBundleItemsWithKeyBindingRepository = mockCredentialWithKeyBindingRepository,
+            deleteKeyStoreEntry = deleteKeyStoreEntry
         )
     }
 

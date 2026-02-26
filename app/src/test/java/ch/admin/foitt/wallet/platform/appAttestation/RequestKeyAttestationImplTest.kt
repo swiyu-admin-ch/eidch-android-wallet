@@ -18,8 +18,8 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.ValidateKeyA
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.implementation.RequestKeyAttestationImpl
 import ch.admin.foitt.wallet.platform.appAttestation.domain.util.getBase64CertificateChain
 import ch.admin.foitt.wallet.platform.appAttestation.mock.KeyAttestationMocks
-import ch.admin.foitt.wallet.platform.holderBinding.domain.model.KeyPairError
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.KeyPairError
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err

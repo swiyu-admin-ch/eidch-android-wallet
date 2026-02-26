@@ -1,47 +1,41 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
-import androidx.lifecycle.SavedStateHandle
 import ch.admin.foitt.avwrapper.AVBeam
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdOnlineSessionNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdStartAvSessionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdStartSelfieVideoScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.SDKFaceScannerScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 
-@HiltViewModel
-class EIdStartSelfieVideoViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = EIdStartSelfieVideoViewModel.Factory::class)
+class EIdStartSelfieVideoViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
-    savedStateHandle: SavedStateHandle,
     private val avBeam: AVBeam,
     setTopBarState: SetTopBarState,
+    @Assisted private val caseId: String,
 ) : ScreenViewModel(setTopBarState) {
+
+    @AssistedFactory
+    interface Factory {
+        fun create(caseId: String): EIdStartSelfieVideoViewModel
+    }
+
     override val topBarState = TopBarState.EmptyWithCloseButton(
         onClose = ::onClose
     )
 
-    private val navArgs: EIdOnlineSessionNavArg = EIdStartSelfieVideoScreenDestination.argsFrom(savedStateHandle)
-
     fun onStart() {
         navManager.navigateTo(
-            SDKFaceScannerScreenDestination(
-                caseId = navArgs.caseId
-            )
+            Destination.EIdFaceScannerScreen(caseId = caseId)
         )
     }
 
-    fun shutDownLibrary() {
+    fun onClose() {
         avBeam.shutDown()
-    }
-
-    private fun onClose() {
-        shutDownLibrary()
-        navManager.navigateBackToHome(
-            popUntil = EIdStartAvSessionScreenDestination
-        )
+        navManager.navigateBackToHomeScreen(popUntil = Destination.EIdStartAvSessionScreen::class)
     }
 }

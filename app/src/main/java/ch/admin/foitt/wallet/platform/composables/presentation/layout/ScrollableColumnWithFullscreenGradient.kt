@@ -4,8 +4,9 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.scaffold.presentation.FullscreenGradient
 import ch.admin.foitt.wallet.theme.WalletTheme
 
@@ -17,8 +18,8 @@ fun WalletLayouts.ScrollableColumnWithFullscreenGradient(
     scrollableContent: @Composable ColumnScope.() -> Unit,
 ) {
     FullscreenGradient()
-    when (currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass) {
-        WindowWidthSizeClass.COMPACT -> CompactContainerFloatingBottom(
+    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+        WindowWidthClass.COMPACT -> CompactContainerFloatingBottom(
             modifier = modifier,
             content = {
                 scrollableContent()

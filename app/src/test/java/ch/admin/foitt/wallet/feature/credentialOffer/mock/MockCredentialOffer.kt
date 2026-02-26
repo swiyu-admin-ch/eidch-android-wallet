@@ -12,6 +12,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDispl
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
@@ -133,7 +134,8 @@ object MockCredentialOffer {
         credentialId = CREDENTIAL_ID,
         status = CredentialStatus.VALID.toDisplayStatus(),
         credentialDisplay = credentialDisplay1,
-        actorEnvironment = ActorEnvironment.PRODUCTION
+        actorEnvironment = ActorEnvironment.PRODUCTION,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     val mockIssuerDisplayData = ActorDisplayData(

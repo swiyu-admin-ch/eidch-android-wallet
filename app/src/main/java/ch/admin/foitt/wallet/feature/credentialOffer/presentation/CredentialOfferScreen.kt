@@ -41,7 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.credentialOffer.presentation.model.CredentialOfferUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
@@ -55,15 +54,16 @@ import ch.admin.foitt.wallet.platform.composables.HiddenScrollToButton
 import ch.admin.foitt.wallet.platform.composables.HiddenScrollToTopButton
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.verticalSafeDrawing
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.MediumCredentialCard
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.CredentialOfferNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
 import ch.admin.foitt.wallet.platform.preview.AllLargeScreensPreview
@@ -73,13 +73,9 @@ import ch.admin.foitt.wallet.platform.utils.TestTags
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Destination(
-    navArgsDelegate = CredentialOfferNavArg::class
-)
 fun CredentialOfferScreen(
     viewModel: CredentialOfferViewModel,
 ) {
@@ -140,17 +136,16 @@ private fun CredentialOfferScreenContent(
         .fillMaxSize()
         .background(WalletTheme.colorScheme.surfaceContainerLow)
 ) {
-    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
-        CompactContent(
+    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+        WindowWidthClass.COMPACT -> CompactContent(
             credentialOffer = credentialOfferUiState,
             onBadge = onBadge,
             onAccept = onAccept,
             onDecline = onDecline,
             onWrongData = onWrongData,
         )
-    } else {
-        LargeContent(
+
+        else -> LargeContent(
             credentialOffer = credentialOfferUiState,
             onBadge = onBadge,
             onAccept = onAccept,

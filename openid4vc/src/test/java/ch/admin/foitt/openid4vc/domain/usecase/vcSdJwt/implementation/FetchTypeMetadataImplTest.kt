@@ -14,6 +14,7 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
@@ -91,6 +92,13 @@ class FetchTypeMetadataImplTest {
     @Test
     fun `Fetching type metadata for VcSdJwt where credential vct integrity is null returns an error`() = runTest {
         useCase(CREDENTIAL_VCT, typeMetadataUrl, null).assertErrorType(TypeMetadataError.InvalidData::class)
+    }
+
+    @Test
+    fun `Fetching type metadata without expecting integrity allows a null integrity`() = runTest {
+        useCase(credentialVct = CREDENTIAL_VCT, url = typeMetadataUrl, integrity = null, expectIntegrity = false).assertOk()
+
+        coVerify(exactly = 0) { mockSRIValidator(any(), any()) }
     }
 
     @Test

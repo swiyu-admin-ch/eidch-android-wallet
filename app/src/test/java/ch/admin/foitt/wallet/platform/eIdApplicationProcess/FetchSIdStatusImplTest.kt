@@ -38,7 +38,8 @@ class FetchSIdStatusImplTest {
         state = EIdRequestQueueState.IN_QUEUING,
         queueInformation = null,
         legalRepresentant = null,
-        onlineSessionStartTimeout = null
+        onlineSessionStartTimeout = null,
+        targetWallets = null
     )
 
     lateinit var fetchSIdStatus: FetchSIdStatus

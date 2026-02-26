@@ -1,8 +1,8 @@
 package ch.admin.foitt.wallet.platform.appAttestation
 
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
+import ch.admin.foitt.openid4vc.domain.model.jwk.hasSameCurveAs
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.Jwk
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.hasSameCurveAs
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
@@ -17,6 +17,7 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.github.michaelbull.result.getOrThrow
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
+@OptIn(UnsafeResultValueAccess::class)
 class ValidateClientAttestationImplTest {
 
     @MockK

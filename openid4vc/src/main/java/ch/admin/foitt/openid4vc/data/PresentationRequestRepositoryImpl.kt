@@ -1,10 +1,11 @@
 package ch.admin.foitt.openid4vc.data
 
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.domain.model.HttpErrorBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.FetchPresentationRequestError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitAnyCredentialPresentationError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitPresentationErrorError
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
@@ -29,9 +30,10 @@ import io.ktor.http.parameters
 import java.io.IOException
 import java.net.URL
 import javax.inject.Inject
+import javax.inject.Named
 
 internal class PresentationRequestRepositoryImpl @Inject constructor(
-    private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
     private val safeJson: SafeJson,
 ) : PresentationRequestRepository {
     override suspend fun fetchPresentationRequest(url: URL) =
@@ -43,20 +45,24 @@ internal class PresentationRequestRepositoryImpl @Inject constructor(
 
     override suspend fun submitPresentation(
         url: URL,
-        presentationRequestBody: PresentationRequestBody,
+        presentationRequestType: PresentationRequestType,
     ): Result<Unit, SubmitAnyCredentialPresentationError> = coroutineBinding {
-        val jsonString = safeJson.safeEncodeObjectToString(
-            objectToEncode = presentationRequestBody.presentationSubmission,
-        ).mapError(JsonParsingError::toSubmitPresentationError)
-            .bind()
         runSuspendCatching {
-            httpClient.submitForm(
-                url = url.toExternalForm(),
-                formParameters = parameters {
-                    append("vp_token", presentationRequestBody.vpToken)
-                    append("presentation_submission", jsonString)
-                }
-            )
+            when (presentationRequestType) {
+                is PresentationRequestType.Json -> httpClient.submitForm(
+                    url = url.toExternalForm(),
+                    formParameters = parameters {
+                        append("vp_token", presentationRequestType.vpToken)
+                        append("presentation_submission", presentationRequestType.presentationSubmission)
+                    }
+                )
+                is PresentationRequestType.Jwt -> httpClient.submitForm(
+                    url = url.toExternalForm(),
+                    formParameters = parameters {
+                        append("response", presentationRequestType.response)
+                    }
+                )
+            }
         }.mapError { throwable ->
             when (throwable) {
                 is ClientRequestException -> handleClientRequestException(throwable)

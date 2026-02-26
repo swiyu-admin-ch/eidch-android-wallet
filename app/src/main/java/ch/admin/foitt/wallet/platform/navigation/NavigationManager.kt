@@ -1,48 +1,36 @@
 package ch.admin.foitt.wallet.platform.navigation
 
-import androidx.annotation.MainThread
-import androidx.navigation.NavHostController
-import ch.admin.foitt.walletcomposedestinations.destinations.Destination
-import com.ramcosta.composedestinations.spec.Direction
-import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
+import kotlinx.coroutines.flow.Flow
+import kotlin.reflect.KClass
 
 interface NavigationManager {
 
-    val currentDestination: Destination?
-    val previousDestination: Destination?
-    val currentDestinationFlow: StateFlow<Destination?>
-    val currentBackStackFlow: StateFlow<List<Destination>>
+    val backstack: SnapshotStateList<Destination>
+    val backstackFlow: Flow<List<Destination>>
 
-    fun setNavHost(navHost: NavHostController)
+    val currentDestination: Destination
 
-    @MainThread
-    fun navigateTo(
-        direction: Direction,
+    fun replaceCurrentWith(
+        destination: Destination,
     )
 
-    @MainThread
-    fun navigateToAndClearCurrent(
-        direction: Direction,
-    )
-
-    @MainThread
-    fun navigateToAndPopUpTo(
-        direction: Direction,
-        route: String,
-        inclusivePop: Boolean = true
-    )
-
-    @MainThread
     fun popBackStack()
 
-    @MainThread
-    fun popBackStackTo(
-        destination: Destination,
-        inclusive: Boolean,
+    fun <T : Destination> popBackStackTo(
+        destination: KClass<out T>,
+        inclusive: Boolean
     ): Boolean
 
-    @MainThread
-    fun navigateUp()
+    fun <T : Destination> navigateBackToHomeScreen(popUntil: KClass<out T>)
+    fun navigateTo(destination: Destination)
 
-    fun navigateBackToHome(popUntil: Destination)
+    fun <T : Destination> popUpToAndNavigate(popToInclusive: KClass<out T>, destination: Destination)
+
+    fun popBackStackOrToRoot()
+
+    fun <T : DestinationGroup> navigateOutOf(destinationGroup: KClass<T>)
+    fun <T : DestinationGroup> navigateOutAndTo(destinationGroup: KClass<T>, destination: Destination)
 }

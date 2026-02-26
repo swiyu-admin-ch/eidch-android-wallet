@@ -4,6 +4,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.Overlay
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.TransformOcaOverlays
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
@@ -198,6 +199,7 @@ class TransformOcaOverlaysImplTest {
     private val brandingOverlayWithInvalidReference =
         createBrandingOverlay("Primary: {{invalidRef:digest2:$ATTRIBUTE_KEY}}")
 
+    @OptIn(UnsafeResultValueAccess::class)
     companion object {
         private val json = SafeJsonTestInstance.safeJson
         private const val ATTRIBUTE_KEY = "attributeKey"

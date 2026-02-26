@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification
 
 import ch.admin.foitt.avwrapper.DocumentScanPackageResult
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.EIdRequestVerificationError
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdMrzValues
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.GetDocumentScanDataImpl
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFile
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFileCategory
@@ -26,6 +27,9 @@ class GetDocumentScanDataImplTest {
 
     @MockK
     private lateinit var mockEIdRequestFileRepository: EIdRequestFileRepository
+
+    @MockK
+    private lateinit var mockGetEIMrzValues: GetEIdMrzValues
 
     val testCaseId = "testCaseId"
     val testFileName = DocumentScanPackageResult.FILE_EXTRACT_DATA_LIST
@@ -54,9 +58,11 @@ class GetDocumentScanDataImplTest {
 
         coEvery { mockEIdRequestFileRepository.getEIdRequestFileByCaseIdAndFileName(any(), any()) } returns Ok(testResultFile)
         coEvery { mockEIdRequestFileRepository.getEIdRequestFilesByCaseId(any()) } returns Ok(testResultFileList)
+        coEvery { mockGetEIMrzValues(any()) } returns Ok(emptyList())
 
         useCase = GetDocumentScanDataImpl(
             eIdRequestFileRepository = mockEIdRequestFileRepository,
+            getEIdMrzValues = mockGetEIMrzValues,
         )
     }
 
@@ -112,5 +118,15 @@ class GetDocumentScanDataImplTest {
         val result = useCase(testCaseId)
         val error = result.assertErrorType(EIdRequestVerificationError.Unexpected::class)
         assertEquals(exception, error.cause)
+    }
+
+    @Test
+    fun `A GetEIdMrzValues fails and is propagated`() = runTest {
+        val errorFromUseCase = EIdRequestVerificationError.Unexpected(Exception("No MRZ values found in JSON"))
+        coEvery { mockGetEIMrzValues(any()) } returns Err(errorFromUseCase)
+
+        val result = useCase(testCaseId)
+        val error = result.assertErrorType(EIdRequestVerificationError.Unexpected::class)
+        assertEquals(errorFromUseCase, error)
     }
 }

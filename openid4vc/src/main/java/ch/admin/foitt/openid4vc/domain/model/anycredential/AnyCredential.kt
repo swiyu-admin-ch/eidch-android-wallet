@@ -11,7 +11,7 @@ interface AnyCredential {
     val payload: String
     val format: CredentialFormat
     val claimsPath: String
-    val validity: CredentialValidity
+    val validity: Validity
     val issuer: String
     val validFromInstant: Instant?
     val validUntilInstant: Instant?

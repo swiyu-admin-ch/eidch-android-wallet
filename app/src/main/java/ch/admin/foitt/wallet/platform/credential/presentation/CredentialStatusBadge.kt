@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credential.presentation
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -119,7 +120,8 @@ private fun CredentialStatusLabel(
     }
 }
 
-internal fun CredentialDisplayStatus.getIcon() = when (this) {
+@DrawableRes
+internal fun CredentialDisplayStatus.getIcon(): Int = when (this) {
     CredentialDisplayStatus.Valid -> R.drawable.wallet_ic_checkmark
     is CredentialDisplayStatus.NotYetValid -> R.drawable.wallet_ic_hourglass
     is CredentialDisplayStatus.Expired,

@@ -17,9 +17,18 @@ import javax.inject.Inject
 class ActivityWithDetailsRepositoryImpl @Inject constructor(
     daoProvider: DaoProvider,
 ) : ActivityWithDetailsRepository {
-    override fun getByIdFlow(
+    override fun getNullableByIdFlow(
         activityId: Long
     ): Flow<Result<ActivityWithDetails?, ActivityWithDetailsRepositoryError>> = daoFlow.flatMapLatest { dao ->
+        dao?.getNullableByIdFlow(activityId)
+            ?.catchAndMap { throwable ->
+                throwable.toActivityWithDetailsRepositoryError("Error getting ActivityWithDetails? by activityId")
+            } ?: emptyFlow()
+    }
+
+    override fun getByIdFlow(
+        activityId: Long
+    ): Flow<Result<ActivityWithDetails, ActivityWithDetailsRepositoryError>> = daoFlow.flatMapLatest { dao ->
         dao?.getByIdFlow(activityId)
             ?.catchAndMap { throwable ->
                 throwable.toActivityWithDetailsRepositoryError("Error getting ActivityWithDetails by activityId")

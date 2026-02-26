@@ -2,7 +2,7 @@ package ch.admin.foitt.wallet.platform.ssi.data.repository
 
 import ch.admin.foitt.wallet.platform.database.data.dao.DaoProvider
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialWithDisplaysAndClusters
-import ch.admin.foitt.wallet.platform.ssi.domain.model.VerifiableCredentialWithDisplaysAndClustersRepositoryError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialWithDisplaysRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.toVerifiableCredentialWithDisplaysAndClustersRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithDisplaysAndClustersRepository
 import ch.admin.foitt.wallet.platform.utils.catchAndMap
@@ -20,7 +20,7 @@ class VerifiableCredentialWithDisplaysAndClustersRepositoryImpl @Inject construc
 
     override fun getVerifiableCredentialWithDisplaysAndClustersFlowById(
         credentialId: Long
-    ): Flow<Result<VerifiableCredentialWithDisplaysAndClusters, VerifiableCredentialWithDisplaysAndClustersRepositoryError>> =
+    ): Flow<Result<VerifiableCredentialWithDisplaysAndClusters, CredentialWithDisplaysRepositoryError>> =
         daoFlow.flatMapLatest { dao ->
             dao?.getVerifiableCredentialWithDisplaysAndClustersFlowById(credentialId)
                 ?.catchAndMap { throwable ->
@@ -30,7 +30,7 @@ class VerifiableCredentialWithDisplaysAndClustersRepositoryImpl @Inject construc
 
     override fun getNullableVerifiableCredentialWithDisplaysAndClustersFlowById(
         credentialId: Long
-    ): Flow<Result<VerifiableCredentialWithDisplaysAndClusters?, VerifiableCredentialWithDisplaysAndClustersRepositoryError>> =
+    ): Flow<Result<VerifiableCredentialWithDisplaysAndClusters?, CredentialWithDisplaysRepositoryError>> =
         daoFlow.flatMapLatest { dao ->
             dao?.getNullableVerifiableCredentialWithDisplaysAndClustersFlowById(credentialId)
                 ?.catchAndMap { throwable ->
@@ -39,7 +39,7 @@ class VerifiableCredentialWithDisplaysAndClustersRepositoryImpl @Inject construc
         }
 
     override fun getVerifiableCredentialsWithDisplaysAndClustersFlow():
-        Flow<Result<List<VerifiableCredentialWithDisplaysAndClusters>, VerifiableCredentialWithDisplaysAndClustersRepositoryError>> =
+        Flow<Result<List<VerifiableCredentialWithDisplaysAndClusters>, CredentialWithDisplaysRepositoryError>> =
         daoFlow.flatMapLatest { dao ->
             dao?.getVerifiableCredentialsWithDisplaysAndClustersFlow()
                 ?.catchAndMap { throwable ->

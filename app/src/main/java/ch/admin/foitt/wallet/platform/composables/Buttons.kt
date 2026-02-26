@@ -51,7 +51,7 @@ object Buttons {
         endIcon: Painter? = null,
         enabled: Boolean = true,
         isActive: Boolean = false,
-        activeText: String? = null,
+        activeText: String? = text,
     ) = BaseButton(
         text = text,
         onClick = onClick,
@@ -62,25 +62,6 @@ object Buttons {
         isActive = isActive,
         activeText = activeText,
         colors = WalletButtonColors.primary(),
-    )
-
-    @Composable
-    fun FilledLightPrimary(
-        text: String,
-        onClick: () -> Unit,
-        modifier: Modifier = Modifier,
-        startIcon: Painter? = null,
-        endIcon: Painter? = null,
-        enabled: Boolean = true,
-    ) = BaseButton(
-        text = text,
-        onClick = onClick,
-        modifier = modifier,
-        startIcon = startIcon,
-        endIcon = endIcon,
-        enabled = enabled,
-        isActive = false,
-        colors = WalletButtonColors.lightPrimary(),
     )
 
     @Composable
@@ -117,7 +98,6 @@ object Buttons {
         startIcon = startIcon,
         endIcon = endIcon,
         enabled = enabled,
-        isActive = false,
         colors = WalletButtonColors.primaryFixed(),
     )
 
@@ -136,7 +116,6 @@ object Buttons {
         startIcon = startIcon,
         endIcon = endIcon,
         enabled = enabled,
-        isActive = false,
         colors = WalletButtonColors.secondaryFixed(),
     )
 
@@ -155,7 +134,6 @@ object Buttons {
         startIcon = startIcon,
         endIcon = endIcon,
         enabled = enabled,
-        isActive = false,
         colors = WalletButtonColors.secondaryContainerFixed(),
     )
 
@@ -168,7 +146,7 @@ object Buttons {
         endIcon: Painter? = null,
         enabled: Boolean = true,
         isActive: Boolean = false,
-        activeText: String? = null,
+        activeText: String? = text,
     ) = BaseButton(
         text = text,
         onClick = onClick,
@@ -217,24 +195,6 @@ object Buttons {
         endIcon = endIcon,
         enabled = enabled,
         colors = colors
-    )
-
-    @Composable
-    fun Elevated(
-        text: String,
-        onClick: () -> Unit,
-        modifier: Modifier = Modifier,
-        startIcon: Painter? = null,
-        endIcon: Painter? = null,
-        enabled: Boolean = true,
-    ) = BaseButton(
-        text = text,
-        onClick = onClick,
-        modifier = modifier,
-        startIcon = startIcon,
-        endIcon = endIcon,
-        enabled = enabled,
-        colors = WalletButtonColors.elevated(),
     )
 
     @Composable
@@ -322,7 +282,7 @@ private fun BaseButton(
     endIcon: Painter? = null,
     enabled: Boolean = true,
     isActive: Boolean = false,
-    activeText: String? = null,
+    activeText: String? = text,
     hasBorder: Boolean = false
 ) = Button(
     onClick = onClick,
@@ -346,7 +306,7 @@ private fun ButtonContent(
     text: String,
     startIcon: Painter?,
     endIcon: Painter?,
-    activeText: String? = null,
+    activeText: String? = text,
     isActive: Boolean = false,
 ) {
     if (isActive) {
@@ -358,7 +318,9 @@ private fun ButtonContent(
                 .height(Sizes.s04)
                 .focusable(false)
         )
-        Spacer(modifier = Modifier.width(Sizes.s02))
+        if (activeText != null) {
+            Spacer(modifier = Modifier.width(Sizes.s02))
+        }
     }
     startIcon?.let { icon ->
         if (!isActive) {
@@ -369,12 +331,17 @@ private fun ButtonContent(
                     .size(Sizes.buttonIcon)
                     .focusable(false)
             )
+            Spacer(modifier = Modifier.width(Sizes.s02))
         }
-        Spacer(modifier = Modifier.width(Sizes.s02))
     }
-    WalletTexts.Button(
-        text = if (isActive && activeText != null) activeText else text,
-    )
+    if (isActive) {
+        activeText?.let {
+            WalletTexts.Button(text = activeText)
+        }
+    } else {
+        WalletTexts.Button(text = text)
+    }
+
     endIcon?.let { icon ->
         Spacer(modifier = Modifier.width(Sizes.s02))
         Icon(
@@ -421,7 +388,7 @@ private fun BottomButtonPreview() {
             Buttons.FilledTertiary(
                 text = "Click Me with icon",
                 onClick = {},
-                startIcon = painterResource(id = R.drawable.pilot_ic_link)
+                startIcon = painterResource(id = R.drawable.wallet_ic_external_link)
             )
             Buttons.FilledTertiary(
                 text = "Click Me with icon and long text: Lorem ipsum dolor sit amet, consectetur adipiscing elit",
@@ -437,6 +404,12 @@ private fun BottomButtonPreview() {
                 isActive = true,
                 startIcon = painterResource(id = R.drawable.wallet_ic_qr),
                 activeText = "This button is loading..."
+            )
+            Buttons.FilledTertiary(
+                text = "Loading Primary without loading text",
+                onClick = {},
+                isActive = true,
+                activeText = null,
             )
             Buttons.Icon(
                 icon = R.drawable.ic_fingerprint,

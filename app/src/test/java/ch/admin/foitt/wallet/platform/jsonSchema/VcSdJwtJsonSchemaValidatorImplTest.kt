@@ -17,7 +17,6 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -44,7 +43,6 @@ class VcSdJwtJsonSchemaValidatorImplTest {
     }
 
     @Test
-    @Disabled
     fun `Json schema containing url as $ref for validating vc sd-jwt returns error`() = runTest {
         jsonSchemaValidator(
             credentialContentValid,

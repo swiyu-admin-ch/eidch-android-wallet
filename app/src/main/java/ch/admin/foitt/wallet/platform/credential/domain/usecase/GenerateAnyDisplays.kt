@@ -6,13 +6,14 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCred
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.model.GenerateCredentialDisplaysError
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatement
 import com.github.michaelbull.result.Result
 
 interface GenerateAnyDisplays {
     suspend operator fun invoke(
-        anyCredential: AnyCredential,
+        anyCredential: AnyCredential?,
         issuerInfo: IssuerCredentialInfo,
-        trustIssuerNames: Map<String, String>? = null,
+        trustStatement: TrustStatement? = null,
         metadata: AnyCredentialConfiguration,
         ocaBundle: OcaBundle?,
     ): Result<AnyDisplays, GenerateCredentialDisplaysError>

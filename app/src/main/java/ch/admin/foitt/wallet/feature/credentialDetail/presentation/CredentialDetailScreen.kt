@@ -21,9 +21,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.sharp.ArrowBack
-import androidx.compose.material.icons.sharp.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -44,7 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.CredentialDeleteBottomSheet
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.MenuBottomSheet
@@ -62,16 +58,17 @@ import ch.admin.foitt.wallet.platform.composables.HiddenScrollToTopButton
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.calculateVerticalPadding
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
 import ch.admin.foitt.wallet.platform.composables.presentation.topSafeDrawing
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.LargeCredentialCard
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.CredentialDetailNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
 import ch.admin.foitt.wallet.platform.preview.AllLargeScreensPreview
@@ -80,14 +77,10 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustSt
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination(
-    navArgsDelegate = CredentialDetailNavArg::class
-)
 @Composable
 fun CredentialDetailScreen(
     viewModel: CredentialDetailViewModel,
@@ -155,7 +148,7 @@ private fun CoroutineScope.hideModalSheet(
 private fun CredentialDetailScreenContent(
     isLoading: Boolean,
     credentialDetail: CredentialDetailUiState,
-    windowWidthClass: WindowWidthSizeClass = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass,
+    windowWidthClass: WindowWidthClass = currentWindowAdaptiveInfo().windowWidthClass(),
     onEntireHistory: () -> Unit,
     onWrongData: () -> Unit,
     onBack: () -> Unit,
@@ -167,7 +160,7 @@ private fun CredentialDetailScreenContent(
             .background(color = WalletTheme.colorScheme.surfaceContainerLow)
     ) {
         when (windowWidthClass) {
-            WindowWidthSizeClass.COMPACT -> CredentialDetailCompact(
+            WindowWidthClass.COMPACT -> CredentialDetailCompact(
                 credentialDetail = credentialDetail,
                 onEntireHistory = onEntireHistory,
                 onWrongData = onWrongData,
@@ -342,7 +335,7 @@ private fun BackButton(onBack: () -> Unit) {
     ) {
         Icon(
             modifier = Modifier.size(Sizes.s06),
-            imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
+            painter = painterResource(R.drawable.wallet_ic_back_navigation),
             contentDescription = stringResource(id = R.string.tk_global_back_alt),
             tint = WalletTheme.colorScheme.onPrimary,
         )
@@ -359,7 +352,7 @@ private fun MenuButton(onBack: () -> Unit) {
     ) {
         Icon(
             modifier = Modifier.size(Sizes.s06),
-            imageVector = Icons.Sharp.MoreVert,
+            painter = painterResource(R.drawable.wallet_ic_more_vert),
             contentDescription = stringResource(id = R.string.tk_global_moreoptions_alt),
             tint = WalletTheme.colorScheme.onPrimary,
         )
@@ -402,7 +395,7 @@ private fun LazyListScope.latestActivities(
 @Composable
 private fun CredentialDetailScreenCompactPreview() {
     WalletTheme {
-        CredentialDetailScreenPreview(windowWidthClass = WindowWidthSizeClass.COMPACT)
+        CredentialDetailScreenPreview(windowWidthClass = WindowWidthClass.COMPACT)
     }
 }
 
@@ -410,12 +403,12 @@ private fun CredentialDetailScreenCompactPreview() {
 @Composable
 private fun CredentialDetailScreenLargePreview() {
     WalletTheme {
-        CredentialDetailScreenPreview(windowWidthClass = WindowWidthSizeClass.EXPANDED)
+        CredentialDetailScreenPreview(windowWidthClass = WindowWidthClass.EXPANDED)
     }
 }
 
 @Composable
-private fun CredentialDetailScreenPreview(windowWidthClass: WindowWidthSizeClass) {
+private fun CredentialDetailScreenPreview(windowWidthClass: WindowWidthClass) {
     CredentialDetailScreenContent(
         isLoading = false,
         credentialDetail = CredentialDetailUiState(

@@ -13,10 +13,8 @@ import ch.admin.foitt.wallet.platform.cameraPermissionHandler.presentation.Permi
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @Composable
-@Destination
 fun MrzScanPermissionScreen(viewModel: MrzScanPermissionViewModel) {
     val currentActivity = LocalActivity.current
     val cameraPermissionLauncher = rememberLauncherForActivityResult(

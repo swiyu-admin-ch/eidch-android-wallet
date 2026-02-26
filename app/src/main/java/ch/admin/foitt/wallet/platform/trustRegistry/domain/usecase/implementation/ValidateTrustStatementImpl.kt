@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.openid4vc.domain.model.anycredential.CredentialValidity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwt
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
 import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
@@ -55,7 +55,7 @@ internal class ValidateTrustStatementImpl @Inject constructor(
             checkNotNull(trustStatement.issuedAt) { "$errorMessageStart iat is missing" }
             checkNotNull(trustStatement.subject) { "$errorMessageStart sub is missing" }
             check(trustStatement.subject == actorDid) { "trust statement is not from did we requested it for" }
-            check(trustStatement.jwtValidity == CredentialValidity.Valid) {
+            check(trustStatement.jwtValidity == Validity.Valid) {
                 "$errorMessageStart is ${trustStatement.jwtValidity}"
             }
 

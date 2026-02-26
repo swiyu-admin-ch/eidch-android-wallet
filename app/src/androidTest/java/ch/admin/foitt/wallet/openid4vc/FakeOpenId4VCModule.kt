@@ -5,6 +5,7 @@ import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule
 import ch.admin.foitt.openid4vc.domain.repository.CredentialOfferRepository
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
 import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.VerifyVcSdJwtSignature
 import ch.admin.foitt.wallet.platform.utils.SafeJson
 import dagger.Binds
 import dagger.Module
@@ -38,4 +39,9 @@ interface FakeOpenId4VcBindings {
     fun bindVerifyJwtSignature(
         useCase: FakeVerifyJwtSignatureImpl
     ): VerifyJwtSignature
+
+    @Binds
+    fun bindVerifyVcSdJwtSignature(
+        useCase: FakeVerifyVcSdJwtSignatureImpl
+    ): VerifyVcSdJwtSignature
 }

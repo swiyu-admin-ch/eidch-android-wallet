@@ -7,7 +7,7 @@ import ch.admin.foitt.wallet.feature.credentialOffer.domain.usecase.GetCredentia
 import ch.admin.foitt.wallet.platform.credential.domain.model.MapToCredentialDisplayDataError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.MapToCredentialClaimCluster
-import ch.admin.foitt.wallet.platform.ssi.domain.model.VerifiableCredentialWithDisplaysAndClustersRepositoryError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialWithDisplaysRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithDisplaysAndClustersRepository
 import ch.admin.foitt.wallet.platform.utils.andThen
 import ch.admin.foitt.wallet.platform.utils.mapError
@@ -23,8 +23,9 @@ class GetCredentialOfferFlowImpl @Inject constructor(
     private val mapToCredentialClaimCluster: MapToCredentialClaimCluster,
 ) : GetCredentialOfferFlow {
     override fun invoke(credentialId: Long): Flow<Result<CredentialOffer?, GetCredentialOfferFlowError>> =
-        verifiableCredentialWithDisplaysAndClustersRepository.getNullableVerifiableCredentialWithDisplaysAndClustersFlowById(credentialId)
-            .mapError(VerifiableCredentialWithDisplaysAndClustersRepositoryError::toGetCredentialOfferFlowError)
+        verifiableCredentialWithDisplaysAndClustersRepository.getNullableVerifiableCredentialWithDisplaysAndClustersFlowById(
+            credentialId
+        ).mapError(CredentialWithDisplaysRepositoryError::toGetCredentialOfferFlowError)
             .andThen { credentialWithDisplaysAndClusters ->
                 coroutineBinding {
                     credentialWithDisplaysAndClusters?.let { credentialWithDisplaysAndClusters ->

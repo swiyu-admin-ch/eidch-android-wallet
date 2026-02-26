@@ -10,13 +10,13 @@ import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.Permi
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.CheckCameraPermission
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.ShouldAutoTriggerPermissionPrompt
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.hasCameraPermission
 import ch.admin.foitt.wallet.platform.scaffold.extension.shouldShowRationale
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openAppDetailsSettings
-import ch.admin.foitt.walletcomposedestinations.destinations.QrScannerScreenDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +37,7 @@ class QrScanPermissionViewModel @Inject constructor(
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
 
-    override val topBarState = TopBarState.Details(navManager::navigateUp, null)
+    override val topBarState = TopBarState.Details(navManager::popBackStack, null)
 
     private val cameraPermission by lazy { Manifest.permission.CAMERA }
 
@@ -71,7 +71,7 @@ class QrScanPermissionViewModel @Inject constructor(
 
     fun onOpenSettings() {
         appContext.openAppDetailsSettings()
-        navManager.navigateUp()
+        navManager.popBackStack()
     }
 
     fun navigateToFirstScreen(activity: FragmentActivity) {
@@ -91,11 +91,11 @@ class QrScanPermissionViewModel @Inject constructor(
         }
     }
 
-    fun onClose() = navManager.navigateUp()
+    fun onClose() = navManager.popBackStack()
 
     private suspend fun handleNewState(newState: PermissionState) = when (newState) {
-        PermissionState.Granted -> navManager.navigateToAndClearCurrent(
-            QrScannerScreenDestination(
+        PermissionState.Granted -> navManager.replaceCurrentWith(
+            Destination.QrScannerScreen(
                 firstCredentialWasAdded = getFirstCredentialWasAdded()
             )
         )

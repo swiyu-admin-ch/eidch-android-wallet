@@ -2,9 +2,8 @@ package ch.admin.foitt.wallet.app.presentation
 
 import android.content.Intent
 import android.os.CountDownTimer
-import androidx.fragment.app.FragmentActivity
+import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
-import androidx.navigation.NavHostController
 import ch.admin.foitt.wallet.BuildConfig
 import ch.admin.foitt.wallet.feature.login.domain.usecase.LockTrigger
 import ch.admin.foitt.wallet.feature.sessionTimeout.domain.SessionTimeoutNavigation
@@ -44,7 +43,8 @@ class MainViewModel @Inject constructor(
 
     private val countdown = object : CountDownTimer(SESSION_TIMEOUT, 1000) {
         @Suppress("EmptyFunctionBlock")
-        override fun onTick(millisUntilFinished: Long) {}
+        override fun onTick(millisUntilFinished: Long) {
+        }
 
         override fun onFinish() {
             ioDispatcherScope.launch {
@@ -57,11 +57,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun initNavHost(navHostController: NavHostController) {
-        navManager.setNavHost(navHostController)
-    }
+    fun getBackStack() = navManager.backstack
 
-    fun handleIntent(activity: FragmentActivity) {
+    fun handleIntent(activity: ComponentActivity) {
         val intent = activity.intent
         Timber.d("Intent received,\naction: ${intent.action},\ndata: ${intent.dataString}")
         if (intent.isDeeplinkIntent) {
@@ -75,8 +73,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private val Intent.isDeeplinkIntent get() =
-        action == Intent.ACTION_VIEW && (scheme.isOfferScheme() || scheme.isPresentationScheme()) && dataString != null
+    private val Intent.isDeeplinkIntent
+        get() =
+            action == Intent.ACTION_VIEW && (scheme.isOfferScheme() || scheme.isPresentationScheme()) && dataString != null
 
     private fun String?.isOfferScheme() = this == BuildConfig.SCHEME_CREDENTIAL_OFFER || this == BuildConfig.SCHEME_CREDENTIAL_OFFER_SWIYU
     private fun String?.isPresentationScheme() = this == BuildConfig.SCHEME_PRESENTATION_REQUEST ||

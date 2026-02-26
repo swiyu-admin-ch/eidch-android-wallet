@@ -36,6 +36,7 @@ import ch.admin.foitt.wallet.platform.activityList.presentation.model.ActivityUi
 import ch.admin.foitt.wallet.platform.composables.Avatar
 import ch.admin.foitt.wallet.platform.composables.AvatarSize
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
+import ch.admin.foitt.wallet.platform.composables.ToastAnimated
 import ch.admin.foitt.wallet.platform.composables.presentation.clusterLazyListItem
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
@@ -45,7 +46,6 @@ import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimIte
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialInfoWithBadgesWidget
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.ActivityDetailNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
@@ -53,12 +53,8 @@ import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination(
-    navArgsDelegate = ActivityDetailNavArg::class,
-)
 @Composable
 fun ActivityDetailScreen(viewModel: ActivityDetailViewModel) {
     val confirmationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -76,8 +72,10 @@ fun ActivityDetailScreen(viewModel: ActivityDetailViewModel) {
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         nonComplianceEnabled = viewModel.nonComplianceEnabled,
         activityDetailUiState = viewModel.activity.collectAsStateWithLifecycle().value,
+        isSnackbarVisible = viewModel.isSnackbarVisible.collectAsStateWithLifecycle().value,
         onReportActor = viewModel::onReportActor,
         onDeleteActivity = viewModel::onDeleteActivity,
+        onCloseSnackbar = viewModel::hideNonComplianceSnackbar,
     )
 }
 
@@ -86,8 +84,10 @@ fun ActivityDetailScreenContent(
     isLoading: Boolean,
     nonComplianceEnabled: Boolean,
     activityDetailUiState: ActivityDetailUiState,
+    isSnackbarVisible: Boolean,
     onReportActor: () -> Unit,
     onDeleteActivity: () -> Unit,
+    onCloseSnackbar: () -> Unit,
 ) = Box(
     modifier = Modifier
         .fillMaxSize()
@@ -127,6 +127,14 @@ fun ActivityDetailScreenContent(
 
         item { Spacer(modifier = Modifier.height(Sizes.s04)) }
 
+        item {
+            WalletTexts.ClusterHeadline(
+                text = stringResource(R.string.tk_activity_activityDetail_credential_title),
+                depth = 0
+            )
+            Spacer(modifier = Modifier.height(Sizes.s02))
+        }
+
         credentialInfoWithBadgesWidget(
             credentialCardState = activityDetailUiState.credential,
             paddingValues = paddingValues,
@@ -150,6 +158,15 @@ fun ActivityDetailScreenContent(
             onDeleteActivity = onDeleteActivity,
         )
     }
+
+    ToastAnimated(
+        isVisible = isSnackbarVisible,
+        isSnackBarDesign = true,
+        messageToast = R.string.tk_activity_activityList_nonCompliance_reportSent_title,
+        iconEnd = R.drawable.wallet_ic_cross,
+        onCloseToast = onCloseSnackbar,
+    )
+
     LoadingOverlay(isLoading)
 }
 
@@ -323,8 +340,10 @@ private fun ActivityDetailScreenPreview() {
                     )
                 )
             ),
+            isSnackbarVisible = true,
             onReportActor = {},
             onDeleteActivity = {},
+            onCloseSnackbar = {},
         )
     }
 }

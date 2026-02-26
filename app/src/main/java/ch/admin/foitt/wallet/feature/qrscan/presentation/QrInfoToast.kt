@@ -82,30 +82,6 @@ fun QrToastExpiredCredentialOffer(
 )
 
 @Composable
-fun QrToastEmptyWallet(
-    modifier: Modifier = Modifier,
-    onClose: () -> Unit,
-) = QrInfoToast(
-    modifier = modifier,
-    headline = R.string.tk_error_emptywallet_title,
-    text = R.string.tk_error_emptywallet_body,
-    iconStart = R.drawable.wallet_ic_toast_credential,
-    onClose = onClose,
-)
-
-@Composable
-fun QrToastNoCompatibleCredential(
-    modifier: Modifier = Modifier,
-    onClose: () -> Unit,
-) = QrInfoToast(
-    modifier = modifier,
-    headline = R.string.tk_error_nosuchcredential_title,
-    text = R.string.tk_error_nosuchcredential_body,
-    iconStart = R.drawable.wallet_ic_toast_credential,
-    onClose = onClose,
-)
-
-@Composable
 fun QrToastNetworkError(
     modifier: Modifier = Modifier,
     onClose: () -> Unit,

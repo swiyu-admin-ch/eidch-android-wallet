@@ -5,6 +5,6 @@ import ch.admin.foitt.wallet.platform.database.domain.model.LocalizedDisplay
 interface GetLocalizedDisplay {
     operator fun <T : LocalizedDisplay> invoke(
         displays: Collection<T>,
-        preferredLocale: String? = null,
+        preferredLocaleString: String? = null,
     ): T?
 }

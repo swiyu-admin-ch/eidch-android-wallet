@@ -31,7 +31,7 @@ class SavePresentationAcceptedActivityImplTest {
         )
 
         coEvery {
-            mockActivityRepository.saveActivity(any(), any(), any(), any(), any())
+            mockActivityRepository.saveActivity(any(), any(), any(), any(), any(), any())
         } returns Ok(1)
     }
 
@@ -46,12 +46,14 @@ class SavePresentationAcceptedActivityImplTest {
         val actorDisplayData = mockk<ActorDisplayData>()
         val actorFallbackName = "fallback"
         val claimIds = listOf(1L, 2L)
+        val nonComplianceData = "nonComplianceData"
 
         useCase(
             credentialId = credentialId,
             actorDisplayData = actorDisplayData,
             verifierFallbackName = actorFallbackName,
-            claimIds = claimIds
+            claimIds = claimIds,
+            nonComplianceData = nonComplianceData,
         )
 
         coVerify {
@@ -61,6 +63,7 @@ class SavePresentationAcceptedActivityImplTest {
                 actorDisplayData = actorDisplayData,
                 actorFallbackName = actorFallbackName,
                 claimIds = claimIds,
+                nonComplianceData = nonComplianceData,
             )
         }
     }

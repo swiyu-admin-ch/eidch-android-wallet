@@ -1,7 +1,7 @@
 package ch.admin.foitt.openid4vc.domain.model.vcSdJwt
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
-import ch.admin.foitt.openid4vc.domain.model.anycredential.CredentialValidity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import kotlinx.serialization.json.JsonElement
@@ -15,12 +15,12 @@ class VcSdJwtCredential(
     override val payload: String,
     validFrom: Long? = null,
     validUntil: Long? = null,
-) : VcSdJwt(payload), AnyCredential {
+) : VcSdJwt(rawVcSdJwt = payload, reservedClaimNames = RESERVED_CLAIM_NAMES), AnyCredential {
 
     override val issuer: String = this.vcIssuer
     override val format: CredentialFormat = CredentialFormat.VC_SD_JWT
 
-    override val validity: CredentialValidity
+    override val validity: Validity
         get() = jwtValidity
 
     override val claimsPath = "$"

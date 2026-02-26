@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.model
 
 import ch.admin.foitt.wallet.platform.utils.base64StringToByteArray
-import ch.admin.foitt.wallet.platform.utils.decompress
+import ch.admin.foitt.wallet.platform.utils.decompressWithMaxSize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,6 +22,6 @@ data class TokenStatusList(
 ) {
     fun decodeAndDeflate(): ByteArray {
         val zippedData = base64StringToByteArray(lst)
-        return zippedData.decompress()
+        return zippedData.decompressWithMaxSize()
     }
 }

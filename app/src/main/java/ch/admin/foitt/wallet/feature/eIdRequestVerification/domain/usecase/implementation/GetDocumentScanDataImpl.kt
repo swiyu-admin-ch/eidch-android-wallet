@@ -7,6 +7,7 @@ import ch.admin.foitt.avwrapper.DocumentScanPackageResult
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.GetDocumentScanDataError
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.toGetDocumentScanDataError
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetDocumentScanData
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdMrzValues
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestFileRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.repository.EIdRequestFileRepository
 import com.github.michaelbull.result.Result
@@ -18,6 +19,7 @@ import javax.inject.Inject
 
 class GetDocumentScanDataImpl @Inject constructor(
     private val eIdRequestFileRepository: EIdRequestFileRepository,
+    private val getEIdMrzValues: GetEIdMrzValues,
 ) : GetDocumentScanData {
     override suspend fun invoke(
         caseId: String
@@ -28,6 +30,8 @@ class GetDocumentScanDataImpl @Inject constructor(
         ).map { requestFile ->
             requestFile.data.decodeToString()
         }.mapError(EIdRequestFileRepositoryError::toGetDocumentScanDataError).bind()
+
+        val mrzValues = getEIdMrzValues(serializedDataList).bind()
 
         val nfcFileList: List<AVBeamFileData> = eIdRequestFileRepository.getEIdRequestFilesByCaseId(caseId).map { dbFileList ->
             dbFileList
@@ -45,7 +49,7 @@ class GetDocumentScanDataImpl @Inject constructor(
         Timber.d("NfcScan: getDocumentScanPackageResult $serializedDataList")
         DocumentScanPackageResult(
             serializedDataList = serializedDataList,
-            mrzValues = listOf(),
+            mrzValues = mrzValues,
             files = AVBeamFilesDataList(nfcFileList)
         )
     }

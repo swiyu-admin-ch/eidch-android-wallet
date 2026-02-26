@@ -3,30 +3,30 @@ package ch.admin.foitt.wallet.platform.activityList.mock
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityActorDisplayEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.ActivityActorDisplayWithImage
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityClaimEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialActivityEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
+import java.net.URL
 
 object ActivityListMocks {
 
     val credential1 = Credential(
         id = 1,
-        format = CredentialFormat.VC_SD_JWT
+        format = CredentialFormat.VC_SD_JWT,
+        issuerUrl = URL("https://issuer.example.com")
     )
 
     val verifiableCredential1 = VerifiableCredentialEntity(
         credentialId = 1,
         progressionState = VerifiableProgressionState.ACCEPTED,
-        status = CredentialStatus.VALID,
-        payload = "payload",
         issuer = "issuer",
         validFrom = 1,
         validUntil = 123456789,
@@ -128,4 +128,8 @@ object ActivityListMocks {
         imageHash = null
     )
 
+    val activityActorDisplayWithImage = ActivityActorDisplayWithImage(
+        actorDisplay =activityActorDisplay4,
+        image = null
+    )
 }

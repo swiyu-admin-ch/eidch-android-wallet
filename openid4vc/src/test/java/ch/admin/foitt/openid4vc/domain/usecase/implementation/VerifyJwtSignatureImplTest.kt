@@ -1,8 +1,8 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
-import ch.admin.eid.didresolver.didtoolbox.DidDoc
-import ch.admin.eid.didresolver.didtoolbox.Jwk
-import ch.admin.eid.didresolver.didtoolbox.VerificationMethod
+import ch.admin.eid.didresolver.did_sidekicks.DidDoc
+import ch.admin.eid.didresolver.did_sidekicks.Jwk
+import ch.admin.eid.didresolver.did_sidekicks.VerificationMethod
 import ch.admin.foitt.openid4vc.domain.model.ResolveDidError
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError

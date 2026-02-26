@@ -4,7 +4,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.SdJwt
-import ch.admin.foitt.wallet.platform.database.domain.model.Converters
+import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 
 // DB schema v3.1 to v3.3
 internal val Migration1to2 = object : Migration(1, 2) {
@@ -17,7 +17,7 @@ internal val Migration1to2 = object : Migration(1, 2) {
             val id = cursor.getLong(cursor.getColumnIndexOrThrow("id"))
             val payload = cursor.getString(cursor.getColumnIndexOrThrow("payload"))
             val formatString = cursor.getString(cursor.getColumnIndexOrThrow("format"))
-            val format = Converters().toCredentialFormat(formatString)
+            val format = Credential.Converters().toCredentialFormat(formatString)
 
             val (validFrom, validUntil) = when (format) {
                 CredentialFormat.VC_SD_JWT -> {

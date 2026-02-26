@@ -12,6 +12,9 @@ internal object LocalizedDisplayTestData {
     val withSupportedLocaleWithCountryCode = listOf("en", "fr", "de-CH", "fallback").map {
         MockLocalizedDisplay(locale = it)
     }
+    val withSupportedLocaleWithDifferentCountryCode = listOf("en", "fr", "de-DE", "fallback").map {
+        MockLocalizedDisplay(locale = it)
+    }
     val withSupportedLocaleNoCountryCode = listOf("en", "it", "fallback", "yy").map { MockLocalizedDisplay(locale = it) }
     val noSupportedLocaleAndNoFallback = listOf("xx", "yy").map { MockLocalizedDisplay(locale = it) }
     val withFallbackAndNoSupportedLocale = listOf("yy", "fallback").map { MockLocalizedDisplay(locale = it) }
@@ -19,6 +22,10 @@ internal object LocalizedDisplayTestData {
 
 internal object LocalizedAndThemedDisplayTestData {
     val withSupportedLocaleWithCountryCode = listOf("en", "fr", "de-CH", "fallback").map {
+        createCredentialDisplay(it)
+    }
+
+    val withSupportedLocaleWithDifferentCountryCode = listOf("en", "fr", "de-DE", "fallback").map {
         createCredentialDisplay(it)
     }
     val withSupportedLocaleNoCountryCode = listOf("en", "it", "fallback", "yy").map {

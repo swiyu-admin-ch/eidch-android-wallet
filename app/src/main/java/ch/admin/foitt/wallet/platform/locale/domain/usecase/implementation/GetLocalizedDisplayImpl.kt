@@ -2,8 +2,10 @@ package ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation
 
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.database.domain.model.LocalizedDisplay
+import ch.admin.foitt.wallet.platform.locale.LocaleCompat
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
+import java.util.Locale
 import javax.inject.Inject
 
 class GetLocalizedDisplayImpl @Inject constructor(
@@ -12,53 +14,82 @@ class GetLocalizedDisplayImpl @Inject constructor(
 
     override fun <T : LocalizedDisplay> invoke(
         displays: Collection<T>,
-        preferredLocale: String?,
+        preferredLocaleString: String?,
     ): T? {
         val appLocale = getCurrentAppLocale()
-        val language = appLocale.language // e.g. "de"
-        val country = appLocale.country // e.g. "CH"
 
-        // Search for LocalizedDisplay with a perfect match of $language-$country, e.g. "de-CH"
-        val displayWithPerfectLocaleMatch = displays.getPerfectMatch(
-            language = language,
-            country = country,
-        )
+        val preferredLocale = preferredLocaleString?.let {
+            LocaleCompat.ofUnknownFormat(it)
+        } ?: appLocale
 
-        // If available, return the perfectly matching LocalizedDisplay
-        // Otherwise return the LocalizedDisplay whose locale's $language part has the lowest index aka highest priority
-        return displayWithPerfectLocaleMatch ?: bestMatchingLocale(
-            language = language,
-            preferredLocale = preferredLocale,
-            displays = displays
-        )
+        // Preferred Locale in this example is "fr-CH"
+        // Search for LocalizedDisplay with a perfect match, f. ex. "fr-CH"
+        return displays.getWithLanguageAndCountry(preferredLocale = preferredLocale)
+            // Next: language match, but different country, f. ex. "fr-FR"
+            ?: displays.getWithLanguageAndDifferentCountry(preferredLocale = preferredLocale)
+            // Next: language match, country not available, f. ex. "fr"
+            ?: displays.getWithLanguage(preferredLocale = preferredLocale)
+            // Next: check for default languages, f. e "en" etc. (see prioritized list)
+            ?: displays.getWithDefault()
+            // Last resort: take first if available
+            ?: displays.firstOrNull()
     }
 
-    private fun <T : LocalizedDisplay> Collection<T>.getPerfectMatch(
-        language: String,
-        country: String,
+    /**
+     * Looks for display containing a complete locale
+     * Ex: preferred locale: "fr-CH"
+     * Display with "fr-CH" -> return this perfect match
+     * No display with "fr-CH" -> null
+     */
+    private fun <T : LocalizedDisplay> Collection<T>.getWithLanguageAndCountry(
+        preferredLocale: Locale,
     ) = firstOrNull { display ->
-        display.locale.formatLocale().equals("$language-$country", ignoreCase = true)
+        LocaleCompat.ofUnknownFormat(display.locale) == preferredLocale
     }
 
-    private fun String.formatLocale() = replace("_", "-")
+    /**
+     * Looks for display containing a language-(anyCountry)
+     * Ex: preferred locale: "fr-CH"
+     * Display with "fr-(anyCountry)" -> return this match
+     * No display with "fr-(anyCountry)" -> null
+     */
+    private fun <T : LocalizedDisplay> Collection<T>.getWithLanguageAndDifferentCountry(
+        preferredLocale: Locale,
+    ) = firstOrNull { display ->
+        val displayLocale = LocaleCompat.ofUnknownFormat(display.locale)
 
-    private fun String.language() = split("-", "_").first()
+        displayLocale.language == preferredLocale.language && displayLocale.country != null
+    }
 
-    private fun <T : LocalizedDisplay> bestMatchingLocale(language: String, preferredLocale: String?, displays: Collection<T>): T? {
-        // Create a map of preferred languages with the provided language in the first place.
+    /**
+     * Looks for display containing a language
+     * Ex: preferred locale: "fr-CH"
+     * Display with "fr" -> return this match
+     * No display with "fr" -> null
+     */
+    private fun <T : LocalizedDisplay> Collection<T>.getWithLanguage(
+        preferredLocale: Locale,
+    ) = firstOrNull { display ->
+        val displayLocale = LocaleCompat.ofUnknownFormat(display.locale)
+
+        displayLocale.language == preferredLocale.language
+    }
+
+    /**
+     * Looks for display containing a (prioritized) default language
+     * Ex: preferred locale: "fr-CH"
+     * Display with "de" -> return this match
+     * No display with match in prio list -> null
+     */
+    private fun <T : LocalizedDisplay> Collection<T>.getWithDefault(): T? {
+        // Create a map of preferred languages
         // The map value indicates the preference order (lower index => higher priority)
+        val prioritizedLocales: Map<Locale, Int> = DisplayLanguage.PRIORITIES
+            .withIndex()
+            .associate { it.value to it.index }
 
-        val preferredLanguages = setOf(language)
-            .plus(DisplayLanguage.PRIORITIES)
-            .mapIndexed { index: Int, s: String -> s to index }
-            .toMap()
-        return displays.minByOrNull { display ->
-            preferredLanguages.getOrDefault(
-                display.locale.language(),
-                Int.MAX_VALUE
-            )
-        } ?: displays.firstOrNull { display ->
-            display.locale.language().equals(preferredLocale?.language(), ignoreCase = true)
-        } ?: displays.firstOrNull() // return the first LocalizedDisplay if none contains a preferred language
+        return this.minByOrNull { display ->
+            prioritizedLocales[LocaleCompat.ofUnknownFormat(display.locale)] ?: Int.MAX_VALUE
+        }
     }
 }

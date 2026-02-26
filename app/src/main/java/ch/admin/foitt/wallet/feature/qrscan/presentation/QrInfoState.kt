@@ -10,8 +10,6 @@ sealed interface QrInfoState {
     data object UnknownIssuer : QrInfoState
     data object UnknownVerifier : QrInfoState
     data object InvalidQr : QrInfoState
-    data object EmptyWallet : QrInfoState
-    data object NoCompatibleCredential : QrInfoState
     data object UnexpectedError : QrInfoState
     data object InvalidPresentation : QrInfoState
     data object UnsupportedKeyStorageSecurityLevel : QrInfoState

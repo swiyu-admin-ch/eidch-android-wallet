@@ -1,6 +1,10 @@
+@file:OptIn(UnsafeResultValueAccess::class, UnsafeResultErrorAccess::class)
+
 package ch.admin.foitt.wallet.util
 
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.annotation.UnsafeResultErrorAccess
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.github.michaelbull.result.asErr
 import com.github.michaelbull.result.asOk
 import com.github.michaelbull.result.get

@@ -12,7 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
@@ -74,8 +77,23 @@ private fun CredentialCardWithIcon(
             useSmall = true
         )
     }
+
+    val inactiveColor = WalletTheme.colorScheme.inactiveOverlay
+    val inactiveModifier = if (credentialState.isUnaccepted) {
+        Modifier.drawBehind {
+            drawRoundRect(color = inactiveColor)
+            drawRoundRect(
+                color = credentialState.backgroundColor,
+                style = dashedStroke,
+                cornerRadius = CornerRadius(roundedCornerSize.toPx()),
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Box(
-        modifier = Modifier
+        modifier = inactiveModifier
             .drawBehind {
                 drawRect(brush = Gradients.diagonalCredentialBrush())
             }
@@ -92,6 +110,11 @@ private fun CredentialCardWithIcon(
         }
     }
 }
+
+private val dashedStroke = Stroke(
+    width = 8f,
+    pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 16f)),
+)
 
 private class CredentialCardSmallPreviewParams :
     PreviewParameterProvider<ComposableWrapper<CredentialCardState>> {

@@ -23,7 +23,7 @@ class LockViewModel @Inject constructor(
 
     override fun onResume(owner: LifecycleOwner) {
         viewModelScope.launch {
-            navManager.navigateToAndClearCurrent(navigateToLogin())
+            navManager.replaceCurrentWith(navigateToLogin())
         }
     }
 }

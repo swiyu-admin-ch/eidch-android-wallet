@@ -1,8 +1,12 @@
+@file:Suppress("TooManyFunctions")
+
 package ch.admin.foitt.openid4vc.domain.model.presentationRequest
 
 import ch.admin.foitt.openid4vc.domain.model.GetKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.GetSoftwareKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.KeyPairError
+import ch.admin.foitt.openid4vc.domain.model.jwe.CreateJWEError
+import ch.admin.foitt.openid4vc.domain.model.jwe.JWEError
 import ch.admin.foitt.openid4vc.utils.JsonError
 import ch.admin.foitt.openid4vc.utils.JsonParsingError
 import timber.log.Timber
@@ -20,7 +24,8 @@ interface PresentationRequestError {
         CreateVcSdJwtVerifiablePresentationError,
         CreateAnyDescriptorMapsError,
         CreateVcSdJwtDescriptorMapError,
-        SubmitPresentationErrorError
+        SubmitPresentationErrorError,
+        GetPresentationRequestTypeError
 }
 
 sealed interface FetchPresentationRequestError : PresentationRequestError
@@ -30,6 +35,8 @@ internal sealed interface CreateVcSdJwtVerifiablePresentationError : Presentatio
 internal sealed interface CreateAnyDescriptorMapsError : PresentationRequestError
 internal sealed interface CreateVcSdJwtDescriptorMapError : PresentationRequestError
 sealed interface SubmitPresentationErrorError : PresentationRequestError
+
+sealed interface GetPresentationRequestTypeError : PresentationRequestError
 
 internal fun CreateVcSdJwtVerifiablePresentationError.toCreateAnyVerifiablePresentationError(): CreateAnyVerifiablePresentationError =
     when (this) {
@@ -67,4 +74,16 @@ internal fun JsonParsingError.toCreateVcSdJwtVerifiablePresentationError(): Crea
 
 internal fun JsonParsingError.toFetchPresentationRequestError(): FetchPresentationRequestError = when (this) {
     is JsonError.Unexpected -> PresentationRequestError.Unexpected(throwable)
+}
+
+internal fun JsonParsingError.toGetPresentationRequestTypeError(): GetPresentationRequestTypeError = when (this) {
+    is JsonError.Unexpected -> PresentationRequestError.Unexpected(throwable)
+}
+
+internal fun CreateJWEError.toGetPresentationRequestTypeError(): GetPresentationRequestTypeError = when (this) {
+    is JWEError.Unexpected -> PresentationRequestError.Unexpected(throwable)
+}
+
+internal fun GetPresentationRequestTypeError.toSubmitAnyCredentialPresentationError(): SubmitAnyCredentialPresentationError = when (this) {
+    is PresentationRequestError.Unexpected -> this
 }

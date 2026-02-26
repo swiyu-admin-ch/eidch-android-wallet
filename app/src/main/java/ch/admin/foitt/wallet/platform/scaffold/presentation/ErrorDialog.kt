@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
@@ -32,8 +32,8 @@ internal fun ErrorDialog(
     when (val state = viewModel.state.collectAsStateWithLifecycle().value) {
         ErrorDialogState.Closed -> {}
         is ErrorDialogState.Unexpected -> ErrorDialogContent(
-            title = stringResource(id = R.string.global_error_unexpected_title),
-            message = stringResource(id = R.string.global_error_unexpected_message),
+            title = stringResource(id = R.string.tk_global_error_unexpected_title),
+            message = stringResource(id = R.string.tk_global_error_unexpected_message),
             details = state.errorDetails,
             buttonText = stringResource(id = R.string.global_error_confirm_button),
             icon = painterResource(id = R.drawable.wallet_ic_circular_cross),
@@ -41,8 +41,8 @@ internal fun ErrorDialog(
         )
 
         is ErrorDialogState.Network -> ErrorDialogContent(
-            title = stringResource(id = R.string.global_error_network_title),
-            message = stringResource(id = R.string.global_error_network_message),
+            title = stringResource(id = R.string.tk_global_error_network_title),
+            message = stringResource(id = R.string.tk_global_error_network_message),
             details = state.errorDetails,
             buttonText = stringResource(id = R.string.global_error_confirm_button),
             icon = painterResource(id = R.drawable.wallet_ic_wifi),
@@ -110,8 +110,8 @@ private fun ErrorDialogContent(
 private fun ErrorDialogPreview() {
     WalletTheme {
         ErrorDialogContent(
-            title = stringResource(id = R.string.global_error_unexpected_title),
-            message = stringResource(id = R.string.global_error_unexpected_message),
+            title = stringResource(id = R.string.tk_global_error_unexpected_title),
+            message = stringResource(id = R.string.tk_global_error_unexpected_message),
             details = "WalletBustedException",
             icon = painterResource(id = R.drawable.wallet_ic_circular_cross),
             buttonText = stringResource(id = R.string.global_error_confirm_button),

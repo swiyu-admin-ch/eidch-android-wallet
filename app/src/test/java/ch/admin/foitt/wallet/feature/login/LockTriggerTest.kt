@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.feature.login
 
+import androidx.compose.runtime.snapshotFlow
 import ch.admin.foitt.wallet.feature.login.domain.usecase.IsDeviceSecureLockScreenConfigured
 import ch.admin.foitt.wallet.feature.login.domain.usecase.implementation.LockTriggerImpl
 import ch.admin.foitt.wallet.platform.appLifecycleRepository.domain.model.AppLifecycleState
@@ -7,12 +8,7 @@ import ch.admin.foitt.wallet.platform.appLifecycleRepository.domain.usecase.GetA
 import ch.admin.foitt.wallet.platform.database.domain.usecase.CloseAppDatabase
 import ch.admin.foitt.wallet.platform.database.domain.usecase.IsAppDatabaseOpen
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
-import ch.admin.foitt.walletcomposedestinations.destinations.Destination
-import ch.admin.foitt.walletcomposedestinations.destinations.HomeScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.LockScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.OnboardingIntroScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.UnsecuredDeviceScreenDestination
-import com.ramcosta.composedestinations.spec.Direction
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import io.mockk.MockKAnnotations
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -47,7 +43,7 @@ internal class LockTriggerTest {
     fun setup() {
         MockKAnnotations.init(this)
 
-        coEvery { mockNavManager.navigateTo(direction = any()) } just Runs
+        coEvery { mockNavManager.navigateTo(destination = any()) } just Runs
         coEvery { mockCloseAppDatabase() } just Runs
     }
 
@@ -58,47 +54,47 @@ internal class LockTriggerTest {
 
     @Test
     fun `Standard screens in background with open DB and a device lockscreen, lock DB and navigate to lock screen`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = true,
         isCloseAppDatabaseCalled = true,
-        newDestination = LockScreenDestination,
+        newDestination = Destination.LockScreen
     )
 
     @Test
     fun `Standard screens in background with open DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen
     )
 
     @Test
     fun `Standard screens in background with closed DB and a device lockscreen, lock DB and navigate to lock screen`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = true,
         isCloseAppDatabaseCalled = true,
-        newDestination = LockScreenDestination,
+        newDestination = Destination.LockScreen,
     )
 
     @Test
     fun `Standard screens in background with closed DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen,
     )
 
     @Test
     fun `Standard screens in foreground with open DB and a device lockscreen, do nothing`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = true,
@@ -108,37 +104,37 @@ internal class LockTriggerTest {
 
     @Test
     fun `Standard screens in foreground with open DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen,
     )
 
     @Test
     fun `Standard screens in foreground with closed DB and a device lockscreen, lock DB and navigate to lock screen`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = true,
         isCloseAppDatabaseCalled = true,
-        newDestination = LockScreenDestination,
+        newDestination = Destination.LockScreen,
     )
 
     @Test
     fun `Standard screens in foreground with closed DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = HomeScreenDestination,
+        backstack = listOf(Destination.HomeScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen,
     )
 
     @Test
     fun `Whitelisted screens in background with open DB and a device lockscreen, only lock DB`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = true,
@@ -148,17 +144,17 @@ internal class LockTriggerTest {
 
     @Test
     fun `Whitelisted screens in background with open DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen,
     )
 
     @Test
     fun `Whitelisted screens in background with closed DB and a device lockscreen, only lock DB`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = true,
@@ -168,17 +164,17 @@ internal class LockTriggerTest {
 
     @Test
     fun `Whitelisted screens in background with closed DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen
     )
 
     @Test
     fun `Whitelisted screens in foreground with open DB and a device lockscreen, only lock DB`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = true,
@@ -188,17 +184,17 @@ internal class LockTriggerTest {
 
     @Test
     fun `Whitelisted screens in foreground with open DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen
     )
 
     @Test
     fun `Whitelisted screens in foreground with closed DB and a device lockscreen, only lock DB`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = true,
@@ -208,17 +204,17 @@ internal class LockTriggerTest {
 
     @Test
     fun `Whitelisted screens in foreground with closed DB and no device lockscreen, lock DB and navigate to no device lockscreen screen`() = lockTest(
-        currentDestination = OnboardingIntroScreenDestination,
+        backstack = listOf(Destination.OnboardingIntroScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
         isCloseAppDatabaseCalled = true,
-        newDestination = UnsecuredDeviceScreenDestination,
+        newDestination = Destination.UnsecuredDeviceScreen,
     )
 
     @Test
     fun `NoDevicePinSet screen in foreground with closed DB and no device lockscreen, only lock DB`() = lockTest(
-        currentDestination = UnsecuredDeviceScreenDestination,
+        backstack = listOf(Destination.UnsecuredDeviceScreen),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
@@ -228,7 +224,7 @@ internal class LockTriggerTest {
 
     @Test
     fun `NoDevicePinSet screen in background with closed DB and no device lockscreen, only lock DB`() = lockTest(
-        currentDestination = UnsecuredDeviceScreenDestination,
+        backstack = listOf(Destination.UnsecuredDeviceScreen),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
@@ -237,8 +233,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in background with open DB and a device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in background with open DB and a device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = true,
@@ -247,8 +243,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in background with open DB and no device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in background with open DB and no device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = false,
@@ -257,8 +253,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in background with closed DB and a device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in background with closed DB and a device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = true,
@@ -267,8 +263,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in background with closed DB and no device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in background with closed DB and no device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Background,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
@@ -277,8 +273,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in foreground with open DB and a device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in foreground with open DB and a device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = true,
@@ -287,8 +283,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in foreground with open DB and no device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in foreground with open DB and no device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = true,
         isDeviceLockScreenConfigured = false,
@@ -297,8 +293,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in foreground with closed DB and a device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in foreground with closed DB and a device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = true,
@@ -307,8 +303,8 @@ internal class LockTriggerTest {
     )
 
     @Test
-    fun `Null screen in foreground with closed DB and no device lockscreen, does nothing`() = lockTest(
-        currentDestination = null,
+    fun `Empty backstack in foreground with closed DB and no device lockscreen, does nothing`() = lockTest(
+        backstack = emptyList(),
         appLifecycleState = AppLifecycleState.Foreground,
         isAppDatabaseOpen = false,
         isDeviceLockScreenConfigured = false,
@@ -317,15 +313,18 @@ internal class LockTriggerTest {
     )
 
     private fun lockTest(
-        currentDestination: Destination?,
+        backstack: List<Destination>,
         appLifecycleState: AppLifecycleState,
         isAppDatabaseOpen: Boolean,
         isDeviceLockScreenConfigured: Boolean,
         isCloseAppDatabaseCalled: Boolean,
-        newDestination: Direction?,
+        newDestination: Destination?,
     ) = runTest {
-        coEvery { mockNavManager.currentDestinationFlow } returns MutableStateFlow(currentDestination)
-        coEvery { mockNavManager.currentDestination } returns currentDestination
+        coEvery { mockNavManager.backstackFlow } returns snapshotFlow { backstack }
+        if (backstack.isNotEmpty()) {
+            // this is only called when backstack is not empty
+            coEvery { mockNavManager.currentDestination } returns backstack.last()
+        }
         coEvery { mockGetAppLifecycleState() } returns MutableStateFlow(appLifecycleState)
         coEvery { mockIsAppDatabaseOpen.invoke() } returns isAppDatabaseOpen
         coEvery { mockIsDeviceSecureLockScreenConfigured.invoke() } returns isDeviceLockScreenConfigured
@@ -344,13 +343,13 @@ internal class LockTriggerTest {
         verify(isCloseAppDatabaseCalled = isCloseAppDatabaseCalled, destination = newDestination)
     }
 
-    private fun verify(isCloseAppDatabaseCalled: Boolean, destination: Direction?) {
+    private fun verify(isCloseAppDatabaseCalled: Boolean, destination: Destination?) {
         coVerify(exactly = if (isCloseAppDatabaseCalled) 1 else 0) {
             mockCloseAppDatabase()
         }
         destination?.let {
             coVerify(exactly = 1) {
-                mockNavManager.navigateTo(direction = destination)
+                mockNavManager.navigateTo(destination = destination)
             }
         } ?: coVerify(exactly = 0) { mockNavManager.navigateTo(any()) }
     }

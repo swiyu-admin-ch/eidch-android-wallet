@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.appAttestation.data.repository
 
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.Jwk
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AppAttestationRepositoryError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationChallengeResponse
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationRequest
@@ -23,9 +24,10 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import javax.inject.Inject
+import javax.inject.Named
 
 class AppAttestationRepositoryImpl @Inject constructor(
-    private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
     private val environmentSetupRepo: EnvironmentSetupRepository,
 ) : AppAttestationRepository {
 

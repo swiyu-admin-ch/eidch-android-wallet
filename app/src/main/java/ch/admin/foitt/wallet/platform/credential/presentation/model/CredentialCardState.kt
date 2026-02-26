@@ -3,6 +3,8 @@ package ch.admin.foitt.wallet.platform.credential.presentation.model
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 
 data class CredentialCardState(
     val credentialId: Long,
@@ -14,25 +16,15 @@ data class CredentialCardState(
     val contentColor: Color,
     val borderColor: Color,
     val isCredentialFromBetaIssuer: Boolean,
+    val progressionState: VerifiableProgressionState = VerifiableProgressionState.UNACCEPTED,
+    val deferredStatus: DeferredProgressionState? = null,
 ) {
     val useDefaultBackground = backgroundColor == defaultCardColor
 
-    companion object {
-        val EMPTY by lazy {
-            CredentialCardState(
-                credentialId = 0,
-                title = "",
-                subtitle = null,
-                status = null,
-                logo = null,
-                backgroundColor = defaultCardColor,
-                contentColor = defaultCardTextColor,
-                borderColor = defaultCardColor,
-                isCredentialFromBetaIssuer = false
-            )
-        }
+    val isDeferred = deferredStatus != null
+    val isUnaccepted = progressionState == VerifiableProgressionState.UNACCEPTED
 
+    companion object {
         val defaultCardColor = Color(0xFFF0EDE5)
-        private val defaultCardTextColor = Color(0xFFF8FAFC)
     }
 }

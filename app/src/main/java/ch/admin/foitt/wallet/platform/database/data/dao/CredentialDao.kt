@@ -19,7 +19,4 @@ interface CredentialDao {
 
     @Query("SELECT * FROM Credential ORDER BY createdAt DESC")
     fun getAll(): List<Credential>
-
-    @Query("SELECT id FROM Credential")
-    fun getAllIds(): List<Long>
 }

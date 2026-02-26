@@ -6,5 +6,6 @@ import com.github.michaelbull.result.Result
 import kotlinx.coroutines.flow.Flow
 
 interface ActivityWithDetailsRepository {
-    fun getByIdFlow(activityId: Long): Flow<Result<ActivityWithDetails?, ActivityWithDetailsRepositoryError>>
+    fun getNullableByIdFlow(activityId: Long): Flow<Result<ActivityWithDetails?, ActivityWithDetailsRepositoryError>>
+    fun getByIdFlow(activityId: Long): Flow<Result<ActivityWithDetails, ActivityWithDetailsRepositoryError>>
 }

@@ -41,7 +41,7 @@ class FetchVcMetadataByFormatImpl @Inject constructor(
     ): Result<VcMetadata, FetchVcMetadataByFormatError> = coroutineBinding {
         when (anyCredential.format) {
             CredentialFormat.VC_SD_JWT -> fetchVcMetadataForVcSdJwt(anyCredential as VcSdJwtCredential).bind()
-            else -> Err(OcaError.Unexpected(IllegalStateException("invalid format"))).bind()
+            else -> Err(OcaError.UnsupportedCredentialFormat).bind()
         }
     }
 

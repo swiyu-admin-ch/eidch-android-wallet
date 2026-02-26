@@ -17,4 +17,7 @@ interface CredentialIssuerDisplayDao {
 
     @Query("SELECT * FROM credentialissuerdisplay WHERE credentialId = :credentialId")
     fun getCredentialIssuerDisplaysFlowById(credentialId: Long): Flow<List<CredentialIssuerDisplay>>
+
+    @Query("DELETE FROM credentialissuerdisplay WHERE credentialId = :credentialId")
+    fun deleteByCredentialId(credentialId: Long): Int
 }

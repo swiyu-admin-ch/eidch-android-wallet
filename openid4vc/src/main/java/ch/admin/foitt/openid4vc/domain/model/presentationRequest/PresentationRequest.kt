@@ -2,6 +2,7 @@ package ch.admin.foitt.openid4vc.domain.model.presentationRequest
 
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwks
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -98,6 +99,8 @@ sealed class InputDescriptorFormat(open val name: String) {
 data class ClientMetaData(
     val clientNameList: List<ClientName>,
     val logoUriList: List<LogoUri>,
+    val jwks: Jwks? = null,
+    val encryptedResponseEncValuesSupported: List<String>? = null,
 )
 
 data class ClientName(

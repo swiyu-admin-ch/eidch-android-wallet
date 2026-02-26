@@ -3,17 +3,12 @@ package ch.admin.foitt.wallet.feature.presentationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.PresentationRequestError
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.implementation.GetPresentationRequestFlowImpl
-import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
-import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
-import ch.admin.foitt.wallet.platform.credential.domain.model.toDisplayStatus
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.MapToCredentialClaimCluster
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestField
 import ch.admin.foitt.wallet.platform.database.domain.model.ClusterWithDisplaysAndClaims
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClusterWithDisplays
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialWithDisplaysAndClusters
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
@@ -171,20 +166,5 @@ class GetPresentationRequestFlowImplTest {
         const val CLIENT_ID_SCHEME = "did"
 
         const val CREDENTIAL_ID1 = 1L
-
-        val credentialDisplay1 = CredentialDisplay(
-            credentialId = CREDENTIAL_ID1,
-            locale = "locale",
-            name = "name"
-        )
-
-        val credentialDisplays = listOf(credentialDisplay1)
-
-        val credentialDisplayData = CredentialDisplayData(
-            credentialId = CREDENTIAL_ID1,
-            status = CredentialStatus.VALID.toDisplayStatus(),
-            credentialDisplay = credentialDisplay1,
-            actorEnvironment = ActorEnvironment.PRODUCTION,
-        )
     }
 }

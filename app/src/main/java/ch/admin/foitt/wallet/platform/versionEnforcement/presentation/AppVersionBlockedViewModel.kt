@@ -1,28 +1,33 @@
 package ch.admin.foitt.wallet.platform.versionEnforcement.presentation
 
 import android.content.Context
-import androidx.lifecycle.SavedStateHandle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
-import ch.admin.foitt.walletcomposedestinations.destinations.AppVersionBlockedScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 
-@HiltViewModel
-class AppVersionBlockedViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = AppVersionBlockedViewModel.Factory::class)
+class AppVersionBlockedViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle,
+    @Assisted("title") val title: String?,
+    @Assisted("text") val text: String?
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.None
 
-    private val navArgs = AppVersionBlockedScreenDestination.argsFrom(savedStateHandle)
-    val title = navArgs.title
-    val text = navArgs.text
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            @Assisted("title") title: String?,
+            @Assisted("text") text: String?
+        ): AppVersionBlockedViewModel
+    }
 
     fun goToPlayStore() = appContext.openLink(R.string.version_enforcement_store_link)
 }

@@ -20,6 +20,10 @@ interface EIdRequestFileDao {
     fun getAllFilesByCaseId(caseId: String): List<EIdRequestFile>
 
     @Transaction
+    @Query("SELECT * FROM eidrequestfile ORDER BY createdAt ASC")
+    fun getAllFiles(): List<EIdRequestFile>
+
+    @Transaction
     @Query("SELECT * FROM eidrequestfile WHERE eIdRequestCaseId = :caseId AND fileName = :fileName ORDER BY createdAt DESC LIMIT 1")
     fun getFile(caseId: String, fileName: String): EIdRequestFile
 }

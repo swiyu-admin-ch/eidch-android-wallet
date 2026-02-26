@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables
 
 import android.view.View
+import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -62,7 +63,10 @@ internal fun ScannerCamera(
     val currentSurfaceView = surfaceView ?: return
 
     AndroidView(
-        factory = { currentSurfaceView },
+        factory = {
+            currentSurfaceView.detachFromParent()
+            currentSurfaceView
+        },
         update = { surfaceView ->
             surfaceView.post {
                 onAfterViewLayout(surfaceView.width, surfaceView.height)
@@ -84,6 +88,10 @@ internal fun ScannerCamera(
                 clip = true,
             )
     )
+}
+
+private fun View.detachFromParent() {
+    (parent as? ViewGroup)?.removeView(this)
 }
 
 private fun computeCroppedScaling(

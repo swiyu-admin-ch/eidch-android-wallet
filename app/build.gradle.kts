@@ -4,6 +4,7 @@ import com.mikepenz.aboutlibraries.plugin.DuplicateRule
 plugins {
     id("android-application")
     id("jacoco-android-app")
+    alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.devtools.ksp)
     alias(libs.plugins.junit5)
     alias(libs.plugins.compose.compiler)
@@ -33,7 +34,8 @@ android {
 
         // keeps only resources in these languages
         // if libs f. e. include resources in spanish they are not shipped with the app
-        resourceConfigurations += arrayOf("en", "de", "fr", "it", "rm")
+        @Suppress("UnstableApiUsage")
+        androidResources.localeFilters += arrayOf("en", "de", "fr", "it", "rm")
 
         buildConfigField(
             type = "String",
@@ -116,13 +118,6 @@ android {
             layout.buildDirectory.dir("generated/ksp/$name/kotlin").get().asFile
         )
     }
-    ksp {
-        arg(
-            "compose-destinations.codeGenPackageName",
-            "ch.admin.foitt.walletcomposedestinations"
-        )
-        arg("room.generateKotlin", "true")
-    }
 
     room {
         schemaDirectory("$projectDir/schemas")
@@ -140,11 +135,6 @@ android {
 }
 
 aboutLibraries {
-    export {
-        prettyPrint = true
-        outputFile = file("src/main/res/raw/aboutlibraries.json")
-    }
-
     library {
         duplicationMode = DuplicateMode.MERGE
         duplicationRule = DuplicateRule.GROUP
@@ -174,10 +164,6 @@ dependencies {
     implementation(libs.androidx.adaptive)
 
     implementation(libs.androidx.core.splashscreen)
-
-    // navigation
-    implementation(libs.compose.destinations)
-    ksp(libs.compose.destinations.ksp)
 
     // biometrics
     implementation(libs.androidx.biometric)
@@ -273,4 +259,10 @@ dependencies {
     // AvWrapper
     implementation(libs.av.wrapper)
     implementation(libs.java.websocket)
+
+    // Nav3
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.material3.adaptive.navigation3)
 }

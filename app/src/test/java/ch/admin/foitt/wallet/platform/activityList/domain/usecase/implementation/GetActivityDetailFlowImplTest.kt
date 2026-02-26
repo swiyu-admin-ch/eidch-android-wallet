@@ -126,7 +126,7 @@ class GetActivityDetailFlowImplTest {
     @Test
     fun `Getting activity details where getting the activity fails returns an error`() = runTest {
         coEvery {
-            mockActivityWithDetailsRepository.getByIdFlow(ACTIVITY_ID)
+            mockActivityWithDetailsRepository.getNullableByIdFlow(ACTIVITY_ID)
         } returns flowOf(Err(ActivityListError.Unexpected(IllegalStateException())))
 
         val result = useCase(CREDENTIAL_ID, ACTIVITY_ID).firstOrNull()
@@ -157,7 +157,7 @@ class GetActivityDetailFlowImplTest {
         } returns flowOf(Ok(verifiableCredentialWithDisplaysAndClusters))
 
         coEvery {
-            mockActivityWithDetailsRepository.getByIdFlow(ACTIVITY_ID)
+            mockActivityWithDetailsRepository.getNullableByIdFlow(ACTIVITY_ID)
         } returns flowOf(Ok(activityWithDetails))
 
         coEvery {

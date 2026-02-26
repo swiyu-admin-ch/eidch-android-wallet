@@ -35,6 +35,7 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -52,6 +53,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.net.URL
 
+@OptIn(UnsafeResultValueAccess::class)
 class FetchVcMetadataByFormatImplTest {
     @MockK
     private lateinit var mockFetchTypeMetadata: FetchTypeMetadata
@@ -265,12 +267,12 @@ class FetchVcMetadataByFormatImplTest {
     }
 
     @Test
-    fun `Fetching vc metadata for other credential format throws an exception`() = runTest {
+    fun `Fetching vc metadata for other credential format returns an error`() = runTest {
         val otherCredential = mockk<AnyCredential>()
         every { otherCredential.format } returns CredentialFormat.UNKNOWN
 
-        val error = useCase(otherCredential).assertErrorType(OcaError.Unexpected::class)
-        assertEquals("invalid format", error.cause?.message)
+        useCase(otherCredential)
+            .assertErrorType(OcaError.UnsupportedCredentialFormat::class)
     }
 
     private fun setupDefaultMocks() {

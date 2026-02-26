@@ -15,6 +15,7 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.getError
+import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.mapError
 import io.ktor.http.ContentType
 import kotlinx.coroutines.CoroutineDispatcher
@@ -37,17 +38,13 @@ class UploadAllFilesImpl @Inject constructor(
         coroutineBinding {
             filesToUpload.map { fileToUpload ->
                 async {
-                    val fileResult = getEIdRequestFile(caseId, fileToUpload.fileName)
-
-                    if (fileResult.isErr) {
+                    val file = getEIdRequestFile(caseId, fileToUpload.fileName).getOrElse {
                         if (!fileToUpload.isMandatory) {
                             Timber.d("Skipping optional file '${fileToUpload.fileName}' (not found)")
                             return@async Ok(Unit)
                         }
-                        Err(fileResult.error).bind()
+                        Err(it).bind()
                     }
-
-                    val file = fileResult.bind()
 
                     retryWithLimit(NUMBER_RETRIES) {
                         uploadFileToCase(

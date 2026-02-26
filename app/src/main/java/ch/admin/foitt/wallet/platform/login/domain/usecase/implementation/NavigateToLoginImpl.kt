@@ -4,24 +4,20 @@ import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.ResetBiometrics
 import ch.admin.foitt.wallet.platform.login.domain.model.CanUseBiometricsForLoginResult
 import ch.admin.foitt.wallet.platform.login.domain.usecase.CanUseBiometricsForLogin
 import ch.admin.foitt.wallet.platform.login.domain.usecase.NavigateToLogin
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PassphraseLoginNavArg
-import ch.admin.foitt.walletcomposedestinations.destinations.BiometricLoginScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PassphraseLoginScreenDestination
-import com.ramcosta.composedestinations.spec.Direction
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import javax.inject.Inject
 
 class NavigateToLoginImpl @Inject constructor(
     private val canUseBiometricsForLogin: CanUseBiometricsForLogin,
     private val resetBiometrics: ResetBiometrics,
 ) : NavigateToLogin {
-    override suspend fun invoke(): Direction {
+    override suspend fun invoke(): Destination {
         return when (canUseBiometricsForLogin()) {
-            CanUseBiometricsForLoginResult.Usable -> BiometricLoginScreenDestination
-            CanUseBiometricsForLoginResult.NotSetUpInApp ->
-                PassphraseLoginScreenDestination(PassphraseLoginNavArg(biometricsLocked = false))
+            CanUseBiometricsForLoginResult.Usable -> Destination.BiometricLoginScreen
+            CanUseBiometricsForLoginResult.NotSetUpInApp -> Destination.PassphraseLoginScreen(biometricsLocked = false)
             else -> {
                 resetBiometrics()
-                PassphraseLoginScreenDestination(PassphraseLoginNavArg(biometricsLocked = false))
+                Destination.PassphraseLoginScreen(biometricsLocked = false)
             }
         }
     }

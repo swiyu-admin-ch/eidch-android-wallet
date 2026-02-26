@@ -5,7 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
-import ch.admin.foitt.wallet.platform.screens.BaseScreen
+import ch.admin.foitt.wallet.platform.genericScreens.BaseScreen
 import ch.admin.foitt.wallet.platform.utils.TestTags
 
 class QrScannerScreen(composeTestRule: ComposeContentTestRule) : BaseScreen(composeTestRule) {

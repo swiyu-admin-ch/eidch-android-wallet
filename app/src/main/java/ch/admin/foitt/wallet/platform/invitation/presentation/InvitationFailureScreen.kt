@@ -7,20 +7,15 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.ErrorScreenContent
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationErrorScreenState
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.InvitationFailureNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @Composable
-@Destination(
-    navArgsDelegate = InvitationFailureNavArg::class,
-)
 fun InvitationFailureScreen(
     viewModel: InvitationFailureViewModel,
 ) {
     InvitationFailureScreenContent(
-        screenState = viewModel.error,
+        screenState = viewModel.invitationErrorScreenState,
         onClose = viewModel::close,
     )
 }
@@ -116,8 +111,8 @@ private fun NetworkError(onClose: () -> Unit) = ErrorScreenContent(
 @Composable
 private fun UnexpectedError(onClose: () -> Unit) = ErrorScreenContent(
     iconRes = R.drawable.wallet_ic_error_general,
-    title = stringResource(id = R.string.global_error_unexpected_title),
-    body = stringResource(id = R.string.global_error_unexpected_message),
+    title = stringResource(id = R.string.tk_global_error_unexpected_title),
+    body = stringResource(id = R.string.tk_global_error_unexpected_message),
     primaryButton = stringResource(id = R.string.tk_global_close),
     onPrimaryClick = onClose,
 )

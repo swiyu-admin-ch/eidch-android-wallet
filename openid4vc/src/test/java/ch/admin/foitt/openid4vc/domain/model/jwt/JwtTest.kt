@@ -1,6 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.model.jwt
 
-import ch.admin.foitt.openid4vc.domain.model.anycredential.CredentialValidity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.util.SafeJsonTestInstance
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.jsonObject
@@ -81,31 +81,31 @@ class JwtTest {
     @Test
     fun `Parsing a valid jwt with valid time stamps succeeds and is valid`() = runTest {
         val jwt = Jwt(VALID_JWT)
-        assertEquals(CredentialValidity.Valid, jwt.jwtValidity)
+        assertEquals(Validity.Valid, jwt.jwtValidity)
     }
 
     @Test
     fun `Parsing a valid jwt with missing exp claim succeeds and is valid`() = runTest {
         val jwt = Jwt(JWT_MISSING_EXP)
-        assertEquals(CredentialValidity.Valid, jwt.jwtValidity)
+        assertEquals(Validity.Valid, jwt.jwtValidity)
     }
 
     @Test
     fun `Parsing a valid jwt with missing nbf claim succeeds and is valid`() = runTest {
         val jwt = Jwt(JWT_MISSING_NBF)
-        assertEquals(CredentialValidity.Valid, jwt.jwtValidity)
+        assertEquals(Validity.Valid, jwt.jwtValidity)
     }
 
     @Test
     fun `Parsing a valid jwt with expired time stamps succeeds and is expired`() = runTest {
         val jwt = Jwt(EXPIRED_JWT)
-        assertEquals(CredentialValidity.Expired(Instant.ofEpochSecond(0)), jwt.jwtValidity)
+        assertEquals(Validity.Expired(Instant.ofEpochSecond(0)), jwt.jwtValidity)
     }
 
     @Test
     fun `Parsing a valid jwt with not yet valid time stamps succeeds and is not yet valid`() = runTest {
         val jwt = Jwt(NOT_YET_VALID_JWT)
-        assertEquals(CredentialValidity.NotYetValid(Instant.ofEpochSecond(1924988399)), jwt.jwtValidity)
+        assertEquals(Validity.NotYetValid(Instant.ofEpochSecond(1924988399)), jwt.jwtValidity)
     }
 
     private companion object {

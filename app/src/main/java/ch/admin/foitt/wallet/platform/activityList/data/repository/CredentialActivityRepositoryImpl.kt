@@ -34,7 +34,7 @@ class CredentialActivityRepositoryImpl @Inject constructor(
 
     override suspend fun getById(
         activityId: Long
-    ): Result<CredentialActivityEntity?, CredentialActivityRepositoryError> = runSuspendCatching {
+    ): Result<CredentialActivityEntity, CredentialActivityRepositoryError> = runSuspendCatching {
         withContext(ioDispatcher) {
             credentialActivityDao().getById(activityId)
         }

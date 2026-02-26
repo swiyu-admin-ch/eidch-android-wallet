@@ -9,16 +9,6 @@ object Gradients {
     const val CREDENTIAL_GRADIENT_ALPHA_01 = 0.3f
     const val CREDENTIAL_GRADIENT_ALPHA_02 = 0.1f
 
-    fun bottomFadingBrush(endColor: Color) = Brush.verticalGradient(
-        0.0f to Color.Transparent,
-        1.0f to endColor,
-    )
-
-    fun topFadingBrush(startColor: Color) = Brush.verticalGradient(
-        0.0f to startColor,
-        1.0f to Color.Transparent,
-    )
-
     fun diagonalCredentialBrush() = Brush.linearGradient(
         0.0f to Color.Black.copy(alpha = CREDENTIAL_GRADIENT_ALPHA_01),
         1.0f to Color.Transparent

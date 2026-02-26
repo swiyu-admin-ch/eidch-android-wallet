@@ -3,7 +3,7 @@ package ch.admin.foitt.wallet.platform.appAttestation
 import android.annotation.SuppressLint
 import ch.admin.foitt.openid4vc.domain.model.JwkError
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.openid4vc.domain.model.anycredential.CredentialValidity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.JWSKeyPair
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
@@ -22,8 +22,8 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.implementati
 import ch.admin.foitt.wallet.platform.appAttestation.domain.util.getBase64CertificateChain
 import ch.admin.foitt.wallet.platform.appAttestation.mock.ClientAttestationMocks
 import ch.admin.foitt.wallet.platform.appAttestation.mock.KeyAttestationMocks
-import ch.admin.foitt.wallet.platform.holderBinding.domain.model.KeyPairError
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.KeyPairError
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -192,7 +192,7 @@ class RequestClientAttestationImplTest {
         val expiredClientAttestationJwt = mockk<Jwt>()
         val mockExpiredClientAttestation = ClientAttestation(keyStoreAlias, expiredClientAttestationJwt)
 
-        coEvery { expiredClientAttestationJwt.jwtValidity } returns CredentialValidity.Expired(Instant.now())
+        coEvery { expiredClientAttestationJwt.jwtValidity } returns Validity.Expired(Instant.now())
         coEvery { mockClientAttestationRepository.get() } returns Ok(mockExpiredClientAttestation)
 
         val result = useCase()

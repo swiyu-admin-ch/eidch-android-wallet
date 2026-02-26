@@ -115,7 +115,6 @@ fun VerifyJwtError.toValidateTrustStatementError(): ValidateTrustStatementError 
     VcSdJwtError.NetworkError,
     VcSdJwtError.InvalidJwt,
     VcSdJwtError.IssuerValidationFailed -> TrustRegistryError.Unexpected(null)
-
     VcSdJwtError.DidDocumentDeactivated -> TrustRegistryError.Unexpected(null)
     is VcSdJwtError.Unexpected -> TrustRegistryError.Unexpected(cause)
 }

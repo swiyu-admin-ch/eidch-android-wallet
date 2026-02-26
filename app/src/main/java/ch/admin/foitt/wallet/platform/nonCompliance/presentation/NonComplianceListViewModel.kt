@@ -1,50 +1,55 @@
 package ch.admin.foitt.wallet.platform.nonCompliance.presentation
 
-import androidx.lifecycle.SavedStateHandle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.NonComplianceInfoNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
+import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.NonComplianceInfoScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.NonComplianceListScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 
-@HiltViewModel
-class NonComplianceListViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = NonComplianceListViewModel.Factory::class)
+class NonComplianceListViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle
+    @Assisted private val activityId: Long,
+    @Assisted private val activityType: ActivityType
 ) : ScreenViewModel(setTopBarState) {
+    @AssistedFactory
+    interface Factory {
+        fun create(activityId: Long, activityType: ActivityType): NonComplianceListViewModel
+    }
+
     override val topBarState = TopBarState.Details(
-        titleId = R.string.tk_nonComplianceList_title,
-        useTransparentBackground = false,
+        titleId = R.string.tk_nonCompliance_list_title,
+        topBarBackground = TopBarBackground.CLUSTER,
         onUp = this::onBack
     )
-
-    private val navArgs = NonComplianceListScreenDestination.argsFrom(savedStateHandle)
 
     private val issuanceReportingReasons = listOf<NonComplianceReportReason>()
     private val verificationReportingReasons = listOf(NonComplianceReportReason.EXCESSIVE_DATA_REQUEST)
 
-    val reasons = when (navArgs.activityType) {
+    val reasons = when (activityType) {
         ActivityType.ISSUANCE -> issuanceReportingReasons
         ActivityType.PRESENTATION_ACCEPTED,
         ActivityType.PRESENTATION_DECLINED -> verificationReportingReasons
     }
 
     fun onBack() {
-        navManager.navigateUp()
+        navManager.popBackStack()
     }
 
     fun onReason(reportReason: NonComplianceReportReason) {
         navManager.navigateTo(
-            NonComplianceInfoScreenDestination(
-                NonComplianceInfoNavArg(nonComplianceReportReason = reportReason)
+            Destination.NonComplianceInfoScreen(
+                activityId = activityId,
+                reportReason = reportReason,
             )
         )
     }

@@ -33,16 +33,13 @@ import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.Qr
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdRequestNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
 import ch.admin.foitt.wallet.platform.utils.generateQRBitmap
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(navArgsDelegate = EIdRequestNavArg::class)
 @Composable
 internal fun EIdGuardianConsentScreen(
     viewModel: EIdGuardianConsentViewModel,

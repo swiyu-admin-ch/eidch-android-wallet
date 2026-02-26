@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess.data.repository
 
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AvRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.UploadFileRequest
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toAvRepositoryError
@@ -17,9 +18,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentLength
 import io.ktor.http.contentType
 import javax.inject.Inject
+import javax.inject.Named
 
 class EIdAvRepositoryImpl @Inject constructor(
-    private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
     private val environmentSetupRepository: EnvironmentSetupRepository
 ) : EIdAvRepository {
     override suspend fun uploadFileToCase(

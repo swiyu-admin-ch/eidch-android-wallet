@@ -53,8 +53,6 @@ object Sizes {
 
     val buttonIcon = 18.dp
 
-    val onboardingDotSize = 6.dp
-
     val boxCornerSize = 36.dp
 
     val scannerBoxMaxSize = 200.dp
@@ -64,4 +62,6 @@ object Sizes {
     val homeMenuMinWidth = 200.dp
 
     val maxClusterWidth = 600.dp
+
+    val contentMaxWidth = 650.dp
 }

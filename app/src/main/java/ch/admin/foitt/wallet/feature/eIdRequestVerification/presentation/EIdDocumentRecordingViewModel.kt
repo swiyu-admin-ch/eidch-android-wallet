@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 
 import android.view.SurfaceView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.avwrapper.AVBeamInitConfig
@@ -11,19 +10,23 @@ import ch.admin.foitt.avwrapper.AVBeamStatus
 import ch.admin.foitt.avwrapper.AvBeamNotification
 import ch.admin.foitt.avwrapper.config.AVBeamConfigLogLevel
 import ch.admin.foitt.avwrapper.config.AVBeamRecordDocumentConfig
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.toTextRes
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdRequestCase
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveEIdRequestFiles
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.SDKInfoState
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFileCategory
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.IdentityType
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdOnlineSessionNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdDocumentRecordingScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdStartAutoVerificationScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdStartSelfieVideoScreenDestination
+import com.github.michaelbull.result.onSuccess
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,20 +40,24 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class EIdDocumentRecordingViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = EIdDocumentRecordingViewModel.Factory::class)
+class EIdDocumentRecordingViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
     private val avBeam: AVBeam,
     private val saveEIdRequestFiles: SaveEIdRequestFiles,
     private val environmentSetupRepository: EnvironmentSetupRepository,
-    savedStateHandle: SavedStateHandle,
+    private val getEIdRequestCase: GetEIdRequestCase,
+    @Assisted private val caseId: String,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.None
 
-    private val navArgs: EIdOnlineSessionNavArg = EIdDocumentRecordingScreenDestination.argsFrom(savedStateHandle)
+    @AssistedFactory
+    interface Factory {
+        fun create(caseId: String): EIdDocumentRecordingViewModel
+    }
+
+    override val topBarState = TopBarState.None
 
     private val _changeToBackCard = MutableStateFlow(false)
     val changeToBackCard = _changeToBackCard.asStateFlow()
@@ -58,7 +65,7 @@ class EIdDocumentRecordingViewModel @Inject constructor(
     private val _infoState = MutableStateFlow<SDKInfoState>(SDKInfoState.Empty)
     val infoState = _infoState.asStateFlow()
 
-    private val _infoText = MutableStateFlow("")
+    private val _infoText = MutableStateFlow<Int?>(null)
     val infoText = _infoText.asStateFlow()
 
     private var viewWidth = 0
@@ -71,6 +78,15 @@ class EIdDocumentRecordingViewModel @Inject constructor(
     private val isCameraRunning = MutableStateFlow(false)
     private val isRecording = MutableStateFlow(false)
     private val isViewReady = MutableStateFlow(false)
+
+    private val _documentType = MutableStateFlow(IdentityType.SWISS_IDK)
+    val documentType: StateFlow<IdentityType?> = _documentType.asStateFlow()
+
+    private suspend fun fetchDocumentType() {
+        getEIdRequestCase(caseId).onSuccess { eIdCase ->
+            _documentType.value = eIdCase.selectedDocumentType
+        }
+    }
 
     val isLoading = combine(
         isScannerLoading,
@@ -90,6 +106,7 @@ class EIdDocumentRecordingViewModel @Inject constructor(
     fun onResume() {
         viewModelScope.launch {
             Timber.d("Recording: view resumed")
+            fetchDocumentType()
             startRecordingDocument()
         }
     }
@@ -141,7 +158,7 @@ class EIdDocumentRecordingViewModel @Inject constructor(
         launch {
             avBeam.statusFlow.collect { status ->
                 _infoState.update { SDKInfoState.InfoData }
-                _infoText.update { status.toString() }
+                _infoText.update { status.toTextRes() }
                 when (status) {
                     AVBeamStatus.StreamingStarted -> isCameraRunning.update { true }
                     else -> {}
@@ -171,16 +188,14 @@ class EIdDocumentRecordingViewModel @Inject constructor(
         Timber.d(message = "Recording: Completed: ${packageResult.data?.size()}")
 
         saveEIdRequestFiles(
-            sIdCaseId = navArgs.caseId,
+            sIdCaseId = caseId,
             filesDataList = packageResult.files,
             filesCategory = EIdRequestFileCategory.DOCUMENT_RECORDING,
         )
 
-        navManager.navigateToAndPopUpTo(
-            direction = EIdStartSelfieVideoScreenDestination(
-                caseId = navArgs.caseId
-            ),
-            route = EIdStartAutoVerificationScreenDestination.route,
+        navManager.popUpToAndNavigate(
+            popToInclusive = Destination.EIdStartAutoVerificationScreen::class,
+            destination = Destination.EIdStartSelfieVideoScreen(caseId = caseId)
         )
     }.trackCompletion(isRecordLoading)
 
@@ -233,13 +248,9 @@ class EIdDocumentRecordingViewModel @Inject constructor(
         isViewReady.update { false }
     }
 
-    fun onCloseToast() {
-        _infoState.update { SDKInfoState.Empty }
-    }
-
     fun onBack() {
         resetRecordingState()
-        navManager.navigateUp()
+        navManager.popBackStack()
     }
 
     private suspend inline fun <T> StateFlow<T>.awaitValue(value: T) =

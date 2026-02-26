@@ -1,41 +1,39 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
-import androidx.lifecycle.SavedStateHandle
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdRequestNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdGuardianConsentScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdGuardianSelectionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdGuardianVerificationScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdIntroScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 
-@HiltViewModel
-class EIdGuardianSelectionViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = EIdGuardianSelectionViewModel.Factory::class)
+class EIdGuardianSelectionViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted private val caseId: String,
 ) : ScreenViewModel(setTopBarState) {
+    @AssistedFactory
+    interface Factory {
+        fun create(caseId: String): EIdGuardianSelectionViewModel
+    }
+
     override val topBarState = TopBarState.DetailsWithCloseButton(
         titleId = null,
         onUp = navManager::popBackStack,
-        onClose = { navManager.navigateBackToHome(EIdIntroScreenDestination) }
+        onClose = {
+            navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class)
+        }
     )
 
-    private val navArgs: EIdRequestNavArg = EIdGuardianSelectionScreenDestination.argsFrom(savedStateHandle)
-
     fun onObtainConsent() = navManager.navigateTo(
-        EIdGuardianConsentScreenDestination(
-            caseId = navArgs.caseId,
-        )
+        Destination.EIdGuardianConsentScreen(caseId = caseId)
     )
 
     fun onContinueAsGuardian() = navManager.navigateTo(
-        EIdGuardianVerificationScreenDestination(
-            caseId = navArgs.caseId,
-        )
+        Destination.EIdGuardianVerificationScreen(caseId = caseId)
     )
 }

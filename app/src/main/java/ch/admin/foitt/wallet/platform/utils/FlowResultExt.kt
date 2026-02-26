@@ -1,8 +1,12 @@
+@file:OptIn(UnsafeResultErrorAccess::class, UnsafeResultValueAccess::class)
+
 package ch.admin.foitt.wallet.platform.utils
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.annotation.UnsafeResultErrorAccess
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map

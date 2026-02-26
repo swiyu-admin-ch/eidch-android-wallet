@@ -15,9 +15,7 @@ import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.utils.TestTags
 import ch.admin.foitt.wallet.platform.utils.contentDescription
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination
 @Composable
 fun OnboardingIntroScreen(
     viewModel: OnboardingIntroViewModel,

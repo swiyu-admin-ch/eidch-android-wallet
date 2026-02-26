@@ -61,7 +61,7 @@ fun WalletListItems.LinkSettingsItem(
     },
     trailingContent = {
         Icon(
-            painter = painterResource(id = R.drawable.wallet_ic_web_link),
+            painter = painterResource(id = R.drawable.wallet_ic_external_link),
             contentDescription = null
         )
     },

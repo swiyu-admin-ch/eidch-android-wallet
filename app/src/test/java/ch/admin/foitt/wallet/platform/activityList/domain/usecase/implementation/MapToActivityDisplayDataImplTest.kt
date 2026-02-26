@@ -2,14 +2,16 @@ package ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementatio
 
 import android.text.format.DateFormat
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityActorDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.NON_COMPLIANCE_DATA
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activity
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityActorDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityWithActorDisplays
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.actorDisplay1
-import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.actorDisplay2
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.imageData1
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.locale
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
-import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
@@ -30,7 +32,7 @@ class MapToActivityDisplayDataImplTest {
     private lateinit var mockGetCurrentAppLocale: GetCurrentAppLocale
 
     @MockK
-    private lateinit var mockGetLocalizedDisplay: GetLocalizedDisplay
+    private lateinit var mockMapToActivityActorDisplayData: MapToActivityActorDisplayData
 
     private lateinit var useCase: MapToActivityDisplayData
 
@@ -39,7 +41,7 @@ class MapToActivityDisplayDataImplTest {
         MockKAnnotations.init(this)
         useCase = MapToActivityDisplayDataImpl(
             getCurrentAppLocale = mockGetCurrentAppLocale,
-            getLocalizedDisplay = mockGetLocalizedDisplay,
+            mapToActivityActorDisplayData = mockMapToActivityActorDisplayData,
         )
 
         TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("Europe/Zurich")))
@@ -50,10 +52,11 @@ class MapToActivityDisplayDataImplTest {
 
         coEvery { mockGetCurrentAppLocale() } returns locale
         coEvery {
-            mockGetLocalizedDisplay(
-                listOf(actorDisplay1.actorDisplay, actorDisplay2.actorDisplay)
+            mockMapToActivityActorDisplayData(
+                activityId = activity.id,
+                actorDisplaysWithImages = activityWithActorDisplays.actorDisplays
             )
-        } returns actorDisplay1.actorDisplay
+        } returns activityActorDisplayData
     }
 
     @AfterEach
@@ -69,7 +72,9 @@ class MapToActivityDisplayDataImplTest {
             id = activity.id,
             activityType = activity.type,
             date = "07.10.2025 | 13:43",
-            localizedActorName = actorDisplay1.actorDisplay.name
+            nonComplianceData = NON_COMPLIANCE_DATA,
+            localizedActorName = actorDisplay1.actorDisplay.name,
+            actorImageData = imageData1,
         )
 
         assertEquals(expected, result)

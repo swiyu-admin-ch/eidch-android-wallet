@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.feature.credentialDetail.presentation
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.feature.credentialDetail.domain.model.IssuerDisplay
 import ch.admin.foitt.wallet.feature.credentialDetail.domain.usecase.GetCredentialIssuerDisplaysFlow
@@ -17,8 +16,8 @@ import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredent
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.ActivityListNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
@@ -31,13 +30,11 @@ import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetCredentialDetailFlow
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.platform.utils.toPainter
-import ch.admin.foitt.walletcomposedestinations.destinations.ActivityListScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.CredentialDetailScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.CredentialDetailWrongDataScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.ErrorScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.HomeScreenDestination
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.onFailure
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,10 +42,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class CredentialDetailViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = CredentialDetailViewModel.Factory::class)
+class CredentialDetailViewModel @AssistedInject constructor(
     getCredentialDetailFlow: GetCredentialDetailFlow,
     getCredentialIssuerDisplaysFlow: GetCredentialIssuerDisplaysFlow,
     getActivitiesWithDisplaysFlow: GetActivitiesWithDisplaysFlow,
@@ -59,11 +55,15 @@ class CredentialDetailViewModel @Inject constructor(
     private val navManager: NavigationManager,
     private val deleteCredential: DeleteCredential,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle
+    @Assisted private val credentialId: Long
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.None
 
-    private val navArgs = CredentialDetailScreenDestination.argsFrom(savedStateHandle)
+    @AssistedFactory
+    interface Factory {
+        fun create(credentialId: Long): CredentialDetailViewModel
+    }
+
+    override val topBarState = TopBarState.None
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
@@ -73,15 +73,15 @@ class CredentialDetailViewModel @Inject constructor(
 
     val credentialDetailUiState = refreshableStateFlow(CredentialDetailUiState.EMPTY) {
         combine(
-            getCredentialDetailFlow(navArgs.credentialId),
-            getCredentialIssuerDisplaysFlow(navArgs.credentialId),
-            getActivitiesWithDisplaysFlow(navArgs.credentialId),
+            getCredentialDetailFlow(credentialId),
+            getCredentialIssuerDisplaysFlow(credentialId),
+            getActivitiesWithDisplaysFlow(credentialId),
         ) { detailsResult, issuerDisplayResult, activitiesResult ->
             when {
                 detailsResult.isOk -> {
                     _isLoading.value = false
                     mapToUiState(
-                        credentialDetail = detailsResult.value,
+                        credentialDetail = detailsResult.get(),
                         issuerDisplay = issuerDisplayResult.get(),
                         activities = activitiesResult.get() ?: emptyList(),
                     )
@@ -123,12 +123,12 @@ class CredentialDetailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            updateCredentialStatus(navArgs.credentialId)
+            updateCredentialStatus(credentialId)
         }
     }
 
     fun onBack() {
-        navManager.navigateUp()
+        navManager.popBackStack()
     }
 
     fun onMenu() {
@@ -142,12 +142,12 @@ class CredentialDetailViewModel @Inject constructor(
     fun onDeleteCredential() {
         _visibleBottomSheet.value = VisibleBottomSheet.NONE
         viewModelScope.launch {
-            deleteCredential(credentialId = navArgs.credentialId).onFailure { error ->
+            deleteCredential(credentialId = credentialId).onFailure { error ->
                 when (error) {
                     is SsiError.Unexpected -> Timber.e(error.cause)
                 }
             }
-            navManager.popBackStackTo(HomeScreenDestination, false)
+            navManager.popBackStackTo(Destination.HomeScreen::class, false)
         }
     }
 
@@ -156,16 +156,20 @@ class CredentialDetailViewModel @Inject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.navigateToAndClearCurrent(ErrorScreenDestination)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
     }
 
     fun onWrongData() {
-        navManager.navigateTo(CredentialDetailWrongDataScreenDestination)
+        navManager.navigateTo(Destination.CredentialDetailWrongDataScreen)
         onBottomSheetDismiss()
     }
 
     fun onEntireHistory() {
-        navManager.navigateTo(ActivityListScreenDestination(ActivityListNavArg(credentialId = navArgs.credentialId)))
+        navManager.navigateTo(
+            Destination.ActivityListScreen(
+                credentialId = credentialId
+            )
+        )
     }
 
     private suspend fun IssuerDisplay?.toActorUiState() = this?.let {

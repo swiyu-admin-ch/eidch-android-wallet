@@ -2,24 +2,26 @@ package ch.admin.foitt.wallet.feature.qrscan.presentation
 
 import android.content.Context
 import androidx.camera.view.PreviewView
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
 import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
 import ch.admin.foitt.wallet.feature.qrscan.infra.QrScanner
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationError
+import ch.admin.foitt.wallet.platform.invitation.domain.model.toErrorDisplay
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.HandleInvitationProcessingSuccess
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ProcessInvitation
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.hasCameraPermission
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.QrScanPermissionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.QrScannerScreenDestination
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -29,23 +31,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class QrScannerViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = QrScannerViewModel.Factory::class)
+class QrScannerViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val processInvitation: ProcessInvitation,
     private val handleInvitationProcessingSuccess: HandleInvitationProcessingSuccess,
     private val declinePresentation: DeclinePresentation,
     private val qrScanner: QrScanner,
     private val navManager: NavigationManager,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted private val firstCredentialWasAdded: Boolean,
 ) : ScreenViewModel(setTopBarState, systemBarsFixedLightColor = true) {
 
-    override val topBarState = TopBarState.None
+    @AssistedFactory
+    interface Factory {
+        fun create(firstCredentialWasAdded: Boolean): QrScannerViewModel
+    }
 
-    private val firstCredentialWasAdded = QrScannerScreenDestination.argsFrom(savedStateHandle).firstCredentialWasAdded
+    override val topBarState = TopBarState.None
 
     val flashLightState = qrScanner.flashLightState
 
@@ -93,6 +97,9 @@ class QrScannerViewModel @Inject constructor(
 
         when (failureResult) {
             is InvitationError.InvalidPresentation -> declinePresentationRequest(failureResult.responseUri)
+            is InvitationError.EmptyWallet -> navigateToInvitationFailureError(failureResult, failureResult.responseUri)
+            is InvitationError.NoCompatibleCredential ->
+                navigateToInvitationFailureError(failureResult, failureResult.responseUri)
             else -> {}
         }
 
@@ -102,11 +109,17 @@ class QrScannerViewModel @Inject constructor(
         }
     }
 
+    private fun navigateToInvitationFailureError(failureResult: ProcessInvitationError, uri: String?) {
+        navManager.replaceCurrentWith(
+            destination = Destination.InvitationFailureScreen(invitationError = failureResult.toErrorDisplay(), uri = uri)
+        )
+    }
+
     private fun tryInitAnalyser() {
         return if (hasCameraPermission(appContext)) {
             qrScanner.initAnalyser(onBarcodesScanned = ::onQrScanSuccess)
         } else {
-            navManager.navigateToAndClearCurrent(QrScanPermissionScreenDestination)
+            navManager.replaceCurrentWith(Destination.QrScanPermissionScreen)
         }
     }
 
@@ -116,7 +129,7 @@ class QrScannerViewModel @Inject constructor(
         }
     }
 
-    fun onUp() = navManager.navigateUp()
+    fun onUp() = navManager.popBackStack()
 
     fun onCloseToast() {
         _infoState.update { QrInfoState.Empty }
@@ -134,13 +147,15 @@ class QrScannerViewModel @Inject constructor(
 
     private fun ProcessInvitationError.toQrInfoState() = when (this) {
         InvitationError.InvalidInput -> QrInfoState.InvalidQr
+        is InvitationError.MetadataMisconfiguration -> QrInfoState.InvalidCredentialOffer
         InvitationError.InvalidCredentialOffer -> QrInfoState.InvalidCredentialOffer
         InvitationError.CredentialOfferExpired -> QrInfoState.ExpiredCredentialOffer
-        InvitationError.NoCompatibleCredential -> QrInfoState.NoCompatibleCredential
-        InvitationError.EmptyWallet -> QrInfoState.EmptyWallet
+        is InvitationError.NoCompatibleCredential,
+        is InvitationError.EmptyWallet -> QrInfoState.Empty
         InvitationError.NetworkError -> QrInfoState.NetworkError
         InvitationError.InvalidPresentationRequest,
         is InvitationError.InvalidPresentation -> QrInfoState.InvalidPresentation
+
         InvitationError.Unexpected -> QrInfoState.UnexpectedError
         InvitationError.UnknownIssuer -> QrInfoState.UnknownIssuer
         InvitationError.UnknownVerifier -> QrInfoState.UnknownVerifier

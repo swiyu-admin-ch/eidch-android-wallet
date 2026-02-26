@@ -26,7 +26,8 @@ internal class FetchTypeMetadataImpl @Inject constructor(
     override suspend fun invoke(
         credentialVct: String,
         url: URL,
-        integrity: String?
+        integrity: String?,
+        expectIntegrity: Boolean,
     ): Result<TypeMetadata, FetchTypeMetadataError> = coroutineBinding {
         val typeMetadataString = typeMetadataRepository.fetchTypeMetadata(url)
             .mapError(TypeMetadataRepositoryError::toFetchTypeMetadataByFormatError)
@@ -38,12 +39,14 @@ internal class FetchTypeMetadataImpl @Inject constructor(
             .mapError(JsonParsingError::toFetchTypeMetadataByFormatError)
             .bind()
 
-        if (integrity == null) {
-            Err(TypeMetadataError.InvalidData).bind<FetchTypeMetadataError>()
-        } else {
-            sriValidator(typeMetadataString.encodeToByteArray(), integrity)
-                .mapError(SRIError::toFetchTypeMetadataByFormatError)
-                .bind()
+        if (expectIntegrity) {
+            if (integrity == null) {
+                Err(TypeMetadataError.InvalidData).bind<FetchTypeMetadataError>()
+            } else {
+                sriValidator(typeMetadataString.encodeToByteArray(), integrity)
+                    .mapError(SRIError::toFetchTypeMetadataByFormatError)
+                    .bind()
+            }
         }
 
         if (typeMetadata.vct != credentialVct) {

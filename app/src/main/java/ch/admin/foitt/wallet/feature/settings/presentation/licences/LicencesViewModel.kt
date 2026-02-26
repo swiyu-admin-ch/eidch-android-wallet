@@ -8,7 +8,7 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import com.mikepenz.aboutlibraries.Libs
-import com.mikepenz.aboutlibraries.util.withJson
+import com.mikepenz.aboutlibraries.util.withContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,9 +31,7 @@ class LicencesViewModel @Inject constructor(
     val licenseDialog = _licenseDialog.asStateFlow()
 
     init {
-        val libs = Libs.Builder()
-            .withJson(ctx = appContext, rawResId = R.raw.aboutlibraries)
-            .build()
+        val libs = Libs.Builder().withContext(appContext).build()
 
         _libraries.value = libs.libraries.map { library ->
             val libraryLicense = library.licenses.firstOrNull()

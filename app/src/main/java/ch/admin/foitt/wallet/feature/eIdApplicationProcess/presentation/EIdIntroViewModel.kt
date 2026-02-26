@@ -1,11 +1,10 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination.EIdPrivacyPolicyScreen
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdPrivacyPolicyScreenDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -16,9 +15,9 @@ class EIdIntroViewModel @Inject constructor(
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.Empty
 
-    fun onRequestEId() = navManager.navigateTo(EIdPrivacyPolicyScreenDestination)
+    fun onRequestEId() = navManager.navigateTo(EIdPrivacyPolicyScreen)
 
-    fun onSkip() = navManager.navigateUpOrToRoot()
+    fun onSkip() = navManager.popBackStackOrToRoot()
 
-    fun onBack() = navManager.navigateUpOrToRoot()
+    fun onBack() = navManager.popBackStackOrToRoot()
 }

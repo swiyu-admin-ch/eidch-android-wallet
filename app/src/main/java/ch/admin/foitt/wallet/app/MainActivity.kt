@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import ch.admin.foitt.wallet.app.presentation.MainScreen
+import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
 import ch.admin.foitt.wallet.platform.userInteraction.domain.usecase.UserInteraction
 import ch.admin.foitt.wallet.platform.utils.LocalIntent
 import dagger.hilt.android.AndroidEntryPoint
@@ -22,6 +23,13 @@ class MainActivity : AppCompatActivity() {
 
     private val currentIntent = mutableStateOf(Intent())
 
+    /**
+     * All [EntryProviderInstaller] are injected into a single Set.
+     * See [ch.admin.foitt.wallet.app.di.EntryProviderInstallerModule] for an example how to define the Hilt Module
+     */
+    @Inject
+    lateinit var entryProviderBuilders: Set<@JvmSuppressWildcards EntryProviderInstaller>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -33,7 +41,10 @@ class MainActivity : AppCompatActivity() {
             CompositionLocalProvider(
                 LocalIntent provides currentIntent.value
             ) {
-                MainScreen(this)
+                MainScreen(
+                    this,
+                    entryProviderBuilders
+                )
             }
         }
     }

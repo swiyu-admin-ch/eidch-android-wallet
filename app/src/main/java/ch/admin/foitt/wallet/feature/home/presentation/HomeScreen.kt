@@ -48,17 +48,21 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.home.presentation.composables.EIdRequestCard
+import ch.admin.foitt.wallet.feature.home.presentation.model.HomeContainerState
+import ch.admin.foitt.wallet.feature.home.presentation.model.HomeScreenState
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.ToastAnimated
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.nonFocusableAccessibilityAnchor
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialListRow
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayData
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayStatus
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
@@ -70,20 +74,18 @@ import ch.admin.foitt.wallet.platform.utils.setIsTraversalGroup
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
 ) {
     val uiMode = LocalConfiguration.current.uiMode
     LaunchedEffect(uiMode) {
-        viewModel.screenState.refreshData()
+        viewModel.screenContentState.refreshData()
     }
 
     HomeScreenContent(
-        screenState = viewModel.screenState.stateFlow.collectAsStateWithLifecycle().value,
+        screenState = viewModel.screenContentState.stateFlow.collectAsStateWithLifecycle().value,
         containerState = viewModel.homeContainerState.collectAsStateWithLifecycle().value,
         isRefreshing = viewModel.isRefreshing.collectAsStateWithLifecycle().value,
         eventMessage = viewModel.eventMessage.collectAsStateWithLifecycle().value,
@@ -94,6 +96,7 @@ fun HomeScreen(
         onRefresh = viewModel::onRefresh,
         onRefreshSIds = viewModel::onRefreshSIdStatuses,
         onObtainConsent = viewModel::onObtainConsent,
+        onLearnMore = viewModel::onLearnMore
     )
 }
 
@@ -109,8 +112,9 @@ private fun HomeScreenContent(
     onRefresh: () -> Unit,
     onRefreshSIds: () -> Unit,
     onObtainConsent: (caseId: String) -> Unit,
+    onLearnMore: () -> Unit,
     @StringRes eventMessage: Int?,
-    windowWidthClass: WindowWidthSizeClass = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass,
+    windowWidthClass: WindowWidthClass = currentWindowAdaptiveInfo().windowWidthClass()
 ) = WalletLayouts.HomeContainer(
     windowWidthClass = windowWidthClass,
     containerState = containerState,
@@ -118,7 +122,7 @@ private fun HomeScreenContent(
 ) { stickyBottomHeightDp ->
 
     when (screenState) {
-        HomeScreenState.Initial -> {
+        is HomeScreenState.Initial -> {
         }
 
         is HomeScreenState.CredentialList -> Credentials(
@@ -134,69 +138,41 @@ private fun HomeScreenContent(
             onRefreshSIds = onRefreshSIds,
             onCloseToast = onCloseToast,
             onObtainConsent = onObtainConsent,
+            onLearnMore = onLearnMore
         )
 
-        is HomeScreenState.NoCredential -> NoCredentialContent(
+        is HomeScreenState.NoCredential -> WalletEmptyWithEIdRequestsContent(
             contentBottomPadding = stickyBottomHeightDp,
             isRefreshing = isRefreshing,
             ongoingEIdRequests = screenState.eIdRequests,
             onStartOnlineIdentification = onStartOnlineIdentification,
             onCloseEId = onCloseEId,
-            showBetaIdRequestButton = containerState.showBetaIdRequestButton,
             showEIdRequestButton = containerState.showEIdRequestButton,
-            onRequestBetaId = containerState.onGetBetaId,
+            showBetaIdRequestButton = containerState.showBetaIdRequestButton,
             onRequestEId = containerState.onGetEId,
+            onRequestBetaId = containerState.onGetBetaId,
             onRefresh = onRefresh,
             onRefreshSIds = onRefreshSIds,
             onObtainConsent = onObtainConsent,
+            onLearnMore = onLearnMore
         )
-    }
-}
 
-@Composable
-private fun BoxScope.NoCredentialContent(
-    contentBottomPadding: Dp,
-    isRefreshing: Boolean,
-    ongoingEIdRequests: List<SIdRequestDisplayData>,
-    onStartOnlineIdentification: (caseId: String) -> Unit,
-    onCloseEId: (caseId: String) -> Unit,
-    showEIdRequestButton: Boolean,
-    showBetaIdRequestButton: Boolean,
-    onRequestEId: () -> Unit,
-    onRequestBetaId: () -> Unit,
-    onRefresh: () -> Unit,
-    onRefreshSIds: () -> Unit,
-    onObtainConsent: (caseId: String) -> Unit,
-) {
-    if (ongoingEIdRequests.isEmpty()) {
-        WalletEmptyContainer(
-            contentBottomPadding = contentBottomPadding,
-            showEIdRequestButton = showEIdRequestButton,
-            showBetaIdRequestButton = showBetaIdRequestButton,
-            onRequestEId = onRequestEId,
-            onRequestBetaId = onRequestBetaId,
+        is HomeScreenState.WalletEmpty -> WalletEmptyContent(
+            contentBottomPadding = stickyBottomHeightDp,
+            showEIdRequestButton = containerState.showEIdRequestButton,
+            showBetaIdRequestButton = containerState.showBetaIdRequestButton,
+            onRequestEId = containerState.onGetEId,
+            onRequestBetaId = containerState.onGetBetaId,
         )
-    } else {
-        WalletEmptyWithEIdRequestsContainer(
-            contentBottomPadding = contentBottomPadding,
-            isRefreshing = isRefreshing,
-            ongoingEIdRequests = ongoingEIdRequests,
-            onStartOnlineIdentification = onStartOnlineIdentification,
-            onCloseEId = onCloseEId,
-            showEIdRequestButton = showEIdRequestButton,
-            showBetaIdRequestButton = showBetaIdRequestButton,
-            onRequestEId = onRequestEId,
-            onRequestBetaId = onRequestBetaId,
-            onRefresh = onRefresh,
-            onRefreshSIds = onRefreshSIds,
-            onObtainConsent = onObtainConsent,
-        )
+
+        HomeScreenState.UnexpectedError -> {
+        }
     }
 }
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun WalletEmptyWithEIdRequestsContainer(
+fun WalletEmptyWithEIdRequestsContent(
     contentBottomPadding: Dp,
     isRefreshing: Boolean,
     ongoingEIdRequests: List<SIdRequestDisplayData>,
@@ -209,6 +185,7 @@ fun WalletEmptyWithEIdRequestsContainer(
     onRefresh: () -> Unit,
     onRefreshSIds: () -> Unit,
     onObtainConsent: (caseId: String) -> Unit,
+    onLearnMore: () -> Unit,
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
@@ -238,6 +215,7 @@ fun WalletEmptyWithEIdRequestsContainer(
                     onStartOnlineIdentification = { onStartOnlineIdentification(eIdRequest.caseId) },
                     onRefresh = onRefreshSIds,
                     onObtainConsent = { onObtainConsent(eIdRequest.caseId) },
+                    onLearnMore = { onLearnMore() },
                     onCloseClick = { onCloseEId(eIdRequest.caseId) }
                 )
             }
@@ -272,7 +250,7 @@ fun WalletEmptyWithEIdRequestsContainer(
 }
 
 @Composable
-fun BoxScope.WalletEmptyContainer(
+fun BoxScope.WalletEmptyContent(
     contentBottomPadding: Dp,
     showEIdRequestButton: Boolean,
     showBetaIdRequestButton: Boolean,
@@ -355,10 +333,11 @@ private fun Credentials(
     ongoingEIdRequests: List<SIdRequestDisplayData>,
     onStartOnlineIdentification: (caseId: String) -> Unit,
     onCloseEId: (id: String) -> Unit,
-    onCredentialClick: (id: Long) -> Unit,
+    onCredentialClick: (id: Long, progressState: VerifiableProgressionState) -> Unit,
     onRefresh: () -> Unit,
     onRefreshSIds: () -> Unit,
     onObtainConsent: (caseId: String) -> Unit,
+    onLearnMore: () -> Unit,
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
@@ -385,6 +364,7 @@ private fun Credentials(
                         onStartOnlineIdentification = { onStartOnlineIdentification(eIdRequest.caseId) },
                         onRefresh = onRefreshSIds,
                         onObtainConsent = { onObtainConsent(eIdRequest.caseId) },
+                        onLearnMore = { onLearnMore() },
                         onCloseClick = { onCloseEId(eIdRequest.caseId) }
                     )
                 }
@@ -400,7 +380,12 @@ private fun Credentials(
             CredentialListRow(
                 showDivider = true,
                 credentialState = credentialState,
-                onClick = { onCredentialClick(credentialState.credentialId) },
+                onClick = {
+                    onCredentialClick(
+                        credentialState.credentialId,
+                        credentialState.progressionState,
+                    )
+                },
             )
         }
     }
@@ -448,7 +433,7 @@ private class HomePreviewParams : PreviewParameterProvider<ComposableWrapper<Hom
             HomeScreenState.CredentialList(
                 eIdRequests = emptyList(),
                 credentials = CredentialMocks.cardStates.toList().map { it.value() },
-                onCredentialClick = {},
+                onCredentialClick = { _, _ -> },
             )
         },
         ComposableWrapper {
@@ -468,7 +453,7 @@ private class HomePreviewParams : PreviewParameterProvider<ComposableWrapper<Hom
                     )
                 ),
                 credentials = CredentialMocks.cardStates.toList().map { it.value() },
-                onCredentialClick = {},
+                onCredentialClick = { _, _ -> },
             )
         },
         ComposableWrapper {
@@ -512,9 +497,9 @@ private fun HomeScreenCompactPreview(
         HomeScreenContent(
             screenState = state.value(),
             containerState = HomeContainerState.EMPTY,
-            windowWidthClass = WindowWidthSizeClass.COMPACT,
+            windowWidthClass = WindowWidthClass.COMPACT,
             isRefreshing = true,
-            eventMessage = null,
+            eventMessage = R.string.tk_home_notification_credential_declined,
             onMenu = {},
             onStartOnlineIdentification = {},
             onCloseEId = {},
@@ -522,6 +507,7 @@ private fun HomeScreenCompactPreview(
             onRefreshSIds = {},
             onObtainConsent = {},
             onCloseToast = {},
+            onLearnMore = {}
         )
     }
 }
@@ -535,9 +521,9 @@ private fun HomeScreenLargePreview(
         HomeScreenContent(
             screenState = state.value(),
             containerState = HomeContainerState.EMPTY,
-            windowWidthClass = WindowWidthSizeClass.EXPANDED,
+            windowWidthClass = WindowWidthClass.EXPANDED,
             isRefreshing = false,
-            eventMessage = null,
+            eventMessage = R.string.tk_home_notification_credential_declined,
             onMenu = {},
             onStartOnlineIdentification = {},
             onCloseEId = {},
@@ -545,6 +531,7 @@ private fun HomeScreenLargePreview(
             onRefreshSIds = {},
             onObtainConsent = {},
             onCloseToast = {},
+            onLearnMore = {}
         )
     }
 }

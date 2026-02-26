@@ -11,11 +11,14 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.toGenerateCredenti
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.util.addFallbackLanguageIfNecessary
+import ch.admin.foitt.wallet.platform.credential.domain.util.entityNames
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
+import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedCredentialInformationDisplay
 import ch.admin.foitt.wallet.platform.oca.domain.model.GenerateOcaDisplaysError
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaDisplays
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatement
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
@@ -34,28 +37,53 @@ import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 class GenerateAnyDisplaysImpl @Inject constructor(
+    private val getLocalizedCredentialInformationDisplay: GetLocalizedCredentialInformationDisplay,
     private val generateOcaDisplays: GenerateOcaDisplays,
     private val generateMetadataDisplays: GenerateMetadataDisplays,
 ) : GenerateAnyDisplays {
     override suspend fun invoke(
-        anyCredential: AnyCredential,
+        anyCredential: AnyCredential?,
         issuerInfo: IssuerCredentialInfo,
-        trustIssuerNames: Map<String, String>?,
+        trustStatement: TrustStatement?,
         metadata: AnyCredentialConfiguration,
-        ocaBundle: OcaBundle?
+        ocaBundle: OcaBundle?,
     ): Result<AnyDisplays, GenerateCredentialDisplaysError> = coroutineBinding {
-        val localizedIssuerDisplays: List<AnyIssuerDisplay> = issuerInfo.display?.map { oidIssuerDisplay ->
-            AnyIssuerDisplay(
-                locale = oidIssuerDisplay.locale,
-                name = trustIssuerNames?.get(oidIssuerDisplay.locale) ?: oidIssuerDisplay.name,
-                logo = oidIssuerDisplay.logo?.uri,
-                logoAltText = oidIssuerDisplay.logo?.altText,
-            )
+        val useTrustStatement = trustStatement != null
+
+        val localizedIssuerDisplays: List<AnyIssuerDisplay> = if (useTrustStatement) {
+            // if trust statement is available only use information from there (no fallback to metadata)
+            trustStatement.entityNames()?.map { (locale, entityName) ->
+                val metadataDisplay = issuerInfo.display?.let {
+                    getLocalizedCredentialInformationDisplay(
+                        displays = it,
+                        preferredLocaleString = locale,
+                    )
+                }
+
+                AnyIssuerDisplay(
+                    locale = locale,
+                    name = entityName,
+                    logo = metadataDisplay?.logo?.uri, // exception: use logo from metadata
+                    logoAltText = metadataDisplay?.logo?.altText, // exception: use logo alt text from metadata
+                )
+            }.orEmpty()
+        } else {
+            // if trust statement is not available use metadata
+            issuerInfo.display?.map { oidIssuerDisplay ->
+                AnyIssuerDisplay(
+                    locale = oidIssuerDisplay.locale,
+                    name = oidIssuerDisplay.name,
+                    logo = oidIssuerDisplay.logo?.uri,
+                    logoAltText = oidIssuerDisplay.logo?.altText,
+                )
+            }.orEmpty()
         }.addFallbackLanguageIfNecessary {
             AnyIssuerDisplay(name = DisplayConst.ISSUER_FALLBACK_NAME, locale = DisplayLanguage.FALLBACK)
         }
 
-        val credentialClaims = getCredentialClaims(anyCredential).bind()
+        val credentialClaims = anyCredential?.let {
+            getCredentialClaims(anyCredential).bind()
+        } ?: mapOf()
 
         val displays = if (ocaBundle != null) {
             generateOcaDisplays(credentialClaims, ocaBundle)

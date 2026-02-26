@@ -1,14 +1,17 @@
+@file:Suppress("TooManyFunctions")
+
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.model
 
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
-import ch.admin.foitt.wallet.platform.credential.domain.model.GetAnyCredentialError
+import ch.admin.foitt.wallet.platform.credential.domain.model.GetAllAnyCredentialsByCredentialIdError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError.DidDocumentDeactivated
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError.NetworkError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError.Unexpected
-import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialRepositoryError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.BundleItemRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.VerifiableCredentialRepositoryError
 import ch.admin.foitt.wallet.platform.utils.JsonError
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
 import timber.log.Timber
@@ -40,11 +43,15 @@ internal fun FetchCredentialStatusError.toUpdateCredentialStatusError(): UpdateC
     is Unexpected -> this
 }
 
-internal fun CredentialRepositoryError.toUpdateCredentialStatusError(): UpdateCredentialStatusError = when (this) {
+internal fun VerifiableCredentialRepositoryError.toUpdateCredentialStatusError(): UpdateCredentialStatusError = when (this) {
     is SsiError.Unexpected -> Unexpected(cause)
 }
 
-internal fun GetAnyCredentialError.toUpdateCredentialStatusError(): UpdateCredentialStatusError = when (this) {
+internal fun BundleItemRepositoryError.toUpdateCredentialStatusError(): UpdateCredentialStatusError = when (this) {
+    is SsiError.Unexpected -> Unexpected(cause)
+}
+
+internal fun GetAllAnyCredentialsByCredentialIdError.toUpdateCredentialStatusError(): UpdateCredentialStatusError = when (this) {
     is CredentialError.Unexpected -> Unexpected(cause)
 }
 
@@ -82,6 +89,11 @@ internal fun Throwable.toValidateTokenStatusStatusListError(message: String): Va
 }
 
 internal fun Throwable.toParseTokenStatusStatusListError(message: String): ParseTokenStatusStatusListError {
+    Timber.e(t = this, message = message)
+    return Unexpected(this)
+}
+
+internal fun Throwable.toUpdateCredentialStatusError(message: String): UpdateCredentialStatusError {
     Timber.e(t = this, message = message)
     return Unexpected(this)
 }

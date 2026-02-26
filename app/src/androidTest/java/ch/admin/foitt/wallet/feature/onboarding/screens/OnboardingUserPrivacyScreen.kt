@@ -8,7 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.printToLog
-import ch.admin.foitt.wallet.platform.screens.BaseScreen
+import ch.admin.foitt.wallet.platform.genericScreens.BaseScreen
 import ch.admin.foitt.wallet.platform.utils.TestTags
 
 class OnboardingUserPrivacyScreen(composeTestRule: ComposeContentTestRule) : BaseScreen(composeTestRule) {

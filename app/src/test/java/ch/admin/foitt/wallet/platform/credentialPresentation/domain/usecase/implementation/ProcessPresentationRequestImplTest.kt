@@ -6,11 +6,13 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationReq
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProcessPresentationRequestResult
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.GetCompatibleCredentials
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ProcessPresentationRequest
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ValidatePresentationRequest
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
-import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialRepo
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialRepository
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertSuccessType
 import com.github.michaelbull.result.Err
@@ -33,7 +35,7 @@ class ProcessPresentationRequestImplTest {
     private lateinit var mockValidatePresentationRequest: ValidatePresentationRequest
 
     @MockK
-    private lateinit var mockCredentialRepository: CredentialRepo
+    private lateinit var mockVerifiableCredentialRepo: VerifiableCredentialRepository
 
     @MockK
     private lateinit var mockGetCompatibleCredentials: GetCompatibleCredentials
@@ -51,12 +53,18 @@ class ProcessPresentationRequestImplTest {
     private lateinit var mockJwt: Jwt
 
     @MockK
+    private lateinit var mockPresentationRequestWithRaw: PresentationRequestWithRaw
+
+    @MockK
     private lateinit var mockInputDescriptors: List<InputDescriptor>
 
     @MockK
     private lateinit var mockCompatibleCredential: CompatibleCredential
 
-    private lateinit var useCase: ProcessPresentationRequestImpl
+    @MockK
+    private lateinit var mockCompatibleCredential2: CompatibleCredential
+
+    private lateinit var useCase: ProcessPresentationRequest
 
     @BeforeEach
     fun setUp() {
@@ -65,7 +73,7 @@ class ProcessPresentationRequestImplTest {
         useCase = ProcessPresentationRequestImpl(
             mockValidatePresentationRequest,
             mockGetCompatibleCredentials,
-            mockCredentialRepository
+            mockVerifiableCredentialRepo
         )
 
         setupDefaultMocks()
@@ -78,13 +86,13 @@ class ProcessPresentationRequestImplTest {
 
     @Test
     fun `Processing presentation request which matches one credential returns the credential`() = runTest {
-        coEvery { mockGetCompatibleCredentials(mockInputDescriptors) } returns Ok(listOf(mockCompatibleCredential))
+        coEvery { mockGetCompatibleCredentials(mockInputDescriptors) } returns Ok(setOf(mockCompatibleCredential))
 
         val result = useCase(mockJwtPresentationContainer)
 
         val expected = ProcessPresentationRequestResult.Credential(
             mockCompatibleCredential,
-            mockPresentationRequest,
+            mockPresentationRequestWithRaw,
             true,
         )
         val processPresentationResult = result.assertSuccessType(ProcessPresentationRequestResult.Credential::class)
@@ -93,14 +101,14 @@ class ProcessPresentationRequestImplTest {
 
     @Test
     fun `Processing presentation request which matches multiple credentials returns the credentials`() = runTest {
-        val credentials = listOf(mockCompatibleCredential, mockCompatibleCredential)
+        val credentials = setOf(mockCompatibleCredential, mockCompatibleCredential2)
         coEvery { mockGetCompatibleCredentials(mockInputDescriptors) } returns Ok(credentials)
 
         val result = useCase(mockJwtPresentationContainer)
 
         val expected = ProcessPresentationRequestResult.CredentialList(
             credentials,
-            mockPresentationRequest,
+            mockPresentationRequestWithRaw,
             true,
         )
         val processPresentationResult = result.assertSuccessType(ProcessPresentationRequestResult.CredentialList::class)
@@ -109,7 +117,7 @@ class ProcessPresentationRequestImplTest {
 
     @Test
     fun `Processing presentation request which matches no credential returns no compatible credential error`() = runTest {
-        coEvery { mockGetCompatibleCredentials(mockInputDescriptors) } returns Ok(emptyList())
+        coEvery { mockGetCompatibleCredentials(mockInputDescriptors) } returns Ok(emptySet())
 
         val result = useCase(mockJwtPresentationContainer)
 
@@ -118,7 +126,7 @@ class ProcessPresentationRequestImplTest {
 
     @Test
     fun `Processing presentation request with empty wallet returns empty wallet error`() = runTest {
-        coEvery { mockCredentialRepository.getAll() } returns Ok(emptyList())
+        coEvery { mockVerifiableCredentialRepo.getAllIds() } returns Ok(emptyList())
 
         val result = useCase(mockJwtPresentationContainer)
 
@@ -137,7 +145,7 @@ class ProcessPresentationRequestImplTest {
     @Test
     fun `Processing presentation request maps errors from getting all credentials`() = runTest {
         val exception = IllegalStateException()
-        coEvery { mockCredentialRepository.getAll() } returns Err(SsiError.Unexpected(exception))
+        coEvery { mockVerifiableCredentialRepo.getAllIds() } returns Err(SsiError.Unexpected(exception))
 
         val result = useCase(mockJwtPresentationContainer)
 
@@ -178,13 +186,19 @@ class ProcessPresentationRequestImplTest {
         every { mockPresentationRequest.presentationDefinition } returns mockk {
             every { inputDescriptors } returns mockInputDescriptors
         }
-        coEvery { mockValidatePresentationRequest(any()) } returns Ok(mockPresentationRequest)
-        coEvery { mockCredentialRepository.getAll() } returns Ok(listOf(mockk()))
-        coEvery { mockGetCompatibleCredentials(mockInputDescriptors) } returns Ok(listOf(mockCompatibleCredential))
+        every { mockPresentationRequest.responseUri } returns "uri"
+        coEvery { mockValidatePresentationRequest(any()) } returns Ok(mockPresentationRequestWithRaw)
+        coEvery { mockVerifiableCredentialRepo.getAllIds() } returns Ok(listOf(1, 2, 3))
+        coEvery { mockGetCompatibleCredentials(mockInputDescriptors) } returns Ok(setOf(mockCompatibleCredential))
         coEvery { mockJwtPresentationContainer.jwt } returns mockJwt
+        coEvery { mockJwt.rawJwt } returns RAW_JWT
+
+        every { mockPresentationRequestWithRaw.presentationRequest } returns mockPresentationRequest
+        every { mockPresentationRequestWithRaw.rawPresentationRequest } returns RAW_JWT
     }
 
     private companion object {
         const val RESPONSE_URI = "response uri"
+        const val RAW_JWT = "rawJwt"
     }
 }

@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientMetaData
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
@@ -118,6 +119,34 @@ class ValidatePresentationRequestImplTest {
         }
 
     @Test
+    fun `Json Presentation request with response_mode 'direct_post(dot)jwt' but missing client metadata returns an invalid presentation error`() =
+        runTest {
+            val presentationJson = MockPresentationRequest.presentationRequest
+                .copy(responseMode = DIRECT_POST_JWT)
+                .toJsonObject()
+            coEvery { mockJsonPresentationContainer.json } returns presentationJson
+
+            useCase(mockJsonPresentationContainer).assertErrorType(CredentialPresentationError.InvalidPresentation::class)
+        }
+
+    @Test
+    fun `Json Presentation request with response_mode 'direct_post(dot)jwt' and client metadata returns success`() =
+        runTest {
+            val presentationJson = MockPresentationRequest.presentationRequest
+                .copy(
+                    responseMode = DIRECT_POST_JWT,
+                    clientMetaData = ClientMetaData(
+                        clientNameList = emptyList(),
+                        logoUriList = emptyList(),
+                    )
+                )
+                .toJsonObject()
+            coEvery { mockJsonPresentationContainer.json } returns presentationJson
+
+            useCase(mockJsonPresentationContainer).assertOk()
+        }
+
+    @Test
     fun `Json Presentation request missing client_id_scheme returns invalid presentation error`(): Unit =
         runTest {
             val presentationJson = MockPresentationRequest.presentationRequest
@@ -190,6 +219,34 @@ class ValidatePresentationRequestImplTest {
             coEvery { mockPresentationJwt.payloadJson } returns presentationJson
 
             useCase(mockJwtPresentationContainer).assertErrorType(CredentialPresentationError.InvalidPresentation::class)
+        }
+
+    @Test
+    fun `Jwt Presentation request with response_mode 'direct_post(dot)jwt' but missing client metadata returns an invalid presentation error`() =
+        runTest {
+            val presentationJson = MockPresentationRequest.presentationRequest
+                .copy(responseMode = DIRECT_POST_JWT)
+                .toJsonObject()
+            coEvery { mockPresentationJwt.payloadJson } returns presentationJson
+
+            useCase(mockJwtPresentationContainer).assertErrorType(CredentialPresentationError.InvalidPresentation::class)
+        }
+
+    @Test
+    fun `Jwt Presentation request with response_mode 'direct_post(dot)jwt' and client metadata returns success`() =
+        runTest {
+            val presentationJson = MockPresentationRequest.presentationRequest
+                .copy(
+                    responseMode = DIRECT_POST_JWT,
+                    clientMetaData = ClientMetaData(
+                        clientNameList = emptyList(),
+                        logoUriList = emptyList(),
+                    )
+                )
+                .toJsonObject()
+            coEvery { mockPresentationJwt.payloadJson } returns presentationJson
+
+            useCase(mockJwtPresentationContainer).assertOk()
         }
 
     @Test
@@ -322,6 +379,7 @@ class ValidatePresentationRequestImplTest {
         testSafeJson.json.encodeToJsonElement(value = this).jsonObject
 
     private companion object {
+        const val DIRECT_POST_JWT = "direct_post.jwt"
         const val INVALID_RESPONSE_TYPE = "invalid response_type"
         const val INVALID_RESPONSE_MODE = "invalid response_mode"
         const val INVALID_CLIENT_ID = "invalid client_id"

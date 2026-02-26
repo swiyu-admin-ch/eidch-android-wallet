@@ -37,7 +37,7 @@ internal class GetActorUiStateImpl @Inject constructor(
     private fun ActorDisplayData.getLocalizedName(): String? = name?.let {
         getLocalizedDisplay(
             displays = name,
-            preferredLocale = preferredLanguage,
+            preferredLocaleString = preferredLanguage,
         )
     }?.let { actorField: ActorField<String> ->
         return if (actorField.locale == DisplayLanguage.FALLBACK) {
@@ -52,7 +52,7 @@ internal class GetActorUiStateImpl @Inject constructor(
     private suspend fun ActorDisplayData.getLocalizedIcon(): Painter? = image?.let {
         getLocalizedDisplay(
             displays = image,
-            preferredLocale = preferredLanguage,
+            preferredLocaleString = preferredLanguage,
         )
     }?.let {
         getDrawableFromUri(it.value)?.toPainter()
@@ -61,7 +61,7 @@ internal class GetActorUiStateImpl @Inject constructor(
     private fun ActorDisplayData.getLocalizedReason(): String? = nonComplianceReason?.let {
         getLocalizedDisplay(
             displays = nonComplianceReason,
-            preferredLocale = preferredLanguage,
+            preferredLocaleString = preferredLanguage,
         )?.value
     }
 }

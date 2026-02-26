@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.data
 
+import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.TypeMetadataRepositoryError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.toTypeMetadataRepositoryError
 import ch.admin.foitt.openid4vc.domain.repository.TypeMetadataRepository
@@ -13,9 +14,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import java.net.URL
 import javax.inject.Inject
+import javax.inject.Named
 
 internal class TypeMetadataRepositoryImpl @Inject constructor(
-    private val httpClient: HttpClient,
+    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
 ) : TypeMetadataRepository {
 
     override suspend fun fetchTypeMetadata(url: URL): Result<String, TypeMetadataRepositoryError> = runSuspendCatching<String> {

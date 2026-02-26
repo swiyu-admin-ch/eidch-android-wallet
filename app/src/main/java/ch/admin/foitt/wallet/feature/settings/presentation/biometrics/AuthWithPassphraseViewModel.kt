@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.feature.settings.presentation.biometrics
 
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.authenticateWithPassphrase.domain.model.AuthenticateWithPassphraseError
@@ -10,8 +9,8 @@ import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.ResetBiometrics
 import ch.admin.foitt.wallet.platform.login.domain.usecase.GetRemainingLoginAttempts
 import ch.admin.foitt.wallet.platform.login.domain.usecase.IncreaseFailedLoginAttemptsCounter
 import ch.admin.foitt.wallet.platform.login.domain.usecase.ResetLockout
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EnableBiometricsNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseValidationState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.usecase.ValidatePassphrase
@@ -19,19 +18,18 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.AuthWithPassphraseScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EnableBiometricsScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.LockoutScreenDestination
 import com.github.michaelbull.result.mapBoth
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class AuthWithPassphraseViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = AuthWithPassphraseViewModel.Factory::class)
+class AuthWithPassphraseViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
     private val validatePassphrase: ValidatePassphrase,
     private val authenticateWithPassphrase: AuthenticateWithPassphrase,
@@ -39,14 +37,16 @@ class AuthWithPassphraseViewModel @Inject constructor(
     private val resetLockout: ResetLockout,
     private val increaseFailedLoginAttemptsCounter: IncreaseFailedLoginAttemptsCounter,
     private val resetBiometrics: ResetBiometrics,
+    @Assisted val enableBiometrics: Boolean,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle,
 ) : ScreenViewModel(setTopBarState) {
 
-    override val topBarState = TopBarState.Details(navManager::navigateUp, R.string.change_biometrics_title)
+    @AssistedFactory
+    interface Factory {
+        fun create(enableBiometrics: Boolean): AuthWithPassphraseViewModel
+    }
 
-    private val navArgs = AuthWithPassphraseScreenDestination.argsFrom(savedStateHandle)
-    val enableBiometrics = navArgs.enableBiometrics
+    override val topBarState = TopBarState.Details(navManager::popBackStack, R.string.change_biometrics_title)
 
     private val _textFieldValue = MutableStateFlow(TextFieldValue(""))
     val textFieldValue = _textFieldValue.asStateFlow()
@@ -95,8 +95,8 @@ class AuthWithPassphraseViewModel @Inject constructor(
         _passphraseInputFieldState.value = PassphraseInputFieldState.Success
 
         if (enableBiometrics) {
-            navManager.navigateToAndClearCurrent(
-                EnableBiometricsScreenDestination(navArgs = EnableBiometricsNavArg(pin = textFieldValue.value.text))
+            navManager.replaceCurrentWith(
+                Destination.EnableBiometricsScreen(pin = textFieldValue.value.text)
             )
         } else {
             resetBiometrics()
@@ -122,6 +122,6 @@ class AuthWithPassphraseViewModel @Inject constructor(
     }
 
     private fun navigateToLockoutScreen() = viewModelScope.launch {
-        navManager.navigateToAndClearCurrent(LockoutScreenDestination)
+        navManager.replaceCurrentWith(Destination.LockoutScreen)
     }
 }

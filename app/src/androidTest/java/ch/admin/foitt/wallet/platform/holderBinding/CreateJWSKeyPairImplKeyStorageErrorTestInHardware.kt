@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import ch.admin.foitt.openid4vc.domain.model.KeyStorageSecurityLevel
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.wallet.platform.holderBinding.domain.model.KeyPairError
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.CreateJWSKeyPairInHardware
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.implementation.CreateJWSKeyPairInHardwareImpl
-import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.implementation.CreateKeyGenSpecImpl
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.KeyPairError
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateJWSKeyPairInHardwareImpl
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateKeyGenSpecImpl
 import ch.admin.foitt.wallet.util.assertErrorType
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -67,7 +67,7 @@ class CreateJWSKeyPairImplKeyStorageErrorTestInHardware(
             provider = "AndroidKeyStore",
             keyStorageSecurityLevels = keyStorageList,
             attestationChallenge = null,
-        ).assertErrorType(KeyPairError.UnsupportedKeyStorageSecurityLevel::class)
+        ).assertErrorType(KeyPairError.UnsupportedProofKeyStorageSecurityLevel::class)
 
         verify(exactly = 0) {
             keyGenSpecFactory.invoke(any(), any(), any(), any())

@@ -6,10 +6,10 @@ import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManag
 import ch.admin.foitt.wallet.platform.navigation.DestinationsComponentBuilder
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
-import ch.admin.foitt.walletcomposedestinations.destinations.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.contains
 import dagger.hilt.EntryPoints
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -17,17 +17,16 @@ import javax.inject.Inject
 internal class DestinationScopedComponentManagerImpl @Inject constructor(
     private val componentBuilder: DestinationsComponentBuilder,
     private val navManager: NavigationManager,
-    @param:IoDispatcherScope private val ioDispatcherScope: CoroutineScope,
+    @param:IoDispatcherScope private val ioDispatcherScope: CoroutineScope
 ) : DestinationScopedComponentManager {
-    private val backStackFlow: StateFlow<List<Destination>> = navManager.currentBackStackFlow
-
     private val scopedComponents: MutableMap<ComponentScope, DestinationScopedComponent> = mutableMapOf()
 
     override fun <T> getEntryPoint(entryPointClass: Class<T>, componentScope: ComponentScope): T {
-        // Runtime exception in case of coding error
         val currentDestination = navManager.currentDestination
-        require(currentDestination in componentScope.destinations) {
-            val msg = "the current destination $currentDestination is not in the scope ${componentScope.destinations}"
+
+        // Runtime exception in case of coding error
+        require(componentScope.contains(currentDestination)) {
+            val msg = "current destination ${currentDestination::class.simpleName} is not in scope $componentScope"
             Timber.e(msg)
             msg
         }
@@ -38,16 +37,19 @@ internal class DestinationScopedComponentManagerImpl @Inject constructor(
 
         val entryPoint = EntryPoints.get(component, entryPointClass)
         Timber.d(
-            "Component Entry Point requested:\n" +
-                "EntryClass: $entryPointClass,\n" +
-                "Scoped components: ${scopedComponents.entries}"
+            """
+            Component Entry Point requested:
+            :: EntryClass: ${entryPointClass.simpleName}
+            :: Scoped components: ${scopedComponents.entries}
+            """.trimIndent()
         )
+
         return entryPoint
     }
 
     init {
         ioDispatcherScope.launch {
-            backStackFlow.collect { backStack ->
+            navManager.backstackFlow.collect { backStack ->
                 updateComponents(backStack)
             }
         }
@@ -55,15 +57,18 @@ internal class DestinationScopedComponentManagerImpl @Inject constructor(
 
     private fun updateComponents(backStack: List<Destination>) {
         Timber.d("Components update triggered")
-        if (backStack.isNotEmpty()) {
-            scopedComponents.keys.retainAll { scope ->
-                scope.destinations.any { scopeDestination -> scopeDestination in backStack }
+        scopedComponents.keys.retainAll { componentScope ->
+            // Only keep component if their scope is in the backstack
+            backStack.any { destination ->
+                componentScope.contains(destination)
             }
-            Timber.d(
-                "Components updated:\n" +
-                    "Backstack: $backStack,\n" +
-                    "Scoped components: ${scopedComponents.entries}"
-            )
         }
+        Timber.d(
+            """
+            Components updated:
+            :: Backstack: ${backStack.joinToString(", ") { it::class.simpleName ?: "" }}
+            :: Scoped components: ${scopedComponents.entries}
+            """.trimIndent()
+        )
     }
 }

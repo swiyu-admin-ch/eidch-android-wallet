@@ -4,6 +4,7 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.repository.TopBarStateRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 import javax.inject.Inject
 
 class TopBarStateRepositoryImpl @Inject constructor() : TopBarStateRepository {
@@ -12,6 +13,7 @@ class TopBarStateRepositoryImpl @Inject constructor() : TopBarStateRepository {
     override val state = _state.asStateFlow()
 
     override fun setState(state: TopBarState) {
+        Timber.d("Nav set topbarstate: $state")
         _state.value = state
     }
 }

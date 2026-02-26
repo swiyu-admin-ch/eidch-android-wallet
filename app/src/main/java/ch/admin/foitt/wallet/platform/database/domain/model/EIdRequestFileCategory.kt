@@ -5,4 +5,5 @@ enum class EIdRequestFileCategory {
     DOCUMENT_RECORDING,
     FACE_RECORDING,
     NFC_SCAN,
+    METADATA
 }

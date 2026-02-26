@@ -1,15 +1,15 @@
 package ch.admin.foitt.wallet.platform.invitation
 
+import ch.admin.foitt.wallet.platform.appSetupState.domain.usecase.GetFirstCredentialWasAdded
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.mock.MockPresentationRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationResult
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.HandleInvitationProcessingSuccess
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.implementation.HandleInvitationProcessingSuccessImpl
+import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialOfferEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
-import ch.admin.foitt.walletcomposedestinations.destinations.CredentialOfferScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationCredentialListScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PresentationRequestScreenDestination
-import com.ramcosta.composedestinations.spec.Direction
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import io.mockk.MockKAnnotations
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -28,16 +28,25 @@ class HandleInvitationProcessingSuccessTest {
     @MockK
     private lateinit var mockNavigationManager: NavigationManager
 
+    @MockK
+    private lateinit var mockCredentialOfferEventRepository: CredentialOfferEventRepository
+
+    @MockK
+    private lateinit var mockFirstCredentialWasAdded: GetFirstCredentialWasAdded
+
     private lateinit var handleInvitationProcessingSuccess: HandleInvitationProcessingSuccess
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
 
-        coEvery { mockNavigationManager.navigateToAndClearCurrent(any()) } just runs
+        coEvery { mockNavigationManager.replaceCurrentWith(any()) } just runs
+        coEvery { mockCredentialOfferEventRepository.setEvent(any()) } just runs
+        coEvery { mockFirstCredentialWasAdded() } returns true
 
         handleInvitationProcessingSuccess = HandleInvitationProcessingSuccessImpl(
             navManager = mockNavigationManager,
+            credentialOfferEventRepository = mockCredentialOfferEventRepository,
         )
     }
 
@@ -52,8 +61,8 @@ class HandleInvitationProcessingSuccessTest {
             handleInvitationProcessingSuccess(successResult).navigate()
 
             coVerify(exactly = 1) {
-                mockNavigationManager.navigateToAndClearCurrent(destination)
-                mockNavigationManager.navigateToAndClearCurrent(destination)
+                mockNavigationManager.replaceCurrentWith(destination)
+                mockNavigationManager.replaceCurrentWith(destination)
             }
             clearMocks(mockNavigationManager, answers = false)
         }
@@ -62,34 +71,40 @@ class HandleInvitationProcessingSuccessTest {
     companion object {
         private val mockPresentationRequest = MockPresentationRequest.presentationRequest
         private val mockCredentialOfferResult = ProcessInvitationResult.CredentialOffer(0L)
+        private const val RAW_JWT = "rawJwt"
 
         private val mockCompatibleCredential = CompatibleCredential(
             credentialId = mockCredentialOfferResult.credentialId,
             requestedFields = listOf(),
         )
 
+        private val mockPresentationRequestWithRaw = PresentationRequestWithRaw(
+            mockPresentationRequest,
+            RAW_JWT,
+        )
+
         private val mockPresentationRequestResult = ProcessInvitationResult.PresentationRequest(
             mockCompatibleCredential,
-            mockPresentationRequest,
+            mockPresentationRequestWithRaw,
             shouldCheckTrustStatement = true,
         )
 
         private val mockPresentationRequestListResult = ProcessInvitationResult.PresentationRequestCredentialList(
-            listOf(mockCompatibleCredential),
-            mockPresentationRequest,
+            setOf(mockCompatibleCredential),
+            mockPresentationRequestWithRaw,
             shouldCheckTrustStatement = true,
         )
 
-        private val definedSuccessDestinations: Map<ProcessInvitationResult, Direction> = mapOf(
-            mockCredentialOfferResult to CredentialOfferScreenDestination(mockCredentialOfferResult.credentialId),
-            mockPresentationRequestResult to PresentationRequestScreenDestination(
-                mockPresentationRequestResult.credential,
-                mockPresentationRequestResult.request,
+        private val definedSuccessDestinations: Map<ProcessInvitationResult, Destination> = mapOf(
+            mockCredentialOfferResult to Destination.CredentialOfferScreen(mockCredentialOfferResult.credentialId),
+            mockPresentationRequestResult to Destination.PresentationRequestScreen(
+                compatibleCredential = mockPresentationRequestResult.credential,
+                presentationRequestWithRaw = mockPresentationRequestResult.request,
                 shouldFetchTrustStatement = true,
             ),
-            mockPresentationRequestListResult to PresentationCredentialListScreenDestination(
-                mockPresentationRequestListResult.credentials.toTypedArray(),
-                mockPresentationRequestListResult.request,
+            mockPresentationRequestListResult to Destination.PresentationCredentialListScreen(
+                compatibleCredentials = mockPresentationRequestListResult.credentials,
+                presentationRequestWithRaw = mockPresentationRequestListResult.request,
                 shouldFetchTrustStatement = true,
             ),
         )

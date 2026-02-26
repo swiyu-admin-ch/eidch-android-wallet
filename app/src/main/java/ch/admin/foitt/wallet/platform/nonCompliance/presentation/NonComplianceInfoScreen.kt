@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
@@ -25,8 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,18 +42,13 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
 import ch.admin.foitt.wallet.platform.composables.presentation.verticalSafeDrawing
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.NonComplianceInfoNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = NonComplianceInfoNavArg::class,
-)
 @Composable
 fun NonComplianceInfoScreen(viewModel: NonComplianceInfoViewModel) {
     NonComplianceInfoScreenContent(
@@ -74,8 +72,9 @@ private fun NonComplianceInfoScreenContent(
 
     WalletLayouts.LazyColumn(
         modifier = Modifier
-            .fillMaxWidth()
-            .horizontalSafeDrawing(),
+            .widthIn(max = Sizes.contentMaxWidth)
+            .horizontalSafeDrawing()
+            .align(Alignment.TopCenter),
         state = rememberLazyListState(),
         contentPadding = PaddingValues(start = Sizes.s04, top = Sizes.s02, end = Sizes.s04, bottom = Sizes.s04),
         useTopInsets = false,
@@ -99,7 +98,7 @@ private fun NonComplianceInfoScreenContent(
         item {
             WalletTexts.LabelMedium(
                 modifier = Modifier.padding(horizontal = Sizes.s04),
-                text = stringResource(R.string.tk_nonCompliance_report_footer),
+                text = stringResource(R.string.tk_nonCompliance_report_info_footer),
             )
         }
 
@@ -108,7 +107,7 @@ private fun NonComplianceInfoScreenContent(
 
     HeightReportingLayout(
         modifier = Modifier
-            .fillMaxWidth()
+            .widthIn(max = Sizes.contentMaxWidth)
             .align(Alignment.BottomCenter)
             .horizontalSafeDrawing()
             .verticalSafeDrawing(),
@@ -119,7 +118,8 @@ private fun NonComplianceInfoScreenContent(
         Buttons.FilledPrimary(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Sizes.s04),
+                .padding(horizontal = Sizes.s04)
+                .padding(bottom = Sizes.s04),
             text = stringResource(R.string.tk_global_continue),
             onClick = onContinue,
         )
@@ -154,12 +154,12 @@ private fun LazyListScope.nonComplianceReportReasonListItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .semantics { heading() },
-                text = stringResource(R.string.tk_nonCompliance_report_title),
+                text = stringResource(R.string.tk_nonCompliance_report_info_title),
                 textAlign = TextAlign.Center,
             )
 
             val body = when (nonComplianceReportReason) {
-                NonComplianceReportReason.EXCESSIVE_DATA_REQUEST -> R.string.tk_nonCompliance_reportExcessiveData_body
+                NonComplianceReportReason.EXCESSIVE_DATA_REQUEST -> R.string.tk_nonCompliance_report_info_body
             }
 
             WalletTexts.BodyMedium(
@@ -181,7 +181,7 @@ private fun LazyListScope.nonComplianceReportReasonListItem(
 fun ExternalLinkListItem(
     onClick: () -> Unit,
 ) {
-    val title = stringResource(R.string.tk_nonCompliance_report_moreInformation_link_text)
+    val title = stringResource(R.string.tk_nonCompliance_report_info_moreInformation_link_text)
 
     ListItem(
         modifier = Modifier
@@ -196,6 +196,7 @@ fun ExternalLinkListItem(
                 WalletTexts.BodyMedium(
                     modifier = Modifier.semantics {
                         contentDescription = "$title $linkAltText"
+                        role = Role.Button
                     },
                     text = title,
                     color = WalletTheme.colorScheme.error,

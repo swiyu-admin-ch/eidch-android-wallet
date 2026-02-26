@@ -14,8 +14,8 @@ import ch.admin.foitt.wallet.platform.login.domain.usecase.CanUseBiometricsForLo
 import ch.admin.foitt.wallet.platform.login.domain.usecase.GetLockoutDuration
 import ch.admin.foitt.wallet.platform.login.domain.usecase.LoginWithBiometrics
 import ch.admin.foitt.wallet.platform.login.domain.usecase.ResetLockout
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PassphraseLoginNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
@@ -23,8 +23,6 @@ import ch.admin.foitt.wallet.platform.utils.openLink
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersionInfo
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.FetchAppVersionInfo
-import ch.admin.foitt.walletcomposedestinations.destinations.AppVersionBlockedScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PassphraseLoginScreenDestination
 import com.github.michaelbull.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -129,14 +127,12 @@ class LockoutViewModel @Inject constructor(
             }
     }.trackCompletion(_isLoading)
 
-    private fun navigateToPassphraseLoginScreen() = navManager.navigateToAndClearCurrent(
-        PassphraseLoginScreenDestination(
-            PassphraseLoginNavArg(biometricsLocked = false)
-        )
+    private fun navigateToPassphraseLoginScreen() = navManager.replaceCurrentWith(
+        Destination.PassphraseLoginScreen(biometricsLocked = false)
     )
 
-    private fun navigateToAppVersionBlocked(title: String?, text: String?) = navManager.navigateToAndClearCurrent(
-        direction = AppVersionBlockedScreenDestination(title = title, text = text)
+    private fun navigateToAppVersionBlocked(title: String?, text: String?) = navManager.replaceCurrentWith(
+        destination = Destination.AppVersionBlockedScreen(title = title, text = text)
     )
 
     fun onPassphraseForgotten() = appContext.openLink(R.string.tk_login_locked_secondarybutton_value)

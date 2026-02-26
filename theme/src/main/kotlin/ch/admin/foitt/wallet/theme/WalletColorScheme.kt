@@ -78,6 +78,8 @@ data class WalletColorScheme(
     val errorBackgroundDark: Color,
 
     val listItemBackground: Color,
+
+    val inactiveOverlay: Color,
 ) {
     @Stable
     internal val materialColorScheme: ColorScheme by lazy {
@@ -118,6 +120,18 @@ data class WalletColorScheme(
             surfaceContainerHighest = surfaceContainerHighest,
             surfaceContainerLow = surfaceContainerLow,
             surfaceContainerLowest = surfaceContainerLowest,
+            primaryFixed = primaryFixed,
+            primaryFixedDim = primaryFixed,
+            onPrimaryFixed = onPrimaryFixed,
+            onPrimaryFixedVariant = onPrimaryFixed,
+            secondaryFixed = secondaryFixed,
+            secondaryFixedDim = secondaryFixed,
+            onSecondaryFixed = onSecondaryFixed,
+            onSecondaryFixedVariant = onSecondaryFixed,
+            tertiaryFixed = tertiary,
+            tertiaryFixedDim = tertiary,
+            onTertiaryFixed = onTertiary,
+            onTertiaryFixedVariant = onTertiary,
         )
     }
 
@@ -193,7 +207,8 @@ data class WalletColorScheme(
 
                 listItemBackground = WalletColors.white,
                 sensitiveBadge = WalletColors.purple91,
-                onSensitiveBadge = WalletColors.purple27
+                onSensitiveBadge = WalletColors.purple27,
+                inactiveOverlay = WalletColors.transparentWhite03,
             )
         }
 
@@ -268,7 +283,8 @@ data class WalletColorScheme(
 
                 listItemBackground = WalletColors.grey17,
                 sensitiveBadge = WalletColors.purple18,
-                onSensitiveBadge = WalletColors.purple91
+                onSensitiveBadge = WalletColors.purple91,
+                inactiveOverlay = WalletColors.tansparentBlack03,
             )
         }
     }

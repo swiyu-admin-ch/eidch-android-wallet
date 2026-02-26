@@ -4,7 +4,7 @@ import ch.admin.foitt.openid4vc.di.DefaultDispatcher
 import ch.admin.foitt.openid4vc.domain.model.GetKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.GetSoftwareKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.Jwk
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.CreateVcSdJwtVerifiablePresentationError

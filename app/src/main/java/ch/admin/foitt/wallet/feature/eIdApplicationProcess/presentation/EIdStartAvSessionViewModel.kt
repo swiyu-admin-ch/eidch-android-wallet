@@ -1,25 +1,26 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
-import androidx.lifecycle.SavedStateHandle
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdOnlineSessionNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdStartAvSessionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdWalletPairingScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 
-@HiltViewModel
-class EIdStartAvSessionViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = EIdStartAvSessionViewModel.Factory::class)
+class EIdStartAvSessionViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
-    savedStateHandle: SavedStateHandle,
     setTopBarState: SetTopBarState,
+    @Assisted private val caseId: String
 ) : ScreenViewModel(setTopBarState) {
 
-    private val navArgs: EIdOnlineSessionNavArg = EIdStartAvSessionScreenDestination.argsFrom(savedStateHandle)
+    @AssistedFactory
+    interface Factory {
+        fun create(caseId: String): EIdStartAvSessionViewModel
+    }
 
     override val topBarState = TopBarState.Details(
         titleId = null,
@@ -27,10 +28,8 @@ class EIdStartAvSessionViewModel @Inject constructor(
     )
 
     fun onStart() = navManager.navigateTo(
-        EIdWalletPairingScreenDestination(
-            caseId = navArgs.caseId,
-        )
+        Destination.EIdWalletPairingScreen(caseId = caseId)
     )
 
-    private fun onClose() = navManager.navigateUpOrToRoot()
+    private fun onClose() = navManager.popBackStackOrToRoot()
 }

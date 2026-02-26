@@ -30,9 +30,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.presentationRequest.presentation.model.PresentationRequestUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
@@ -44,14 +45,15 @@ import ch.admin.foitt.wallet.platform.badges.presentation.model.ClaimBadgeUiStat
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.ConfirmationBottomSheet
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialCardSmall
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialInfoWithBadgesWidget
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PresentationRequestNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
@@ -60,12 +62,8 @@ import ch.admin.foitt.wallet.platform.utils.TestTags
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination(
-    navArgsDelegate = PresentationRequestNavArg::class
-)
 @Composable
 fun PresentationRequestScreen(viewModel: PresentationRequestViewModel) {
     BackHandler(onBack = viewModel::onDecline)
@@ -133,13 +131,12 @@ private fun PresentationRequestContent(
             .fillMaxSize()
             .background(color = WalletTheme.colorScheme.surfaceContainerLow)
     ) {
-        val isCompact = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
-        val modifier = if (isCompact) {
-            Modifier.fillMaxWidth()
-        } else {
-            Modifier
-                .fillMaxWidth(0.8f)
-                .align(Alignment.Center)
+        val modifier = when (currentWindowAdaptiveInfo().windowWidthClass()) {
+            WindowWidthClass.COMPACT -> Modifier.fillMaxWidth()
+            else ->
+                Modifier
+                    .fillMaxWidth(0.8f)
+                    .align(Alignment.Center)
         }
 
         if (isSubmitting) {
@@ -248,7 +245,9 @@ private fun ContentList(
     item {
         WalletTexts.HeadlineSmallEmphasized(
             text = stringResource(id = R.string.tk_present_review_credential_dataSection_primary),
-            modifier = Modifier.padding(start = Sizes.s06, end = Sizes.s03, top = Sizes.s02)
+            modifier = Modifier
+                .padding(start = Sizes.s06, end = Sizes.s03, top = Sizes.s02)
+                .semantics { heading() },
         )
     }
     item { Spacer(modifier = Modifier.height(Sizes.s04)) }

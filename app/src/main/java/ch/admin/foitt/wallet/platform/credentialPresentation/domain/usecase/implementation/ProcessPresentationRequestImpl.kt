@@ -13,8 +13,8 @@ import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.toProc
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.GetCompatibleCredentials
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ProcessPresentationRequest
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ValidatePresentationRequest
-import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialRepositoryError
-import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialRepo
+import ch.admin.foitt.wallet.platform.ssi.domain.model.VerifiableCredentialRepositoryError
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialRepository
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
@@ -24,7 +24,7 @@ import javax.inject.Inject
 class ProcessPresentationRequestImpl @Inject constructor(
     private val validatePresentationRequest: ValidatePresentationRequest,
     private val getCompatibleCredentials: GetCompatibleCredentials,
-    private val credentialRepository: CredentialRepo,
+    private val verifiableCredentialRepository: VerifiableCredentialRepository,
 ) : ProcessPresentationRequest {
     override suspend fun invoke(
         presentationRequestContainer: PresentationRequestContainer,
@@ -32,14 +32,14 @@ class ProcessPresentationRequestImpl @Inject constructor(
         val presentationRequest = validatePresentationRequest(presentationRequestContainer)
             .mapError(ValidatePresentationRequestError::toProcessPresentationRequestError).bind()
 
-        checkIfWalletIsEmpty().bind()
+        checkIfWalletIsEmpty(presentationRequest.presentationRequest.responseUri).bind()
 
-        val compatibleCredentials = findCompatibleCredentials(presentationRequest).bind()
+        val compatibleCredentials = findCompatibleCredentials(presentationRequest.presentationRequest).bind()
         val shouldFetchTrustStatement = presentationRequestContainer.shouldFetchTrustStatements()
 
         when {
             compatibleCredentials.isEmpty() -> Err(
-                CredentialPresentationError.NoCompatibleCredential
+                CredentialPresentationError.NoCompatibleCredential(presentationRequest.presentationRequest.responseUri)
             ).bind<ProcessPresentationRequestResult>()
             compatibleCredentials.size == 1 -> ProcessPresentationRequestResult.Credential(
                 credential = compatibleCredentials.first(),
@@ -57,19 +57,20 @@ class ProcessPresentationRequestImpl @Inject constructor(
     private fun PresentationRequestContainer.shouldFetchTrustStatements(): Boolean =
         this is Jwt
 
-    private suspend fun checkIfWalletIsEmpty(): Result<Unit, ProcessPresentationRequestError> = coroutineBinding {
-        val credentials = credentialRepository.getAll()
-            .mapError(CredentialRepositoryError::toProcessPresentationRequestError)
+    private suspend fun checkIfWalletIsEmpty(uri: String):
+        Result<Unit, ProcessPresentationRequestError> = coroutineBinding {
+        val credentials = verifiableCredentialRepository.getAllIds()
+            .mapError(VerifiableCredentialRepositoryError::toProcessPresentationRequestError)
             .bind()
 
         if (credentials.isEmpty()) {
-            Err(CredentialPresentationError.EmptyWallet).bind<Unit>()
+            Err(CredentialPresentationError.EmptyWallet(responseUri = uri)).bind<Unit>()
         }
     }
 
     private suspend fun findCompatibleCredentials(
         presentationRequest: PresentationRequest
-    ): Result<List<CompatibleCredential>, ProcessPresentationRequestError> =
+    ): Result<Set<CompatibleCredential>, ProcessPresentationRequestError> =
         getCompatibleCredentials(presentationRequest.presentationDefinition.inputDescriptors)
             .mapError(GetCompatibleCredentialsError::toProcessPresentationRequestError)
 }

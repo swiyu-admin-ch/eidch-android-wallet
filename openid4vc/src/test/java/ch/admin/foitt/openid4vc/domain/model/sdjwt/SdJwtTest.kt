@@ -8,6 +8,10 @@ import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.RecursiveSdJwt
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.SdJwtSeparator
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.StructuredSdJwt
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.UndisclosedJwt
+import ch.admin.foitt.openid4vc.utils.createDigest
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -97,6 +101,31 @@ class SdJwtTest {
     }
 
     @Test
+    fun `parsing an SD-JWT with a disclosure with as reserved claim name should throw an exception`() {
+        assertThrows<IllegalStateException> {
+            SdJwt(rawSdJwt = FlatSdJwt.JWT + FlatDisclosures, reservedClaimNames = setOf("test_key_2"))
+        }
+    }
+
+    @Test
+    fun `parsing an SD-JWT with disclosures with duplicate claim names should throw an exception`() {
+        // Key: claim1
+        // Value: value1
+        val disclosure1 = "WyI5Mzc0NTNkMWVmODZmY2E4IiwiY2xhaW0xIiwidmFsdWUxIl0"
+
+        // Key: claim1
+        // Value: value2
+        val disclosure2 = "WyIyZmEwZWQ0NzQ0YTM1ZjdiIiwiY2xhaW0xIiwidmFsdWUyIl0"
+
+        // jwt referencing both disclosures' digests in _sd
+        val jwt = "eyJ0eXAiOiJzZCtqd3QiLCJhbGciOiJFUzI1NiJ9.eyJfc2QiOlsickptc2w4cHZnLWlMeTR4dVVZYkNXUXVvZE14UVF6NV9LbTA5b2FrR0k4dyIsIjlLeTlieExOa292STcwcmU1R1djTXFuSHFUMzctN3VMUnA4NkdqRTVqbGciXSwiX3NkX2FsZyI6IlNIQS0yNTYifQ.7-4yC1vRDMWyzyIqX9Ro2_rtLZPwdKUkG_eQWwC69kuZH7xI8uc_7GACFXGcTvGOTziISb_PcDYyi6DwD_uQPg"
+
+        assertThrows<IllegalStateException> {
+            SdJwt(rawSdJwt = jwt + SdJwtSeparator + disclosure1 + SdJwtSeparator + disclosure2 + SdJwtSeparator)
+        }
+    }
+
+    @Test
     fun `parsing an SD-JWT with a disclosure with one element should throw an exception`() = runTest {
         // ["test_salt_1"]
         val invalidSdJwt = FlatSdJwt.JWT + "${SdJwtSeparator}WyJ0ZXN0X3NhbHRfMSJd$SdJwtSeparator"
@@ -171,6 +200,19 @@ class SdJwtTest {
         assertThrows<IllegalStateException> {
             SdJwt(jwt + FlatDisclosures)
         }
+    }
+
+    @Test
+    fun `parsing a SD-JWT with duplicate digest should return an error`() = runTest {
+        mockkStatic("ch.admin.foitt.openid4vc.utils.StringExtKt")
+
+        every { any<String>().createDigest(any()) } returns "DUPLICATE_DIGEST"
+
+        assertThrows<IllegalStateException> {
+            SdJwt(RecursiveSdJwt.SD_JWT)
+        }
+
+        unmockkStatic("ch.admin.foitt.openid4vc.utils.StringExtKt")
     }
 
     private fun assertJsonEquals(expected: String, actualJson: JsonElement) {

@@ -12,17 +12,12 @@ import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScan
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerLoadingContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerNfcDisabledContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerSuccessContent
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdOnlineSessionNavArg
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.platform.utils.LocalIntent
 import ch.admin.foitt.wallet.platform.utils.OnLifecycleEventHandler
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = EIdOnlineSessionNavArg::class,
-)
 @Composable
 fun EIdNfcScannerScreen(viewModel: EIdNfcScannerViewModel) {
     val currentActivity = LocalActivity.current

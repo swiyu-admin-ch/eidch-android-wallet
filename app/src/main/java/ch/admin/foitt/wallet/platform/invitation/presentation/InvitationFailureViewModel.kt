@@ -1,26 +1,47 @@
 package ch.admin.foitt.wallet.platform.invitation.presentation
 
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
+import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationErrorScreenState
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.walletcomposedestinations.destinations.InvitationFailureScreenDestination
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 
-@HiltViewModel
-class InvitationFailureViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = InvitationFailureViewModel.Factory::class)
+class InvitationFailureViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
+    private val declinePresentation: DeclinePresentation,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle,
+    @Assisted val invitationErrorScreenState: InvitationErrorScreenState,
+    @Assisted private val uri: String?
 ) : ScreenViewModel(setTopBarState) {
+
+    @AssistedFactory
+    interface Factory {
+        fun create(invitationErrorScreenState: InvitationErrorScreenState, uri: String?): InvitationFailureViewModel
+    }
+
     override val topBarState = TopBarState.None
 
-    private val navArgs = InvitationFailureScreenDestination.argsFrom(savedStateHandle)
-    val error: InvitationErrorScreenState = navArgs.invitationError
+    fun close() = handleErrorType(uri)
 
-    fun close() = navManager.navigateUpOrToRoot()
+    private fun handleErrorType(uri: String?) = viewModelScope.launch {
+        when (invitationErrorScreenState) {
+            InvitationErrorScreenState.EMPTY_WALLET,
+            InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL -> {
+                if (uri != null) {
+                    declinePresentation(url = uri, reason = PresentationRequestErrorBody.ErrorType.CLIENT_REJECTED)
+                }
+            }
+            else -> {}
+        }
+        navManager.popBackStackOrToRoot()
+    }
 }

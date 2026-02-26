@@ -8,5 +8,6 @@ interface SavePresentationDeclinedActivity {
         actorDisplayData: ActorDisplayData,
         verifierFallbackName: String,
         claimIds: List<Long>,
+        nonComplianceData: String?,
     )
 }

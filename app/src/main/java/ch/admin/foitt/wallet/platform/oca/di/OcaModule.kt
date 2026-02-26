@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.platform.oca.di
 
 import ch.admin.foitt.wallet.platform.oca.data.OcaRepositoryImpl
 import ch.admin.foitt.wallet.platform.oca.domain.repository.OcaRepository
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchDeferredVcMetadataByFormat
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchOcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchVcMetadataByFormat
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaClaimData
@@ -14,6 +15,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaCaptureBaseValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaCesrHashValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaOverlayValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.TransformOcaOverlays
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.FetchDeferredVcMetadataByFormatImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.FetchOcaBundleImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.FetchVcMetadataByFormatImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.GenerateOcaClaimDataImpl
@@ -50,6 +52,11 @@ internal interface OcaModule {
     fun bindFetchVcMetadataByFormat(
         useCase: FetchVcMetadataByFormatImpl
     ): FetchVcMetadataByFormat
+
+    @Binds
+    fun bindFetchDeferredVcMetadataByFormat(
+        useCase: FetchDeferredVcMetadataByFormatImpl
+    ): FetchDeferredVcMetadataByFormat
 
     @Binds
     fun bindFetchOcaBundle(

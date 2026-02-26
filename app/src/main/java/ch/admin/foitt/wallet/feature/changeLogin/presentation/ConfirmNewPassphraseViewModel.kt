@@ -1,13 +1,13 @@
 package ch.admin.foitt.wallet.feature.changeLogin.presentation
 
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.changeLogin.domain.usecase.ChangePassphrase
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.PassphraseChangeEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.PassphraseChangeEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseValidationState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.usecase.ValidatePassphrase
@@ -15,9 +15,10 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.ConfirmNewPassphraseScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.SecuritySettingsScreenDestination
 import com.github.michaelbull.result.mapBoth
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,20 +27,23 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class ConfirmNewPassphraseViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = ConfirmNewPassphraseViewModel.Factory::class)
+class ConfirmNewPassphraseViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
     private val validatePassphrase: ValidatePassphrase,
     private val changePassphrase: ChangePassphrase,
     private val passphraseChangeEventRepository: PassphraseChangeEventRepository,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle,
+    @Assisted private val originalPassphrase: String
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Details(navManager::navigateUp, R.string.pin_change_title)
 
-    private val originalPassphrase = ConfirmNewPassphraseScreenDestination.argsFrom(savedStateHandle).passphrase
+    @AssistedFactory
+    interface Factory {
+        fun create(originalPassphrase: String): ConfirmNewPassphraseViewModel
+    }
+
+    override val topBarState = TopBarState.Details(navManager::popBackStack, R.string.pin_change_title)
 
     private val _textFieldValue = MutableStateFlow(TextFieldValue(text = ""))
     val textFieldValue = _textFieldValue.asStateFlow()
@@ -95,7 +99,7 @@ class ConfirmNewPassphraseViewModel @Inject constructor(
         success = {
             _passphraseInputFieldState.value = PassphraseInputFieldState.Success
             passphraseChangeEventRepository.setEvent(PassphraseChangeEvent.CHANGED)
-            navManager.popBackStackTo(SecuritySettingsScreenDestination, false)
+            navManager.popBackStackTo(Destination.SecuritySettingsScreen::class, false)
         },
         failure = { error ->
             Timber.e(error.throwable, "Could not change password")

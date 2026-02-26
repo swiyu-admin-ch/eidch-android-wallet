@@ -4,11 +4,8 @@ import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.ResetBiometrics
 import ch.admin.foitt.wallet.platform.login.domain.model.CanUseBiometricsForLoginResult
 import ch.admin.foitt.wallet.platform.login.domain.usecase.CanUseBiometricsForLogin
 import ch.admin.foitt.wallet.platform.login.domain.usecase.NavigateToLogin
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PassphraseLoginNavArg
-import ch.admin.foitt.walletcomposedestinations.destinations.BiometricLoginScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.PassphraseLoginScreenDestination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import com.github.michaelbull.result.Ok
-import com.ramcosta.composedestinations.spec.Direction
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
@@ -48,20 +45,20 @@ class NavigateToLoginImplTest {
         unmockkAll()
     }
 
+    private data class TestExpectation(val canUseBiometrics: CanUseBiometricsForLoginResult, val direction: Destination)
+
     @TestFactory
     fun `should navigate in correct direction`(): Stream<DynamicTest> {
-        data class TestExpectation(val canUseBiometrics: CanUseBiometricsForLoginResult, val direction: Direction)
-
         val expectations = CanUseBiometricsForLoginResult.entries.map {
             if (it.name == CanUseBiometricsForLoginResult.Usable.name) {
-                TestExpectation(it, BiometricLoginScreenDestination)
+                TestExpectation(it, Destination.BiometricLoginScreen)
             } else {
-                TestExpectation(it, PassphraseLoginScreenDestination(PassphraseLoginNavArg(biometricsLocked = false)))
+                TestExpectation(it, Destination.PassphraseLoginScreen(biometricsLocked = false))
             }
         }
         return expectations.stream().flatMap { testExpectation ->
             Stream.of(
-                DynamicTest.dynamicTest("${testExpectation.canUseBiometrics} should navigate to ${testExpectation.direction.route}") {
+                DynamicTest.dynamicTest("${testExpectation.canUseBiometrics} should navigate to ${testExpectation.direction}") {
                     runTest {
                         coEvery { mockCanUseBiometricsForLogin() } returns testExpectation.canUseBiometrics
                         Assertions.assertEquals(testExpectation.direction, useCase())

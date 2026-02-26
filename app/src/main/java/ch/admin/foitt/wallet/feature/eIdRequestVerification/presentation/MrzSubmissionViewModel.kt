@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.avwrapper.filesWithExtractDataList
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.SaveEIdRequestCaseError
@@ -26,21 +25,19 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.Fetch
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetDocumentScanResult
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetHasLegalGuardian
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdGuardianSelectionScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdGuardianshipScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdQueueScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdWalletPairingScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.MrzSubmissionScreenDestination
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.onSuccess
-import com.ramcosta.composedestinations.spec.Direction
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,10 +45,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.Instant
-import javax.inject.Inject
 
-@HiltViewModel
-internal class MrzSubmissionViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = MrzSubmissionViewModel.Factory::class)
+internal class MrzSubmissionViewModel @AssistedInject constructor(
     private val fetchSIdCase: FetchSIdCase,
     private val fetchSIdStatus: FetchSIdStatus,
     private val saveEIdRequestCase: SaveEIdRequestCase,
@@ -60,12 +56,16 @@ internal class MrzSubmissionViewModel @Inject constructor(
     private val getHasLegalGuardian: GetHasLegalGuardian,
     private val getDocumentScanResult: GetDocumentScanResult,
     private val navManager: NavigationManager,
-    savedStateHandle: SavedStateHandle,
+    @Assisted private val mrzLines: List<String>,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Empty
 
-    private val navArgs = MrzSubmissionScreenDestination.argsFrom(savedStateHandle)
+    @AssistedFactory
+    interface Factory {
+        fun create(mrzLines: List<String>): MrzSubmissionViewModel
+    }
+
+    override val topBarState = TopBarState.Empty
 
     private val isLoading = MutableStateFlow(false)
     private val applyResult = MutableStateFlow<Result<Unit, ApplyRequestError>?>(null)
@@ -86,10 +86,12 @@ internal class MrzSubmissionViewModel @Inject constructor(
                 onClose = ::onClose,
                 onRetry = ::onRetry
             )
+
             fetchStatusResult?.getError() is EIdRequestError.NetworkError -> MrzSubmissionUiState.NetworkError(
                 onClose = ::onClose,
                 onRetry = ::onRetry
             )
+
             else -> MrzSubmissionUiState.Unexpected(
                 onClose = ::onClose,
                 onRetry = ::onRetry,
@@ -103,13 +105,13 @@ internal class MrzSubmissionViewModel @Inject constructor(
         }
         viewModelScope.launch {
             fetchSIdCase().onSuccess { sIdCase ->
-                checkStatus(caseResponse = sIdCase, mrzLines = navArgs.mrzLines.toList())
+                checkStatus(caseResponse = sIdCase, mrzLines = mrzLines)
             }
         }.trackCompletion(isLoading)
     }
 
     private suspend fun fetchSIdCase() = ApplyRequest(
-        mrz = navArgs.mrzLines.toList(),
+        mrz = mrzLines,
         legalRepresentant = getHasLegalGuardian().value,
     ).let {
         fetchSIdCase(applyRequest = it)
@@ -135,12 +137,12 @@ internal class MrzSubmissionViewModel @Inject constructor(
                 } ?: Timber.d("No document scan result found")
 
                 if (isLegalCaseNeeded(stateResponse.legalRepresentant)) {
-                    navigateToNextScreen(EIdGuardianSelectionScreenDestination(caseId = caseResponse.caseId))
+                    navigateToNextScreen(Destination.EIdGuardianSelectionScreen(caseId = caseResponse.caseId))
                 } else if (stateResponse.state == EIdRequestQueueState.READY_FOR_ONLINE_SESSION) {
-                    navigateToNextScreen(EIdWalletPairingScreenDestination(caseId = caseResponse.caseId))
+                    navigateToNextScreen(Destination.EIdWalletPairingScreen(caseId = caseResponse.caseId))
                 } else {
                     navigateToNextScreen(
-                        EIdQueueScreenDestination(
+                        Destination.EIdQueueScreen(
                             rawDeadline = stateResponse.queueInformation?.expectedOnlineSessionStart,
                         )
                     )
@@ -184,16 +186,16 @@ internal class MrzSubmissionViewModel @Inject constructor(
         else -> false
     }
 
-    private fun navigateToNextScreen(direction: Direction) = navManager.navigateToAndPopUpTo(
-        direction = direction,
-        route = EIdGuardianshipScreenDestination.route,
+    private fun navigateToNextScreen(direction: Destination) = navManager.popUpToAndNavigate(
+        popToInclusive = Destination.EIdGuardianshipScreen::class,
+        destination = direction
     )
 
     init {
         onRefreshState()
     }
 
-    fun onClose() = navManager.navigateBackToHome(EIdGuardianshipScreenDestination)
+    fun onClose() = navManager.navigateBackToHomeScreen(Destination.EIdGuardianshipScreen::class)
 
     fun onRetry() = onRefreshState()
 }

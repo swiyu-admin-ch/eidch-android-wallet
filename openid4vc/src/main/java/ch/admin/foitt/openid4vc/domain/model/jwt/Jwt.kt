@@ -1,7 +1,7 @@
 package ch.admin.foitt.openid4vc.domain.model.jwt
 
-import ch.admin.foitt.openid4vc.domain.model.anycredential.CredentialValidity
-import ch.admin.foitt.openid4vc.domain.model.anycredential.getCredentialValidity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
+import ch.admin.foitt.openid4vc.domain.model.anycredential.getValidity
 import com.nimbusds.jwt.SignedJWT
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -29,5 +29,5 @@ open class Jwt(
     val expInstant: Instant? = signedJwt.jwtClaimsSet.expirationTime?.toInstant()
     val nbfInstant: Instant? = signedJwt.jwtClaimsSet.notBeforeTime?.toInstant()
 
-    val jwtValidity: CredentialValidity = getCredentialValidity(nbfInstant?.epochSecond, expInstant?.epochSecond)
+    val jwtValidity: Validity = getValidity(nbfInstant?.epochSecond, expInstant?.epochSecond)
 }

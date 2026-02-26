@@ -1,13 +1,15 @@
 package ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.VerifiableCredential
+import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedCredential
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
+import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.usecase.FetchVerifiableCredential
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.mock.MockCredentialOffer
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.FetchVcSdJwtCredential
+import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.VerifyVcSdJwtSignature
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
 import com.github.michaelbull.result.Err
@@ -18,7 +20,7 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -27,7 +29,10 @@ class FetchVcSdJwtCredentialImplTest {
     private lateinit var mockFetchVerifiableCredential: FetchVerifiableCredential
 
     @MockK
-    private lateinit var mockVerifyJwtSignature: VerifyJwtSignature
+    private lateinit var mockVerifyVcSdJwtSignature: VerifyVcSdJwtSignature
+
+    @MockK
+    private lateinit var mockPayloadEncryptionType: PayloadEncryptionType
 
     private lateinit var useCase: FetchVcSdJwtCredential
 
@@ -37,7 +42,7 @@ class FetchVcSdJwtCredentialImplTest {
 
         useCase = FetchVcSdJwtCredentialImpl(
             fetchVerifiableCredential = mockFetchVerifiableCredential,
-            verifyJwtSignature = mockVerifyJwtSignature,
+            verifyVcSdJwtSignature = mockVerifyVcSdJwtSignature,
         )
 
         initDefaultMocks()
@@ -52,92 +57,75 @@ class FetchVcSdJwtCredentialImplTest {
     fun `Fetching a vc sd jwt credential with valid params returns a VcSdJwtCredential`() = runTest {
         val credential = useCase(
             verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
-            keyPair = null,
-            attestationJwt = null
-        ).assertOk()
+            bindingKeyPairs = null,
+            payloadEncryptionType = mockPayloadEncryptionType,
+        ).assertOk() as AnyVerifiedCredential
 
-        Assertions.assertEquals(null, credential.keyBinding)
-        Assertions.assertEquals(VALID_JWT, credential.payload)
-    }
-
-    @Test
-    fun `Fetching a vc sd jwt credential that contains non disclosable claims returns an error`() = runTest {
-        coEvery {
-            mockFetchVerifiableCredential(MockCredentialOffer.verifiableCredentialParamsWithoutBinding, null, null)
-        } returns Ok(createVerifiableCredential(JWT_WITH_NON_DISCLOSABLE_CLAIM))
-
-        useCase(
-            verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
-            keyPair = null,
-            attestationJwt = null
-        ).assertErrorType(CredentialOfferError.InvalidCredentialOffer::class)
-    }
-
-    @Test
-    fun `Fetching a vc sd jwt credential that does not contain an issuer returns an error`() = runTest {
-        coEvery {
-            mockFetchVerifiableCredential(MockCredentialOffer.verifiableCredentialParamsWithoutBinding, null, null)
-        } returns Ok(createVerifiableCredential(JWT_WITHOUT_ISSUER))
-
-        useCase(
-            verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
-            keyPair = null,
-            attestationJwt = null
-        ).assertErrorType(CredentialOfferError.Unexpected::class)
-    }
-
-    @Test
-    fun `Fetching a vc sd jwt credential that does not contain a keyId returns an error`() = runTest {
-        coEvery {
-            mockFetchVerifiableCredential(MockCredentialOffer.verifiableCredentialParamsWithoutBinding, null, null)
-        } returns Ok(createVerifiableCredential(JWT_WITHOUT_KID))
-
-        useCase(
-            verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
-            keyPair = null,
-            attestationJwt = null
-        ).assertErrorType(CredentialOfferError.Unexpected::class)
+        assertEquals(null, credential.vcSdJwtCredential.keyBinding)
+        assertEquals(VALID_JWT, credential.vcSdJwtCredential.payload)
     }
 
     @Test
     fun `Fetching a vc sd jwt credential where the jwt signature validation fails returns an error`() = runTest {
         coEvery {
-            mockVerifyJwtSignature(any(), any(), any())
+            mockVerifyVcSdJwtSignature(any(), any())
         } returns Err(VcSdJwtError.InvalidJwt)
 
         useCase(
             verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
-            keyPair = null,
-            attestationJwt = null
+            bindingKeyPairs = null,
+            payloadEncryptionType = mockPayloadEncryptionType,
         ).assertErrorType(CredentialOfferError.IntegrityCheckFailed::class)
+    }
+
+    @Test
+    fun `Fetching a deferred vc sd jwt credential returns a deferred credential`() = runTest {
+        coEvery {
+            mockFetchVerifiableCredential(
+                MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
+                bindingKeyPairs = null,
+                mockPayloadEncryptionType
+            )
+        } returns Ok(MockCredentialOffer.validDeferredCredential)
+
+        val deferredCredential = useCase(
+            verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
+            bindingKeyPairs = null,
+            payloadEncryptionType = mockPayloadEncryptionType
+        ).assertOk()
+
+        assertEquals(MockCredentialOffer.validDeferredCredential, deferredCredential)
     }
 
     private fun initDefaultMocks() {
         coEvery {
-            mockFetchVerifiableCredential(MockCredentialOffer.verifiableCredentialParamsWithoutBinding, null, null)
+            mockFetchVerifiableCredential(
+                MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
+                bindingKeyPairs = null,
+                mockPayloadEncryptionType
+            )
         } returns Ok(createVerifiableCredential(VALID_JWT))
 
         coEvery {
-            mockVerifyJwtSignature(ISSUER, KEY_ID, any())
-        } returns Ok(Unit)
+            mockVerifyVcSdJwtSignature(any(), any(),)
+        } returns Ok(validSdJwt)
     }
 
     private fun createVerifiableCredential(jwt: String) = VerifiableCredential(
-        format = CredentialFormat.VC_SD_JWT,
         credential = jwt,
         keyBinding = null
     )
 
+    private val validSdJwt = createVcSdJwtCredential(VALID_JWT)
+
+    private fun createVcSdJwtCredential(jwt: String) = VcSdJwtCredential(
+        1L,
+        keyBinding = null,
+        payload = jwt,
+    )
+
     private companion object {
-        const val ISSUER = "issuer"
-        const val KEY_ID = "keyId"
         const val VALID_JWT =
             "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0In0.jX5Mfxyh_gJ9VhagwlL80QFZjNgOPgdASjP3awIX-ty_LimDlNDZY3eCpjyecqcKFskkVx55gFs9h8_sENvNyQ"
-        const val JWT_WITH_NON_DISCLOSABLE_CLAIM =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0Iiwib3RoZXIiOiJjbGFpbSJ9.-lrZnzOpojUAL07c1A_4B1UnZZPMB6DkYv5tvsISosizj49wvHr_KMPvsvtZGXP-XkiTto8AG_7VdlgzUASE6w"
-        const val JWT_WITHOUT_ISSUER =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0In0.gBLcxhsnZpKiMZrj-XZrqrTLPktU_pxIRnOvqFCd-fpwAhr6u2rRoVRByejfw7oqyNBRRdiDobK1q7ZZ8WCYOQ"
-        const val JWT_WITHOUT_KID =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUifQ.eyJpc3MiOiJpc3N1ZXIiLCJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0In0.w2aH9-ragocFNC9N6AduOyy0909mFAv3-kSVMZsCmuYB0XHSGxH8_5rsxLLOBYgF0PCsQZbPknyemdpMdgLNQA"
     }
 }

@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.feature.onboarding.screens
 
-import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -10,8 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.printToLog
-import androidx.compose.ui.test.printToString
-import ch.admin.foitt.wallet.platform.screens.BaseScreen
+import ch.admin.foitt.wallet.platform.genericScreens.BaseScreen
 import ch.admin.foitt.wallet.platform.utils.TestTags
 
 open class OnboardingBaseScreen(composeTestRule: ComposeContentTestRule): BaseScreen(composeTestRule) {

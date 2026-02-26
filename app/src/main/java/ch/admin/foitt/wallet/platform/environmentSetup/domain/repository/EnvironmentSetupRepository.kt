@@ -6,7 +6,8 @@ interface EnvironmentSetupRepository {
     val attestationsServiceTrustedDids: List<String>
     val trustRegistryMapping: Map<String, String>
     val trustRegistryTrustedDids: List<String>
-    val useMetadataV1TrustStatement: Boolean
+    val trustEnvironmentDidRegex: String
+    val demoTrustEnvironmentDidRegex: String
     val baseTrustDomainRegex: Regex
     val betaIdRequestEnabled: Boolean
     val eIdRequestEnabled: Boolean
@@ -17,4 +18,7 @@ interface EnvironmentSetupRepository {
     val appId: String
     val avBeamLoggingEnabled: Boolean
     val nonComplianceEnabled: Boolean
+    val nonComplianceBaseUrl: String
+    val batchIssuanceEnabled: Boolean
+    val payloadEncryptionEnabled: Boolean
 }

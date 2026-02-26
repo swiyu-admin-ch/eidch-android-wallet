@@ -1,7 +1,7 @@
 plugins {
     id("android-common")
     id("com.android.application")
-    id("com.mikepenz.aboutlibraries.plugin")
+    id("com.mikepenz.aboutlibraries.plugin.android") apply false
     id("dynatrace-android-app")
 }
 

@@ -12,16 +12,20 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Credential
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.wallet.platform.database.data.AppDatabase
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration11to12
+import ch.admin.foitt.wallet.platform.database.data.migrations.Migration14to15
+import ch.admin.foitt.wallet.platform.database.data.migrations.Migration15to16
+import ch.admin.foitt.wallet.platform.database.data.migrations.Migration16to17
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration1to2
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration2to3
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration5to6
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration6to7
-import ch.admin.foitt.wallet.platform.database.domain.model.Converters
+import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestState
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.LegalRepresentativeConsent
+import ch.admin.foitt.wallet.platform.utils.compress
 import org.junit.Rule
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,7 +46,10 @@ class DBMigrationsTest {
             Migration2to3,
             Migration5to6,
             Migration6to7,
-            Migration11to12
+            Migration11to12,
+            Migration14to15,
+            Migration15to16,
+            Migration16to17,
         )
 
     @get:Rule
@@ -74,7 +81,7 @@ class DBMigrationsTest {
         db.execSQL(
             "INSERT INTO `Credential` (`id`,`status`,`keyBindingIdentifier`,`keyBindingAlgorithm`,`payload`,`issuer`,`format`,`createdAt`,`updatedAt`) " +
                 "VALUES ($expectedId,'${credentialStatusEnumToString(expectedStatus)}','$expectedKeyBindingIdentifier','$expectedKeyBindingAlgorithm','$expectedPayload','$expectedIssuer','${
-                    Converters().fromCredentialFormat(
+                    Credential.Converters().fromCredentialFormat(
                         expectedFormat
                     )
                 }',$expectedCreatedAt,$expectedUpdatedAt)"
@@ -96,7 +103,7 @@ class DBMigrationsTest {
         assertEquals(expectedPayload, cursor.getStringColumn("payload"))
         assertEquals(expectedIssuer, cursor.getStringColumn("issuer"))
         val format = cursor.getStringColumn("format")
-        assertEquals(expectedFormat, Converters().toCredentialFormat(format))
+        assertEquals(expectedFormat, Credential.Converters().toCredentialFormat(format))
         assertEquals(expectedCreatedAt, cursor.getLongColumn("createdAt"))
         assertEquals(expectedUpdatedAt, cursor.getLongColumn("updatedAt"))
         assertEquals(expectedValidFrom, cursor.getLongColumn("validFrom"))
@@ -194,7 +201,7 @@ class DBMigrationsTest {
                 "'$expectedKeyBindingAlgorithm'," +
                 "'$expectedPayload'," +
                 "'$expectedIssuer'," +
-                "'${Converters().fromCredentialFormat(expectedFormat)}'" +
+                "'${Credential.Converters().fromCredentialFormat(expectedFormat)}'" +
                 ",$expectedCreatedAt,$expectedUpdatedAt" +
                 ")"
         )
@@ -238,7 +245,7 @@ class DBMigrationsTest {
         assertEquals(expectedPayload, credentialCursor.getStringColumn("payload"))
         assertEquals(expectedIssuer, credentialCursor.getStringColumn("issuer"))
         val format = credentialCursor.getStringColumn("format")
-        assertEquals(expectedFormat, Converters().toCredentialFormat(format))
+        assertEquals(expectedFormat, Credential.Converters().toCredentialFormat(format))
         assertEquals(expectedCreatedAt, credentialCursor.getLongColumn("createdAt"))
         assertEquals(expectedUpdatedAt, credentialCursor.getLongColumn("updatedAt"))
 
@@ -297,7 +304,7 @@ class DBMigrationsTest {
                 "'$expectedKeyBindingAlgorithm'," +
                 "'$expectedPayload'," +
                 "'$expectedIssuer'," +
-                "'${Converters().fromCredentialFormat(expectedFormat)}'," +
+                "'${Credential.Converters().fromCredentialFormat(expectedFormat)}'," +
                 "$expectedCreatedAt,$expectedUpdatedAt" +
                 ")"
         )
@@ -385,7 +392,7 @@ class DBMigrationsTest {
                 "NULL," +
                 "'$expectedPayload1'," +
                 "'$expectedIssuer1'," +
-                "'${Converters().fromCredentialFormat(expectedFormat1)}'," +
+                "'${Credential.Converters().fromCredentialFormat(expectedFormat1)}'," +
                 "$expectedValidFrom1," +
                 "$expectedValidUntil1," +
                 "$expectedCreatedAt1," +
@@ -416,7 +423,7 @@ class DBMigrationsTest {
                 "'$expectedKeyBindingAlgorithm2'," +
                 "'$expectedPayload2'," +
                 "'$expectedIssuer2'," +
-                "'${Converters().fromCredentialFormat(expectedFormat2)}'," +
+                "'${Credential.Converters().fromCredentialFormat(expectedFormat2)}'," +
                 "$expectedValidFrom2," +
                 "$expectedValidUntil2," +
                 "$expectedCreatedAt2," +
@@ -438,7 +445,7 @@ class DBMigrationsTest {
         assertEquals(expectedPayload1, credentialCursor.getStringColumn("payload"))
         assertEquals(expectedIssuer1, credentialCursor.getStringColumn("issuer"))
         val format1 = credentialCursor.getStringColumn("format")
-        assertEquals(expectedFormat1, Converters().toCredentialFormat(format1))
+        assertEquals(expectedFormat1, Credential.Converters().toCredentialFormat(format1))
         assertEquals(expectedValidFrom1, credentialCursor.getLongColumn("validFrom"))
         assertEquals(expectedValidUntil1, credentialCursor.getLongColumn("validUntil"))
         assertEquals(expectedCreatedAt1, credentialCursor.getLongColumn("createdAt"))
@@ -451,7 +458,7 @@ class DBMigrationsTest {
         assertEquals(expectedPayload2, credentialCursor.getStringColumn("payload"))
         assertEquals(expectedIssuer2, credentialCursor.getStringColumn("issuer"))
         val format2 = credentialCursor.getStringColumn("format")
-        assertEquals(expectedFormat2, Converters().toCredentialFormat(format2))
+        assertEquals(expectedFormat2, Credential.Converters().toCredentialFormat(format2))
         assertEquals(expectedValidFrom2, credentialCursor.getLongColumn("validFrom"))
         assertEquals(expectedValidUntil2, credentialCursor.getLongColumn("validUntil"))
         assertEquals(expectedCreatedAt2, credentialCursor.getLongColumn("createdAt"))
@@ -496,7 +503,7 @@ class DBMigrationsTest {
                 "'${credentialStatusEnumToString(CredentialStatus.VALID)}'," +
                 "'$expectedPayload'," +
                 "'issuer'," +
-                "'${Converters().fromCredentialFormat(CredentialFormat.VC_SD_JWT)}'," +
+                "'${Credential.Converters().fromCredentialFormat(CredentialFormat.VC_SD_JWT)}'," +
                 "123456," +
                 "234567," +
                 "1000," +
@@ -573,7 +580,7 @@ class DBMigrationsTest {
                 "'${credentialStatusEnumToString(CredentialStatus.VALID)}'," +
                 "'$expectedPayload'," +
                 "'issuer'," +
-                "'${Converters().fromCredentialFormat(CredentialFormat.VC_SD_JWT)}'," +
+                "'${Credential.Converters().fromCredentialFormat(CredentialFormat.VC_SD_JWT)}'," +
                 "123456," +
                 "234567," +
                 "1000," +
@@ -660,7 +667,7 @@ class DBMigrationsTest {
                 "'${credentialStatusEnumToString(expectedStatus)}'," +
                 "'$expectedPayload'," +
                 "'$expectedIssuer'," +
-                "'${Converters().fromCredentialFormat(expectedFormat)}'," +
+                "'${Credential.Converters().fromCredentialFormat(expectedFormat)}'," +
                 "$expectedValidFrom," +
                 "$expectedValidUntil," +
                 "$expectedCreatedAt," +
@@ -718,7 +725,7 @@ class DBMigrationsTest {
         cursorCredential.moveToFirst()
         assertEquals(expectedCredentialId, cursorCredential.getLongColumn("id"))
         val format = cursorCredential.getStringColumn("format")
-        assertEquals(expectedFormat, Converters().toCredentialFormat(format))
+        assertEquals(expectedFormat, Credential.Converters().toCredentialFormat(format))
         assertEquals(expectedCreatedAt, cursorCredential.getLongColumn("createdAt"))
 
         // Validate that DeferredCredentialEntity table was created
@@ -761,7 +768,7 @@ class DBMigrationsTest {
             "INSERT INTO `Credential` (`id`, `format`, `createdAt`) " +
                 "VALUES (" +
                 "$expectedCredentialId," +
-                "'${Converters().fromCredentialFormat(expectedFormat)}'," +
+                "'${Credential.Converters().fromCredentialFormat(expectedFormat)}'," +
                 "$expectedCreatedAt" +
                 ")"
         )
@@ -806,6 +813,220 @@ class DBMigrationsTest {
     }
 
     @Test
+    fun migrate14to15() {
+        var db = helper.createDatabase(testDbName, 14)
+
+        val expectedCredentialId = 1L
+        val expectedFormat = CredentialFormat.VC_SD_JWT
+        val expectedCreatedAt = 1000L
+        val expectedPayload = "payload"
+        val expectedIssuer = "issuer"
+        val expectedStatus = CredentialStatus.VALID
+        val expectedValidFrom = 123456L
+        val expectedValidUntil = 234567L
+        val expectedUpdatedAt = 1000L
+
+        val initialProgressionState = VerifiableProgressionState.UNACCEPTED
+        val expectedProgressionState = VerifiableProgressionState.ACCEPTED
+
+        // insert a Credential
+        db.execSQL(
+            "INSERT INTO `Credential` (`id`, `format`, `createdAt`) " +
+                "VALUES (" +
+                "$expectedCredentialId," +
+                "'${Credential.Converters().fromCredentialFormat(expectedFormat)}'," +
+                "$expectedCreatedAt" +
+                ")"
+        )
+
+        // add Credential
+        db.execSQL(
+            "INSERT INTO `VerifiableCredentialEntity` (`credentialId`,`progressionState`,`status`,`payload`,`issuer`,`validFrom`,`validUntil`,`createdAt`,`updatedAt`) " +
+                "VALUES (" +
+                "$expectedCredentialId," +
+                "'${verifiableProgressionStateEnumToString(initialProgressionState)}'," +
+                "'${credentialStatusEnumToString(expectedStatus)}'," +
+                "'$expectedPayload'," +
+                "'$expectedIssuer'," +
+                "$expectedValidFrom," +
+                "$expectedValidUntil," +
+                "$expectedCreatedAt," +
+                "$expectedUpdatedAt" +
+                ")"
+        )
+
+        db.close()
+
+        // re-open with version 15
+        db = helper.runMigrationsAndValidate(testDbName, 15, validateDroppedTables = true, Migration14to15)
+
+        // Validate that VerifiableCredentialEntity progression state was updated
+        val cursor = db.query("SELECT * FROM `VerifiableCredentialEntity`")
+        cursor.moveToFirst()
+
+        assertEquals(expectedCredentialId, cursor.getLongColumn("credentialId"))
+        val progressionState = cursor.getStringColumn("progressionState")
+        assertEquals(expectedProgressionState, verifiableProgressionStateStringToEnum(progressionState))
+        val status = cursor.getStringColumn("status")
+        assertEquals(expectedStatus, credentialStatusStringToEnum(status))
+        assertEquals(expectedPayload, cursor.getStringColumn("payload"))
+        assertEquals(expectedIssuer, cursor.getStringColumn("issuer"))
+        assertEquals(expectedValidFrom, cursor.getLongColumn("validFrom"))
+        assertEquals(expectedValidUntil, cursor.getLongColumn("validUntil"))
+        assertEquals(expectedCreatedAt, cursor.getLongColumn("createdAt"))
+        assertEquals(expectedUpdatedAt, cursor.getLongColumn("updatedAt"))
+
+        db.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate15To16() {
+        // create db with schema version 15
+        var db = helper.createDatabase(testDbName, 15)
+
+        val expectedCredentialId = 1L
+        val expectedFormat = CredentialFormat.VC_SD_JWT
+        val expectedIssuer = "https://issuer-agent.domain.ch"
+        val expectedSelectedConfigurationId = "configId"
+        val expectedCreatedAt = 1000L
+        val expectedRawCredentialDataId = 1L
+
+        // insert a credential
+        db.execSQL(
+            "INSERT INTO `Credential` (`id`,`format`,`selectedConfigurationId`,`createdAt`) " +
+                "VALUES ($expectedCredentialId,'${Credential.Converters().fromCredentialFormat(expectedFormat)}','$expectedSelectedConfigurationId',$expectedCreatedAt)"
+        )
+        // insert raw credential data
+        val minimalMetadata = """
+            {
+               "credential_endpoint":"https://issuer-agent.domain.ch/credential",
+               "credential_issuer":"$expectedIssuer",
+               "credential_configurations_supported":{
+                  "elfa-sdjwt":{
+                     "format":"vc+sd-jwt",
+                     "credential_signing_alg_values_supported":[
+                        "Ed25519VerificationKey2020"
+                     ],
+                     "vct":"elfa-sdjwt"
+                  }
+               }
+            }
+        """.trimIndent()
+        val compressedMetadata = minimalMetadata.toByteArray().compress()
+        val rawOcaBundle = byteArrayOf(0, 1)
+
+        db.execSQL(
+            "INSERT INTO `RawCredentialData` (`id`,`credentialId`,`rawOIDMetadata`,`rawOcaBundle`) " +
+                "VALUES (?, ?, ?, ?)",
+            arrayOf(
+                expectedRawCredentialDataId,
+                expectedCredentialId,
+                compressedMetadata,
+                rawOcaBundle,
+            )
+        )
+        db.close()
+
+        // re-open db with version 16 and provide MIGRATION_15_16 as migration path
+        db = helper.runMigrationsAndValidate(testDbName, 16, true, Migration15to16)
+
+        // manually validate migrated credential
+        val cursor = db.query("SELECT * FROM `Credential`")
+        cursor.moveToFirst()
+
+        assertEquals(expectedCredentialId, cursor.getLongColumn("id"))
+        val format = cursor.getStringColumn("format")
+        assertEquals(expectedFormat, Credential.Converters().toCredentialFormat(format))
+        assertEquals(expectedIssuer, cursor.getStringColumn("issuerUrl"))
+        assertEquals(expectedSelectedConfigurationId, cursor.getStringColumn("selectedConfigurationId"))
+        assertEquals(expectedCreatedAt, cursor.getLongColumn("createdAt"))
+
+        db.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate16to17() {
+        // create db with schema version 16
+        var db = helper.createDatabase(testDbName, 16)
+
+        val expectedCredentialId = 1L
+        val expectedFormat = CredentialFormat.VC_SD_JWT
+        val expectedCreatedAt = 1000L
+        val expectedUpdatedAt = 2000L
+        val expectedPayload = "payload-16"
+        val expectedIssuer = "issuer-16"
+        val expectedIssuerUrl = "https://issuer-16.example"
+        val expectedStatus = CredentialStatus.VALID
+        val expectedValidFrom = 111L
+        val expectedValidUntil = 222L
+
+        // Insert a Credential (required FK for others)
+        db.execSQL(
+            "INSERT INTO `Credential` (`id`, `format`, `issuerUrl`, `createdAt`) VALUES (" +
+                "$expectedCredentialId, '" +
+                Credential.Converters().fromCredentialFormat(expectedFormat) + "', '" +
+                expectedIssuerUrl + "', " +
+                "$expectedCreatedAt)"
+        )
+
+        // Insert a VerifiableCredentialEntity row that should be copied to BundleItemEntity
+        db.execSQL(
+            "INSERT INTO `VerifiableCredentialEntity` (" +
+                "`credentialId`,`progressionState`,`status`,`payload`,`issuer`,`validFrom`,`validUntil`,`createdAt`,`updatedAt`) " +
+                "VALUES (" +
+                "$expectedCredentialId, '" + verifiableProgressionStateEnumToString(VerifiableProgressionState.ACCEPTED) + "', '" +
+                credentialStatusEnumToString(expectedStatus) + "', '" + expectedPayload + "', '" + expectedIssuer + "', " +
+                "$expectedValidFrom, $expectedValidUntil, $expectedCreatedAt, $expectedUpdatedAt)"
+        )
+
+        // Insert a CredentialKeyBindingEntity row that should gain a nullable bundleItemId after migration
+        val keyBindingId = "kb-1"
+        val keyBindingAlgorithm = "EdDSA"
+        db.execSQL(
+            "INSERT INTO `CredentialKeyBindingEntity` (" +
+                "`id`, `credentialId`, `algorithm`, `bindingType`, `publicKey`, `privateKey`) VALUES (" +
+                "'" + keyBindingId + "', $expectedCredentialId, '" + keyBindingAlgorithm + "', '" +
+                KeyBindingType.HARDWARE.name + "', NULL, NULL)"
+        )
+
+        db.close()
+
+        // Run migration 16 -> 17
+        db = helper.runMigrationsAndValidate(testDbName, 17, true, Migration16to17)
+
+        // Validate BundleItemEntity has an entry copied from VerifiableCredentialEntity
+        val bundleCursor = db.query("SELECT * FROM `BundleItemEntity`")
+        assertEquals(1, bundleCursor.count)
+        bundleCursor.moveToFirst()
+        // presented default should be 0/false
+        assertEquals(0, bundleCursor.getIntColumn("presented"))
+        assertEquals(credentialStatusEnumToString(expectedStatus), bundleCursor.getStringColumn("status"))
+        assertEquals(expectedCredentialId, bundleCursor.getLongColumn("credentialId"))
+        assertEquals(expectedPayload, bundleCursor.getStringColumn("payload"))
+
+        // Validate BatchRefreshDataEntity table exists (should be empty)
+        val batchCursor = db.query("SELECT * FROM `BatchRefreshDataEntity`")
+        assertEquals(0, batchCursor.count)
+
+        // Validate CredentialKeyBindingEntity structure and data preserved, bundleItemId is bundleItemEntity.id
+        val kbCursor = db.query("SELECT * FROM `CredentialKeyBindingEntity`")
+        assertEquals(1, kbCursor.count)
+        kbCursor.moveToFirst()
+        assertEquals(keyBindingId, kbCursor.getStringColumn("id"))
+        assertEquals(expectedCredentialId, kbCursor.getLongColumn("credentialId"))
+        assertEquals(keyBindingAlgorithm, kbCursor.getStringColumn("algorithm"))
+        assertEquals(KeyBindingType.HARDWARE.name, kbCursor.getStringColumn("bindingType"))
+        assertNull(kbCursor.getBlobOrNullColumn("publicKey"))
+        assertNull(kbCursor.getBlobOrNullColumn("privateKey"))
+        assertTrue(kbCursor.getColumnIndex("bundleItemId") >= 0)
+        assertTrue(kbCursor.getLongOrNullColumn("bundleItemId") == bundleCursor.getLongOrNullColumn("id"))
+
+        db.close()
+    }
+
+    @Test
     @Throws(IOException::class)
     fun migrateAll() {
         // Create earliest version of the database.
@@ -842,6 +1063,11 @@ class DBMigrationsTest {
         "UNSUPPORTED" -> CredentialStatus.UNSUPPORTED
         "UNKNOWN" -> CredentialStatus.UNKNOWN
         else -> throw IllegalArgumentException("Can't convert value to enum, unknown value: $string")
+    }
+
+    private fun verifiableProgressionStateEnumToString(progressionState: VerifiableProgressionState) = when (progressionState) {
+        VerifiableProgressionState.UNACCEPTED -> "UNACCEPTED"
+        VerifiableProgressionState.ACCEPTED -> "ACCEPTED"
     }
 
     private fun verifiableProgressionStateStringToEnum(string: String): VerifiableProgressionState = when (string) {

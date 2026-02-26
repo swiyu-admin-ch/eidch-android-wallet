@@ -1,14 +1,24 @@
 package ch.admin.foitt.wallet.architectureTests
 
+import androidx.compose.runtime.Composable
 import ch.admin.foitt.wallet.app.MainActivity
 import ch.admin.foitt.wallet.app.WalletApplication
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
 import ch.admin.foitt.wallet.util.assertTrue
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.functions
 import com.lemonappdev.konsist.api.ext.list.modifierprovider.withOpenModifier
 import com.lemonappdev.konsist.api.ext.list.properties
+import com.lemonappdev.konsist.api.ext.list.withAnnotationOf
 import com.lemonappdev.konsist.api.ext.provider.hasAnnotationOf
+import com.lemonappdev.konsist.api.ext.provider.hasParentOf
 import com.lemonappdev.konsist.api.verify.assertFalse
+import com.lemonappdev.konsist.api.verify.assertTrue
+import dagger.Module
+import dagger.assisted.AssistedFactory
+import dagger.multibindings.IntoSet
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -16,6 +26,11 @@ import java.util.stream.Stream
 import javax.inject.Inject
 
 class GeneralCodingKonsistTest {
+    val completeEntryProviderCode = Konsist
+        .scopeFromProject()
+        .functions()
+        .filter { it.returnType?.name == "EntryProviderInstaller" }.joinToString { it.text }
+
     @Test
     fun `unit test should not use JUnit4`() {
         Konsist
@@ -43,6 +58,76 @@ class GeneralCodingKonsistTest {
         assertTrue(hasCorrectImport) {
             "SqlCipherDatabaseInitializer must import and use sqlcipher.SupportOpenHelperFactory"
         }
+    }
+
+    @Test
+    fun `Hilt modules providing EntryProviderInstaller must be annotated with @IntoSet`() {
+        Konsist
+            .scopeFromProject()
+            .classesAndObjects()
+            .filter { it.hasAnnotationOf<Module>() }
+            .functions()
+            .filter { it.returnType == EntryProviderInstaller::class.java }
+            .assertTrue {
+                it.hasAnnotationOf<IntoSet>()
+            }
+    }
+
+    @Test
+    fun `All destinations must be provided by an EntryProviderInstaller`() {
+        Konsist
+            .scopeFromProject()
+            .classesAndObjects()
+            .filter { it.hasParentOf<Destination>() }
+            .map {
+                it.assertTrue(
+                    additionalMessage = "${it.fullyQualifiedName} is not referenced in any EntryProviderInstallerModule"
+                ) { destination ->
+                    completeEntryProviderCode.contains(destination.name)
+                }
+            }
+    }
+
+    @Test
+    fun `ViewModel_AssistedFactory must be used to create correct ViewModel`() {
+        Konsist
+            .scopeFromProject()
+            .interfaces()
+            .filter { it.hasAnnotationOf<AssistedFactory>() }
+            .mapNotNull { it.fullyQualifiedName?.split(".")?.takeLast(2)?.joinToString(".") }
+            .map { assistedFactory: String ->
+                assertTrue(
+                    completeEntryProviderCode.contains(assistedFactory),
+                    "$assistedFactory not used to create entry in any EntryProviderInstallerModule. This will crash during runtime."
+                )
+            }
+    }
+
+    @Test
+    fun `Destination screen name must end with Screen and a Composable screen with the same name must exist`() {
+        val allScreenNames = Konsist
+            .scopeFromProject()
+            .functions()
+            .withAnnotationOf(Composable::class)
+            .filter { it.name.endsWith("Screen") }
+            .map { it.name }
+
+        Konsist
+            .scopeFromProject()
+            .classesAndObjects()
+            .filter { it.hasParentOf<Destination>() }
+            .map {
+                it.assertTrue(
+                    additionalMessage = "${it.fullyQualifiedName} does not end with Screen"
+                ) { destination ->
+                    destination.name.endsWith("Screen")
+                }
+                it.assertTrue(
+                    additionalMessage = "${it.fullyQualifiedName} does not refer to a Compose screen with the same name"
+                ) { destination ->
+                    destination.name in allScreenNames
+                }
+            }
     }
 
     @Test
@@ -109,9 +194,9 @@ class GeneralCodingKonsistTest {
                     DynamicTest.dynamicTest("${file.name}: compose.material should not be used") {
                         file.assertFalse(additionalMessage = "use 'compose.material3' instead") {
                             it.hasImport { import ->
-                                // Exceptions: for now we allow material.icons, material.pullrefresh and material.ExperimentalApi
+                                // Exceptions: for now we allow material.pullrefresh and material.ExperimentalApi
                                 import.hasNameMatching(
-                                    "androidx\\.compose\\.material\\.(?!icons|pullrefresh|ExperimentalMaterialApi).*".toRegex()
+                                    "androidx\\.compose\\.material\\.(?!pullrefresh|ExperimentalMaterialApi).*".toRegex()
                                 )
                             }
                         }
@@ -159,7 +244,7 @@ class GeneralCodingKonsistTest {
                     },
                     DynamicTest.dynamicTest("${file.name}: kotlinx.serialization.json.Json methods should not be used") {
                         val exceptions =
-                            listOf("SafeJson", "OpenId4VcModule", "UtilModule", "VersionEnforcementModule", "Jwt", "SdJwt")
+                            listOf("SafeJson", "OpenId4VcModule", "UtilModule", "Jwt", "SdJwt", "Migration15To16")
                         if (!file.hasClassWithName(names = exceptions)) {
                             file.assertFalse(additionalMessage = "use methods from 'SafeJson' instead") { fileDeclaration ->
                                 fileDeclaration.hasImport { import ->

@@ -3,7 +3,7 @@ package ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementati
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceData
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceError
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.repository.NonComplianceRepository
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.repository.NonComplianceTrustRepository
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.mock.NonComplianceMocks.NON_REPORTED_ACTOR_DID
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.mock.NonComplianceMocks.REPORTED_ACTOR_DID
@@ -29,7 +29,7 @@ class FetchNonComplianceDataImplTest {
     private lateinit var mockGetTrustDomainFromDid: GetTrustDomainFromDid
 
     @MockK
-    private lateinit var mockNonComplianceRepository: NonComplianceRepository
+    private lateinit var mockNonComplianceTrustRepository: NonComplianceTrustRepository
 
     private lateinit var useCase: FetchNonComplianceData
 
@@ -38,7 +38,7 @@ class FetchNonComplianceDataImplTest {
         MockKAnnotations.init(this)
         useCase = FetchNonComplianceDataImpl(
             getTrustDomainFromDid = mockGetTrustDomainFromDid,
-            nonComplianceRepository = mockNonComplianceRepository,
+            nonComplianceTrustRepository = mockNonComplianceTrustRepository,
         )
 
         coEvery {
@@ -46,7 +46,7 @@ class FetchNonComplianceDataImplTest {
         } returns Ok(trustDomain)
 
         coEvery {
-            mockNonComplianceRepository.fetchNonComplianceData(trustDomain)
+            mockNonComplianceTrustRepository.fetchNonComplianceData(trustDomain)
         } returns Ok(nonComplianceResponseSuccess)
     }
 
@@ -98,7 +98,7 @@ class FetchNonComplianceDataImplTest {
     @Test
     fun `Fetching non compliance data where an error occurs returns unknown`() = runTest {
         coEvery {
-            mockNonComplianceRepository.fetchNonComplianceData(trustDomain)
+            mockNonComplianceTrustRepository.fetchNonComplianceData(trustDomain)
         } returns Err(NonComplianceError.Unexpected(IllegalStateException("error when fetching non compliance data")))
 
         val result = useCase(REPORTED_ACTOR_DID)

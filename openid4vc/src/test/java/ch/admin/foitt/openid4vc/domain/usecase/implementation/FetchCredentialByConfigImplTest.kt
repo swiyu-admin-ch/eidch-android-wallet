@@ -1,10 +1,11 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.VerifiableCredentialParams
+import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredentialResult
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.VcSdJwtCredentialConfiguration
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import ch.admin.foitt.openid4vc.domain.usecase.FetchCredentialByConfig
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.FetchVcSdJwtCredential
 import ch.admin.foitt.openid4vc.util.assertErrorType
@@ -28,13 +29,16 @@ class FetchCredentialByConfigImplTest {
     private lateinit var mockFetchVcSdJwtCredential: FetchVcSdJwtCredential
 
     @MockK
-    private lateinit var mockVcSdJwtCredential: VcSdJwtCredential
+    private lateinit var mockAnyCredentialResult: AnyCredentialResult
 
     @MockK
     private lateinit var mockVcSdJwtCredentialConfig: VcSdJwtCredentialConfiguration
 
     @MockK
     private lateinit var mockVerifiableCredentialParams: VerifiableCredentialParams
+
+    @MockK
+    private lateinit var mockPayloadEncryptionType: PayloadEncryptionType
 
     private lateinit var useCase: FetchCredentialByConfig
 
@@ -49,8 +53,12 @@ class FetchCredentialByConfigImplTest {
         every { mockVerifiableCredentialParams.credentialConfiguration } returns mockVcSdJwtCredentialConfig
         every { mockVcSdJwtCredentialConfig.format } returns CredentialFormat.VC_SD_JWT
         coEvery {
-            mockFetchVcSdJwtCredential(mockVerifiableCredentialParams, null, null)
-        } returns Ok(mockVcSdJwtCredential)
+            mockFetchVcSdJwtCredential(
+                mockVerifiableCredentialParams,
+                null,
+                mockPayloadEncryptionType
+            )
+        } returns Ok(mockAnyCredentialResult)
     }
 
     @AfterEach
@@ -60,10 +68,14 @@ class FetchCredentialByConfigImplTest {
 
     @Test
     fun `Fetching credential by config with vc+sd_jwt config returns a valid credential`() = runTest {
-        val result = useCase(mockVerifiableCredentialParams, null, null)
+        val result = useCase(
+            mockVerifiableCredentialParams,
+            null,
+            mockPayloadEncryptionType
+        )
 
         val credential = result.assertOk()
-        assertEquals(mockVcSdJwtCredential, credential)
+        assertEquals(mockAnyCredentialResult, credential)
     }
 
     @Test
@@ -73,7 +85,7 @@ class FetchCredentialByConfigImplTest {
             mockFetchVcSdJwtCredential(any(), any(), any())
         } returns Err(CredentialOfferError.Unexpected(exception))
 
-        val result = useCase(mockVerifiableCredentialParams, null, null)
+        val result = useCase(mockVerifiableCredentialParams, null, mockPayloadEncryptionType)
 
         val error = result.assertErrorType(CredentialOfferError.Unexpected::class)
         assertEquals(exception, error.cause)

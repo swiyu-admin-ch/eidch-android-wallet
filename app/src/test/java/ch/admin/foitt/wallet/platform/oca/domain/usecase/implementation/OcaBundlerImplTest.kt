@@ -20,6 +20,7 @@ import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
@@ -103,6 +104,7 @@ class OcaBundlerImplTest {
         ocaBundler(ocaBundleWithoutCaptureBases).assertErrorType(OcaError.InvalidJsonObject::class)
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     @Test
     fun `Failing CESR validation returns an error`(): Unit = runTest {
         coEvery {
@@ -147,6 +149,7 @@ class OcaBundlerImplTest {
         ocaBundler(elfaExample).assertErrorType(OcaError.InvalidCaptureBases::class)
     }
 
+    @OptIn(UnsafeResultValueAccess::class)
     private fun setupDefaultMocks() {
         val captureBase = json.safeDecodeStringTo<CaptureBase>(defaultCaptureBase).value
         val captureBases = listOf(captureBase)

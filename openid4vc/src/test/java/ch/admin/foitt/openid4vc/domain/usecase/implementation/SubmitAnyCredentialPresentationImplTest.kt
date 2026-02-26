@@ -9,10 +9,12 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptor
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationSubmission
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
 import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyDescriptorMaps
 import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyVerifiablePresentation
+import ch.admin.foitt.openid4vc.domain.usecase.GetPresentationRequestType
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
 import com.github.michaelbull.result.Err
@@ -41,6 +43,9 @@ class SubmitAnyCredentialPresentationImplTest {
     private lateinit var mockCreateAnyDescriptorMaps: CreateAnyDescriptorMaps
 
     @MockK
+    private lateinit var mockGetPresentationRequestType: GetPresentationRequestType
+
+    @MockK
     private lateinit var mockPresentationRequestRepository: PresentationRequestRepository
 
     @MockK
@@ -58,6 +63,7 @@ class SubmitAnyCredentialPresentationImplTest {
         useCase = SubmitAnyCredentialPresentationImpl(
             createAnyVerifiablePresentation = mockCreateAnyVerifiablePresentation,
             createAnyDescriptorMaps = mockCreateAnyDescriptorMaps,
+            getPresentationRequestType = mockGetPresentationRequestType,
             presentationRequestRepository = mockPresentationRequestRepository,
         )
 
@@ -71,13 +77,12 @@ class SubmitAnyCredentialPresentationImplTest {
 
     @Test
     fun `Submitting presentation for any credential just runs`() = runTest {
-        val result = useCase(
+        useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
             presentationRequest = mockPresentationRequest,
-        )
-
-        result.assertOk()
+            usePayloadEncryption = true,
+        ).assertOk()
     }
 
     @Test
@@ -91,13 +96,12 @@ class SubmitAnyCredentialPresentationImplTest {
             )
         )
 
-        val result = useCase(
+        useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
             presentationRequest = mockPresentationRequest,
-        )
-
-        result.assertErrorType(PresentationRequestError.Unexpected::class)
+            usePayloadEncryption = true,
+        ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
     @Test
@@ -106,13 +110,12 @@ class SubmitAnyCredentialPresentationImplTest {
             inputDescriptorFormats = listOf(validVcSdJwt, validVcSdJwt)
         )
 
-        val result = useCase(
+        useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
             presentationRequest = mockPresentationRequest,
-        )
-
-        result.assertOk()
+            usePayloadEncryption = true,
+        ).assertOk()
     }
 
     @Test
@@ -121,35 +124,16 @@ class SubmitAnyCredentialPresentationImplTest {
         coEvery {
             mockPresentationRequestRepository.submitPresentation(
                 url = any(),
-                presentationRequestBody = presentationRequestBody,
+                presentationRequestType = PresentationRequestType.Json(vpToken = VP_TOKEN, presentationSubmission = ""),
             )
         } returns Ok(Unit)
 
-        val result = useCase(
+        useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
             presentationRequest = mockPresentationRequest,
-        )
-
-        result.assertErrorType(PresentationRequestError.Unexpected::class)
-    }
-
-    @Test
-    fun `Submitting a presentation for vc+sd_jwt with no supported algorithm returns an error`() = runTest {
-        coEvery {
-            mockPresentationRequestRepository.submitPresentation(
-                url = any(),
-                presentationRequestBody = presentationRequestBody,
-            )
-        } returns Err(PresentationRequestError.VerificationError)
-
-        val result = useCase(
-            anyCredential = mockAnyCredential,
-            requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
-        )
-
-        result.assertErrorType(PresentationRequestError.VerificationError::class)
+            usePayloadEncryption = true,
+        ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
     @Test
@@ -163,6 +147,37 @@ class SubmitAnyCredentialPresentationImplTest {
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
             presentationRequest = mockPresentationRequest,
+            usePayloadEncryption = true,
+        )
+
+        val error = result.assertErrorType(PresentationRequestError.Unexpected::class)
+        assertEquals(exception, error.throwable)
+    }
+
+    @Test
+    fun `Submitting a presentation for any credential maps errors from invalid response uri`() = runTest {
+        every { mockPresentationRequest.responseUri } returns "invalid uri"
+
+        useCase(
+            anyCredential = mockAnyCredential,
+            requestedFields = requestedFields,
+            presentationRequest = mockPresentationRequest,
+            usePayloadEncryption = true,
+        ).assertErrorType(PresentationRequestError.Unexpected::class)
+    }
+
+    @Test
+    fun `Submitting a presentation for any credential maps errors from getting presentation request type`() = runTest {
+        val exception = IllegalStateException()
+        coEvery {
+            mockGetPresentationRequestType(any(), any(), any())
+        } returns Err(PresentationRequestError.Unexpected(exception))
+
+        val result = useCase(
+            anyCredential = mockAnyCredential,
+            requestedFields = requestedFields,
+            presentationRequest = mockPresentationRequest,
+            usePayloadEncryption = true,
         )
 
         val error = result.assertErrorType(PresentationRequestError.Unexpected::class)
@@ -180,6 +195,7 @@ class SubmitAnyCredentialPresentationImplTest {
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
             presentationRequest = mockPresentationRequest,
+            usePayloadEncryption = true,
         )
 
         val error = result.assertErrorType(PresentationRequestError.Unexpected::class)
@@ -198,13 +214,21 @@ class SubmitAnyCredentialPresentationImplTest {
 
         coEvery { mockCreateAnyDescriptorMaps(mockPresentationRequest) } returns mockDescriptorMaps
 
+        coEvery {
+            mockGetPresentationRequestType(
+                presentationRequest = mockPresentationRequest,
+                presentationRequestBody = presentationRequestBody,
+                usePayloadEncryption = true,
+            )
+        } returns Ok(presentationRequestType)
+
         mockkStatic(UUID::class)
         every { UUID.randomUUID().toString() } returns PRESENTATION_SUBMISSION_ID
 
         coEvery {
             mockPresentationRequestRepository.submitPresentation(
                 url = URL(RESPONSE_URI),
-                presentationRequestBody = presentationRequestBody,
+                presentationRequestType = presentationRequestType,
             )
         } returns Ok(Unit)
     }
@@ -227,6 +251,10 @@ class SubmitAnyCredentialPresentationImplTest {
         purpose = "purpose",
     )
 
+    private val presentationRequestType = PresentationRequestType.Jwt(
+        response = PRESENTATION_REQUEST_TYPE_JWE
+    )
+
     private companion object {
         const val RESPONSE_URI = "https://example.com"
         const val FIELD = "field"
@@ -246,5 +274,7 @@ class SubmitAnyCredentialPresentationImplTest {
             id = PRESENTATION_SUBMISSION_ID,
         )
         val presentationRequestBody = PresentationRequestBody(VP_TOKEN, presentationSubmission)
+
+        const val PRESENTATION_REQUEST_TYPE_JWE = "jwe"
     }
 }

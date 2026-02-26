@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.platform.activityList.presentation
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivitiesWithDisplaysFlow
@@ -8,45 +7,49 @@ import ch.admin.foitt.wallet.platform.activityList.presentation.model.toActivity
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.ActivityEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.ActivityEventRepository
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.ActivityDetailNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.toPainter
-import ch.admin.foitt.walletcomposedestinations.destinations.ActivityDetailScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.ActivityListScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.ErrorScreenDestination
 import com.github.michaelbull.result.mapBoth
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class ActivityListViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = ActivityListViewModel.Factory::class)
+class ActivityListViewModel @AssistedInject constructor(
     getActivitiesWithDisplaysFlow: GetActivitiesWithDisplaysFlow,
     private val getDrawableFromImageData: GetDrawableFromImageData,
     private val activityEventRepository: ActivityEventRepository,
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
-    savedStateHandle: SavedStateHandle
+    @Assisted private val credentialId: Long
 ) : ScreenViewModel(setTopBarState) {
+
+    @AssistedFactory
+    interface Factory {
+        fun create(credentialId: Long): ActivityListViewModel
+    }
+
     override val topBarState = TopBarState.Details(
         titleId = R.string.tk_activity_activityList_title,
-        useTransparentBackground = false,
+        topBarBackground = TopBarBackground.CLUSTER,
         onUp = this::onBack
     )
-
-    private val navArgs = ActivityListScreenDestination.argsFrom(savedStateHandle)
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
-    val activities = getActivitiesWithDisplaysFlow(navArgs.credentialId)
+    val activities = getActivitiesWithDisplaysFlow(credentialId)
         .map { result ->
             result.mapBoth(
                 success = { activitiesWithDisplays ->
@@ -87,21 +90,19 @@ class ActivityListViewModel @Inject constructor(
     fun hideActivityDeletedSnackbar() = activityEventRepository.resetEvent()
 
     fun onBack() {
-        navManager.navigateUp()
+        navManager.popBackStack()
     }
 
     fun onActivity(activityId: Long) {
         navManager.navigateTo(
-            ActivityDetailScreenDestination(
-                ActivityDetailNavArg(
-                    credentialId = navArgs.credentialId,
-                    activityId = activityId
-                )
+            Destination.ActivityDetailScreen(
+                credentialId = credentialId,
+                activityId = activityId
             )
         )
     }
 
     private fun navigateToErrorScreen() {
-        navManager.navigateToAndClearCurrent(ErrorScreenDestination)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
     }
 }

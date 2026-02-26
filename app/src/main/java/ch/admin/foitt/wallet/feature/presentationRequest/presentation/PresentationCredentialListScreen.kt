@@ -48,7 +48,6 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayo
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialListRow
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.PresentationCredentialListNavArg
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
@@ -56,12 +55,8 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustSt
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination(
-    navArgsDelegate = PresentationCredentialListNavArg::class,
-)
 @Composable
 fun PresentationCredentialListScreen(viewModel: PresentationCredentialListViewModel) {
     val presentationCredentialListUiState = viewModel.presentationCredentialListUiState.stateFlow.collectAsStateWithLifecycle().value

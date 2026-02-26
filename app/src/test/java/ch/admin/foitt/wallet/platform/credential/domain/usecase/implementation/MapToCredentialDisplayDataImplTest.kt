@@ -6,16 +6,20 @@ import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEn
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.toDisplayStatus
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
+import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedAndThemedDisplay
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.BundleItemRepository
 import ch.admin.foitt.wallet.platform.theme.domain.model.Theme
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
+import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
@@ -41,6 +45,9 @@ class MapToCredentialDisplayDataImplTest {
     private lateinit var mockGetActorEnvironment: GetActorEnvironment
 
     @MockK
+    private lateinit var mockBundleItemRepository: BundleItemRepository
+
+    @MockK
     private lateinit var mockAppContext: Context
 
     @MockK
@@ -56,6 +63,7 @@ class MapToCredentialDisplayDataImplTest {
             mockAppContext,
             mockGetLocalizedAndThemedDisplay,
             mockGetActorEnvironment,
+            mockBundleItemRepository,
         )
 
         setupDefaultMocks()
@@ -78,6 +86,7 @@ class MapToCredentialDisplayDataImplTest {
         assertEquals(LOGO_URI, displayData.logoUri)
         assertEquals(BACKGROUND_COLOR, displayData.backgroundColor)
         assertEquals(ActorEnvironment.PRODUCTION, displayData.actorEnvironment)
+        assertEquals(progressionState, displayData.progressionState)
     }
 
     @ParameterizedTest
@@ -204,10 +213,23 @@ class MapToCredentialDisplayDataImplTest {
 
     private fun setupDefaultMocks() {
         every { mockVerifiableCredential.credentialId } returns CREDENTIAL_ID
-        every { mockVerifiableCredential.status } returns CredentialStatus.VALID
         every { mockVerifiableCredential.validFrom } returns 0
         every { mockVerifiableCredential.validUntil } returns 17768026519L
         every { mockVerifiableCredential.issuer } returns ISSUER
+        every { mockVerifiableCredential.progressionState } returns progressionState
+
+        coEvery {
+            mockBundleItemRepository.getAllByCredentialId(CREDENTIAL_ID)
+        } returns Ok(
+            listOf(
+                BundleItemEntity(
+                    id = BUNDLE_ITEM_ID,
+                    status = CredentialStatus.VALID,
+                    credentialId = CREDENTIAL_ID,
+                    payload = "payload"
+                )
+            )
+        )
 
         coEvery {
             mockGetLocalizedAndThemedDisplay(
@@ -220,11 +242,13 @@ class MapToCredentialDisplayDataImplTest {
 
     private companion object {
         const val CREDENTIAL_ID = 1L
+        const val BUNDLE_ITEM_ID = 11L
         const val ISSUER = "issuer"
         const val NAME = "name"
         const val DESCRIPTION = "description"
         const val LOGO_URI = "logoUri"
         const val BACKGROUND_COLOR = "backgroundColor"
+        val progressionState = VerifiableProgressionState.ACCEPTED
 
         val credentialDisplay = createCredentialDisplay(DESCRIPTION)
 

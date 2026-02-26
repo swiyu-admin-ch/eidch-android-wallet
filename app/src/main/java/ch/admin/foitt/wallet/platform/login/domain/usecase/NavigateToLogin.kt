@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.login.domain.usecase
 
-import com.ramcosta.composedestinations.spec.Direction
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 
 fun interface NavigateToLogin {
-    suspend operator fun invoke(): Direction
+    suspend operator fun invoke(): Destination
 }

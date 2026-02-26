@@ -10,14 +10,14 @@ repositories {
 }
 
 dependencies {
-    implementation("com.android.tools.build:gradle:8.11.0")
-    implementation("com.google.dagger:hilt-android-gradle-plugin:2.56.2")
+    implementation("com.android.tools.build:gradle:8.13.2")
+    implementation("com.google.dagger:hilt-android-gradle-plugin:2.58")
 
     val kotlinVersion = "2.2.0" // keep in sync with 'devtools-ksp' and 'kotlin' in [libs.versions.toml]
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
 
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.8")
-    implementation("com.mikepenz.aboutlibraries.plugin:aboutlibraries-plugin:12.2.4") // keep in sync with version in [libs.versions.toml]
-    implementation("com.dynatrace.tools.android:gradle-plugin:8.295.1.1006")
+    implementation("com.mikepenz.aboutlibraries.plugin:aboutlibraries-plugin:13.2.1") // keep in sync with version in [libs.versions.toml]
+    implementation("com.dynatrace.tools.android:gradle-plugin:8.327.3.1006")
 }

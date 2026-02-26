@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.platform.trustRegistry
 
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1TrustStatement
-import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.MetadataV1TrustStatement
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertOk
 import io.mockk.MockKAnnotations
@@ -28,12 +27,6 @@ class TrustStatementParsingTest {
     @Test
     fun `parse identity trust statement correctly`() = runTest {
         val trustStatement = safeJson.safeDecodeStringTo<IdentityV1TrustStatement>(identityStatement)
-        trustStatement.assertOk()
-    }
-
-    @Test
-    fun `parse metadata trust statement correctly`() = runTest {
-        val trustStatement = safeJson.safeDecodeStringTo<MetadataV1TrustStatement>(metadataStatement)
         trustStatement.assertOk()
     }
 

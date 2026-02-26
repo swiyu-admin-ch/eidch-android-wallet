@@ -8,8 +8,8 @@ import ch.admin.foitt.openid4vc.domain.model.JwkError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError.NetworkError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError.Unexpected
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError.ValidationError
-import ch.admin.foitt.wallet.platform.holderBinding.domain.model.CreateJWSKeyPairError
-import ch.admin.foitt.wallet.platform.holderBinding.domain.model.KeyPairError
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.CreateJWSKeyPairError
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.KeyPairError
 import timber.log.Timber
 import java.io.IOException
 import ch.admin.foitt.openid4vc.domain.model.KeyPairError as OIDKeyPairError
@@ -110,8 +110,8 @@ internal fun ClientAttestationRepositoryError.toRequestClientAttestationError():
 }
 
 internal fun CreateJWSKeyPairError.toRequestClientAttestationError(): RequestClientAttestationError = when (this) {
-    is KeyPairError.IncompatibleDeviceKeyStorage,
-    is KeyPairError.UnsupportedKeyStorageSecurityLevel -> Unexpected(null)
+    is KeyPairError.IncompatibleDeviceProofKeyStorage,
+    is KeyPairError.UnsupportedProofKeyStorageSecurityLevel -> Unexpected(null)
     is KeyPairError.Unexpected -> Unexpected(throwable)
 }
 
@@ -131,8 +131,8 @@ internal fun AppAttestationRepositoryError.toRequestKeyAttestationError(): Reque
 }
 
 internal fun CreateJWSKeyPairError.toRequestKeyAttestationError(): RequestKeyAttestationError = when (this) {
-    is KeyPairError.IncompatibleDeviceKeyStorage -> AttestationError.IncompatibleDeviceKeyStorage
-    is KeyPairError.UnsupportedKeyStorageSecurityLevel -> AttestationError.UnsupportedKeyStorageSecurityLevel
+    is KeyPairError.IncompatibleDeviceProofKeyStorage -> AttestationError.IncompatibleDeviceKeyStorage
+    is KeyPairError.UnsupportedProofKeyStorageSecurityLevel -> AttestationError.UnsupportedKeyStorageSecurityLevel
     is KeyPairError.Unexpected -> Unexpected(throwable)
 }
 

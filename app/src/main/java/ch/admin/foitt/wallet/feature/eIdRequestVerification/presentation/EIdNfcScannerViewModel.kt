@@ -5,7 +5,6 @@ import android.content.Intent
 import android.nfc.NfcAdapter
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.avwrapper.AVBeamInitConfig
@@ -21,20 +20,20 @@ import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScan
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFileCategory
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
-import ch.admin.foitt.wallet.platform.navArgs.domain.model.EIdOnlineSessionNavArg
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.extension.navigateUpOrToRoot
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
 import ch.admin.foitt.wallet.platform.utils.openNFCSettings
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdNfcScannerScreenDestination
-import ch.admin.foitt.walletcomposedestinations.destinations.EIdNfcSummaryScreenDestination
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -53,10 +52,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.lang.ref.WeakReference
-import javax.inject.Inject
 
-@HiltViewModel
-class EIdNfcScannerViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = EIdNfcScannerViewModel.Factory::class)
+class EIdNfcScannerViewModel @AssistedInject constructor(
     private val avBeam: AVBeam,
     private val environmentSetupRepository: EnvironmentSetupRepository,
     private val getStartAutoVerificationResult: GetStartAutoVerificationResult,
@@ -64,15 +62,18 @@ class EIdNfcScannerViewModel @Inject constructor(
     private val getDocumentScanData: GetDocumentScanData,
     private val navManager: NavigationManager,
     @param:ApplicationContext private val appContext: Context,
-    savedStateHandle: SavedStateHandle,
+    @Assisted private val caseId: String,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
 
-    override val topBarState: TopBarState = TopBarState.EmptyWithCloseButton(
-        onClose = { navManager.navigateBackToHome(EIdNfcScannerScreenDestination) },
-    )
+    @AssistedFactory
+    interface Factory {
+        fun create(caseId: String): EIdNfcScannerViewModel
+    }
 
-    private val navArgs: EIdOnlineSessionNavArg = EIdNfcScannerScreenDestination.argsFrom(savedStateHandle)
+    override val topBarState: TopBarState = TopBarState.EmptyWithCloseButton(
+        onClose = { navManager.navigateBackToHomeScreen(Destination.EIdNfcScannerScreen::class) },
+    )
 
     private var currentActivity: WeakReference<AppCompatActivity> = WeakReference(null)
     private var currentFlowCollectionJob: Job? = null
@@ -104,27 +105,34 @@ class EIdNfcScannerViewModel @Inject constructor(
                 navigateToSummary(nfcScannerState.packageResult)
                 EIdNfcScannerUiState.Success
             }
+
             nfcScannerState is NfcScannerState.Initializing -> {
                 EIdNfcScannerUiState.Initializing
             }
+
             nfcScannerState is NfcScannerState.Ready -> EIdNfcScannerUiState.Info(
                 onStart = ::onStartNfcScan,
                 onTips = ::onTips,
             )
+
             nfcScannerState is NfcScannerState.Scanning -> EIdNfcScannerUiState.Scanning(
                 onStop = ::resetNFCState,
             )
+
             nfcScannerState is NfcScannerState.ReadingChipData -> EIdNfcScannerUiState.ReadingChipData(
                 onStop = ::resetNFCState,
             )
+
             nfcScannerState is NfcScannerState.NfcOff -> EIdNfcScannerUiState.NfcDisabled(
                 onEnable = appContext::openNFCSettings,
             )
+
             nfcScannerState is NfcScannerState.ScanFailure -> {
                 EIdNfcScannerUiState.Error(
                     onRetry = ::onStartNfcScan,
                 )
             }
+
             else -> EIdNfcScannerUiState.Error(
                 onRetry = ::onStartNfcScan,
             )
@@ -185,7 +193,7 @@ class EIdNfcScannerViewModel @Inject constructor(
         }
 
         saveEIdRequestFiles(
-            sIdCaseId = navArgs.caseId,
+            sIdCaseId = caseId,
             filesDataList = packageResult.files,
             filesCategory = EIdRequestFileCategory.NFC_SCAN,
         ).onFailure { error ->
@@ -216,9 +224,9 @@ class EIdNfcScannerViewModel @Inject constructor(
                 saveActiveAuth = true,
                 saveAdditionalFiles = true,
                 authToken = token,
-                processId = navArgs.caseId,
+                processId = caseId,
             )
-            val packageResult = getDocumentScanData(navArgs.caseId).get()
+            val packageResult = getDocumentScanData(caseId).get()
                 ?: error("Package result is null")
 
             nfcScanIsSuccessful.update { false }
@@ -251,7 +259,7 @@ class EIdNfcScannerViewModel @Inject constructor(
     }
 
     fun onBack() {
-        navManager.navigateUpOrToRoot()
+        navManager.popBackStackOrToRoot()
     }
 
     override fun onCleared() {
@@ -307,6 +315,7 @@ class EIdNfcScannerViewModel @Inject constructor(
                     activityState is ActivityState.Initial || currentActivity == null -> {
                         nfcScannerState.update { NfcScannerState.Initializing }
                     }
+
                     activityState is ActivityState.Started -> {
                         setupSdkFlowCollectionJob()
                         runSuspendCatching {
@@ -320,6 +329,7 @@ class EIdNfcScannerViewModel @Inject constructor(
                             nfcScannerState.update { NfcScannerState.UnexpectedError }
                         }
                     }
+
                     activityState is ActivityState.Resumed &&
                         !nfcAdapter.isEnabled &&
                         scannerState !is NfcScannerState.NfcOff -> {
@@ -335,11 +345,13 @@ class EIdNfcScannerViewModel @Inject constructor(
                         }
                         nfcScannerState.update { NfcScannerState.NfcOff }
                     }
+
                     activityState is ActivityState.Resumed &&
                         nfcAdapter.isEnabled &&
                         scannerState is NfcScannerState.NfcOff -> {
                         nfcScannerState.update { NfcScannerState.Ready }
                     }
+
                     activityState is ActivityState.Resumed &&
                         (scannerState is NfcScannerState.Scanning || scannerState is NfcScannerState.ReadingChipData) -> {
                         runSuspendCatching {
@@ -360,6 +372,7 @@ class EIdNfcScannerViewModel @Inject constructor(
                             nfcScannerState.update { NfcScannerState.UnexpectedError }
                         }
                     }
+
                     activityState is ActivityState.Paused -> {
                         runSuspendCatching {
                             avBeam.onPauseNfc()
@@ -389,9 +402,9 @@ class EIdNfcScannerViewModel @Inject constructor(
         val expiryDate = packageResult.getField(119)
         val nfcImage = packageResult.nfcAvatar
 
-        navManager.navigateToAndClearCurrent(
-            EIdNfcSummaryScreenDestination(
-                caseId = navArgs.caseId,
+        navManager.replaceCurrentWith(
+            Destination.EIdNfcSummaryScreen(
+                caseId = caseId,
                 picture = nfcImage,
                 givenName = firstName,
                 surname = lastName,
@@ -414,6 +427,7 @@ class EIdNfcScannerViewModel @Inject constructor(
         data class ScanSuccess(
             val packageResult: AVBeamPackageResult,
         ) : NfcScannerState
+
         data object UnexpectedError : NfcScannerState
     }
 
@@ -428,9 +442,10 @@ class EIdNfcScannerViewModel @Inject constructor(
     }
 
     private fun AVBeamPackageResult.getField(index: Int): String = this.data?.getValue(index) ?: "-"
-    private val AVBeamPackageResult.nfcAvatar get() = this.files?.value?.firstOrNull { file ->
-        file.fileDescription == "images/id_document_nfc/NFCAvatar.jpg"
-    }?.fileData ?: byteArrayOf()
+    private val AVBeamPackageResult.nfcAvatar
+        get() = this.files?.value?.firstOrNull { file ->
+            file.fileDescription == "images/id_document_nfc/NFCAvatar.jpg"
+        }?.fileData ?: byteArrayOf()
 
     companion object {
         private const val SUCCESS_DELAY_MS = 1500L

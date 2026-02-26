@@ -42,7 +42,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowWidthSizeClass
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.InvitationHeader
@@ -51,6 +50,8 @@ import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
@@ -257,8 +258,7 @@ private fun Sheet(
             .padding(bottom = Sizes.s06 + stickyBottomHeight),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-        val compact = windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
+        val compact = currentWindowAdaptiveInfo().windowWidthClass() == WindowWidthClass.COMPACT
         if ((iconAlwaysVisible || compact) && contentIcon != null) {
             Icon(
                 modifier = Modifier

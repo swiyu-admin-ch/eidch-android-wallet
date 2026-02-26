@@ -16,9 +16,7 @@ import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination
 @Composable
 fun BetaIdScreen(
     viewModel: BetaIdViewModel,
@@ -43,7 +41,7 @@ private fun EIdIntroScreenContent(
             Buttons.FilledPrimary(
                 text = stringResource(id = R.string.tk_global_getbetaid_primarybutton),
                 onClick = onBetaIdButtonClick,
-                startIcon = painterResource(id = R.drawable.pilot_ic_link)
+                startIcon = painterResource(id = R.drawable.wallet_ic_external_link)
             )
         }
     ) {
