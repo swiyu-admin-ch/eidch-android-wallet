@@ -40,13 +40,11 @@ enum class ComponentScope {
     EidOnlineSession,
 }
 
-internal fun ComponentScope.contains(destination: Destination?): Boolean {
-    return when (this) {
-        ComponentScope.CredentialIssuer -> destination is ScopedComponentGroup.CredentialIssuer
-        ComponentScope.Verifier -> destination is ScopedComponentGroup.Verifier
-        ComponentScope.NonComplianceFormInput -> destination is ScopedComponentGroup.NonComplianceFormInput
-        ComponentScope.EidApplicationProcess -> destination is ScopedComponentGroup.EidApplicationProcess
-        ComponentScope.EidDocumentScan -> destination is ScopedComponentGroup.EidDocumentScan
-        ComponentScope.EidOnlineSession -> destination is ScopedComponentGroup.EidOnlineSession
-    }
+internal fun ComponentScope.contains(destination: Destination?): Boolean = when (this) {
+    ComponentScope.CredentialIssuer -> destination is ScopedComponentGroup.CredentialIssuer
+    ComponentScope.Verifier -> destination is ScopedComponentGroup.Verifier
+    ComponentScope.NonComplianceFormInput -> destination is ScopedComponentGroup.NonComplianceFormInput
+    ComponentScope.EidApplicationProcess -> destination is ScopedComponentGroup.EidApplicationProcess
+    ComponentScope.EidDocumentScan -> destination is ScopedComponentGroup.EidDocumentScan
+    ComponentScope.EidOnlineSession -> destination is ScopedComponentGroup.EidOnlineSession
 }

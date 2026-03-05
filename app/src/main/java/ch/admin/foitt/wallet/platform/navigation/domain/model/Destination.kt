@@ -122,15 +122,15 @@ sealed interface Destination : NavKey {
     @Serializable
     data object OnboardingErrorScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
 
-    // OnboardingSuccessScreen is outside of the NavigationScope.Onboarding
+    // OnboardingSuccessScreen is outside of the NavigationScope.Onboarding.
     @Serializable
-    data object OnboardingSuccessScreen : Destination
+    data object OnboardingSuccessScreen : Destination, ScopedComponentGroup.CredentialIssuer
 
     // endregion feature/onboarding
     // region feature/login
 
     @Serializable
-    data object BiometricLoginScreen : Destination, NoAutoLogout, ScopedComponentGroup.Verifier, ScopedComponentGroup.CredentialIssuer
+    data object BiometricLoginScreen : Destination, NoAutoLogout, ScopedComponentGroup.CredentialIssuer, ScopedComponentGroup.Verifier
 
     @Serializable
     data object LockScreen : Destination, NoAutoLogout
@@ -141,7 +141,7 @@ sealed interface Destination : NavKey {
     @Serializable
     data class PassphraseLoginScreen(
         val biometricsLocked: Boolean
-    ) : Destination, NoAutoLogout, ScopedComponentGroup.Verifier, ScopedComponentGroup.CredentialIssuer
+    ) : Destination, NoAutoLogout, ScopedComponentGroup.CredentialIssuer, ScopedComponentGroup.Verifier
 
     @Serializable
     data object UnsecuredDeviceScreen : Destination, NoAutoLogout
