@@ -101,8 +101,6 @@ class SecuritySettingsViewModel @Inject constructor(
         navManager.navigateTo(Destination.AuthWithPassphraseScreen(enableBiometrics = false))
     }
 
-    fun onDataProtection() = appContext.openLink(R.string.tk_settings_securityPrivacy_dataProtection_privacyPolicy_link_value)
-
     fun onChangePassphrase() = navManager.navigateTo(Destination.EnterCurrentPassphraseScreen)
 
     fun onShareAnalysisChange(isEnabled: Boolean) {
@@ -110,4 +108,8 @@ class SecuritySettingsViewModel @Inject constructor(
     }
 
     fun onDataAnalysis() = navManager.navigateTo(Destination.DataAnalysisScreen)
+
+    fun onActivityList() = navManager.navigateTo(Destination.ActivityListSettingsScreen)
+
+    fun onDataProtection() = appContext.openLink(R.string.tk_settings_securityPrivacy_dataProtection_privacyPolicy_link_value)
 }

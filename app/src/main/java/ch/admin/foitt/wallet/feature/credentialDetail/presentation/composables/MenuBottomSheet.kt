@@ -19,7 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
@@ -36,7 +38,7 @@ fun MenuBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
-    onWrongData: () -> Unit,
+    onWrongData: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = {
@@ -54,31 +56,39 @@ fun MenuBottomSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Sizes.s04)
         ) {
-            ListItem(
-                colors = ListItemDefaults.colors(containerColor = WalletTheme.colorScheme.surfaceContainerHighest),
-                modifier = Modifier
-                    .clickable(onClick = onWrongData)
-                    .spaceBarKeyClickable(onWrongData),
-                leadingContent = {
-                    Icon(
-                        modifier = Modifier.width(18.dp).height(18.dp),
-                        painter = painterResource(R.drawable.wallet_ic_wrong_data),
-                        tint = WalletTheme.colorScheme.onBackground,
-                        contentDescription = null,
-                    )
-                },
-                headlineContent = {
-                    WalletTexts.BodyLarge(
-                        text = stringResource(id = R.string.tk_global_wrongdata),
-                        color = WalletTheme.colorScheme.onBackground,
-                    )
-                },
-            )
+            onWrongData?.let { callback ->
+                ListItem(
+                    colors = ListItemDefaults.colors(containerColor = WalletTheme.colorScheme.surfaceContainerHighest),
+                    modifier = Modifier
+                        .clickable(onClick = callback)
+                        .spaceBarKeyClickable(callback)
+                        .semantics {
+                            role = Role.Button
+                        },
+                    leadingContent = {
+                        Icon(
+                            modifier = Modifier.width(18.dp).height(18.dp),
+                            painter = painterResource(R.drawable.wallet_ic_wrong_data),
+                            tint = WalletTheme.colorScheme.onBackground,
+                            contentDescription = null,
+                        )
+                    },
+                    headlineContent = {
+                        WalletTexts.BodyLarge(
+                            text = stringResource(id = R.string.tk_global_wrongdata),
+                            color = WalletTheme.colorScheme.onBackground,
+                        )
+                    },
+                )
+            }
             ListItem(
                 colors = ListItemDefaults.colors(containerColor = WalletTheme.colorScheme.surfaceContainerHighest),
                 modifier = Modifier
                     .clickable(onClick = onDelete)
-                    .spaceBarKeyClickable(onDelete),
+                    .spaceBarKeyClickable(onDelete)
+                    .semantics {
+                        role = Role.Button
+                    },
                 leadingContent = {
                     Icon(
                         painter = painterResource(R.drawable.wallet_ic_trashcan),

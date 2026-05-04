@@ -20,9 +20,13 @@ internal class FetchRawAndParsedIssuerCredentialInfoImpl @Inject constructor(
     private val credentialOfferRepository: CredentialOfferRepository,
     private val validateIssuerMetadataJwt: ValidateIssuerMetadataJwt,
 ) : FetchRawAndParsedIssuerCredentialInfo {
-    override suspend fun invoke(issuerEndpoint: URL): Result<RawAndParsedIssuerCredentialInfo, FetchIssuerCredentialInfoError> =
+    override suspend fun invoke(
+        issuerEndpoint: URL,
+    ): Result<RawAndParsedIssuerCredentialInfo, FetchIssuerCredentialInfoError> =
         coroutineBinding {
-            val rawAndParsedInfo = credentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(issuerEndpoint).bind()
+            val rawAndParsedInfo = credentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(
+                issuerEndpoint = issuerEndpoint,
+            ).bind()
             // it was already parsed in the repo, so we can assume that we get the JWT if available
             val jwt = runSuspendCatching { Jwt(rawAndParsedInfo.rawIssuerCredentialInfo) }.get()
             jwt?.let {

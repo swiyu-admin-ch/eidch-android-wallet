@@ -24,7 +24,7 @@ class EIdNfcSummaryViewModel @AssistedInject constructor(
     @Assisted("documentId") internal val documentId: String,
     @Assisted("expiryDate") internal val expiryDate: String,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.EmptyWithCloseButton(::onClose)
+    override val topBarState = TopBarState.WithCloseButton(::onClose)
 
     @AssistedFactory
     interface Factory {
@@ -50,7 +50,7 @@ class EIdNfcSummaryViewModel @AssistedInject constructor(
             }
 
             startAutoVerificationResult.recordDocumentVideo -> navManager.replaceCurrentWith(
-                Destination.EIdDocumentRecordingScreen(caseId = caseId)
+                Destination.EIdDocumentRecordingInfoScreen(caseId = caseId)
             )
 
             else -> navManager.replaceCurrentWith(

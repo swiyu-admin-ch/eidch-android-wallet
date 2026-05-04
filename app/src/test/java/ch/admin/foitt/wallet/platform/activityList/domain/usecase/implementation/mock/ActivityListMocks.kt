@@ -1,8 +1,9 @@
 package ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock
 
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityActorDisplayData
-import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDetailDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
+import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityWithActorDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityActorDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityActorDisplayWithImage
@@ -17,9 +18,11 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithD
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClusterWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.NonComplianceReasonDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialWithDisplaysAndClusters
 import ch.admin.foitt.wallet.platform.locale.LocaleCompat
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
@@ -40,7 +43,22 @@ object ActivityListMocks {
         actorTrust = TrustStatus.TRUSTED,
         vcSchemaTrust = VcSchemaTrustStatus.TRUSTED,
         nonComplianceData = NON_COMPLIANCE_DATA,
+        actorCompliance = ActorComplianceState.REPORTED,
         createdAt = 1759837408,
+    )
+
+    val nonComplianceReasonDisplay1 = NonComplianceReasonDisplayEntity(
+        id = 1,
+        activityId = ACTIVITY_ID,
+        locale = "de-CH",
+        reason = "reason de-CH",
+    )
+
+    val nonComplianceReasonDisplay2 = NonComplianceReasonDisplayEntity(
+        id = 2,
+        activityId = ACTIVITY_ID,
+        locale = "en",
+        reason = "reason en",
     )
 
     val activityClaim = ActivityClaimEntity(
@@ -95,21 +113,33 @@ object ActivityListMocks {
     val activityWithDetails = ActivityWithDetails(
         activity = activity,
         actorDisplays = listOf(actorDisplay1, actorDisplay2),
+        nonComplianceReasonDisplays = listOf(nonComplianceReasonDisplay1, nonComplianceReasonDisplay2),
         claims = listOf(activityClaim),
     )
 
-    val activityDisplayData = ActivityDisplayData(
-        id = activity.id,
+    val activityWithActorDisplayData = ActivityWithActorDisplayData(
+        activityId = activity.id,
         activityType = activity.type,
         date = "07.10.2025 13:43",
-        nonComplianceData = NON_COMPLIANCE_DATA,
         localizedActorName = actorDisplay1.actorDisplay.name
     )
 
     val activityActorDisplayData = ActivityActorDisplayData(
-        id = activity.id,
+        activityId = activity.id,
         localizedActorName = actorDisplay1.actorDisplay.name,
         actorImageData = actorDisplay1.image?.image,
+    )
+
+    val activityDetailDisplayData = ActivityDetailDisplayData(
+        activityId = ACTIVITY_ID,
+        activityType = ActivityType.ISSUANCE,
+        date = "07.10.2025 13:43",
+        localizedActorName = "issuerName de",
+        actorTrustStatus = TrustStatus.TRUSTED,
+        vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
+        actorComplianceState = ActorComplianceState.REPORTED,
+        localizedNonComplianceReason = "reason de-CH",
+        actorImageData = imageData1,
     )
 
     val mockVerifiableCredential = mockk<VerifiableCredentialEntity>()
@@ -118,7 +148,7 @@ object ActivityListMocks {
         claim = CredentialClaim(
             id = 1,
             clusterId = 1,
-            key = "claim 1",
+            path = "claim 1",
             value = "claim 1 value",
             valueType = "string",
             valueDisplayInfo = null,
@@ -131,7 +161,7 @@ object ActivityListMocks {
         claim = CredentialClaim(
             id = 2,
             clusterId = 1,
-            key = "claim 2",
+            path = "claim 2",
             value = "claim 2 value",
             valueType = "string",
             valueDisplayInfo = null,

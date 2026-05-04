@@ -31,17 +31,12 @@ import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
-import ch.admin.foitt.wallet.platform.badges.presentation.LegitimateIssuerBadge
-import ch.admin.foitt.wallet.platform.badges.presentation.LegitimateVerifierBadge
-import ch.admin.foitt.wallet.platform.badges.presentation.NonCompliantActorBadge
-import ch.admin.foitt.wallet.platform.badges.presentation.NonLegitimateIssuerBadge
-import ch.admin.foitt.wallet.platform.badges.presentation.NonLegitimateVerifierBadge
-import ch.admin.foitt.wallet.platform.badges.presentation.TrustBadgeNotInSystem
-import ch.admin.foitt.wallet.platform.badges.presentation.TrustBadgeNotTrusted
-import ch.admin.foitt.wallet.platform.badges.presentation.TrustBadgeTrusted
+import ch.admin.foitt.wallet.platform.badges.presentation.LegitimateActorBadge
+import ch.admin.foitt.wallet.platform.badges.presentation.NonComplianceBadge
+import ch.admin.foitt.wallet.platform.badges.presentation.TrustBadge
 import ch.admin.foitt.wallet.platform.composables.Avatar
 import ch.admin.foitt.wallet.platform.composables.AvatarSize
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
@@ -92,7 +87,7 @@ internal fun InvitationHeader(
             )
 
             NonComplianceBadge(
-                nonComplianceState = actorUiState.nonComplianceState,
+                actorComplianceState = actorUiState.actorComplianceState,
                 onClick = onBadge,
             )
 
@@ -120,62 +115,12 @@ private fun fallBackName(actorType: ActorType): String = when (actorType) {
     ActorType.UNKNOWN -> ""
 }
 
-@Composable
-private fun TrustBadge(
-    trustStatus: TrustStatus,
-    onClick: (BadgeType) -> Unit,
-) = when (trustStatus) {
-    TrustStatus.TRUSTED -> TrustBadgeTrusted(onClick = onClick)
-    TrustStatus.NOT_TRUSTED -> TrustBadgeNotTrusted(onClick = onClick)
-    TrustStatus.EXTERNAL -> TrustBadgeNotInSystem(onClick = onClick)
-    TrustStatus.UNKNOWN -> {}
-}
-
-@Composable
-private fun NonComplianceBadge(
-    nonComplianceState: NonComplianceState,
-    onClick: (BadgeType) -> Unit,
-) = when (nonComplianceState) {
-    NonComplianceState.REPORTED -> NonCompliantActorBadge(
-        onClick = onClick,
-    )
-
-    NonComplianceState.NOT_REPORTED,
-    NonComplianceState.UNKNOWN -> {
-    }
-}
-
-@Composable
-private fun LegitimateActorBadge(
-    actorType: ActorType,
-    vcSchemaTrustStatus: VcSchemaTrustStatus,
-    onClick: (BadgeType) -> Unit,
-) = when {
-    actorType == ActorType.ISSUER && vcSchemaTrustStatus == VcSchemaTrustStatus.TRUSTED -> {
-        LegitimateIssuerBadge(onClick = onClick)
-    }
-
-    actorType == ActorType.ISSUER && vcSchemaTrustStatus == VcSchemaTrustStatus.NOT_TRUSTED -> {
-        NonLegitimateIssuerBadge(onClick = onClick)
-    }
-
-    actorType == ActorType.VERIFIER && vcSchemaTrustStatus == VcSchemaTrustStatus.TRUSTED -> {
-        LegitimateVerifierBadge(onClick = onClick)
-    }
-
-    actorType == ActorType.VERIFIER && vcSchemaTrustStatus == VcSchemaTrustStatus.NOT_TRUSTED -> {
-        NonLegitimateVerifierBadge(onClick = onClick)
-    }
-
-    else -> {}
-}
-
 private data class InvitationHeaderPreviewParam(
     val actorName: String?,
     val actorLogo: Int,
     val trustStatus: TrustStatus,
     val vcSchemaTrustStatus: VcSchemaTrustStatus,
-    val nonComplianceState: NonComplianceState,
+    val actorComplianceState: ActorComplianceState,
 )
 
 private class InvitationHeaderPreviewParams : PreviewParameterProvider<InvitationHeaderPreviewParam> {
@@ -185,42 +130,42 @@ private class InvitationHeaderPreviewParams : PreviewParameterProvider<Invitatio
             actorLogo = R.drawable.wallet_ic_eid,
             trustStatus = TrustStatus.TRUSTED,
             vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
-            nonComplianceState = NonComplianceState.REPORTED,
+            actorComplianceState = ActorComplianceState.REPORTED,
         ),
         InvitationHeaderPreviewParam(
             actorName = "Issuer Name",
             actorLogo = R.drawable.wallet_ic_eid,
             trustStatus = TrustStatus.TRUSTED,
             vcSchemaTrustStatus = VcSchemaTrustStatus.NOT_TRUSTED,
-            nonComplianceState = NonComplianceState.NOT_REPORTED,
+            actorComplianceState = ActorComplianceState.NOT_REPORTED,
         ),
         InvitationHeaderPreviewParam(
             actorName = "Issuer with a veeeeryyyyy loooonnnnnng name",
             actorLogo = R.drawable.ic_launcher_background,
             trustStatus = TrustStatus.TRUSTED,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
-            nonComplianceState = NonComplianceState.NOT_REPORTED,
+            actorComplianceState = ActorComplianceState.NOT_REPORTED,
         ),
         InvitationHeaderPreviewParam(
             actorName = "Issuer Name not trusted",
             actorLogo = R.drawable.wallet_ic_actor_default,
             trustStatus = TrustStatus.NOT_TRUSTED,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
-            nonComplianceState = NonComplianceState.NOT_REPORTED,
+            actorComplianceState = ActorComplianceState.NOT_REPORTED,
         ),
         InvitationHeaderPreviewParam(
             actorName = "Issuer Name trust unknown",
             actorLogo = R.drawable.wallet_ic_dotted_cross,
             trustStatus = TrustStatus.UNKNOWN,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
-            nonComplianceState = NonComplianceState.NOT_REPORTED,
+            actorComplianceState = ActorComplianceState.NOT_REPORTED,
         ),
         InvitationHeaderPreviewParam(
             actorName = null,
             actorLogo = R.drawable.wallet_ic_dotted_cross,
             trustStatus = TrustStatus.UNKNOWN,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
-            nonComplianceState = NonComplianceState.UNKNOWN,
+            actorComplianceState = ActorComplianceState.UNKNOWN,
         ),
     )
 }
@@ -238,7 +183,7 @@ private fun InvitationHeaderPreview(
                 trustStatus = previewParams.trustStatus,
                 vcSchemaTrustStatus = previewParams.vcSchemaTrustStatus,
                 actorType = ActorType.ISSUER,
-                nonComplianceState = previewParams.nonComplianceState,
+                actorComplianceState = previewParams.actorComplianceState,
                 nonComplianceReason = null,
             ),
             onBadge = {}

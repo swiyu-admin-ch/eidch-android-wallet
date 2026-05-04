@@ -6,7 +6,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerConf
 import com.github.michaelbull.result.Result
 import java.net.URL
 
-internal interface FetchIssuerConfiguration {
+interface FetchIssuerConfiguration {
     @CheckResult
     suspend operator fun invoke(
         issuerEndpoint: URL

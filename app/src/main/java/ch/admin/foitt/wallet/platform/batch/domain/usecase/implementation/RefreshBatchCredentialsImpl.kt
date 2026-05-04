@@ -4,8 +4,8 @@ import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedBatchCrede
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchCredentialByConfigError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerCredentialInfoError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetVerifiableCredentialParamsError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.Grant
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.PrepareFetchVerifiableCredentialError
 import ch.admin.foitt.openid4vc.domain.model.threshold
 import ch.admin.foitt.openid4vc.domain.usecase.FetchCredentialByConfig
 import ch.admin.foitt.openid4vc.domain.usecase.FetchRawAndParsedIssuerCredentialInfo
@@ -91,10 +91,10 @@ class RefreshBatchCredentialsImpl @Inject constructor(
         credentialOffer: CredentialOffer,
         batchRefreshParams: BatchRefreshParams
     ): Result<FetchCredentialResult, FetchCredentialError> = coroutineBinding {
-        val rawAndParsedCredentialInfo =
-            fetchRawAndParsedIssuerCredentialInfo(credentialOffer.credentialIssuer)
-                .mapError(FetchIssuerCredentialInfoError::toFetchCredentialError)
-                .bind()
+        val rawAndParsedCredentialInfo = fetchRawAndParsedIssuerCredentialInfo(
+            issuerEndpoint = credentialOffer.credentialIssuer,
+        ).mapError(FetchIssuerCredentialInfoError::toFetchCredentialError)
+            .bind()
 
         val issuerInfo = rawAndParsedCredentialInfo.issuerCredentialInfo
         val batchCredentialIssuance = issuerInfo.batchCredentialIssuance
@@ -127,7 +127,7 @@ class RefreshBatchCredentialsImpl @Inject constructor(
             credentialConfiguration = config,
             credentialOffer = credentialOffer,
             issuerCredentialInfo = issuerInfo
-        ).mapError(PrepareFetchVerifiableCredentialError::toFetchCredentialError).bind()
+        ).mapError(GetVerifiableCredentialParamsError::toFetchCredentialError).bind()
 
         val proofKeyPairs = verifiableCredentialParams.proofTypeConfig?.let { proofTypeConfig ->
             generateProofKeyPairs(

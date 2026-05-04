@@ -17,6 +17,7 @@ interface ActivityListError {
         ActivityRepositoryError,
         MapToActivityDisplayDataError,
         GetActivitiesWithDisplaysFlowError,
+        GetActivityActorDisplaysFlowError,
         GetActivityDetailFlowError,
         GetActivityWithDetailsFlowError,
         DeleteActivityError
@@ -32,6 +33,7 @@ sealed interface ImageRepositoryError
 sealed interface ActivityRepositoryError
 sealed interface MapToActivityDisplayDataError
 sealed interface GetActivitiesWithDisplaysFlowError
+sealed interface GetActivityActorDisplaysFlowError
 sealed interface GetActivityActorDisplaysWithImagesFlowError
 sealed interface GetActivityDetailFlowError
 sealed interface GetActivityWithDetailsFlowError
@@ -75,5 +77,9 @@ fun ActivityActorDisplayWithImageRepositoryError.toGetActivityActorDisplaysWithI
 }
 
 fun ActivityWithDetailsRepositoryError.toGetActivityWithDetailsFlowError(): GetActivityWithDetailsFlowError = when (this) {
+    is ActivityListError.Unexpected -> this
+}
+
+fun ActivityActorDisplayWithImageRepositoryError.toGetActivityActorDisplaysFlowError(): GetActivityActorDisplaysFlowError = when (this) {
     is ActivityListError.Unexpected -> this
 }

@@ -1,10 +1,8 @@
 package ch.admin.foitt.wallet.platform.appAttestation.di
 
 import ch.admin.foitt.wallet.platform.appAttestation.data.repository.AppAttestationRepositoryImpl
-import ch.admin.foitt.wallet.platform.appAttestation.data.repository.AppIntegrityRepositoryImpl
 import ch.admin.foitt.wallet.platform.appAttestation.data.repository.CurrentClientAttestationRepositoryImpl
 import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.AppAttestationRepository
-import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.AppIntegrityRepository
 import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.CurrentClientAttestationRepository
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.GenerateProofOfPossession
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestClientAttestation
@@ -48,11 +46,6 @@ internal interface AppAttestationModule {
     fun bindAppAttestationRepository(
         repo: AppAttestationRepositoryImpl
     ): AppAttestationRepository
-
-    @Binds
-    fun bindAppIntegrityRepository(
-        repo: AppIntegrityRepositoryImpl
-    ): AppIntegrityRepository
 
     @Binds
     fun bindCurrentClientAttestationRepository(

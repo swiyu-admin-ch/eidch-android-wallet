@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.platform.oca.domain.model.CaptureBase
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
@@ -8,6 +9,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
+import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryCodeOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryCodeOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryOverlay
@@ -65,29 +67,24 @@ class OcaOverlayValidatorImpl @Inject constructor() : OcaOverlayValidator {
     }
 
     private fun List<DataSourceOverlay>.isInvalid(): Boolean {
-        val jsonPaths = this.flatMap { dataSourceOverlay ->
+        return this.any { dataSourceOverlay ->
             when (dataSourceOverlay) {
-                is DataSourceOverlay1x0 -> dataSourceOverlay.attributeSources.values
+                is DataSourceOverlay2x0 -> dataSourceOverlay.attributeSources.values.any {
+                    validClaimsPathPointerRegex.matches(it.toPointerString()).not()
+                }
+                is DataSourceOverlay1x0 -> dataSourceOverlay.attributeSources.values.any {
+                    validJsonPathRegex.matches(it).not()
+                }
             }
         }
-
-        val containsInvalidJsonPath = jsonPaths.any { path ->
-            validJsonPathRegex.matches(path).not()
-        }
-
-        return containsInvalidJsonPath
     }
 
     private fun List<BrandingOverlay>.containsInvalidUri(): Boolean = this.any { brandingOverlay ->
         when (brandingOverlay) {
             is BrandingOverlay1x1 ->
-                brandingOverlay.logo?.let { !isValidImageDataUri(it) } ?: false ||
-                    brandingOverlay.backgroundImage?.let { !isValidImageDataUri(it) } ?: false
+                brandingOverlay.logo?.let { !ImageType.isValidImageDataUri(it) } ?: false ||
+                    brandingOverlay.backgroundImage?.let { !ImageType.isValidImageDataUri(it) } ?: false
         }
-    }
-
-    private fun isValidImageDataUri(input: String): Boolean = ImageType.entries.any { imageType ->
-        input.startsWith("data:${imageType.mimeType};base64,")
     }
 
     private fun List<EntryOverlay>.areEntryOverlaysInvalid(
@@ -140,6 +137,13 @@ class OcaOverlayValidatorImpl @Inject constructor() : OcaOverlayValidator {
               )+$
             """.trimMargin(),
             RegexOption.COMMENTS
+        )
+
+        // Matches claims path pointers
+        // start with: [, end with: ]
+        // contains: strings, integers, null (separated by commas)
+        val validClaimsPathPointerRegex = Regex(
+            """^\s*\[\s*(?:"[^"]+"|\d+|null)(?:\s*,\s*(?:"[^"]+"|\d+|null))*\s*]\s*$"""
         )
     }
 }

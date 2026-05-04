@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.Field
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.Filter
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.Filter.Companion.TYPE_NUMBER
@@ -49,7 +50,7 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, descriptors).assertOk()
 
         assertEquals(1, result.size)
-        assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
+        assertTrue(PresentationRequestField(path1, VALUE_1) in result)
     }
 
     @Test
@@ -59,8 +60,8 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
         assertEquals(2, result.size)
-        assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
-        assertTrue(PresentationRequestField(JSON_PATH_2, VALUE_2) in result)
+        assertTrue(PresentationRequestField(path1, VALUE_1) in result)
+        assertTrue(PresentationRequestField(path2, VALUE_2) in result)
     }
 
     @Test
@@ -70,7 +71,7 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
         assertEquals(1, result.size)
-        assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
+        assertTrue(PresentationRequestField(path1, VALUE_1) in result)
     }
 
     @Test
@@ -81,8 +82,8 @@ class GetRequestedFieldsImplTest {
             val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
             assertEquals(2, result.size)
-            assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
-            assertTrue(PresentationRequestField(JSON_PATH_2, VALUE_2) in result)
+            assertTrue(PresentationRequestField(path1, VALUE_1) in result)
+            assertTrue(PresentationRequestField(path2, VALUE_2) in result)
         }
 
     @Test
@@ -92,8 +93,8 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
         assertEquals(2, result.size)
-        assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
-        assertTrue(PresentationRequestField(JSON_PATH_2, VALUE_2) in result)
+        assertTrue(PresentationRequestField(path1, VALUE_1) in result)
+        assertTrue(PresentationRequestField(path2, VALUE_2) in result)
     }
 
     @Test
@@ -103,7 +104,7 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
         assertEquals(1, result.size)
-        assertEquals(JSON_PATH_NUMBER, result[0].jsonPath)
+        assertEquals(pathNumber, result[0].path)
         assertEquals(NUMBER.toString(), result[0].value)
     }
 
@@ -114,9 +115,9 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
         assertEquals(3, result.size)
-        assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
-        assertTrue(PresentationRequestField(JSON_PATH_2, VALUE_2) in result)
-        assertTrue(PresentationRequestField(JSON_PATH_NUMBER, NUMBER.toString()) in result)
+        assertTrue(PresentationRequestField(path1, VALUE_1) in result)
+        assertTrue(PresentationRequestField(path2, VALUE_2) in result)
+        assertTrue(PresentationRequestField(pathNumber, NUMBER.toString()) in result)
     }
 
     @Test
@@ -153,7 +154,7 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
         assertEquals(1, result.size)
-        assertTrue(PresentationRequestField(JSON_PATH_VCT, VALUE_VCT) in result)
+        assertTrue(PresentationRequestField(pathVct, VALUE_VCT) in result)
     }
 
     @Test
@@ -163,21 +164,21 @@ class GetRequestedFieldsImplTest {
         val result = useCase(CREDENTIAL_JSON, inputDescriptors).assertOk()
 
         assertEquals(1, result.size)
-        assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
+        assertTrue(PresentationRequestField(path1, VALUE_1) in result)
     }
 
     @Test
     fun `Filter is ignored if path is not $vct`(): Unit = runTest(testDispatcher) {
         val result = useCase(CREDENTIAL_JSON, listOf(invalidPathFilterInputDescriptor)).assertOk()
 
-        assertTrue(PresentationRequestField(JSON_PATH_1, VALUE_1) in result)
+        assertTrue(PresentationRequestField(path1, VALUE_1) in result)
     }
 
     @Test
     fun `Filter is ignored if type is not string`(): Unit = runTest(testDispatcher) {
         val result = useCase(CREDENTIAL_JSON, listOf(invalidTypeFilterInputDescriptor)).assertOk()
 
-        assertTrue(PresentationRequestField(JSON_PATH_VCT, VALUE_VCT) in result)
+        assertTrue(PresentationRequestField(pathVct, VALUE_VCT) in result)
     }
 
     @Test
@@ -207,6 +208,10 @@ class GetRequestedFieldsImplTest {
         const val JSON_PATH_2 = "$.$KEY_2"
         const val JSON_PATH_NUMBER = "$.$KEY_NUMBER"
         const val JSON_PATH_VCT = "$.$KEY_VCT"
+        val path1 = listOf(ClaimsPathPointerComponent.String(KEY_1))
+        val path2 = listOf(ClaimsPathPointerComponent.String(KEY_2))
+        val pathNumber = listOf(ClaimsPathPointerComponent.String(KEY_NUMBER))
+        val pathVct = listOf(ClaimsPathPointerComponent.String(KEY_VCT))
 
         val oneMatchingPathInputDescriptor = InputDescriptor.create(Field(path = listOf("$.test", JSON_PATH_1)))
         val twoMatchingPathsInputDescriptor = InputDescriptor.createFieldPerPath(listOf(JSON_PATH_2, JSON_PATH_1))

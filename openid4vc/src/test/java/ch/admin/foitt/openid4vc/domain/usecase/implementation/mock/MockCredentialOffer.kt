@@ -37,6 +37,7 @@ internal object MockCredentialOffer {
 
     const val KEY_ATTESTATION_JWT = "keyAttestationJwt"
     private const val ACCESS_TOKEN = "accessToken"
+    private const val REFRESH_TOKEN = "refreshToken"
     const val C_NONCE = "cNonce"
     private const val EXPIRES_IN = 2
     private const val TOKEN_TYPE = "tokenType"
@@ -107,6 +108,7 @@ internal object MockCredentialOffer {
         keyBindings = listOf(keyBinding),
         transactionId = TRANSACTION_ID,
         accessToken = ACCESS_TOKEN,
+        refreshToken = REFRESH_TOKEN,
         endpoint = DEFERRED_CREDENTIAL_ENDPOINT,
         pollInterval = POLLING_INTERVAL,
     )

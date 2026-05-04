@@ -51,17 +51,23 @@ class FetchRawAndParsedIssuerCredentialInfoImplTest {
 
     @Test
     fun `UseCase should return the raw and parsed info when metadata is unsigned`() = runTest {
-        val result = useCase(CREDENTIAL_ISSUER).assertOk()
+        val result = useCase(
+            issuerEndpoint = CREDENTIAL_ISSUER,
+        ).assertOk()
 
         assertEquals(result, mockRawAndParsedIssuerCredentialInfo)
     }
 
     @Test
     fun `UseCase should call the CredentialOffer repository only when metadata is unsigned`() = runTest {
-        useCase(CREDENTIAL_ISSUER)
+        useCase(
+            issuerEndpoint = CREDENTIAL_ISSUER,
+        )
 
         coVerify(exactly = 1) {
-            mockCredentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(CREDENTIAL_ISSUER)
+            mockCredentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(
+                issuerEndpoint = CREDENTIAL_ISSUER,
+            )
         }
         coVerify(exactly = 0) {
             mockValidateIssuerMetadataJwt(any(), any(), any())
@@ -74,11 +80,15 @@ class FetchRawAndParsedIssuerCredentialInfoImplTest {
             mockRawAndParsedIssuerCredentialInfo.rawIssuerCredentialInfo
         } returns TEST_JWT.rawJwt
 
-        val result = useCase(CREDENTIAL_ISSUER).assertOk()
+        val result = useCase(
+            issuerEndpoint = CREDENTIAL_ISSUER,
+        ).assertOk()
 
         assertEquals(result, mockRawAndParsedIssuerCredentialInfo)
         coVerify(exactly = 1) {
-            mockCredentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(CREDENTIAL_ISSUER)
+            mockCredentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(
+                issuerEndpoint = CREDENTIAL_ISSUER,
+            )
             mockValidateIssuerMetadataJwt(CREDENTIAL_ISSUER.toString(), any(), any())
         }
     }
@@ -89,7 +99,9 @@ class FetchRawAndParsedIssuerCredentialInfoImplTest {
             mockCredentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(any())
         } returns Err(CredentialOfferError.NetworkInfoError)
 
-        val result = useCase(CREDENTIAL_ISSUER)
+        val result = useCase(
+            issuerEndpoint = CREDENTIAL_ISSUER,
+        )
 
         result.assertErrorType(CredentialOfferError.NetworkInfoError::class)
     }
@@ -103,7 +115,9 @@ class FetchRawAndParsedIssuerCredentialInfoImplTest {
             mockValidateIssuerMetadataJwt(any(), any(), any())
         } returns Err(CredentialOfferError.InvalidSignedMetadata("test"))
 
-        val result = useCase(CREDENTIAL_ISSUER)
+        val result = useCase(
+            issuerEndpoint = CREDENTIAL_ISSUER,
+        )
 
         result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }

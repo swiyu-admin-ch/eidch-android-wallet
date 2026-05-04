@@ -4,11 +4,11 @@ import androidx.room.Embedded
 import androidx.room.Relation
 
 data class ActivityWithActorDisplays(
-    @Embedded override val activity: CredentialActivityEntity,
+    @Embedded val activity: CredentialActivityEntity,
     @Relation(
         entity = ActivityActorDisplayEntity::class,
         parentColumn = "id",
         entityColumn = "activityId",
     )
-    override val actorDisplays: List<ActivityActorDisplayWithImage>,
-) : ActivityWithDisplays
+    val actorDisplays: List<ActivityActorDisplayWithImage>,
+)

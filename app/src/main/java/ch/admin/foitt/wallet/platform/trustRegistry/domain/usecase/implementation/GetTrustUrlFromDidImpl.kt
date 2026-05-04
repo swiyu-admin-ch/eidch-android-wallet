@@ -43,11 +43,6 @@ internal class GetTrustUrlFromDidImpl @Inject constructor(
     ): Result<URL, GetTrustUrlFromDidError> = runSuspendCatching {
         val trustPathBase = "$TRUST_SCHEME$trustDomain$TRUST_PATH"
         val urlString = when (trustStatementType) {
-            TrustStatementType.METADATA -> {
-                val didUrlEncoded = URLEncoder.encode(actorDid, Charsets.UTF_8.name)
-                "$trustPathBase$didUrlEncoded"
-            }
-
             TrustStatementType.IDENTITY -> {
                 val didUrlEncoded = URLEncoder.encode(actorDid, Charsets.UTF_8.name)
                 "$trustPathBase$TRUST_PATH_IDENTITY$didUrlEncoded"

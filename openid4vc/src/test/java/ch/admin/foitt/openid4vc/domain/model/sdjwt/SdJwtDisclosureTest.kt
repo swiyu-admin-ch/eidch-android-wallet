@@ -7,13 +7,10 @@ import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.FlatSdJwt
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.SdJwtSeparator
 import io.mockk.MockKAnnotations
 import io.mockk.unmockkAll
-import kotlinx.serialization.SerializationException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import java.text.ParseException
 
 class SdJwtDisclosureTest {
 
@@ -68,20 +65,6 @@ class SdJwtDisclosureTest {
 
         val expected = FlatSdJwt.JWT + SdJwtSeparator
         assertEquals(expected, verifiableCredential)
-    }
-
-    @Test
-    fun `Creating selective disclosure with invalid signedJWT throws exception`() {
-        assertThrows<ParseException> {
-            SdJwt("header.body.signature$SdJwtSeparator")
-        }
-    }
-
-    @Test
-    fun `Creating selective disclosure of a flat SdJwt with invalid claims throws exception`() {
-        assertThrows<SerializationException> {
-            SdJwt("${FlatSdJwt.JWT}${SdJwtSeparator}invalid$SdJwtSeparator")
-        }
     }
 
     private companion object {

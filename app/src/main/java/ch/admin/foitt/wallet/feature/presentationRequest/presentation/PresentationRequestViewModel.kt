@@ -3,7 +3,7 @@ package ch.admin.foitt.wallet.feature.presentationRequest.presentation
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseErrorBody
 import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.PresentationRequestDisplayData
@@ -25,6 +25,7 @@ import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredent
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.di.IoDispatcherScope
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
@@ -73,7 +74,6 @@ class PresentationRequestViewModel @AssistedInject constructor(
     setTopBarState: SetTopBarState,
     @Assisted private val compatibleCredential: CompatibleCredential,
     @Assisted private val presentationRequestWithRaw: PresentationRequestWithRaw,
-    @Assisted private val shouldFetchTrustStatement: Boolean,
 ) : ScreenViewModel(setTopBarState) {
 
     @AssistedFactory
@@ -81,7 +81,6 @@ class PresentationRequestViewModel @AssistedInject constructor(
         fun create(
             compatibleCredential: CompatibleCredential,
             presentationRequestWithRaw: PresentationRequestWithRaw,
-            shouldFetchTrustStatement: Boolean
         ): PresentationRequestViewModel
     }
 
@@ -129,7 +128,9 @@ class PresentationRequestViewModel @AssistedInject constructor(
 
     init {
         viewModelScope.launch {
-            updateVerifierDisplayData()
+            fetchAndCacheVerifierDisplayData(
+                presentationRequestWithRaw.authorizationRequest,
+            )
         }
     }
 
@@ -154,7 +155,7 @@ class PresentationRequestViewModel @AssistedInject constructor(
                 )
 
                 submitPresentation(
-                    presentationRequest = presentationRequestWithRaw.presentationRequest,
+                    authorizationRequest = presentationRequestWithRaw.authorizationRequest,
                     compatibleCredential = compatibleCredential,
                 ).mapBoth(
                     success = { navigateToSuccess() },
@@ -186,8 +187,8 @@ class PresentationRequestViewModel @AssistedInject constructor(
             )
 
             declinePresentation(
-                url = presentationRequestWithRaw.presentationRequest.responseUri,
-                reason = PresentationRequestErrorBody.ErrorType.CLIENT_REJECTED,
+                url = presentationRequestWithRaw.authorizationRequest.responseUri,
+                reason = AuthorizationResponseErrorBody.ErrorType.CLIENT_REJECTED,
             ).onFailure { error ->
                 Timber.w("Decline presentation error: $error")
             }
@@ -195,15 +196,6 @@ class PresentationRequestViewModel @AssistedInject constructor(
         navManager.replaceCurrentWith(
             destination = Destination.PresentationDeclinedScreen
         )
-    }
-
-    private suspend fun updateVerifierDisplayData() {
-        if (shouldFetchTrustStatement) {
-            fetchAndCacheVerifierDisplayData(
-                presentationRequestWithRaw.presentationRequest,
-                true,
-            )
-        }
     }
 
     private fun navigateToSuccess() {
@@ -253,12 +245,11 @@ class PresentationRequestViewModel @AssistedInject constructor(
         Destination.PresentationFailureScreen(
             compatibleCredential = compatibleCredential,
             presentationRequestWithRaw = presentationRequestWithRaw,
-            shouldFetchTrustStatement = shouldFetchTrustStatement,
         )
     )
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
     }
 
     private suspend fun PresentationRequestDisplayData.toUiState(): PresentationRequestUiState {

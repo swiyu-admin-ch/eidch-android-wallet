@@ -1,10 +1,10 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
 import ch.admin.foitt.wallet.platform.oca.domain.model.AttributeKey
 import ch.admin.foitt.wallet.platform.oca.domain.model.CaptureBase
 import ch.admin.foitt.wallet.platform.oca.domain.model.DataSourceFormat
 import ch.admin.foitt.wallet.platform.oca.domain.model.EntryCode
-import ch.admin.foitt.wallet.platform.oca.domain.model.JsonPath
 import ch.admin.foitt.wallet.platform.oca.domain.model.Locale
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaClaimData
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.CharacterEncoding
@@ -12,6 +12,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.CharacterEncodin
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.CharacterEncodingOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
+import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.FormatOverlay
@@ -28,6 +29,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.StandardOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.StandardOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaClaimData
 import ch.admin.foitt.wallet.platform.oca.domain.util.getLatestOverlaysOfType
+import ch.admin.foitt.wallet.platform.oca.domain.util.naiveJsonPathToClaimsPathPointer
 import ch.admin.foitt.wallet.platform.utils.associateNotNull
 import ch.admin.foitt.wallet.platform.utils.associateWithNotNull
 import timber.log.Timber
@@ -100,15 +102,21 @@ class GenerateOcaClaimDataImpl @Inject constructor() : GenerateOcaClaimData {
     private fun getDataSourcesForAttributes(
         overlays: List<Overlay>,
         captureBase: CaptureBase,
-    ): Map<AttributeKey, Map<DataSourceFormat, JsonPath>> {
+    ): Map<AttributeKey, Map<DataSourceFormat, ClaimsPathPointer>> {
         val dataSourceOverlays =
             getLatestOverlaysOfType<DataSourceOverlay>(overlays = overlays, digest = captureBase.digest)
         val dataSources = captureBase.attributes.keys.associateWith { attribute ->
             dataSourceOverlays.mapNotNull { overlay ->
                 when (overlay) {
+                    is DataSourceOverlay2x0 -> {
+                        overlay.attributeSources[attribute]?.let { claimsPathPointer ->
+                            overlay.format to claimsPathPointer
+                        }
+                    }
+
                     is DataSourceOverlay1x0 -> {
                         overlay.attributeSources[attribute]?.let { jsonPathString ->
-                            overlay.format to jsonPathString
+                            overlay.format to naiveJsonPathToClaimsPathPointer(jsonPathString)
                         }
                     }
                 }

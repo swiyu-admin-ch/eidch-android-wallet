@@ -88,7 +88,9 @@ class MapToCredentialClaimDataImpl @Inject constructor(
                         }
                     }
 
-                    ValueType.UNSUPPORTED -> error("Unsupported value type '${claim.valueType}' found for claim '${claim.key}'")
+                    ValueType.UNSUPPORTED -> {
+                        error("Unsupported value type '${claim.valueType}' found for claim '${claim.path}'")
+                    }
                 }
             } ?: error("No localized display found")
         }.mapError { throwable ->

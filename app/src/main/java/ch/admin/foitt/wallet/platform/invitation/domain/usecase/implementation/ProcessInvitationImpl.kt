@@ -1,10 +1,10 @@
 package ch.admin.foitt.wallet.platform.invitation.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProcessPresentationRequestError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProcessPresentationRequestResult
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ProcessPresentationRequest
@@ -37,13 +37,13 @@ internal class ProcessInvitationImpl @Inject constructor(
                 Timber.d("Found valid invitation with uri: $invitationUri")
                 when (invitation) {
                     is CredentialOffer -> processCredentialOffer(credentialOffer = invitation)
-                    is PresentationRequestContainer -> processPresentation(invitation)
+                    is PresentationRequestWithRaw -> processPresentation(invitation)
                     else -> Err(InvitationError.Unexpected)
                 }
             }
 
-    private suspend fun processPresentation(requestContainer: PresentationRequestContainer) =
-        processPresentationRequest(requestContainer)
+    private suspend fun processPresentation(presentationRequestWithRaw: PresentationRequestWithRaw) =
+        processPresentationRequest(presentationRequestWithRaw)
             .map { processPresentationResult ->
                 processPresentationResult.toProcessInvitationResult()
             }.mapError(ProcessPresentationRequestError::toProcessInvitationError)
@@ -62,13 +62,11 @@ internal class ProcessInvitationImpl @Inject constructor(
             is ProcessPresentationRequestResult.Credential -> ProcessInvitationResult.PresentationRequest(
                 credential = credential,
                 request = presentationRequest,
-                shouldCheckTrustStatement = shouldFetchTrustStatements,
             )
             is ProcessPresentationRequestResult.CredentialList ->
                 ProcessInvitationResult.PresentationRequestCredentialList(
                     credentials = credentials,
                     request = presentationRequest,
-                    shouldCheckTrustStatement = shouldFetchTrustStatements,
                 )
         }
 }

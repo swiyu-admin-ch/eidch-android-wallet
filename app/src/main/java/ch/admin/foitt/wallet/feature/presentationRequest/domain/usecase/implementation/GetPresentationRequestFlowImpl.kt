@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.GetPresentationRequestFlowError
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.PresentationRequestDisplayData
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.toGetPresentationRequestFlowError
@@ -53,7 +54,7 @@ class GetPresentationRequestFlowImpl @Inject constructor(
     ): List<ClusterWithDisplaysAndClaims> = this.map { cluster ->
         val filteredClaimsWithDisplays = cluster.claimsWithDisplays.filter { (claim, _) ->
             requestedFields.any { field ->
-                field.key == claim.key
+                field.path.toPointerString() == claim.path
             }
         }
 

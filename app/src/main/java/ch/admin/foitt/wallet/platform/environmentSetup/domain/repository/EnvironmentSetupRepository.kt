@@ -5,7 +5,7 @@ interface EnvironmentSetupRepository {
     val attestationsServiceUrl: String
     val attestationsServiceTrustedDids: List<String>
     val trustRegistryMapping: Map<String, String>
-    val trustRegistryTrustedDids: List<String>
+    val trustRegistryTrustedDids: Map<String, List<String>>
     val trustEnvironmentDidRegex: String
     val demoTrustEnvironmentDidRegex: String
     val baseTrustDomainRegex: Regex
@@ -21,4 +21,8 @@ interface EnvironmentSetupRepository {
     val nonComplianceBaseUrl: String
     val batchIssuanceEnabled: Boolean
     val payloadEncryptionEnabled: Boolean
+    val allowBypassOtp: Boolean
+    val isLottieViewerEnabled: Boolean
+    val devsSettingsEnabled: Boolean
+    val isImageValidationEnabled: Boolean
 }

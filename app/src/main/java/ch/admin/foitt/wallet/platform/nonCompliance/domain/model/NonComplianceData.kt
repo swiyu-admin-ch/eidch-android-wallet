@@ -4,6 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NonComplianceData(
-    val state: NonComplianceState,
+    val state: ActorComplianceState,
     val reasonDisplays: List<NonComplianceReasonDisplay>?,
 )

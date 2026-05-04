@@ -227,7 +227,8 @@ class CleanArchitectureKonsistTest {
                         runTest {
                             useCase.assertTrue { case ->
                                 testClasses.any { testCase ->
-                                    testCase.name == case.name + "Test" && testCase.packagee?.name == case.packagee?.name
+                                    testCase.name == case.name + "Test" &&
+                                        case.resideInPackage("${testCase.packagee?.name}..")
                                 }
                             }
                         }

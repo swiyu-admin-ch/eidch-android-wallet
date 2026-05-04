@@ -137,11 +137,15 @@ internal class EIdGuardianConsentViewModel @AssistedInject constructor(
                         deadline = null
                     )
 
+                    SIdRequestDisplayStatus.IN_AUTO_VERIFICATION,
+                    SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING,
+                    SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK,
                     SIdRequestDisplayStatus.IN_ISSUANCE,
                     SIdRequestDisplayStatus.IN_AGENT_REVIEW,
                     SIdRequestDisplayStatus.REFUSED,
-                    SIdRequestDisplayStatus.UNKNOWN,
-                    SIdRequestDisplayStatus.OTHER -> navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class)
+                    SIdRequestDisplayStatus.CANCELLED,
+                    SIdRequestDisplayStatus.CLOSED,
+                    SIdRequestDisplayStatus.UNKNOWN -> navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class)
                 }
             }
             .onFailure {

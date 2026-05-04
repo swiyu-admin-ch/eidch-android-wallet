@@ -1,5 +1,8 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.pointsAtSetOf
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.toAnyCredentialDisplay
@@ -20,8 +23,14 @@ import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaDisplays
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GetRootCaptureBase
 import ch.admin.foitt.wallet.platform.ssi.domain.model.ValueType
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import javax.inject.Inject
 
 class GenerateOcaDisplaysImpl @Inject constructor(
@@ -30,7 +39,8 @@ class GenerateOcaDisplaysImpl @Inject constructor(
 ) : GenerateOcaDisplays {
 
     override suspend fun invoke(
-        credentialClaims: Map<String, String?>,
+        credentialClaims: Map<ClaimsPathPointer, JsonElement>,
+        credentialFormat: String,
         ocaBundle: OcaBundle,
     ): Result<OcaDisplays, GenerateOcaDisplaysError> = coroutineBinding {
         val rootCaptureBase = getRootCaptureBase(ocaBundle.captureBases)
@@ -38,7 +48,12 @@ class GenerateOcaDisplaysImpl @Inject constructor(
             .bind()
 
         val credentialDisplays = createLocalizedCredentialDisplays(ocaBundle)
-        val clusters = createClusters(credentialClaims, ocaBundle, rootCaptureBase.digest)
+        val clusters = createClusters(
+            credentialClaims = credentialClaims,
+            credentialFormat = credentialFormat,
+            ocaBundle = ocaBundle,
+            rootCaptureBaseDigest = rootCaptureBase.digest,
+        ).bind()
 
         OcaDisplays(
             credentialDisplays = credentialDisplays,
@@ -53,20 +68,30 @@ class GenerateOcaDisplaysImpl @Inject constructor(
     }
 
     private fun createClusters(
-        credentialClaims: Map<String, String?>,
+        credentialClaims: Map<ClaimsPathPointer, JsonElement>,
+        credentialFormat: String,
         ocaBundle: OcaBundle,
         rootCaptureBaseDigest: String,
-    ): List<Cluster> {
+    ): Result<List<Cluster>, GenerateOcaDisplaysError> = binding {
         val clusters = mutableListOf<Cluster>()
-        val rootCluster = createCluster(credentialClaims, ocaBundle, rootCaptureBaseDigest)
+        val rootCluster = createCluster(
+            credentialClaims = credentialClaims,
+            credentialFormat = credentialFormat,
+            ocaBundle = ocaBundle,
+            captureBaseDigest = rootCaptureBaseDigest,
+        ).bind()
         if (rootCluster.claims.isEmpty() && rootCluster.childClusters.isNotEmpty()) {
             clusters.addAll(rootCluster.childClusters)
         } else {
             clusters.add(rootCluster)
         }
 
-        val claimsWithoutOca = credentialClaims.filterKeys { key ->
-            ocaBundle.getAttributeForJsonPath("$.$key") == null
+        val claimsWithoutOca = credentialClaims.filterKeys { claimsPathPointer ->
+            ocaBundle.ocaClaimData.none {
+                it.dataSources.values.any { ocaClaimsPathPointer ->
+                    ocaClaimsPathPointer.pointsAtSetOf(claimsPathPointer)
+                }
+            }
         }.map(::createFallbackClaim).toMap()
 
         if (claimsWithoutOca.isNotEmpty()) {
@@ -74,36 +99,50 @@ class GenerateOcaDisplaysImpl @Inject constructor(
             clusters.add(cluster)
         }
 
-        return clusters
+        clusters
     }
 
     private fun createCluster(
-        credentialClaims: Map<String, String?>,
+        credentialClaims: Map<ClaimsPathPointer, JsonElement>,
+        credentialFormat: String,
         ocaBundle: OcaBundle,
         captureBaseDigest: String,
         labels: Map<String, String> = emptyMap(),
         order: Int? = null,
-    ): Cluster {
+    ): Result<Cluster, GenerateOcaDisplaysError> = binding {
         val attributes = ocaBundle.getAttributes(captureBaseDigest)
         val referenceAttributes = attributes
             .filter { it.attributeType.getReferenceValue() != null }
             .toSet()
-        val childClusters = createChildClusters(credentialClaims, ocaBundle, referenceAttributes)
+        val childClusters = createChildClusters(
+            credentialClaims = credentialClaims,
+            credentialFormat = credentialFormat,
+            ocaBundle = ocaBundle,
+            attributes = referenceAttributes
+        ).bind()
         val otherAttributes = attributes - referenceAttributes
-        val claims = createClaims(credentialClaims, otherAttributes)
+        val claims = createClaims(credentialClaims, credentialFormat, otherAttributes).bind()
         val clusterDisplays = createClusterDisplays(labels)
-        return Cluster(claims = claims, clusterDisplays = clusterDisplays, childClusters = childClusters, order = order ?: -1)
+        Cluster(claims = claims, clusterDisplays = clusterDisplays, childClusters = childClusters, order = order ?: -1)
     }
 
     private fun createChildClusters(
-        credentialClaims: Map<String, String?>,
+        credentialClaims: Map<ClaimsPathPointer, JsonElement>,
+        credentialFormat: String,
         ocaBundle: OcaBundle,
         attributes: Collection<OcaClaimData>
-    ): List<Cluster> {
-        return attributes.mapNotNull { attribute ->
+    ): Result<List<Cluster>, GenerateOcaDisplaysError> = binding {
+        attributes.mapNotNull { attribute ->
             if (attribute.attributeType is AttributeType.Reference) {
                 val referenceDigest = attribute.attributeType.getReferenceValue() ?: return@mapNotNull null
-                createCluster(credentialClaims, ocaBundle, referenceDigest, attribute.labels, attribute.order)
+                createCluster(
+                    credentialClaims = credentialClaims,
+                    credentialFormat = credentialFormat,
+                    ocaBundle = ocaBundle,
+                    captureBaseDigest = referenceDigest,
+                    labels = attribute.labels,
+                    order = attribute.order
+                ).bind()
             } else {
                 null
             }
@@ -111,18 +150,31 @@ class GenerateOcaDisplaysImpl @Inject constructor(
     }
 
     private fun createClaims(
-        credentialClaims: Map<String, String?>,
+        credentialClaims: Map<ClaimsPathPointer, JsonElement>,
+        credentialFormat: String,
         attributes: List<OcaClaimData>
-    ): Map<CredentialClaim, List<AnyClaimDisplay>> {
-        return attributes.mapNotNull { attribute ->
-            val claim = credentialClaims.entries.find { (key, _) ->
-                "$.$key" in attribute.dataSources.values
+    ): Result<Map<CredentialClaim, List<AnyClaimDisplay>>, GenerateOcaDisplaysError> = binding {
+        attributes.mapNotNull { attribute ->
+            val claim = credentialClaims.entries.find { (claimsPathPointer, _) ->
+                val dataSourceClaimsPathPointer = attribute.dataSources[credentialFormat]
+
+                dataSourceClaimsPathPointer?.let {
+                    claimsPathPointer.pointsAtSetOf(it)
+                } ?: false
             }?.toPair()
 
             if (claim == null) {
                 null
             } else {
-                generateOcaClaimDisplays(claim.first, value = claim.second, ocaClaimData = attribute)
+                generateOcaClaimDisplays(
+                    claimsPathPointer = claim.first.toPointerString(),
+                    value = when (claim.second) {
+                        is JsonArray -> claim.second.toString()
+                        is JsonObject -> claim.second.toString()
+                        is JsonPrimitive -> (claim.second as JsonPrimitive).contentOrNull
+                    },
+                    ocaClaimData = attribute
+                ).bind()
             }
         }.toMap()
     }
@@ -131,12 +183,16 @@ class GenerateOcaDisplaysImpl @Inject constructor(
         ClusterDisplay(name = label, locale = locale)
     }
 
-    private fun createFallbackClaim(claim: Map.Entry<String, String?>): Pair<CredentialClaim, List<AnyClaimDisplay>> {
-        val displays = listOf(AnyClaimDisplay(name = claim.key, locale = DisplayLanguage.FALLBACK))
+    private fun createFallbackClaim(claim: Map.Entry<ClaimsPathPointer, JsonElement>): Pair<CredentialClaim, List<AnyClaimDisplay>> {
+        val displays = listOf(AnyClaimDisplay(name = claim.key.toPointerString(), locale = DisplayLanguage.FALLBACK))
         return CredentialClaim(
             clusterId = UNKNOWN_CLUSTER_ID,
-            key = claim.key,
-            value = claim.value,
+            path = claim.key.toPointerString(),
+            value = when (claim.value) {
+                is JsonArray -> claim.value.toString()
+                is JsonObject -> claim.value.toString()
+                is JsonPrimitive -> (claim.value as JsonPrimitive).contentOrNull
+            },
             valueType = ValueType.STRING.value,
         ) to displays
     }

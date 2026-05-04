@@ -2,7 +2,7 @@ package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
 import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyVerifiablePresentation
@@ -33,7 +33,7 @@ class CreateAnyVerifiablePresentationImplTest {
     private lateinit var mockAnyCredential: AnyCredential
 
     @MockK
-    private lateinit var mockPresentationRequest: PresentationRequest
+    private lateinit var mockAuthorizationRequest: AuthorizationRequest
 
     @MockK
     private lateinit var mockKeyBinding: KeyBinding
@@ -59,7 +59,7 @@ class CreateAnyVerifiablePresentationImplTest {
         val result = useCase(
             anyCredential = mockVcSdJwtCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest
+            authorizationRequest = mockAuthorizationRequest,
         ).assertOk()
 
         assertEquals(VERIFIABLE_PRESENTATION, result)
@@ -70,7 +70,7 @@ class CreateAnyVerifiablePresentationImplTest {
         val result = useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         result.assertErrorType(PresentationRequestError.Unexpected::class)
@@ -81,7 +81,7 @@ class CreateAnyVerifiablePresentationImplTest {
             mockCreateVcSdJwtVerifiablePresentation(
                 credential = mockVcSdJwtCredential,
                 requestedFields = requestedFields,
-                presentationRequest = mockPresentationRequest,
+                authorizationRequest = mockAuthorizationRequest,
                 keyBinding = mockKeyBinding,
             )
         } returns Ok(VERIFIABLE_PRESENTATION)

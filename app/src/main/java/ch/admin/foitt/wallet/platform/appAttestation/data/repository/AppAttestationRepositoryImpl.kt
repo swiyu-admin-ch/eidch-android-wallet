@@ -7,7 +7,6 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationCha
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationRequest
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationResponse
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.Confirmation
-import ch.admin.foitt.wallet.platform.appAttestation.domain.model.IntegrityToken
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestationRequest
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestationResponse
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.toAppAttestationRepositoryError
@@ -36,15 +35,13 @@ class AppAttestationRepositoryImpl @Inject constructor(
             contentType(ContentType.Application.Json)
         }.body()
     }.mapError { throwable ->
-        throwable.toAppAttestationRepositoryError("Fetch challenge failed")
+        throwable.toAppAttestationRepositoryError("Fetch attestation challenge failed")
     }
 
     override suspend fun fetchClientAttestation(
-        integrityToken: IntegrityToken,
         publicKey: Jwk,
     ): Result<ClientAttestationResponse, AppAttestationRepositoryError> = runSuspendCatching<ClientAttestationResponse> {
         val body = ClientAttestationRequest(
-            integrityToken = integrityToken.value,
             cnf = Confirmation(publicKey),
         )
         httpClient.post(environmentSetupRepo.attestationsServiceUrl + "/api/attestations/android/client-attestations") {
@@ -52,7 +49,7 @@ class AppAttestationRepositoryImpl @Inject constructor(
             setBody(body)
         }.body()
     }.mapError { throwable ->
-        throwable.toAppAttestationRepositoryError("Fetch challenge failed")
+        throwable.toAppAttestationRepositoryError("Fetch client attestation failed")
     }
 
     override suspend fun fetchKeyAttestation(publicKey: Jwk) = runSuspendCatching<KeyAttestationResponse> {

@@ -90,13 +90,10 @@ fun HomeScreen(
         isRefreshing = viewModel.isRefreshing.collectAsStateWithLifecycle().value,
         eventMessage = viewModel.eventMessage.collectAsStateWithLifecycle().value,
         onMenu = viewModel::onMenu,
-        onStartOnlineIdentification = viewModel::onStartOnlineIdentification,
+        onEidNotificationAction = viewModel::onEidNotificationAction,
         onCloseEId = viewModel::onCloseEId,
         onCloseToast = viewModel::onCloseToast,
         onRefresh = viewModel::onRefresh,
-        onRefreshSIds = viewModel::onRefreshSIdStatuses,
-        onObtainConsent = viewModel::onObtainConsent,
-        onLearnMore = viewModel::onLearnMore
     )
 }
 
@@ -106,13 +103,10 @@ private fun HomeScreenContent(
     containerState: HomeContainerState,
     isRefreshing: Boolean,
     onMenu: (Boolean) -> Unit,
-    onStartOnlineIdentification: (caseId: String) -> Unit,
+    onEidNotificationAction: (caseId: String, status: SIdRequestDisplayStatus) -> Unit,
     onCloseEId: (caseId: String) -> Unit,
     onCloseToast: () -> Unit,
     onRefresh: () -> Unit,
-    onRefreshSIds: () -> Unit,
-    onObtainConsent: (caseId: String) -> Unit,
-    onLearnMore: () -> Unit,
     @StringRes eventMessage: Int?,
     windowWidthClass: WindowWidthClass = currentWindowAdaptiveInfo().windowWidthClass()
 ) = WalletLayouts.HomeContainer(
@@ -129,32 +123,26 @@ private fun HomeScreenContent(
             credentialsState = screenState.credentials,
             isRefreshing = isRefreshing,
             ongoingEIdRequests = screenState.eIdRequests,
-            onStartOnlineIdentification = onStartOnlineIdentification,
+            onEidNotificationAction = onEidNotificationAction,
             onCloseEId = onCloseEId,
             contentBottomPadding = stickyBottomHeightDp,
             onCredentialClick = screenState.onCredentialClick,
             onRefresh = onRefresh,
             messageToast = eventMessage,
-            onRefreshSIds = onRefreshSIds,
             onCloseToast = onCloseToast,
-            onObtainConsent = onObtainConsent,
-            onLearnMore = onLearnMore
         )
 
         is HomeScreenState.NoCredential -> WalletEmptyWithEIdRequestsContent(
             contentBottomPadding = stickyBottomHeightDp,
             isRefreshing = isRefreshing,
             ongoingEIdRequests = screenState.eIdRequests,
-            onStartOnlineIdentification = onStartOnlineIdentification,
+            onEidNotificationAction = onEidNotificationAction,
             onCloseEId = onCloseEId,
             showEIdRequestButton = containerState.showEIdRequestButton,
             showBetaIdRequestButton = containerState.showBetaIdRequestButton,
             onRequestEId = containerState.onGetEId,
             onRequestBetaId = containerState.onGetBetaId,
             onRefresh = onRefresh,
-            onRefreshSIds = onRefreshSIds,
-            onObtainConsent = onObtainConsent,
-            onLearnMore = onLearnMore
         )
 
         is HomeScreenState.WalletEmpty -> WalletEmptyContent(
@@ -176,16 +164,13 @@ fun WalletEmptyWithEIdRequestsContent(
     contentBottomPadding: Dp,
     isRefreshing: Boolean,
     ongoingEIdRequests: List<SIdRequestDisplayData>,
-    onStartOnlineIdentification: (caseId: String) -> Unit,
+    onEidNotificationAction: (caseId: String, status: SIdRequestDisplayStatus) -> Unit,
     onCloseEId: (caseId: String) -> Unit,
     showEIdRequestButton: Boolean,
     showBetaIdRequestButton: Boolean,
     onRequestEId: () -> Unit,
     onRequestBetaId: () -> Unit,
     onRefresh: () -> Unit,
-    onRefreshSIds: () -> Unit,
-    onObtainConsent: (caseId: String) -> Unit,
-    onLearnMore: () -> Unit,
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
@@ -212,11 +197,8 @@ fun WalletEmptyWithEIdRequestsContent(
             Box(modifier = Modifier.padding(horizontal = Sizes.s03)) {
                 EIdRequestCard(
                     eIdRequest = eIdRequest,
-                    onStartOnlineIdentification = { onStartOnlineIdentification(eIdRequest.caseId) },
-                    onRefresh = onRefreshSIds,
-                    onObtainConsent = { onObtainConsent(eIdRequest.caseId) },
-                    onLearnMore = { onLearnMore() },
-                    onCloseClick = { onCloseEId(eIdRequest.caseId) }
+                    onMainButton = { onEidNotificationAction(eIdRequest.caseId, eIdRequest.status) },
+                    onClose = { onCloseEId(eIdRequest.caseId) }
                 )
             }
             Spacer(modifier = Modifier.height(Sizes.s02))
@@ -331,13 +313,10 @@ private fun Credentials(
     onCloseToast: () -> Unit,
     contentBottomPadding: Dp,
     ongoingEIdRequests: List<SIdRequestDisplayData>,
-    onStartOnlineIdentification: (caseId: String) -> Unit,
+    onEidNotificationAction: (caseId: String, status: SIdRequestDisplayStatus) -> Unit,
     onCloseEId: (id: String) -> Unit,
-    onCredentialClick: (id: Long, progressState: VerifiableProgressionState) -> Unit,
+    onCredentialClick: (id: Long, progressState: VerifiableProgressionState, isDeferred: Boolean) -> Unit,
     onRefresh: () -> Unit,
-    onRefreshSIds: () -> Unit,
-    onObtainConsent: (caseId: String) -> Unit,
-    onLearnMore: () -> Unit,
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
@@ -361,11 +340,8 @@ private fun Credentials(
                 Box(modifier = Modifier.padding(horizontal = Sizes.s03)) {
                     EIdRequestCard(
                         eIdRequest = eIdRequest,
-                        onStartOnlineIdentification = { onStartOnlineIdentification(eIdRequest.caseId) },
-                        onRefresh = onRefreshSIds,
-                        onObtainConsent = { onObtainConsent(eIdRequest.caseId) },
-                        onLearnMore = { onLearnMore() },
-                        onCloseClick = { onCloseEId(eIdRequest.caseId) }
+                        onMainButton = { onEidNotificationAction(eIdRequest.caseId, eIdRequest.status) },
+                        onClose = { onCloseEId(eIdRequest.caseId) },
                     )
                 }
                 Spacer(modifier = Modifier.height(Sizes.s02))
@@ -384,6 +360,7 @@ private fun Credentials(
                     onCredentialClick(
                         credentialState.credentialId,
                         credentialState.progressionState,
+                        credentialState.isDeferred,
                     )
                 },
             )
@@ -433,7 +410,7 @@ private class HomePreviewParams : PreviewParameterProvider<ComposableWrapper<Hom
             HomeScreenState.CredentialList(
                 eIdRequests = emptyList(),
                 credentials = CredentialMocks.cardStates.toList().map { it.value() },
-                onCredentialClick = { _, _ -> },
+                onCredentialClick = { _, _, _ -> },
             )
         },
         ComposableWrapper {
@@ -453,7 +430,7 @@ private class HomePreviewParams : PreviewParameterProvider<ComposableWrapper<Hom
                     )
                 ),
                 credentials = CredentialMocks.cardStates.toList().map { it.value() },
-                onCredentialClick = { _, _ -> },
+                onCredentialClick = { _, _, _ -> },
             )
         },
         ComposableWrapper {
@@ -501,13 +478,10 @@ private fun HomeScreenCompactPreview(
             isRefreshing = true,
             eventMessage = R.string.tk_home_notification_credential_declined,
             onMenu = {},
-            onStartOnlineIdentification = {},
+            onEidNotificationAction = { _, _ -> },
             onCloseEId = {},
             onRefresh = {},
-            onRefreshSIds = {},
-            onObtainConsent = {},
             onCloseToast = {},
-            onLearnMore = {}
         )
     }
 }
@@ -525,13 +499,10 @@ private fun HomeScreenLargePreview(
             isRefreshing = false,
             eventMessage = R.string.tk_home_notification_credential_declined,
             onMenu = {},
-            onStartOnlineIdentification = {},
+            onEidNotificationAction = { _, _ -> },
             onCloseEId = {},
             onRefresh = {},
-            onRefreshSIds = {},
-            onObtainConsent = {},
             onCloseToast = {},
-            onLearnMore = {}
         )
     }
 }

@@ -124,7 +124,7 @@ class RefreshBatchCredentialsImplTest {
             )
         )
 
-        useCase.invoke().assertOk()
+        useCase().assertOk()
 
         // Ensure we didn't attempt to fetch credential by id
         coVerify(exactly = 0) { mockCredentialRepository.getById(any()) }
@@ -147,7 +147,7 @@ class RefreshBatchCredentialsImplTest {
             )
         )
 
-        useCase.invoke().assertOk()
+        useCase().assertOk()
 
         coVerify(exactly = 0) { mockCredentialRepository.getById(any()) }
     }
@@ -192,7 +192,11 @@ class RefreshBatchCredentialsImplTest {
             rawIssuerCredentialInfo = "{}",
             issuerCredentialInfo = issuerInfo,
         )
-        coEvery { mockFetchRawAndParsedIssuerCredentialInfo(URL(CREDENTIAL_ISSUER)) } returns Ok(rawAndParsed)
+        coEvery {
+            mockFetchRawAndParsedIssuerCredentialInfo(
+                issuerEndpoint = URL(CREDENTIAL_ISSUER),
+            )
+        } returns Ok(rawAndParsed)
         coEvery {
             mockGetCredentialConfig(
                 credentials = any(),
@@ -228,29 +232,24 @@ class RefreshBatchCredentialsImplTest {
         // Execute
         useCase().assertOk()
 
-        coVerify(exactly = 1) { mockCredentialRepository.getById(CREDENTIAL_ID) }
-        coVerify(exactly = 1) { mockFetchRawAndParsedIssuerCredentialInfo(URL(CREDENTIAL_ISSUER)) }
         coVerify(exactly = 1) {
+            mockCredentialRepository.getById(CREDENTIAL_ID)
+            mockFetchRawAndParsedIssuerCredentialInfo(issuerEndpoint = URL(CREDENTIAL_ISSUER))
             mockGetCredentialConfig(
                 credentials = listOf(SELECTED_CONFIG_ID),
                 credentialConfigurations = issuerInfo.credentialConfigurations
             )
+            mockGetVerifiableCredentialParams(issuerInfo, any(), any())
+            mockGenerateProofKeyPairs(any(), any())
+            mockFetchCredentialByConfig(any(), any(), any())
+            mockHandleBatchCredentialResult(any(), any(), any(), any(), any(), any())
+            mockDeleteBundleItems(any())
         }
-        coVerify(exactly = 0) { mockDeleteBundleItemsByAmount(any(), any()) }
+
         coVerify(exactly = 0) {
+            mockDeleteBundleItemsByAmount(any(), any())
             mockBatchRefreshDataRepository.saveBatchRefreshData(CREDENTIAL_ID, batchSize, REFRESH_TOKEN)
         }
-        coVerify(exactly = 1) {
-            mockGetVerifiableCredentialParams(issuerInfo, any(), any())
-        }
-        coVerify(exactly = 1) { mockGenerateProofKeyPairs(any(), any()) }
-        coVerify(exactly = 1) {
-            mockFetchCredentialByConfig(any(), any(), any())
-        }
-        coVerify(exactly = 1) {
-            mockHandleBatchCredentialResult(any(), any(), any(), any(), any(), any())
-        }
-        coVerify(exactly = 1) { mockDeleteBundleItems(any()) }
     }
 
     @Test
@@ -294,7 +293,11 @@ class RefreshBatchCredentialsImplTest {
             rawIssuerCredentialInfo = "{}",
             issuerCredentialInfo = issuerInfo,
         )
-        coEvery { mockFetchRawAndParsedIssuerCredentialInfo(URL(CREDENTIAL_ISSUER)) } returns Ok(rawAndParsed)
+        coEvery {
+            mockFetchRawAndParsedIssuerCredentialInfo(
+                issuerEndpoint = URL(CREDENTIAL_ISSUER),
+            )
+        } returns Ok(rawAndParsed)
         coEvery {
             mockGetCredentialConfig(
                 credentials = any(),
@@ -309,29 +312,26 @@ class RefreshBatchCredentialsImplTest {
         // Execute
         useCase().assertOk()
 
-        coVerify(exactly = 1) { mockCredentialRepository.getById(CREDENTIAL_ID) }
-        coVerify(exactly = 1) { mockFetchRawAndParsedIssuerCredentialInfo(URL(CREDENTIAL_ISSUER)) }
         coVerify(exactly = 1) {
+            mockCredentialRepository.getById(CREDENTIAL_ID)
+            mockFetchRawAndParsedIssuerCredentialInfo(
+                issuerEndpoint = URL(CREDENTIAL_ISSUER),
+            )
             mockGetCredentialConfig(
                 credentials = listOf(SELECTED_CONFIG_ID),
                 credentialConfigurations = issuerInfo.credentialConfigurations
             )
-        }
-        coVerify(exactly = 0) { mockDeleteBundleItemsByAmount(any(), any()) }
-        coVerify(exactly = 1) {
             mockBatchRefreshDataRepository.saveBatchRefreshData(CREDENTIAL_ID, newBatchSize, REFRESH_TOKEN)
         }
+
         coVerify(exactly = 0) {
+            mockDeleteBundleItemsByAmount(any(), any())
             mockGetVerifiableCredentialParams(any(), any(), any())
-        }
-        coVerify(exactly = 0) { mockGenerateProofKeyPairs(any(), any()) }
-        coVerify(exactly = 0) {
+            mockGenerateProofKeyPairs(any(), any())
             mockFetchCredentialByConfig(any(), any(), any())
-        }
-        coVerify(exactly = 0) {
             mockHandleBatchCredentialResult(any(), any(), any(), any(), any(), any())
+            mockDeleteBundleItems(any())
         }
-        coVerify(exactly = 0) { mockDeleteBundleItems(any()) }
     }
 
     @Test
@@ -375,7 +375,11 @@ class RefreshBatchCredentialsImplTest {
             rawIssuerCredentialInfo = "{}",
             issuerCredentialInfo = issuerInfo,
         )
-        coEvery { mockFetchRawAndParsedIssuerCredentialInfo(URL(CREDENTIAL_ISSUER)) } returns Ok(rawAndParsed)
+        coEvery {
+            mockFetchRawAndParsedIssuerCredentialInfo(
+                issuerEndpoint = URL(CREDENTIAL_ISSUER),
+            )
+        } returns Ok(rawAndParsed)
         coEvery {
             mockGetCredentialConfig(
                 credentials = any(),
@@ -390,29 +394,26 @@ class RefreshBatchCredentialsImplTest {
         // Execute
         useCase().assertOk()
 
-        coVerify(exactly = 1) { mockCredentialRepository.getById(CREDENTIAL_ID) }
-        coVerify(exactly = 1) { mockFetchRawAndParsedIssuerCredentialInfo(URL(CREDENTIAL_ISSUER)) }
         coVerify(exactly = 1) {
+            mockCredentialRepository.getById(CREDENTIAL_ID)
+            mockFetchRawAndParsedIssuerCredentialInfo(
+                issuerEndpoint = URL(CREDENTIAL_ISSUER),
+            )
             mockGetCredentialConfig(
                 credentials = listOf(SELECTED_CONFIG_ID),
                 credentialConfigurations = issuerInfo.credentialConfigurations
             )
-        }
-        coVerify(exactly = 1) { mockDeleteBundleItemsByAmount(CREDENTIAL_ID, any()) }
-        coVerify(exactly = 1) {
+            mockDeleteBundleItemsByAmount(CREDENTIAL_ID, any())
             mockBatchRefreshDataRepository.saveBatchRefreshData(CREDENTIAL_ID, newBatchSize, REFRESH_TOKEN)
         }
+
         coVerify(exactly = 0) {
             mockGetVerifiableCredentialParams(any(), any(), any())
-        }
-        coVerify(exactly = 0) { mockGenerateProofKeyPairs(any(), any()) }
-        coVerify(exactly = 0) {
+            mockGenerateProofKeyPairs(any(), any())
             mockFetchCredentialByConfig(any(), any(), any())
-        }
-        coVerify(exactly = 0) {
             mockHandleBatchCredentialResult(any(), any(), any(), any(), any(), any())
+            mockDeleteBundleItems(any())
         }
-        coVerify(exactly = 0) { mockDeleteBundleItems(any()) }
     }
 
     @Test

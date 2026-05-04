@@ -25,21 +25,18 @@ interface AttestationError {
     data object NetworkError :
         RequestClientAttestationError,
         AppAttestationRepositoryError,
-        AppIntegrityRepositoryError,
         RequestKeyAttestationError
     data class Unexpected(val throwable: Throwable?) :
         RequestClientAttestationError,
         AppAttestationRepositoryError,
         ClientAttestationRepositoryError,
         ValidateClientAttestationError,
-        AppIntegrityRepositoryError,
         RequestKeyAttestationError,
         ValidateKeyAttestationError,
         GenerateProofOfPossessionError
 }
 
 sealed interface AppAttestationRepositoryError
-sealed interface AppIntegrityRepositoryError
 sealed interface ClientAttestationRepositoryError
 sealed interface RequestClientAttestationError
 sealed interface ValidateClientAttestationError
@@ -48,14 +45,6 @@ sealed interface ValidateKeyAttestationError
 sealed interface GenerateProofOfPossessionError
 
 internal fun Throwable.toAppAttestationRepositoryError(message: String): AppAttestationRepositoryError {
-    Timber.e(t = this, message = message)
-    return when (this) {
-        is IOException -> NetworkError
-        else -> Unexpected(this)
-    }
-}
-
-internal fun Throwable.toAppIntegrityRepositoryError(message: String): AppIntegrityRepositoryError {
     Timber.e(t = this, message = message)
     return when (this) {
         is IOException -> NetworkError
@@ -96,11 +85,6 @@ internal fun ValidateClientAttestationError.toRequestClientAttestationError(): R
 }
 
 internal fun AppAttestationRepositoryError.toRequestClientAttestationError(): RequestClientAttestationError = when (this) {
-    is NetworkError -> this
-    is Unexpected -> this
-}
-
-internal fun AppIntegrityRepositoryError.toRequestClientAttestationError(): RequestClientAttestationError = when (this) {
     is NetworkError -> this
     is Unexpected -> this
 }

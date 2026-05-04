@@ -1,102 +1,191 @@
 package ch.admin.foitt.openid4vc.domain.model.sdjwt.mock
 
 internal object ComplexSdJwt {
-    /*   {
-              "_sd": [
-                "P_-7sGg8JhhlYo3fcRAhOoq1_Zd2rjx8wPQ1vA2AWfQ",
-                "1zXmT_sGaLd7U-MlN5kQnivtnirQXLUdMCE0z5bFUIo",
-                "o6JA9A7jNKxImn7LaeBJDmgnI1SYx3e7ex9zEdrhuwk",
-                "E46dzJmlC2NeRIiaUdBmoPV83JIFThEFxK6d8hgQC0Q"
-              ],
-              "test_structured": {
-                "_sd": [
-                  "uw2NKXHd-jVZGrRFIV0vYL_k8L23de9xfNi0Q7FXTsA",
-                  "pXkcIv9E4l3b2OTK9enBjQhb52PSFRR2055wZe1xEQ8",
-                  "F88t3uqjfKnrSkkpGux3JpcM0dHUvNn1ubDkVk4GywU"
-                ]
-              },
-              "test_key_undisclosed": "test_value_undisclosed",
-              "_sd_alg": "sha-256",
-              "iat": 1698857721
-            } */
+    /*
+{
+   "key_undisclosed":"value_undisclosed",
+   "_sd":[
+      "psfvd7B2jbfN8_tfkRmen19XTEKyoP1jO9DHevIG0Iw",
+      "decoym52jwU68uFqCEA_ymFAn3gPend70mEZnLIhR_s",
+      "8Xtovm52jwU68uFqCEA_ymFAn3gPend70mEZnLIhR_s",
+      "mCj_kUcQxNFyhT4BFePPaQZ3X141PMRwHLB5brWok_c",
+      "decoyk02tRcB8f4wu7BGZ2Qq7MnPUP9n1-yLDqvKY0g"
+   ],
+   "key_array_undisclosed":[
+      "value_array_undisclosed_1",
+      "value_array_undisclosed_2"
+   ],
+   "key_array_partly_disclosed":[
+      {
+         "...":"kJK4cVfgVT_yItNsNe39lX7TwaIHaHC9BatszCXt2ww"
+      },
+      "value_array_partly_disclosed_2",
+      {
+         "...":"decoyVfgVT_yItNsNe39lX7TwaIHaHC9BatszCXt2ww"
+      },
+      {
+         "...":"0N6j5F4x_RE9ymmtXkPqMERbsOSVABJ_NTvuOKUgxnc"
+      }
+   ],
+   "key_object_undisclosed":{
+      "key_nested_object_1":"value_object_undisclosed_1",
+      "key_nested_object_2":"value_object_undisclosed_2"
+   },
+   "key_object_partly_disclosed":{
+      "key_object_partly_disclosed_1_1":"value_object_partly_disclosed_1_1",
+      "_sd":[
+         "decoyLDpaCc_1y4C5zJ58MUD6J4opcgOU7PeFJiiV28",
+         "SEWSLxmfTpFVGrm9DbxpNk3epLdivSv2TFSWgoBnG_k",
+         "raXs5cEG0_2uWLK5PIW0N5I8rrzXk7H3tgKBBOMoXD8",
+         "decoyKqp7zAwU0LacYMtCJICDWvU8hB_mpmEpR4a3Eg"
+      ]
+   },
+   "_sd_alg":"sha-256"
+}
+     */
 
-    // ["test_salt_recursive", "test_recursive", {"_sd":["GRI9EhZpLsc5F2XDmms2yjuuqNISzdgxzMgqxO0I4tQ", "fhG_hQESMlbTuFJFh09bwEm1dgU04X9m0trMg-0R7q0"]}]
-    private const val RecursiveDisclosure =
-        "WyJ0ZXN0X3NhbHRfcmVjdXJzaXZlIiwgInRlc3RfcmVjdXJzaXZlIiwgeyJfc2QiOlsiR1JJOUVoWnBMc2M1RjJYRG1tczJ5anV1cU5JU3pkZ3h6TWdxeE8wSTR0USIsICJmaEdfaFFFU01sYlR1RkpGaDA5YndFbTFkZ1UwNFg5bTB0ck1nLTBSN3EwIl19XQ"
+    // ["salt_flat", "key_flat", "value_flat"]
+    // psfvd7B2jbfN8_tfkRmen19XTEKyoP1jO9DHevIG0Iw
+    private const val FLAT_DISCLOSURE = "WyJzYWx0X2ZsYXQiLCAia2V5X2ZsYXQiLCAidmFsdWVfZmxhdCJd"
 
-    // ["test_salt_recursive_1", "test_key_recursive_1", "test_value_recursive_1"]
-    private const val RecursiveDisclosure1 =
-        "WyJ0ZXN0X3NhbHRfcmVjdXJzaXZlXzEiLCAidGVzdF9rZXlfcmVjdXJzaXZlXzEiLCAidGVzdF92YWx1ZV9yZWN1cnNpdmVfMSJd"
+    // ["salt_flat_array", "key_flat_array", ["value_flat_array_1", "value_flat_array_2"]]
+    // 8Xtovm52jwU68uFqCEA_ymFAn3gPend70mEZnLIhR_s
+    private const val FLAT_ARRAY_DISCLOSURE =
+        "WyJzYWx0X2ZsYXRfYXJyYXkiLCAia2V5X2ZsYXRfYXJyYXkiLCBbInZhbHVlX2ZsYXRfYXJyYXlfMSIsICJ2YWx1ZV9mbGF0X2FycmF5XzIiXV0"
 
-    // ["test_salt_recursive_2", "test_key_recursive_2", "test_value_recursive_2"]
-    private const val RecursiveDisclosure2 =
-        "WyJ0ZXN0X3NhbHRfcmVjdXJzaXZlXzIiLCAidGVzdF9rZXlfcmVjdXJzaXZlXzIiLCAidGVzdF92YWx1ZV9yZWN1cnNpdmVfMiJd"
+    // ["salt_flat_object", "key_flat_object", {"key_nested_object_1":"value_flat_object_1","key_nested_object_2":"value_flat_object_2"}]
+    // mCj_kUcQxNFyhT4BFePPaQZ3X141PMRwHLB5brWok_c
+    private const val FLAT_OBJECT_DISCLOSURE =
+        "WyJzYWx0X2ZsYXRfb2JqZWN0IiwgImtleV9mbGF0X29iamVjdCIsIHsia2V5X25lc3RlZF9vYmplY3RfMSI6InZhbHVlX2ZsYXRfb2JqZWN0XzEiLCJrZXlfbmVzdGVkX29iamVjdF8yIjoidmFsdWVfZmxhdF9vYmplY3RfMiJ9XQ"
 
-    // ["test_salt_structured_1", "test_key_structured_1", "test_value_structured_1"]
-    private const val StructuredDisclosure1 =
-        "WyJ0ZXN0X3NhbHRfc3RydWN0dXJlZF8xIiwgInRlc3Rfa2V5X3N0cnVjdHVyZWRfMSIsICJ0ZXN0X3ZhbHVlX3N0cnVjdHVyZWRfMSJd"
+    // ["salt_array_partly_disclosed_1", "value_array_partly_disclosed_1"]
+    // kJK4cVfgVT_yItNsNe39lX7TwaIHaHC9BatszCXt2ww
+    private const val ARRAY_PARTLY_DISCLOSED_DISCLOSURE_1 =
+        "WyJzYWx0X2FycmF5X3BhcnRseV9kaXNjbG9zZWRfMSIsICJ2YWx1ZV9hcnJheV9wYXJ0bHlfZGlzY2xvc2VkXzEiXQ"
 
-    // ["test_salt_structured_2", "test_key_structured_2", "test_value_structured_2"]
-    private const val StructuredDisclosure2 =
-        "WyJ0ZXN0X3NhbHRfc3RydWN0dXJlZF8yIiwgInRlc3Rfa2V5X3N0cnVjdHVyZWRfMiIsICJ0ZXN0X3ZhbHVlX3N0cnVjdHVyZWRfMiJd"
+    // ["salt_array_partly_disclosed_3", "value_array_partly_disclosed_3"]
+    // 0N6j5F4x_RE9ymmtXkPqMERbsOSVABJ_NTvuOKUgxnc
+    const val ARRAY_PARTLY_DISCLOSED_DISCLOSURE_3 =
+        "WyJzYWx0X2FycmF5X3BhcnRseV9kaXNjbG9zZWRfMyIsICJ2YWx1ZV9hcnJheV9wYXJ0bHlfZGlzY2xvc2VkXzMiXQ"
 
-    // ["test_salt_structured_recursive", "test_key_structured_recursive", {"_sd":["tEzyZKDToNlT_45TFWGzDjzWXrH6VF9QgMftrFPuazk", "BDw-OXqJN4yMBze97poM0Ubm-KJtEwicXiJ_ennknQE"]}]
-    private const val StructuredRecursiveDisclosure =
-        "WyJ0ZXN0X3NhbHRfc3RydWN0dXJlZF9yZWN1cnNpdmUiLCAidGVzdF9rZXlfc3RydWN0dXJlZF9yZWN1cnNpdmUiLCB7Il9zZCI6WyJ0RXp5WktEVG9ObFRfNDVURldHekRqeldYckg2VkY5UWdNZnRyRlB1YXprIiwgIkJEdy1PWHFKTjR5TUJ6ZTk3cG9NMFVibS1LSnRFd2ljWGlKX2VubmtuUUUiXX1d"
+    // ["salt_object_partly_disclosed_1_2", "key_object_partly_disclosed_1_2", {"key_object_partly_disclosed_1_2_2":"value_object_partly_disclosed_1_2_2", "_sd":["E5KxSZoO8jVOckUoW7zldMM7TFWDs1obK_ES1XuWJ8E", "VIas7gCeBScyUWeeHXYvrvyq47aHsBR6I-MohC5umSw", "decoyfukdVfCExiTsM7dsoUMh_-FrLn-aBgPidHbAVU"]}]
+    // SEWSLxmfTpFVGrm9DbxpNk3epLdivSv2TFSWgoBnG_k
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMiIsICJrZXlfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8yIiwgeyJrZXlfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8yXzIiOiJ2YWx1ZV9vYmplY3RfcGFydGx5X2Rpc2Nsb3NlZF8xXzJfMiIsICJfc2QiOlsiRTVLeFNab084alZPY2tVb1c3emxkTU03VEZXRHMxb2JLX0VTMVh1V0o4RSIsICJWSWFzN2dDZUJTY3lVV2VlSFhZdnJ2eXE0N2FIc0JSNkktTW9oQzV1bVN3IiwgImRlY295ZnVrZFZmQ0V4aVRzTTdkc29VTWhfLUZyTG4tYUJnUGlkSGJBVlUiXX1d"
 
-    // ["test_salt_structured_recursive_1", "test_key_structured_recursive_1", "test_value_structured_recursive_1"]
-    private const val StructuredRecursiveDisclosure1 =
-        "WyJ0ZXN0X3NhbHRfc3RydWN0dXJlZF9yZWN1cnNpdmVfMSIsICJ0ZXN0X2tleV9zdHJ1Y3R1cmVkX3JlY3Vyc2l2ZV8xIiwgInRlc3RfdmFsdWVfc3RydWN0dXJlZF9yZWN1cnNpdmVfMSJd"
+    // ["salt_object_partly_disclosed_1_2_1", "key_object_partly_disclosed_1_2_1", "value_object_partly_disclosed_1_2_1"]
+    // E5KxSZoO8jVOckUoW7zldMM7TFWDs1obK_ES1XuWJ8E
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_1 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8xIiwgImtleV9vYmplY3RfcGFydGx5X2Rpc2Nsb3NlZF8xXzJfMSIsICJ2YWx1ZV9vYmplY3RfcGFydGx5X2Rpc2Nsb3NlZF8xXzJfMSJd"
 
-    // ["test_salt_structured_recursive_2", "test_key_structured_recursive_2", "test_value_structured_recursive_2"]
-    private const val StructuredRecursiveDisclosure2 =
-        "WyJ0ZXN0X3NhbHRfc3RydWN0dXJlZF9yZWN1cnNpdmVfMiIsICJ0ZXN0X2tleV9zdHJ1Y3R1cmVkX3JlY3Vyc2l2ZV8yIiwgInRlc3RfdmFsdWVfc3RydWN0dXJlZF9yZWN1cnNpdmVfMiJd"
+    // ["salt_object_partly_disclosed_1_2_3", "key_object_partly_disclosed_1_2_3", [{"...":"decoygsqyTzjei_kdhpICR3bmao-dRKKdLSFOUkQZNk"}, {"...":"NLQ9qIhd-n3O6bOEjwwq10I19orfVs2qLFu7XcrHLHM"}, {"...":"MRxfTo0MGKrJSJvkPX-i-bm4-tyNP2WbAdCA5P885nc"}]]
+    // VIas7gCeBScyUWeeHXYvrvyq47aHsBR6I-MohC5umSw
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8zIiwgImtleV9vYmplY3RfcGFydGx5X2Rpc2Nsb3NlZF8xXzJfMyIsIFt7Ii4uLiI6ImRlY295Z3NxeVR6amVpX2tkaHBJQ1IzYm1hby1kUktLZExTRk9Va1FaTmsifSwgeyIuLi4iOiJOTFE5cUloZC1uM082Yk9Fand3cTEwSTE5b3JmVnMycUxGdTdYY3JITEhNIn0sIHsiLi4uIjoiTVJ4ZlRvME1HS3JKU0p2a1BYLWktYm00LXR5TlAyV2JBZENBNVA4ODVuYyJ9XV0"
 
-    // ["test_salt_flat", "test_key_flat", "test_value_flat"]
-    private const val FlatDisclosure = "WyJ0ZXN0X3NhbHRfZmxhdCIsICJ0ZXN0X2tleV9mbGF0IiwgInRlc3RfdmFsdWVfZmxhdCJd"
+    // ["salt_object_partly_disclosed_1_2_3_1_1", {"key_object_partly_disclosed_1_2_3_1":["value_object_partly_disclosed_1_2_3_1_1_1"]}]
+    // NLQ9qIhd-n3O6bOEjwwq10I19orfVs2qLFu7XcrHLHM
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_1 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8zXzFfMSIsIHsia2V5X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8zXzEiOlsidmFsdWVfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8yXzNfMV8xXzEiXX1d"
 
-    // ["test_salt_flat_array", "test_key_flat_array", ["test_value_flat_array_1", "test_value_flat_array_2"]]
-    private const val FlatArrayDisclosure =
-        "WyJ0ZXN0X3NhbHRfZmxhdF9hcnJheSIsICJ0ZXN0X2tleV9mbGF0X2FycmF5IiwgWyJ0ZXN0X3ZhbHVlX2ZsYXRfYXJyYXlfMSIsICJ0ZXN0X3ZhbHVlX2ZsYXRfYXJyYXlfMiJdXQ"
+    // ["salt_object_partly_disclosed_1_2_3_2", {"_sd":["decoyOtvbtDg7myA5ip43aLkcNAnETfr44TrisiJ-d0", "WKDl2n6sdUM9MBhP6BGwOfAc_1kWnrujY7FbpgPOFSE"]}]
+    // MRxfTo0MGKrJSJvkPX-i-bm4-tyNP2WbAdCA5P885nc
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8zXzIiLCB7Il9zZCI6WyJkZWNveU90dmJ0RGc3bXlBNWlwNDNhTGtjTkFuRVRmcjQ0VHJpc2lKLWQwIiwgIldLRGwybjZzZFVNOU1CaFA2Qkd3T2ZBY18xa1ducnVqWTdGYnBnUE9GU0UiXX1d"
 
-    // ["test_salt_flat_object", "test_key_flat_object", {"test_key_flat_object_1":"test_value_flat_object_1","test_key_flat_object_2":"test_value_flat_object_2"}]
-    private const val FlatObjectDisclosure =
-        "WyJ0ZXN0X3NhbHRfZmxhdF9vYmplY3QiLCAidGVzdF9rZXlfZmxhdF9vYmplY3QiLCB7InRlc3Rfa2V5X2ZsYXRfb2JqZWN0XzEiOiJ0ZXN0X3ZhbHVlX2ZsYXRfb2JqZWN0XzEiLCJ0ZXN0X2tleV9mbGF0X29iamVjdF8yIjoidGVzdF92YWx1ZV9mbGF0X29iamVjdF8yIn1d"
+    // ["salt_object_partly_disclosed_1_2_3_2_1", "key_object_partly_disclosed_1_2_3_1", [{"...":"H8Vy9zYKUnru74Z5RNzFtrgHWqg-7t5v5zBVAXeQhYM"}, {"...":"decoyzYKUnru74Z5RNzFtrgHWqg-7t5v5zBVAXeQhYM"}]]
+    // WKDl2n6sdUM9MBhP6BGwOfAc_1kWnrujY7FbpgPOFSE
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8zXzJfMSIsICJrZXlfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8yXzNfMSIsIFt7Ii4uLiI6Ikg4Vnk5ellLVW5ydTc0WjVSTnpGdHJnSFdxZy03dDV2NXpCVkFYZVFoWU0ifSwgeyIuLi4iOiJkZWNveXpZS1VucnU3NFo1Uk56RnRyZ0hXcWctN3Q1djV6QlZBWGVRaFlNIn1dXQ"
+
+    // ["salt_object_partly_disclosed_1_2_3_2_1_1", "value_object_partly_disclosed_1_2_3_2_1_1"]
+    // H8Vy9zYKUnru74Z5RNzFtrgHWqg-7t5v5zBVAXeQhYM
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1_1 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8zXzJfMV8xIiwgInZhbHVlX29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMl8zXzJfMV8xIl0"
+
+    // ["salt_object_partly_disclosed_1_3", "key_object_partly_disclosed_1_3", [{"...":"lPIVfEM9o8ze5vXB4zoEXOabTAZyAWX_KcSp6GwjBN0"}, {"...":"decoyv1IB2MeMzj1vn6lUhSTTFWSLmp867EGner_Lu8"}, {"...":"QSzUsv1IB2MeMzj1vn6lUhSTTFWSLmp867EGner_Lu8"}]]
+    // raXs5cEG0_2uWLK5PIW0N5I8rrzXk7H3tgKBBOMoXD8
+    private const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMyIsICJrZXlfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8zIiwgW3siLi4uIjoibFBJVmZFTTlvOHplNXZYQjR6b0VYT2FiVEFaeUFXWF9LY1NwNkd3akJOMCJ9LCB7Ii4uLiI6ImRlY295djFJQjJNZU16ajF2bjZsVWhTVFRGV1NMbXA4NjdFR25lcl9MdTgifSwgeyIuLi4iOiJRU3pVc3YxSUIyTWVNemoxdm42bFVoU1RURldTTG1wODY3RUduZXJfTHU4In1dXQ"
+
+    // ["salt_object_partly_disclosed_1_3_1", "value_object_partly_disclosed_1_3_1"]
+    // lPIVfEM9o8ze5vXB4zoEXOabTAZyAWX_KcSp6GwjBN0
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_1 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfM18xIiwgInZhbHVlX29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfM18xIl0"
+
+    // ["salt_object_partly_disclosed_1_3_2", "value_object_partly_disclosed_1_3_2"]
+    // QSzUsv1IB2MeMzj1vn6lUhSTTFWSLmp867EGner_Lu8
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_2 =
+        "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfM18yIiwgInZhbHVlX29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfM18yIl0"
 
     const val JSON = """
 {
-   "test_recursive":{
-      "test_key_recursive_1":"test_value_recursive_1",
-      "test_key_recursive_2":"test_value_recursive_2"
-   },
-   "test_structured":{
-      "test_key_structured_1":"test_value_structured_1",
-      "test_key_structured_2":"test_value_structured_2",
-      "test_key_structured_recursive":{
-         "test_key_structured_recursive_1":"test_value_structured_recursive_1",
-         "test_key_structured_recursive_2":"test_value_structured_recursive_2"
-      }
-   },
-   "test_key_flat":"test_value_flat",
-   "test_key_flat_array":[
-      "test_value_flat_array_1",
-      "test_value_flat_array_2"
+   "key_undisclosed":"value_undisclosed",
+   "key_flat":"value_flat",
+   "key_flat_array":[
+      "value_flat_array_1",
+      "value_flat_array_2"
    ],
-   "test_key_flat_object":{
-      "test_key_flat_object_1":"test_value_flat_object_1",
-      "test_key_flat_object_2":"test_value_flat_object_2"
+   "key_flat_object":{
+      "key_nested_object_1":"value_flat_object_1",
+      "key_nested_object_2":"value_flat_object_2"
    },
-   "test_key_undisclosed":"test_value_undisclosed"
+   "key_array_undisclosed":[
+      "value_array_undisclosed_1",
+      "value_array_undisclosed_2"
+   ],
+   "key_array_partly_disclosed":[
+      "value_array_partly_disclosed_1",
+      "value_array_partly_disclosed_2",
+      "value_array_partly_disclosed_3"
+   ],
+   "key_object_undisclosed":{
+      "key_nested_object_1":"value_object_undisclosed_1",
+      "key_nested_object_2":"value_object_undisclosed_2"
+   },
+   "key_object_partly_disclosed":{
+      "key_object_partly_disclosed_1_1":"value_object_partly_disclosed_1_1",
+      "key_object_partly_disclosed_1_2":{
+         "key_object_partly_disclosed_1_2_1":"value_object_partly_disclosed_1_2_1",
+         "key_object_partly_disclosed_1_2_2":"value_object_partly_disclosed_1_2_2",
+         "key_object_partly_disclosed_1_2_3":[
+            {
+               "key_object_partly_disclosed_1_2_3_1":[
+                  "value_object_partly_disclosed_1_2_3_1_1_1"
+               ]
+            },
+            {
+               "key_object_partly_disclosed_1_2_3_1":[
+                  "value_object_partly_disclosed_1_2_3_2_1_1"
+               ]
+            }
+         ]
+      },
+      "key_object_partly_disclosed_1_3":[
+         "value_object_partly_disclosed_1_3_1",
+         "value_object_partly_disclosed_1_3_2"
+      ]
+   }
 }
     """
 
     const val JWT =
-        "eyJhbGciOiJFUzUxMiIsInR5cCI6IkpXVCJ9.eyJfc2QiOlsiUF8tN3NHZzhKaGhsWW8zZmNSQWhPb3ExX1pkMnJqeDh3UFExdkEyQVdmUSIsIjF6WG1UX3NHYUxkN1UtTWxONWtRbml2dG5pclFYTFVkTUNFMHo1YkZVSW8iLCJvNkpBOUE3ak5LeEltbjdMYWVCSkRtZ25JMVNZeDNlN2V4OXpFZHJodXdrIiwiRTQ2ZHpKbWxDMk5lUklpYVVkQm1vUFY4M0pJRlRoRUZ4SzZkOGhnUUMwUSJdLCJ0ZXN0X3N0cnVjdHVyZWQiOnsiX3NkIjpbInV3Mk5LWEhkLWpWWkdyUkZJVjB2WUxfazhMMjNkZTl4Zk5pMFE3RlhUc0EiLCJwWGtjSXY5RTRsM2IyT1RLOWVuQmpRaGI1MlBTRlJSMjA1NXdaZTF4RVE4IiwiRjg4dDN1cWpmS25yU2trcEd1eDNKcGNNMGRIVXZObjF1YkRrVms0R3l3VSJdfSwidGVzdF9rZXlfdW5kaXNjbG9zZWQiOiJ0ZXN0X3ZhbHVlX3VuZGlzY2xvc2VkIiwiX3NkX2FsZyI6InNoYS0yNTYiLCJpYXQiOjE2OTg4NTc3MjF9.AYcZWBhRbS4bFymmF6gaqUZMeuT9x3GfdxrnVZAGw2sxccjusqM7hcJrdyl6dnS43hrGgPcsBcvUR48L7Cl65KpBADAU9fLQoBa_00PM8u9b3ufccy1xTXgZdxEBWgbZb784xrDXlrIdlTS_1pmsU7CuZT-5Q3PXJDBbXyXJm8TUHwHU"
-    const val SD_JWT = JWT +
-        "~$RecursiveDisclosure~$RecursiveDisclosure1~$RecursiveDisclosure2" +
-        "~$StructuredDisclosure1~$StructuredDisclosure2" +
-        "~$StructuredRecursiveDisclosure~$StructuredRecursiveDisclosure1~$StructuredRecursiveDisclosure2" +
-        "~$FlatDisclosure" +
-        "~$FlatArrayDisclosure" +
-        "~$FlatObjectDisclosure~"
+        "eyJ0eXAiOiJjb21wbGV4IiwiYWxnIjoiRVM1MTIifQ.eyJrZXlfdW5kaXNjbG9zZWQiOiJ2YWx1ZV91bmRpc2Nsb3NlZCIsIl9zZCI6WyJwc2Z2ZDdCMmpiZk44X3Rma1JtZW4xOVhURUt5b1Axak85REhldklHMEl3IiwiZGVjb3ltNTJqd1U2OHVGcUNFQV95bUZBbjNnUGVuZDcwbUVabkxJaFJfcyIsIjhYdG92bTUyandVNjh1RnFDRUFfeW1GQW4zZ1BlbmQ3MG1FWm5MSWhSX3MiLCJtQ2pfa1VjUXhORnloVDRCRmVQUGFRWjNYMTQxUE1Sd0hMQjVicldva19jIiwiZGVjb3lrMDJ0UmNCOGY0d3U3QkdaMlFxN01uUFVQOW4xLXlMRHF2S1kwZyJdLCJrZXlfYXJyYXlfdW5kaXNjbG9zZWQiOlsidmFsdWVfYXJyYXlfdW5kaXNjbG9zZWRfMSIsInZhbHVlX2FycmF5X3VuZGlzY2xvc2VkXzIiXSwia2V5X2FycmF5X3BhcnRseV9kaXNjbG9zZWQiOlt7Ii4uLiI6ImtKSzRjVmZnVlRfeUl0TnNOZTM5bFg3VHdhSUhhSEM5QmF0c3pDWHQyd3cifSwidmFsdWVfYXJyYXlfcGFydGx5X2Rpc2Nsb3NlZF8yIix7Ii4uLiI6ImRlY295VmZnVlRfeUl0TnNOZTM5bFg3VHdhSUhhSEM5QmF0c3pDWHQyd3cifSx7Ii4uLiI6IjBONmo1RjR4X1JFOXltbXRYa1BxTUVSYnNPU1ZBQkpfTlR2dU9LVWd4bmMifV0sImtleV9vYmplY3RfdW5kaXNjbG9zZWQiOnsia2V5X25lc3RlZF9vYmplY3RfMSI6InZhbHVlX29iamVjdF91bmRpc2Nsb3NlZF8xIiwia2V5X25lc3RlZF9vYmplY3RfMiI6InZhbHVlX29iamVjdF91bmRpc2Nsb3NlZF8yIn0sImtleV9vYmplY3RfcGFydGx5X2Rpc2Nsb3NlZCI6eyJrZXlfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8xIjoidmFsdWVfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8xIiwiX3NkIjpbImRlY295TERwYUNjXzF5NEM1eko1OE1VRDZKNG9wY2dPVTdQZUZKaWlWMjgiLCJTRVdTTHhtZlRwRlZHcm05RGJ4cE5rM2VwTGRpdlN2MlRGU1dnb0JuR19rIiwicmFYczVjRUcwXzJ1V0xLNVBJVzBONUk4cnJ6WGs3SDN0Z0tCQk9Nb1hEOCIsImRlY295S3FwN3pBd1UwTGFjWU10Q0pJQ0RXdlU4aEJfbXBtRXBSNGEzRWciXX0sIl9zZF9hbGciOiJzaGEtMjU2In0.AEeBP94Nhy9Zdw6zCrz78jqMLKskTWCaLkXbfRF2q8hslURfDv0JLEBjip36toCccP3JrLL694fBouCaVxNbnN44AfTfAEp8j_gKlSMuMTZk7wOfDOdWOcs9c0HqG4t49LRK9uRLArK1i-r5wKtgA7dfwNemgyku0mFDjJkzYisB1nZ1"
+    val SD_JWT = JWT + listOf(
+        FLAT_DISCLOSURE,
+        FLAT_ARRAY_DISCLOSURE,
+        FLAT_OBJECT_DISCLOSURE,
+        ARRAY_PARTLY_DISCLOSED_DISCLOSURE_1,
+        ARRAY_PARTLY_DISCLOSED_DISCLOSURE_3,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_1,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_1,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1_1,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_1,
+        OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_2,
+    ).shuffled().toDisclosures()
 }

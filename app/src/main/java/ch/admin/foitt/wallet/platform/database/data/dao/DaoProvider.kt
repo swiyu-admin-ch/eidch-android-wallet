@@ -20,6 +20,7 @@ interface DaoProvider {
     val credentialClaimClusterDisplayEntityDao: StateFlow<CredentialClaimClusterDisplayEntityDao?>
     val credentialKeyBindingEntityDaoFlow: StateFlow<CredentialKeyBindingEntityDao?>
     val credentialActivityEntityDao: StateFlow<CredentialActivityEntityDao?>
+    val nonComplianceReasonDisplayEntityDao: StateFlow<NonComplianceReasonDisplayEntityDao?>
     val activityClaimEntityDao: StateFlow<ActivityClaimEntityDao?>
     val activityActorDisplayEntityDao: StateFlow<ActivityActorDisplayEntityDao?>
     val activityActorDisplayWithImageDao: StateFlow<ActivityActorDisplayWithImageDao?>

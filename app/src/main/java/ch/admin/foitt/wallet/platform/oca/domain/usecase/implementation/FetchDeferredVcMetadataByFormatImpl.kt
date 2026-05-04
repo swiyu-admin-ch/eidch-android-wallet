@@ -13,23 +13,26 @@ import ch.admin.foitt.openid4vc.utils.SafeGetUrlError
 import ch.admin.foitt.openid4vc.utils.safeGetUrl
 import ch.admin.foitt.wallet.platform.oca.domain.model.FetchOcaBundleError
 import ch.admin.foitt.wallet.platform.oca.domain.model.FetchVcMetadataByFormatError
+import ch.admin.foitt.wallet.platform.oca.domain.model.MetaDataIntegrity
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.model.RawOcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.VcMetadata
 import ch.admin.foitt.wallet.platform.oca.domain.model.toFetchVcMetadataByFormatError
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchDeferredVcMetadataByFormat
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchOcaBundle
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.ResolveMetaDataIntegrity
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
-import com.github.michaelbull.result.get
 import com.github.michaelbull.result.mapError
 import javax.inject.Inject
 
 internal class FetchDeferredVcMetadataByFormatImpl @Inject constructor(
+    private val resolveMetaDataIntegrity: ResolveMetaDataIntegrity,
     private val fetchTypeMetadata: FetchTypeMetadata,
     private val fetchVcSchema: FetchVcSchema,
-    private val fetchOcaBundle: FetchOcaBundle,
+    private val fetchOcaBundle: FetchOcaBundle
+
 ) : FetchDeferredVcMetadataByFormat {
     override suspend fun invoke(
         credentialConfig: AnyCredentialConfiguration,
@@ -47,14 +50,15 @@ internal class FetchDeferredVcMetadataByFormatImpl @Inject constructor(
     ): Result<VcMetadata, FetchVcMetadataByFormatError> = coroutineBinding {
         var vcSchema: VcSchema? = null
         var rawOcaBundle: RawOcaBundle? = null
-        val vctUrl = safeGetUrl(credentialConfig.vct).get()
 
-        vctUrl?.let { url ->
+        val (typeMetadataUrl, typeMetadataUrlIntegrity) = resolveMetaDataIntegrity(
+            MetaDataIntegrity.from(credentialConfig)
+        ).bind()
+        typeMetadataUrl?.let { url ->
             val typeMetadata = fetchTypeMetadata(
                 credentialVct = credentialConfig.vct,
                 url = url,
-                integrity = null,
-                expectIntegrity = false,
+                integrity = typeMetadataUrlIntegrity
             ).mapError(FetchTypeMetadataError::toFetchVcMetadataByFormatError).bind()
 
             typeMetadata.schemaUri?.let {

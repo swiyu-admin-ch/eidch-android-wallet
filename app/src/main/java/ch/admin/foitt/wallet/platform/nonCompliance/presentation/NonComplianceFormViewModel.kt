@@ -2,9 +2,10 @@ package ch.admin.foitt.wallet.platform.nonCompliance.presentation
 
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.viewModelScope
-import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDisplayData
-import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivityWithDetailsFlow
+import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityActorDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivityActorDisplaysFlow
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.NonComplianceEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.NonComplianceEventRepository
 import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManager
@@ -43,7 +44,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel(assistedFactory = NonComplianceFormViewModel.Factory::class)
 class NonComplianceFormViewModel @AssistedInject constructor(
-    getActivityWithDetailsFlow: GetActivityWithDetailsFlow,
+    getActivityActorDisplaysFlow: GetActivityActorDisplaysFlow,
     private val getDrawableFromImageData: GetDrawableFromImageData,
     destinationScopedComponentManager: DestinationScopedComponentManager,
     nonComplianceTextInputConstraints: NonComplianceTextInputConstraints,
@@ -118,11 +119,11 @@ class NonComplianceFormViewModel @AssistedInject constructor(
         )
     }.toStateFlow(NonComplianceFormUiState.EMPTY)
 
-    val nonComplianceActorUiState = getActivityWithDetailsFlow(activityId).map { result ->
+    val nonComplianceActorUiState = getActivityActorDisplaysFlow(activityId).map { result ->
         result.mapBoth(
-            success = { activityWithDetails ->
+            success = { activityActorDisplayData ->
                 _isLoading.value = false
-                mapToUiState(activityWithDetails.activity)
+                mapToUiState(activityActorDisplayData = activityActorDisplayData)
             },
             failure = {
                 navigateToErrorScreen()
@@ -132,19 +133,19 @@ class NonComplianceFormViewModel @AssistedInject constructor(
     }.filterNotNull()
         .toStateFlow(NonComplianceActorUiState.EMPTY)
 
-    private suspend fun mapToUiState(activityDisplayData: ActivityDisplayData): NonComplianceActorUiState {
-        val drawable = activityDisplayData.actorImageData?.let {
+    private suspend fun mapToUiState(activityActorDisplayData: ActivityActorDisplayData): NonComplianceActorUiState {
+        val drawable = activityActorDisplayData.actorImageData?.let {
             getDrawableFromImageData(it)
         }
 
         return NonComplianceActorUiState(
-            name = activityDisplayData.localizedActorName,
+            name = activityActorDisplayData.localizedActorName,
             logo = drawable?.toPainter(),
         )
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
     }
 
     fun validateDescriptionInput(description: String) {

@@ -9,6 +9,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PairC
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.StartOnlineSession
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
@@ -127,16 +128,20 @@ internal class EIdWalletPairingViewModel @AssistedInject constructor(
         }
     }
 
-    private fun handleOnlineSessionError(error: StartOnlineSessionError) = when (error) {
+    private fun handleOnlineSessionError(error: StartOnlineSessionError): WalletPairingUiState = when (error) {
         EIdRequestError.NetworkError -> WalletPairingUiState.NetworkError
         EIdRequestError.InvalidClientAttestation,
         is EIdRequestError.Unexpected -> WalletPairingUiState.Unexpected
     }
 
-    private fun handlePairWalletError(error: PairCurrentWalletError) = when (error) {
+    private fun handlePairWalletError(error: PairCurrentWalletError): WalletPairingUiState = when (error) {
         EIdRequestError.NetworkError -> WalletPairingUiState.NetworkError
         EIdRequestError.InvalidDeferredCredentialOffer,
         EIdRequestError.InvalidClientAttestation,
         is EIdRequestError.Unexpected -> WalletPairingUiState.Unexpected
+        EIdRequestError.RequestInWrongState -> {
+            navManager.navigateOutAndTo(DestinationGroup.EIdRequestVerification::class, Destination.EIdWalletPairingTimeoutScreen)
+            WalletPairingUiState.Initial
+        }
     }
 }

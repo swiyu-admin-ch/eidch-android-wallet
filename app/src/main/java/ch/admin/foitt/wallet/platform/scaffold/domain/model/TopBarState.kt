@@ -14,6 +14,14 @@ sealed interface TopBarState {
         val onClose: () -> Unit,
     ) : TopBarState
 
+    data class DetailsWithCloseRoundButtons(
+        val onUp: () -> Unit,
+        @param:StringRes
+        val titleId: Int?,
+        val topBarBackground: TopBarBackground = TopBarBackground.TRANSPARENT,
+        val onClose: () -> Unit,
+    ) : TopBarState
+
     data class Details(
         val onUp: () -> Unit,
         @param:StringRes val titleId: Int?,
@@ -21,8 +29,11 @@ sealed interface TopBarState {
         val topBarBackground: TopBarBackground = TopBarBackground.TRANSPARENT,
     ) : TopBarState
 
-    data class EmptyWithCloseButton(
+    data class WithCloseButton(
         val onClose: () -> Unit,
+        @param:StringRes val titleId: Int? = null,
+        @param:StringRes val titleAltTextId: Int? = null,
+        val topBarBackground: TopBarBackground = TopBarBackground.TRANSPARENT,
     ) : TopBarState
 
     data class OnGradient(

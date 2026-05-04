@@ -1,8 +1,8 @@
 package ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientMetaData
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
@@ -33,25 +33,20 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
     private val initializeActorForScope: InitializeActorForScope,
 ) : FetchAndCacheVerifierDisplayData {
     override suspend fun invoke(
-        presentationRequest: PresentationRequest,
-        shouldFetchTrustStatement: Boolean,
+        authorizationRequest: AuthorizationRequest,
     ) {
-        val verifierNameDisplay = presentationRequest.clientMetaData?.toVerifierName()
-        val verifierLogoDisplay = presentationRequest.clientMetaData?.toVerifierLogo()
+        val verifierNameDisplay = authorizationRequest.clientMetaData?.toVerifierName()
+        val verifierLogoDisplay = authorizationRequest.clientMetaData?.toVerifierLogo()
 
-        val trustCheckResult = if (shouldFetchTrustStatement) {
-            fetchTrustForVerification(presentationRequest)
-        } else {
-            null
-        }
+        val trustCheckResult = fetchTrustForVerification(authorizationRequest)
 
-        val trustStatement = trustCheckResult?.actorTrustStatement
+        val trustStatement = trustCheckResult.actorTrustStatement
 
         Timber.d("${trustStatement ?: "trust statement not evaluated or failed"}")
 
         val trustStatus = getTrustStatus(trustCheckResult)
 
-        val vcSchemaTrustStatus = trustCheckResult?.vcSchemaTrustStatus ?: VcSchemaTrustStatus.UNPROTECTED
+        val vcSchemaTrustStatus = trustCheckResult.vcSchemaTrustStatus
 
         val verifierTrustNameDisplay: List<ActorField<String>>? = if (trustStatement == null) {
             verifierNameDisplay // trust statement not available -> use metadata
@@ -60,7 +55,7 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
         }
         val verifierTrustLogoDisplay: List<ActorField<String>>? = verifierLogoDisplay
 
-        val nonComplianceData = fetchNonComplianceData(actorDid = presentationRequest.clientId)
+        val nonComplianceData = fetchNonComplianceData(actorDid = authorizationRequest.clientId)
         val nonComplianceReason: List<ActorField<String>>? = nonComplianceData.reasonDisplays?.toNonComplianceReason()
 
         val presentationVerifierDisplay = ActorDisplayData(
@@ -70,7 +65,7 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
             vcSchemaTrustStatus = vcSchemaTrustStatus,
             preferredLanguage = null,
             actorType = ActorType.VERIFIER,
-            nonComplianceState = nonComplianceData.state,
+            actorComplianceState = nonComplianceData.state,
             nonComplianceReason = nonComplianceReason,
         )
 
@@ -94,8 +89,8 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
         )
     }
 
-    private suspend fun fetchTrustForVerification(presentationRequest: PresentationRequest): TrustCheckResult {
-        val verifierDid = presentationRequest.clientId
+    private suspend fun fetchTrustForVerification(authorizationRequest: AuthorizationRequest): TrustCheckResult {
+        val verifierDid = authorizationRequest.clientId
         val environment = getActorEnvironment(verifierDid)
 
         val identityTrustStatement = when (environment) {
@@ -106,7 +101,7 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
             ActorEnvironment.EXTERNAL -> null
         }
 
-        val vcSchemaId = getVcSchemaId(presentationRequest)
+        val vcSchemaId = getVcSchemaId(authorizationRequest)
 
         val verificationTrustStatus = vcSchemaId?.let {
             fetchVcSchemaTrustStatus(
@@ -124,8 +119,8 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
     }
 
     private fun getVcSchemaId(
-        presentationRequest: PresentationRequest
-    ) = presentationRequest.presentationDefinition.inputDescriptors.firstNotNullOfOrNull { inputDescriptor ->
+        authorizationRequest: AuthorizationRequest
+    ) = authorizationRequest.presentationDefinition?.inputDescriptors?.firstNotNullOfOrNull { inputDescriptor ->
         val filteredFormats =
             inputDescriptor.formats.filter { inputDescriptorFormat -> inputDescriptorFormat is InputDescriptorFormat.VcSdJwt }
         if (filteredFormats.isNotEmpty()) {

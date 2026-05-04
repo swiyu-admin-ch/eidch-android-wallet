@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation("org.jacoco:org.jacoco.core:0.8.14")
+    testImplementation(versionCatalogs.named("libs").findLibrary("jacoco").orElseThrow(::AssertionError))
 }
 
 project.afterEvaluate {

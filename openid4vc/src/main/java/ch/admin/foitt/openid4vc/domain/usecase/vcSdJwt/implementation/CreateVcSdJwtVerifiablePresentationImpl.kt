@@ -1,14 +1,15 @@
 package ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation
 
 import ch.admin.foitt.openid4vc.di.DefaultDispatcher
+import ch.admin.foitt.openid4vc.domain.model.DigestAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.GetKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.GetSoftwareKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.CreateVcSdJwtVerifiablePresentationError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.toCreateVcSdJwtVerifiablePresentationError
 import ch.admin.foitt.openid4vc.domain.model.toJWSAlgorithm
@@ -48,7 +49,7 @@ internal class CreateVcSdJwtVerifiablePresentationImpl @Inject constructor(
         credential: VcSdJwtCredential,
         keyBinding: KeyBinding?,
         requestedFields: List<String>,
-        presentationRequest: PresentationRequest,
+        authorizationRequest: AuthorizationRequest,
     ): Result<String, CreateVcSdJwtVerifiablePresentationError> = withContext(defaultDispatcher) {
         coroutineBinding {
             val sdJwtWithDisclosures = runSuspendCatching {
@@ -65,7 +66,7 @@ internal class CreateVcSdJwtVerifiablePresentationImpl @Inject constructor(
                 val keyPair = getKeyPair(keyBinding).bind()
 
                 val keyBindingJwt =
-                    createKeyBindingJwt(keyBinding.algorithm, base64UrlEncodedSdHash, presentationRequest)
+                    createKeyBindingJwt(keyBinding.algorithm, base64UrlEncodedSdHash, authorizationRequest)
                 val jwk = getKeyBindingJwk(credential).bind()
                 val signer = ECDSASigner(keyPair.private, Curve(jwk.crv))
                 keyBindingJwt.sign(signer)
@@ -100,15 +101,15 @@ internal class CreateVcSdJwtVerifiablePresentationImpl @Inject constructor(
     private fun createKeyBindingJwt(
         keyBindingAlgorithm: SigningAlgorithm,
         base64UrlEncodedSdHash: String,
-        presentationRequest: PresentationRequest,
+        authorizationRequest: AuthorizationRequest,
     ): SignedJWT {
         val jwtHeader = JWSHeader.Builder(keyBindingAlgorithm.toJWSAlgorithm())
             .type(JOSEObjectType(HEADER_TYPE))
             .build()
         val jwtBody = JWTClaimsSet.Builder()
             .claim(CLAIM_KEY_SD_HASH, base64UrlEncodedSdHash)
-            .claim(CLAIM_KEY_AUD, presentationRequest.clientId)
-            .claim(CLAIM_KEY_NONCE, presentationRequest.nonce)
+            .claim(CLAIM_KEY_AUD, authorizationRequest.clientId)
+            .claim(CLAIM_KEY_NONCE, authorizationRequest.nonce)
             .claim(CLAIM_KEY_IAT, Instant.now().epochSecond)
             .build()
 
@@ -131,7 +132,7 @@ internal class CreateVcSdJwtVerifiablePresentationImpl @Inject constructor(
     }
 
     companion object {
-        const val HASH_ALGORITHM = "SHA-256"
+        val HASH_ALGORITHM = DigestAlgorithm.SHA256
         const val HEADER_TYPE = "kb+jwt"
         const val CLAIM_KEY_SD_HASH = "sd_hash"
         const val CLAIM_KEY_AUD = "aud"

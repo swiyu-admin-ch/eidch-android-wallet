@@ -24,7 +24,7 @@ class EIdStartSelfieVideoViewModel @AssistedInject constructor(
         fun create(caseId: String): EIdStartSelfieVideoViewModel
     }
 
-    override val topBarState = TopBarState.EmptyWithCloseButton(
+    override val topBarState = TopBarState.WithCloseButton(
         onClose = ::onClose
     )
 

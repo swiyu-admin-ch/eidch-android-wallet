@@ -32,108 +32,185 @@ import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
 
+@Suppress("CyclomaticComplexMethod")
 @Composable
 fun EIdRequestCard(
     eIdRequest: SIdRequestDisplayData,
-    onStartOnlineIdentification: () -> Unit,
-    onRefresh: () -> Unit,
-    onObtainConsent: () -> Unit,
-    onLearnMore: () -> Unit,
-    onCloseClick: (() -> Unit)?,
+    onMainButton: () -> Unit,
+    onClose: () -> Unit,
 ) = when (eIdRequest.status) {
     SIdRequestDisplayStatus.AV_READY,
-    SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_OK -> EIdRequestCardGeneric(
-        title = stringResource(
-            R.string.tk_getEid_notification_eidReady_primary,
-            "${eIdRequest.firstName} ${eIdRequest.lastName}"
-        ),
-        body = stringResource(
-            R.string.tk_getEid_notification_eidReady_secondary,
-            eIdRequest.onlineSessionStartTimeoutAt ?: "" // this can not be null here
-        ),
-        buttonText = stringResource(R.string.tk_getEid_notification_eidReady_greenButton),
-        onButtonClick = onStartOnlineIdentification,
-    )
-    SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_PENDING -> EIdRequestCardGeneric(
-        title = stringResource(R.string.tk_getEid_notification_eidReady_noConsent_primary),
-        body = stringResource(R.string.tk_getEid_notification_eidReady_noConsent_secondary),
-        buttonText = stringResource(R.string.tk_getEid_notification_eidReady_noConsent_button),
-        onButtonClick = onObtainConsent,
-    )
+    SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_OK -> CardReady(eIdRequest, onMainButton)
+    SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_PENDING -> CardReadyConsentPending(eIdRequest, onMainButton)
     SIdRequestDisplayStatus.QUEUEING,
-    SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_OK -> EIdRequestCardGeneric(
-        title = stringResource(
-            R.string.tk_getEid_notification_eidProgress_primary,
-            "${eIdRequest.firstName} ${eIdRequest.lastName}"
-        ),
-        body = stringResource(
-            R.string.tk_getEid_notification_eidProgress_secondary,
-            eIdRequest.onlineSessionStartOpenAt ?: "" // this can not be null here
-        )
-    )
-    SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_PENDING -> EIdRequestCardGeneric(
-        title = stringResource(R.string.tk_getEid_notification_eidQueue_noConsent_primary),
-        body = stringResource(R.string.tk_getEid_notification_eidQueue_noConsent_secondary),
-        buttonText = stringResource(R.string.tk_getEid_notification_eidQueue_noConsent_button),
-        onButtonClick = onObtainConsent,
-    )
+    SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_OK -> CardQueueing(eIdRequest)
+    SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_PENDING -> CardQueueingConsentPending(onMainButton)
     SIdRequestDisplayStatus.AV_EXPIRED,
     SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK,
-    SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING -> EIdRequestCardGeneric(
-        title = stringResource(
-            R.string.tk_getEid_notification_eidExpired_primary,
-            "${eIdRequest.firstName} ${eIdRequest.lastName}"
-        ),
-        body = stringResource(
-            R.string.tk_getEid_notification_eidExpired_secondary,
-            eIdRequest.onlineSessionStartOpenAt ?: "" // this can not be null here
-        ),
-        onCloseClick = onCloseClick,
-    )
-    SIdRequestDisplayStatus.UNKNOWN -> EIdRequestCardGeneric(
-        title = stringResource(
-            R.string.tk_getEid_notification_unknown_primary,
-            "${eIdRequest.firstName} ${eIdRequest.lastName}"
-        ),
-        body = stringResource(
-            R.string.tk_getEid_notification_unknown_secondary,
-        ),
-        useTertiaryButton = false,
-        buttonText = stringResource(R.string.tk_getEid_notification_unknown_button_refresh),
-        onButtonClick = onRefresh,
-    )
-    SIdRequestDisplayStatus.IN_AGENT_REVIEW -> EIdRequestCardGeneric(
-        title = stringResource(
-            R.string.tk_getEid_notification_agentReview_primary,
-            "${eIdRequest.firstName} ${eIdRequest.lastName}"
-        ),
-        body = stringResource(
-            R.string.tk_getEid_notification_agentReview_secondary
-        )
-    )
-    SIdRequestDisplayStatus.IN_ISSUANCE -> EIdRequestCardGeneric(
-        title = stringResource(
-            R.string.tk_getEid_notification_issuing_primary,
-            "${eIdRequest.firstName} ${eIdRequest.lastName}"
-        ),
-        body = stringResource(R.string.tk_getEid_notification_issuing_secondary),
-    )
-    SIdRequestDisplayStatus.REFUSED -> EIdRequestCardGeneric(
-        title = stringResource(
-            R.string.tk_getEid_notification_declined_primary,
-            "${eIdRequest.firstName} ${eIdRequest.lastName}"
-        ),
-        body = stringResource(
-            R.string.tk_getEid_notification_declined_secondary
-        ),
-        buttonText = stringResource(R.string.tk_getEid_notification_declined_primaryButton),
-        onButtonClick = onLearnMore,
-    )
-    SIdRequestDisplayStatus.OTHER -> { /* Nothing to show */ }
+    SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING -> CardTimeout(eIdRequest, onClose)
+    SIdRequestDisplayStatus.UNKNOWN -> CardUnknown(eIdRequest, onMainButton)
+    SIdRequestDisplayStatus.IN_AGENT_REVIEW -> CardInAgentReview(eIdRequest)
+    SIdRequestDisplayStatus.IN_ISSUANCE -> CardInIssuance(eIdRequest)
+    SIdRequestDisplayStatus.REFUSED -> CardRefused(eIdRequest, onMainButton, onClose)
+    SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING -> CardInTargetWalletPairing(eIdRequest, onMainButton)
+    SIdRequestDisplayStatus.IN_AUTO_VERIFICATION -> CardInAutoVerification(eIdRequest, onMainButton)
+    SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK -> CardFinalEntitlementCheck(eIdRequest)
+    SIdRequestDisplayStatus.CANCELLED -> CardCancelled(eIdRequest, onClose)
+    SIdRequestDisplayStatus.CLOSED -> CardClosed(eIdRequest, onClose)
 }
 
 @Composable
-fun EIdRequestCardGeneric(
+private fun CardReady(
+    displayData: SIdRequestDisplayData,
+    onStart: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_eidReady_primary, displayData.cardName),
+    body = stringResource(
+        R.string.tk_getEid_notification_eidReady_secondary,
+        displayData.onlineSessionStartTimeoutAt ?: ""
+    ),
+    buttonText = stringResource(R.string.tk_getEid_notification_eidReady_button),
+    onButtonClick = onStart,
+)
+
+@Composable
+private fun CardReadyConsentPending(
+    displayData: SIdRequestDisplayData,
+    onObtainConsent: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_eidReady_noConsent_primary),
+    body = stringResource(
+        R.string.tk_getEid_notification_eidReady_noConsent_secondary,
+        displayData.onlineSessionStartTimeoutAt ?: ""
+    ),
+    buttonText = stringResource(R.string.tk_getEid_notification_eidReady_noConsent_button),
+    onButtonClick = onObtainConsent,
+)
+
+@Composable
+private fun CardQueueing(
+    displayData: SIdRequestDisplayData,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_eidProgress_primary, displayData.cardName),
+    body = stringResource(
+        R.string.tk_getEid_notification_eidProgress_secondary,
+        displayData.onlineSessionStartOpenAt ?: ""
+    )
+)
+
+@Composable
+private fun CardQueueingConsentPending(
+    onObtainConsent: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_eidQueue_noConsent_primary),
+    body = stringResource(R.string.tk_getEid_notification_eidQueue_noConsent_secondary),
+    buttonText = stringResource(R.string.tk_getEid_notification_eidQueue_noConsent_button),
+    onButtonClick = onObtainConsent,
+)
+
+@Composable
+private fun CardUnknown(
+    displayData: SIdRequestDisplayData,
+    onRefresh: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_unknown_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_unknown_secondary),
+    useTertiaryButton = false,
+    buttonText = stringResource(R.string.tk_getEid_notification_unknown_button_refresh),
+    onButtonClick = onRefresh,
+)
+
+@Composable
+private fun CardInAgentReview(
+    displayData: SIdRequestDisplayData,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_agentReview_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_agentReview_secondary),
+)
+
+@Composable
+private fun CardInIssuance(
+    displayData: SIdRequestDisplayData,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_issuing_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_issuing_secondary),
+)
+
+@Composable
+private fun CardInTargetWalletPairing(
+    displayData: SIdRequestDisplayData,
+    onWalletPairing: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_walletPairing_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_walletPairing_secondary),
+    buttonText = stringResource(R.string.tk_getEid_notification_walletPairing_button),
+    onButtonClick = onWalletPairing,
+)
+
+@Composable
+private fun CardInAutoVerification(
+    displayData: SIdRequestDisplayData,
+    onAutoVerification: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_autoVerification_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_autoVerification_secondary),
+    buttonText = stringResource(R.string.tk_getEid_notification_autoVerification_button),
+    onButtonClick = onAutoVerification,
+)
+
+@Composable
+private fun CardFinalEntitlementCheck(
+    displayData: SIdRequestDisplayData,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_readyForFinalEntitlementCheck_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_readyForFinalEntitlementCheck_secondary),
+)
+
+@Composable
+private fun CardRefused(
+    displayData: SIdRequestDisplayData,
+    onLearnMore: () -> Unit,
+    onClose: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_declined_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_declined_secondary),
+    buttonText = stringResource(R.string.tk_getEid_notification_declined_button),
+    onButtonClick = onLearnMore,
+    onCloseClick = onClose,
+)
+
+@Composable
+private fun CardCancelled(
+    displayData: SIdRequestDisplayData,
+    onClose: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_cancelled_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_cancelled_secondary),
+    onCloseClick = onClose,
+)
+
+@Composable
+private fun CardClosed(
+    displayData: SIdRequestDisplayData,
+    onClose: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_closed_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_closed_secondary),
+    onCloseClick = onClose,
+)
+
+@Composable
+private fun CardTimeout(
+    displayData: SIdRequestDisplayData,
+    onClose: () -> Unit,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_eidExpired_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_eidExpired_secondary),
+    onCloseClick = onClose,
+)
+
+@Composable
+private fun EIdRequestCardGeneric(
     modifier: Modifier = Modifier,
     title: String,
     body: String,
@@ -207,26 +284,17 @@ fun EIdRequestCardGeneric(
     }
 }
 
+private val SIdRequestDisplayData.cardName get() = "$firstName $lastName"
+
+//region Preview
 private class EIdRequestCardPreviewParams : PreviewParameterProvider<SIdRequestDisplayData> {
-    override val values: Sequence<SIdRequestDisplayData> = sequenceOf(
-        getEIdRequestForPreview(SIdRequestDisplayStatus.AV_READY),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_OK),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_PENDING),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.QUEUEING),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_OK),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_PENDING),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.AV_EXPIRED),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.IN_AGENT_REVIEW),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.IN_ISSUANCE),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.UNKNOWN),
-        getEIdRequestForPreview(SIdRequestDisplayStatus.OTHER),
-    )
+    override val values: Sequence<SIdRequestDisplayData> = SIdRequestDisplayStatus.entries.map {
+        it.toPreviewDisplayData()
+    }.asSequence()
 }
 
-private fun getEIdRequestForPreview(queueingState: SIdRequestDisplayStatus) = SIdRequestDisplayData(
-    status = queueingState,
+private fun SIdRequestDisplayStatus.toPreviewDisplayData() = SIdRequestDisplayData(
+    status = this,
     firstName = "Seraina",
     lastName = "Muster",
     onlineSessionStartOpenAt = "06.02.2025",
@@ -242,11 +310,9 @@ private fun EIdRequestCardPreview(
     WalletTheme {
         EIdRequestCard(
             eIdRequest = eIdRequest,
-            onStartOnlineIdentification = {},
-            onRefresh = {},
-            onObtainConsent = {},
-            onCloseClick = {},
-            onLearnMore = {}
+            onMainButton = {},
+            onClose = {},
         )
     }
 }
+//endregion

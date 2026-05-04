@@ -30,6 +30,7 @@ private object OverlaySerializer : JsonContentPolymorphicSerializer<Overlay>(
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Overlay> {
         return when (OverlaySpecType.getByType(element.jsonObject["type"]?.jsonPrimitive?.content)) {
             OverlaySpecType.DATA_SOURCE_1_0 -> DataSourceOverlay1x0.serializer()
+            OverlaySpecType.DATA_SOURCE_2_0 -> DataSourceOverlay2x0.serializer()
             OverlaySpecType.LABEL_1_0 -> LabelOverlay1x0.serializer()
             OverlaySpecType.BRANDING_1_1 -> BrandingOverlay1x1.serializer()
             OverlaySpecType.META_1_0 -> MetaOverlay1x0.serializer()

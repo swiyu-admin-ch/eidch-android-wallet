@@ -1,7 +1,8 @@
 package ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -18,7 +19,7 @@ import org.junit.jupiter.api.Test
 class VerifyVcSdJwtSignatureImplTest {
 
     @MockK
-    private lateinit var mockVerifyJwtSignature: VerifyJwtSignature
+    private lateinit var mockVerifyJwtSignatureFromDid: VerifyJwtSignatureFromDid
 
     private lateinit var useCase: VerifyVcSdJwtSignatureImpl
 
@@ -27,11 +28,11 @@ class VerifyVcSdJwtSignatureImplTest {
         MockKAnnotations.init(this)
 
         useCase = VerifyVcSdJwtSignatureImpl(
-            verifyJwtSignature = mockVerifyJwtSignature,
+            verifyJwtSignatureFromDid = mockVerifyJwtSignatureFromDid,
         )
 
         coEvery {
-            mockVerifyJwtSignature(did = any(), kid = any(), jwt = any())
+            mockVerifyJwtSignatureFromDid(did = any(), kid = any(), jwt = any())
         } returns Ok(Unit)
     }
 
@@ -49,10 +50,10 @@ class VerifyVcSdJwtSignatureImplTest {
     }
 
     @Test
-    fun `Verifying a vc sd jwt credential that contains non disclosable claims returns an error`() = runTest {
+    fun `Verifying a vc sd jwt credential that contains non-selectively disclosable claims returns an error`() = runTest {
         useCase(
             keyBinding = null,
-            payload = JWT_WITH_NON_DISCLOSABLE_CLAIM,
+            payload = JWT_WITH_NON_SELECTIVELY_DISCLOSABLE_CLAIM,
         ).assertErrorType(VcSdJwtError.InvalidVcSdJwt::class)
     }
 
@@ -76,8 +77,8 @@ class VerifyVcSdJwtSignatureImplTest {
     fun `Error from the jwt signature verification are mapped`() = runTest {
         val exception = Exception("invalid signature")
         coEvery {
-            mockVerifyJwtSignature(did = any(), kid = any(), jwt = any())
-        } returns Err(VcSdJwtError.Unexpected(exception))
+            mockVerifyJwtSignatureFromDid(did = any(), kid = any(), jwt = any())
+        } returns Err(JwtError.Unexpected(exception))
 
         val error = useCase(
             keyBinding = null,
@@ -89,12 +90,12 @@ class VerifyVcSdJwtSignatureImplTest {
 
     private companion object {
         const val VALID_JWT =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0In0.jX5Mfxyh_gJ9VhagwlL80QFZjNgOPgdASjP3awIX-ty_LimDlNDZY3eCpjyecqcKFskkVx55gFs9h8_sENvNyQ"
-        const val JWT_WITH_NON_DISCLOSABLE_CLAIM =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0Iiwib3RoZXIiOiJjbGFpbSJ9.-lrZnzOpojUAL07c1A_4B1UnZZPMB6DkYv5tvsISosizj49wvHr_KMPvsvtZGXP-XkiTto8AG_7VdlgzUASE6w"
+            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJleHAiOjE5MjQ5ODgzOTksImlhdCI6MCwibmJmIjoxLCJ2Y3QiOiJ2Y3QifQ.xHItSO9jil0yiltXr0WFVGxiogOsihsfX0k5INgcoC9k4oP69yTM_mNqujBM5DB0_x__ZXQF9Sc_1GU__5wZdg~"
+        const val JWT_WITH_NON_SELECTIVELY_DISCLOSABLE_CLAIM =
+            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJleHAiOjE5MjQ5ODgzOTksImlhdCI6MCwibmJmIjoxLCJ2Y3QiOiJ2Y3QiLCJvdGhlciI6ImNsYWltIn0.B0OsUc5CukjhaBChyDrLJdx8paChpV3ghZxDMtn7bY1JT3IQrLu1I1WapetEE9_XgRJn9exz9Ms_HGLT1pDh6g~"
         const val JWT_WITHOUT_ISSUER =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0In0.gBLcxhsnZpKiMZrj-XZrqrTLPktU_pxIRnOvqFCd-fpwAhr6u2rRoVRByejfw7oqyNBRRdiDobK1q7ZZ8WCYOQ"
+            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJleHAiOjE5MjQ5ODgzOTksImlhdCI6MCwibmJmIjoxLCJ2Y3QiOiJ2Y3QifQ.TqCN6faq5ZX7QYYW6fsdthVxnzv9t7d4U9U_g8TWtJt5Sm-HKPmqFFLLC0G8xhINNWvIbMVZ7cat84nEmlLAqw~"
         const val JWT_WITHOUT_KID =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUifQ.eyJpc3MiOiJpc3N1ZXIiLCJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0In0.w2aH9-ragocFNC9N6AduOyy0909mFAv3-kSVMZsCmuYB0XHSGxH8_5rsxLLOBYgF0PCsQZbPknyemdpMdgLNQA"
+            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUifQ.eyJpc3MiOiJpc3N1ZXIiLCJleHAiOjE5MjQ5ODgzOTksImlhdCI6MCwibmJmIjoxLCJ2Y3QiOiJ2Y3QifQ.VarWJBHA1ABRVYJOKxB3Vg_PFc6iGuAtCx20XrwRRaULoSLHnmmdhu3RrS2nfMCzg6ZpiQ-3krCwAgsqFuX45A~"
     }
 }

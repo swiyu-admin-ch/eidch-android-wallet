@@ -62,7 +62,7 @@ object MockCredentialDetail {
     private val claim1 = CredentialClaim(
         id = CLAIM_ID_1,
         clusterId = CLUSTER_ID,
-        key = "key1",
+        path = "key1",
         value = "value1",
         valueType = "valueType1",
         order = 0,
@@ -71,7 +71,7 @@ object MockCredentialDetail {
     private val claim2 = CredentialClaim(
         id = CLAIM_ID_2,
         clusterId = CLUSTER_ID,
-        key = "key2",
+        path = "key2",
         value = "value2",
         valueType = "valueType2",
         order = 1,

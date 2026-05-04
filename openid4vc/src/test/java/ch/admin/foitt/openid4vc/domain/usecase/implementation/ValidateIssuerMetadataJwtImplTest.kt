@@ -2,8 +2,8 @@ package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
 import com.github.michaelbull.result.Err
@@ -24,14 +24,14 @@ import java.time.Instant
 class ValidateIssuerMetadataJwtImplTest {
 
     @MockK
-    private lateinit var mockVerifyJwtSignature: VerifyJwtSignature
+    private lateinit var mockVerifyJwtSignatureFromDid: VerifyJwtSignatureFromDid
 
     private lateinit var useCase: ValidateIssuerMetadataJwtImpl
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        useCase = ValidateIssuerMetadataJwtImpl(mockVerifyJwtSignature)
+        useCase = ValidateIssuerMetadataJwtImpl(mockVerifyJwtSignatureFromDid)
         success()
     }
 
@@ -68,7 +68,7 @@ class ValidateIssuerMetadataJwtImplTest {
         useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
 
         coVerify(exactly = 1) {
-            mockVerifyJwtSignature(MOCK_DID, MOCK_KEY_IDENTIFIER, MOCK_JWT)
+            mockVerifyJwtSignatureFromDid(MOCK_DID, MOCK_KEY_IDENTIFIER, MOCK_JWT)
         }
     }
 
@@ -153,8 +153,8 @@ class ValidateIssuerMetadataJwtImplTest {
     @Test
     fun `UseCase should return an error when jwt signature verification fails`() = runTest {
         coEvery {
-            mockVerifyJwtSignature(did = MOCK_DID, kid = MOCK_KEY_IDENTIFIER, jwt = MOCK_JWT)
-        } returns Err(VcSdJwtError.InvalidJwt)
+            mockVerifyJwtSignatureFromDid(did = MOCK_DID, kid = MOCK_KEY_IDENTIFIER, jwt = MOCK_JWT)
+        } returns Err(JwtError.InvalidJwt)
 
         val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
 
@@ -171,7 +171,7 @@ class ValidateIssuerMetadataJwtImplTest {
         every { MOCK_JWT.keyId } returns MOCK_KEY_IDENTIFIER
 
         coEvery {
-            mockVerifyJwtSignature(did = MOCK_DID, kid = MOCK_KEY_IDENTIFIER, jwt = MOCK_JWT)
+            mockVerifyJwtSignatureFromDid(did = MOCK_DID, kid = MOCK_KEY_IDENTIFIER, jwt = MOCK_JWT)
         } returns Ok(Unit)
     }
 

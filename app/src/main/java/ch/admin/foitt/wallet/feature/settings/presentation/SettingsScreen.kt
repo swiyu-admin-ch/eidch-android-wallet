@@ -12,10 +12,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.settings.presentation.composables.ClickableTextSettingsItem
 import ch.admin.foitt.wallet.feature.settings.presentation.composables.LinkSettingsItem
 import ch.admin.foitt.wallet.feature.settings.presentation.composables.SettingsSection
+import ch.admin.foitt.wallet.feature.settings.presentation.composables.SwitchSettingsItem
 import ch.admin.foitt.wallet.platform.composables.presentation.addTopScaffoldPadding
 import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
@@ -35,17 +39,25 @@ fun SettingsScreen(
         onFeedback = viewModel::onFeedback,
         onLicences = viewModel::onLicenses,
         onImprint = viewModel::onImprint,
+        onDevsSettings = viewModel.onDevsViewer,
+        otpEnabled = viewModel.otpBypassValue.collectAsStateWithLifecycle(false).value,
+        onLottie = viewModel.onLottieViewer,
+        onChangeOtpBypass = viewModel::onChangeOtpBypass
     )
 }
 
 @Composable
 private fun SettingsScreenContent(
+    otpEnabled: Boolean,
     onSecurityAndPrivacy: () -> Unit,
     onLanguage: () -> Unit,
     onHelp: () -> Unit,
     onFeedback: () -> Unit,
     onLicences: () -> Unit,
     onImprint: () -> Unit,
+    onChangeOtpBypass: () -> Unit,
+    onDevsSettings: Boolean,
+    onLottie: (() -> Unit)?,
 ) = Box(
     modifier = Modifier
         .fillMaxSize()
@@ -73,6 +85,14 @@ private fun SettingsScreenContent(
             onLicenses = onLicences,
             onImprint = onImprint,
         )
+        if (onDevsSettings) {
+            Spacer(modifier = Modifier.height(Sizes.s06))
+            DevsSection(
+                otpEnabled = otpEnabled,
+                onLottie = onLottie,
+                onChangeOtpBypass = onChangeOtpBypass,
+            )
+        }
     }
 }
 
@@ -93,6 +113,30 @@ private fun WalletSection(
         title = stringResource(R.string.tk_settings_wallet_language),
         leadingIcon = R.drawable.wallet_ic_globe,
         onClick = onLanguage,
+    )
+}
+
+@Composable
+private fun DevsSection(
+    otpEnabled: Boolean,
+    onLottie: (() -> Unit)?,
+    onChangeOtpBypass: () -> Unit
+) = SettingsSection(
+    title = stringResource(R.string.tk_settings_devs_title)
+) {
+    onLottie?.let {
+        WalletListItems.ClickableTextSettingsItem(
+            title = "Lottie animation",
+            leadingIcon = R.drawable.wallet_ic_questionmark,
+            onClick = onLottie,
+        )
+        WalletListItems.Divider()
+    }
+    WalletListItems.SwitchSettingsItem(
+        title = stringResource(R.string.tk_eidRequest_otp_settings_toggle),
+        subtitle = null,
+        isSwitchChecked = otpEnabled,
+        onSwitchChange = { onChangeOtpBypass() },
     )
 }
 
@@ -130,9 +174,18 @@ private fun GeneralSection(
     )
 }
 
+private class DevsScreenPreviewParams : PreviewParameterProvider<Boolean> {
+    override val values = sequenceOf(
+        false,
+        true,
+    )
+}
+
 @WalletAllScreenPreview
 @Composable
-fun SettingsScreenPreview() {
+fun SettingsScreenPreview(
+    @PreviewParameter(DevsScreenPreviewParams::class) previewParams: Boolean,
+) {
     WalletTheme {
         SettingsScreenContent(
             onSecurityAndPrivacy = {},
@@ -141,6 +194,10 @@ fun SettingsScreenPreview() {
             onFeedback = {},
             onLicences = {},
             onImprint = {},
+            onDevsSettings = true,
+            otpEnabled = previewParams,
+            onLottie = {},
+            onChangeOtpBypass = {}
         )
     }
 }

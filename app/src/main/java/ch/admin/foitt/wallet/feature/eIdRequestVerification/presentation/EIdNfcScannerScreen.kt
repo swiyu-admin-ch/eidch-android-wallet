@@ -8,6 +8,7 @@ import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScan
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerChipDataReadingContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerChipDetectionContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerErrorContent
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerFailureContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerInfoContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerLoadingContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScanner.NfcScannerNfcDisabledContent
@@ -33,30 +34,43 @@ fun EIdNfcScannerScreen(viewModel: EIdNfcScannerViewModel) {
 
     EIdNfcScannerScreenContent(
         uiState = uiState,
+        onStart = viewModel::onStartNfcScan,
+        onStop = viewModel::resetNfcState,
+        onEnableNfc = viewModel::onEnableNfc,
+        onRetry = viewModel::onStartNfcScan,
+        onContinue = viewModel::onContinue,
     )
 }
 
 @Composable
 private fun EIdNfcScannerScreenContent(
     uiState: EIdNfcScannerUiState,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    onEnableNfc: () -> Unit,
+    onRetry: () -> Unit,
+    onContinue: () -> Unit,
 ) = when (uiState) {
-    is EIdNfcScannerUiState.Error -> NfcScannerErrorContent(
-        onRetry = uiState.onRetry,
-    )
     is EIdNfcScannerUiState.Info -> NfcScannerInfoContent(
-        onStart = uiState.onStart,
-        onTips = uiState.onTips,
+        onStart = onStart,
     )
     is EIdNfcScannerUiState.Initializing -> NfcScannerLoadingContent()
     is EIdNfcScannerUiState.Scanning -> NfcScannerChipDetectionContent(
-        onStop = uiState.onStop,
+        onStop = onStop,
     )
     is EIdNfcScannerUiState.ReadingChipData -> NfcScannerChipDataReadingContent(
-        onStop = uiState.onStop,
+        onStop = onStop,
     )
     is EIdNfcScannerUiState.Success -> NfcScannerSuccessContent()
     is EIdNfcScannerUiState.NfcDisabled -> NfcScannerNfcDisabledContent(
-        onEnableNfc = uiState.onEnable,
+        onEnableNfc = onEnableNfc,
+    )
+    is EIdNfcScannerUiState.Error -> NfcScannerErrorContent(
+        onRetry = onRetry,
+    )
+    EIdNfcScannerUiState.Failure -> NfcScannerFailureContent(
+        onContinue = onContinue,
+        onRetry = onRetry,
     )
 }
 
@@ -65,10 +79,12 @@ private fun EIdNfcScannerScreenContent(
 private fun EIdNfcScannerPreview() {
     WalletTheme {
         EIdNfcScannerScreenContent(
-            uiState = EIdNfcScannerUiState.Info(
-                onStart = {},
-                onTips = {},
-            )
+            uiState = EIdNfcScannerUiState.Info,
+            onStart = {},
+            onStop = {},
+            onEnableNfc = {},
+            onRetry = {},
+            onContinue = {},
         )
     }
 }

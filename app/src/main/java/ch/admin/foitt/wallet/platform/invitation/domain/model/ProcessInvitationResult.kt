@@ -13,11 +13,9 @@ sealed interface ProcessInvitationResult {
     data class PresentationRequest(
         val credential: CompatibleCredential,
         val request: PresentationRequestWithRaw,
-        val shouldCheckTrustStatement: Boolean,
     ) : ProcessInvitationResult
     data class PresentationRequestCredentialList(
         val credentials: Set<CompatibleCredential>,
         val request: PresentationRequestWithRaw,
-        val shouldCheckTrustStatement: Boolean,
     ) : ProcessInvitationResult
 }

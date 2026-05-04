@@ -66,7 +66,7 @@ class FetchExistingIssuerCredentialInfoImplTest {
         } returns Ok(mockCredential)
 
         coEvery {
-            mockFetchRawAndParsedIssuerCredentialInfo(CREDENTIAL_ISSUER_URL)
+            mockFetchRawAndParsedIssuerCredentialInfo(issuerEndpoint = CREDENTIAL_ISSUER_URL)
         } returns Ok(mockRawAndParsedIssuerCredentialInfo)
     }
 
@@ -78,7 +78,7 @@ class FetchExistingIssuerCredentialInfoImplTest {
 
         coVerifyOrder {
             mockCredentialRepository.getById(CREDENTIAL_ID)
-            mockFetchRawAndParsedIssuerCredentialInfo(CREDENTIAL_ISSUER_URL)
+            mockFetchRawAndParsedIssuerCredentialInfo(issuerEndpoint = CREDENTIAL_ISSUER_URL)
         }
     }
 

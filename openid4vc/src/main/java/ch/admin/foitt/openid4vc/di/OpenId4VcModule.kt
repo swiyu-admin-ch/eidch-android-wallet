@@ -14,7 +14,7 @@ import ch.admin.foitt.openid4vc.domain.repository.FetchDidLogRepository
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
 import ch.admin.foitt.openid4vc.domain.repository.TypeMetadataRepository
 import ch.admin.foitt.openid4vc.domain.repository.VcSchemaRepository
-import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyDescriptorMaps
+import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyDescriptorMapByPresentationDefinition
 import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyVerifiablePresentation
 import ch.admin.foitt.openid4vc.domain.usecase.CreateCredentialRequest
 import ch.admin.foitt.openid4vc.domain.usecase.CreateCredentialRequestProofsJwt
@@ -26,15 +26,16 @@ import ch.admin.foitt.openid4vc.domain.usecase.FetchIssuerConfiguration
 import ch.admin.foitt.openid4vc.domain.usecase.FetchPresentationRequest
 import ch.admin.foitt.openid4vc.domain.usecase.FetchRawAndParsedIssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.usecase.FetchVerifiableCredential
+import ch.admin.foitt.openid4vc.domain.usecase.GetAuthorizationResponseConfig
 import ch.admin.foitt.openid4vc.domain.usecase.GetHardwareKeyPair
-import ch.admin.foitt.openid4vc.domain.usecase.GetPresentationRequestType
 import ch.admin.foitt.openid4vc.domain.usecase.GetSoftwareKeyPair
 import ch.admin.foitt.openid4vc.domain.usecase.GetVerifiableCredentialParams
 import ch.admin.foitt.openid4vc.domain.usecase.ResolveDid
+import ch.admin.foitt.openid4vc.domain.usecase.ResolvePublicKey
 import ch.admin.foitt.openid4vc.domain.usecase.SubmitAnyCredentialPresentation
 import ch.admin.foitt.openid4vc.domain.usecase.ValidateIssuerMetadataJwt
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
-import ch.admin.foitt.openid4vc.domain.usecase.implementation.CreateAnyDescriptorMapsImpl
+import ch.admin.foitt.openid4vc.domain.usecase.VerifyRequestObjectSignature
+import ch.admin.foitt.openid4vc.domain.usecase.implementation.CreateAnyDescriptorMapByPresentationDefinitionImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.CreateAnyVerifiablePresentationImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.CreateCredentialRequestImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.CreateCredentialRequestProofsJwtImpl
@@ -46,32 +47,36 @@ import ch.admin.foitt.openid4vc.domain.usecase.implementation.FetchIssuerConfigu
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.FetchPresentationRequestImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.FetchRawAndParsedIssuerCredentialInfoImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.FetchVerifiableCredentialImpl
+import ch.admin.foitt.openid4vc.domain.usecase.implementation.GetAuthorizationResponseConfigImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.GetHardwareKeyPairImpl
-import ch.admin.foitt.openid4vc.domain.usecase.implementation.GetPresentationRequestTypeImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.GetSoftwareKeyPairImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.GetVerifiableCredentialParamsImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.ResolveDidImpl
+import ch.admin.foitt.openid4vc.domain.usecase.implementation.ResolvePublicKeyImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.SubmitAnyCredentialPresentationImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.ValidateIssuerMetadataJwtImpl
-import ch.admin.foitt.openid4vc.domain.usecase.implementation.VerifyJwtSignatureImpl
+import ch.admin.foitt.openid4vc.domain.usecase.implementation.VerifyRequestObjectSignatureImpl
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.CreateJWE
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWE
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation.CreateJWEImpl
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation.DecryptJWEImpl
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.implementation.VerifyJwtSignatureFromDidImpl
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.implementation.VerifyJwtSignatureImpl
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.CreateVcSdJwtDescriptorMap
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.CreateVcSdJwtVerifiablePresentation
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.FetchTypeMetadata
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.FetchVcSchema
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.FetchVcSdJwtCredential
-import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.VerifyPublicKey
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.VerifyVcSdJwtSignature
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.CreateVcSdJwtDescriptorMapImpl
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.CreateVcSdJwtVerifiablePresentationImpl
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.FetchTypeMetadataImpl
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.FetchVcSchemaImpl
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.FetchVcSdJwtCredentialImpl
-import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.VerifyPublicKeyImpl
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.VerifyVcSdJwtSignatureImpl
+import ch.admin.foitt.openid4vc.utils.ContentLengthLimiter
 import ch.admin.foitt.openid4vc.utils.SafeJson
 import dagger.Binds
 import dagger.Module
@@ -145,6 +150,9 @@ internal class OpenId4VcModule {
     fun provideDefaultHttpClient(@Named(NAMED_DEFAULT_ENGINE) engine: HttpClientEngine, jsonSerializer: Json): HttpClient {
         return HttpClient(engine) {
             expectSuccess = true
+            install(ContentLengthLimiter) {
+                limitInBytes = MAX_CONTENT_SIZE
+            }
             install(ContentNegotiation) {
                 json(jsonSerializer)
             }
@@ -169,6 +177,9 @@ internal class OpenId4VcModule {
     fun provideGzipHttpClient(@Named(NAMED_GZIP_ENGINE) engine: HttpClientEngine, jsonSerializer: Json): HttpClient {
         return HttpClient(engine) {
             expectSuccess = true
+            install(ContentLengthLimiter) {
+                limitInBytes = MAX_CONTENT_SIZE
+            }
             install(ContentNegotiation) {
                 json(jsonSerializer)
             }
@@ -219,6 +230,7 @@ internal class OpenId4VcModule {
     private companion object {
         const val SOCKET_TIMEOUT_MILLIS = 30 * 1000L
         const val REQUEST_TIMEOUT_MILLIS = 60 * 1000L
+        const val MAX_CONTENT_SIZE = 150 * 1024 * 1024L // limit http responses to 150MB
     }
 }
 
@@ -283,8 +295,8 @@ internal interface OpenId4VCBindings {
 
     @Binds
     fun bindCreateAnyDescriptorMaps(
-        useCase: CreateAnyDescriptorMapsImpl
-    ): CreateAnyDescriptorMaps
+        useCase: CreateAnyDescriptorMapByPresentationDefinitionImpl
+    ): CreateAnyDescriptorMapByPresentationDefinition
 
     @Binds
     fun bindCreateVcSdJwtDescriptorMap(
@@ -325,11 +337,6 @@ internal interface OpenId4VCBindings {
     fun bindFetchVcSdJwtCredential(
         useCase: FetchVcSdJwtCredentialImpl
     ): FetchVcSdJwtCredential
-
-    @Binds
-    fun bindVerifyPublicKey(
-        verifier: VerifyPublicKeyImpl
-    ): VerifyPublicKey
 
     @Binds
     fun bindResolveDid(
@@ -374,7 +381,22 @@ internal interface OpenId4VCBindings {
     ): CreateCredentialRequest
 
     @Binds
-    fun bindGetPresentationRequestType(
-        useCase: GetPresentationRequestTypeImpl
-    ): GetPresentationRequestType
+    fun bindGetAuthorizationResponseConfig(
+        useCase: GetAuthorizationResponseConfigImpl
+    ): GetAuthorizationResponseConfig
+
+    @Binds
+    fun bindVerifyRequestObjectSignature(
+        useCase: VerifyRequestObjectSignatureImpl
+    ): VerifyRequestObjectSignature
+
+    @Binds
+    fun bindResolvePublicKey(
+        useCase: ResolvePublicKeyImpl
+    ): ResolvePublicKey
+
+    @Binds
+    fun bindVerifyJwtSignatureFromDid(
+        useCase: VerifyJwtSignatureFromDidImpl
+    ): VerifyJwtSignatureFromDid
 }

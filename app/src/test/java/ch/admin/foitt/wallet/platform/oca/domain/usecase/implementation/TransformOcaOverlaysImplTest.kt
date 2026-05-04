@@ -10,7 +10,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 
@@ -28,15 +30,26 @@ class TransformOcaOverlaysImplTest {
         unmockkAll()
     }
 
-    @Test
-    fun `Oca bundler correctly resolves branding overlay single template`() = runTest {
-        val overlays = listOf(dataSourceOverlay, brandingOverlaySingleTemplate)
+    @TestFactory
+    fun `Oca bundler correctly resolves branding overlay single template`(): List<DynamicTest> {
+        val input = mapOf(
+            dataSourceOverlay to ATTRIBUTE_JSON_PATH,
+            dataSourceOverlayV2 to ATTRIBUTE_CLAIMS_PATH_POINTER,
+        )
 
-        val result = transformOcaOverlays(overlays)
+        return input.map { (dataSourceOverlay, expectedString) ->
+            DynamicTest.dynamicTest("Oca bundler correctly resolves branding overlay with datasource overlay") {
+                runTest {
+                    val overlays = listOf(dataSourceOverlay, brandingOverlaySingleTemplate)
 
-        assertEquals(2, result.size)
+                    val result = transformOcaOverlays(overlays)
 
-        assertEquals("Primary: {{$ATTRIBUTE_JSON_PATH}}", (result[1] as BrandingOverlay1x1).primaryField)
+                    assertEquals(2, result.size)
+
+                    assertEquals("Primary: {{$expectedString}}", (result[1] as BrandingOverlay1x1).primaryField)
+                }
+            }
+        }
     }
 
     @Test
@@ -180,6 +193,7 @@ class TransformOcaOverlaysImplTest {
     }
 
     private val dataSourceOverlay = createDataSourceOverlay()
+    private val dataSourceOverlayV2 = createDataSourceOverlayV2x0()
     private val dataSourceOverlayOtherDigest = createDataSourceOverlay("otherDigest")
     private val dataSourceOverlayCaptureBase2 = createDataSourceOverlay("digest2")
     private val dataSourceOverlayCaptureBase3 = createDataSourceOverlay("digest3")
@@ -206,6 +220,7 @@ class TransformOcaOverlaysImplTest {
         private const val ATTRIBUTE2_KEY = "attribute2Key"
         private const val ATTRIBUTE_JSON_PATH = "$.attributeJsonPath"
         private const val ATTRIBUTE2_JSON_PATH = "$.attribute2JsonPath"
+        private const val ATTRIBUTE_CLAIMS_PATH_POINTER = "[\"attribute\"]"
 
         private fun createDataSourceOverlay(captureBase: String = "digest"): Overlay {
             val dataSourceOverlay = """
@@ -216,6 +231,22 @@ class TransformOcaOverlaysImplTest {
           "attribute_sources" : {
             "$ATTRIBUTE_KEY" : "$ATTRIBUTE_JSON_PATH",
             "$ATTRIBUTE2_KEY" : "$ATTRIBUTE2_JSON_PATH"
+          }
+        }
+            """.trimIndent()
+
+            return json.safeDecodeStringTo<Overlay>(dataSourceOverlay).value
+        }
+
+        private fun createDataSourceOverlayV2x0(captureBase: String = "digest"): Overlay {
+            val dataSourceOverlay = """
+        {
+          "capture_base": "$captureBase",
+          "type": "extend/overlays/data_source/2.0",
+          "format": "vc+sd-jwt",
+          "attribute_sources" : {
+            "$ATTRIBUTE_KEY" : ["attribute"],
+            "$ATTRIBUTE2_KEY" : ["attribute2"]
           }
         }
             """.trimIndent()

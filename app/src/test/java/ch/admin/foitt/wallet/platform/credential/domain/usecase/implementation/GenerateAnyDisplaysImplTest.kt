@@ -1,10 +1,13 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Logo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.OidIssuerDisplay
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.VcSdJwtCredentialConfiguration
+import ch.admin.foitt.wallet.platform.claimsPathPointer.domain.usecase.GetClaimsPathPointers
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyIssuerDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
@@ -35,6 +38,7 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -45,6 +49,9 @@ class GenerateAnyDisplaysImplTest {
 
     @MockK
     private lateinit var mockGetLocalizedCredentialInformationDisplay: GetLocalizedCredentialInformationDisplay
+
+    @MockK
+    private lateinit var mockGetClaimsPathPointers: GetClaimsPathPointers
 
     @MockK
     private lateinit var mockGenerateOcaDisplays: GenerateOcaDisplays
@@ -77,6 +84,7 @@ class GenerateAnyDisplaysImplTest {
 
         useCase = GenerateAnyDisplaysImpl(
             getLocalizedCredentialInformationDisplay = mockGetLocalizedCredentialInformationDisplay,
+            getClaimsPathPointers = mockGetClaimsPathPointers,
             generateOcaDisplays = mockGenerateOcaDisplays,
             generateMetadataDisplays = mockGenerateMetadataDisplays,
         )
@@ -163,7 +171,7 @@ class GenerateAnyDisplaysImplTest {
         useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockMetadata, mockOcaBundle).assertOk()
 
         coVerify(exactly = 1) {
-            mockGenerateOcaDisplays(any(), any())
+            mockGenerateOcaDisplays(any(), any(), any())
         }
         coVerify(exactly = 0) {
             mockGenerateMetadataDisplays(any(), any())
@@ -178,14 +186,14 @@ class GenerateAnyDisplaysImplTest {
             mockGenerateMetadataDisplays(any(), any())
         }
         coVerify(exactly = 0) {
-            mockGenerateOcaDisplays(any(), any())
+            mockGenerateOcaDisplays(any(), any(), any())
         }
     }
 
     @Test
     fun `Generating credential displays maps errors from generating the oca displays`() = runTest {
         val exception = IllegalStateException()
-        coEvery { mockGenerateOcaDisplays(any(), mockOcaBundle) } returns Err(OcaError.Unexpected(exception))
+        coEvery { mockGenerateOcaDisplays(any(), any(), mockOcaBundle) } returns Err(OcaError.Unexpected(exception))
 
         useCase(
             mockAnyCredential,
@@ -211,12 +219,17 @@ class GenerateAnyDisplaysImplTest {
     }
 
     private fun setupDefaultMocks() {
+        val disclosableClaims = json.safeDecodeStringTo<JsonObject>(DISCLOSABLE_CLAIMS_JSON).value
+
         every { mockAnyCredential.claimsPath } returns "$"
-        every { mockAnyCredential.getClaimsToSave() } returns json.safeDecodeStringTo<JsonObject>(DISCLOSABLE_CLAIMS_JSON).value
+        every { mockAnyCredential.format } returns CredentialFormat.VC_SD_JWT
+        every { mockAnyCredential.getClaimsToSave() } returns disclosableClaims
 
         every { mockIssuerInfo.display } returns listOf(issuerDisplay)
 
         every { mockTrustStatement.entityNames() } returns trustIssuerNames
+
+        every { mockMetadata.format } returns CredentialFormat.VC_SD_JWT
 
         coEvery {
             mockGetLocalizedCredentialInformationDisplay(listOf(issuerDisplay), LANGUAGE_EN)
@@ -225,7 +238,12 @@ class GenerateAnyDisplaysImplTest {
             mockGetLocalizedCredentialInformationDisplay(listOf(issuerDisplay), LANGUAGE_FR)
         } returns null
 
-        coEvery { mockGenerateOcaDisplays(any(), mockOcaBundle) } returns Ok(ocaDisplays)
+        coEvery { mockGetClaimsPathPointers(disclosableClaims) } returns
+            mapOf(
+                listOf(ClaimsPathPointerComponent.String("claim")) to JsonPrimitive("value")
+            )
+
+        coEvery { mockGenerateOcaDisplays(any(), any(), mockOcaBundle) } returns Ok(ocaDisplays)
         coEvery { mockGenerateMetadataDisplays(any(), mockMetadata) } returns Ok(metadataDisplays)
     }
 

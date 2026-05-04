@@ -176,9 +176,6 @@ dependencies {
     // security
     implementation(libs.androidx.security.crypto)
 
-    // integrity
-    implementation(libs.integrity)
-
     // Dagger/Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
@@ -226,6 +223,10 @@ dependencies {
     // Json schema validator
     implementation(libs.json.schema.validator)
 
+    //Import for proguard so we can keep all classes, and any classes that extend jna.Structure
+    //Somehow doesn't work in the version catalog
+    implementation("net.java.dev.jna:jna:5.18.1@aar") // Android-compatible
+
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
@@ -259,6 +260,9 @@ dependencies {
     // AvWrapper
     implementation(libs.av.wrapper)
     implementation(libs.java.websocket)
+
+    // Dcql
+    implementation(libs.dcql)
 
     // Nav3
     implementation(libs.androidx.navigation3.ui)

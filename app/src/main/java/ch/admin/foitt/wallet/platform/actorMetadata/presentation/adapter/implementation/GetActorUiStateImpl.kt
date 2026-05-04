@@ -29,7 +29,7 @@ internal class GetActorUiStateImpl @Inject constructor(
             trustStatus = actorDisplayData.trustStatus,
             vcSchemaTrustStatus = actorDisplayData.vcSchemaTrustStatus,
             actorType = actorDisplayData.actorType,
-            nonComplianceState = actorDisplayData.nonComplianceState,
+            actorComplianceState = actorDisplayData.actorComplianceState,
             nonComplianceReason = localizedNonComplianceReason,
         )
     }

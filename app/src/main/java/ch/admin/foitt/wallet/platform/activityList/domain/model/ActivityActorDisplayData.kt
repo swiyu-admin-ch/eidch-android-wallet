@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.activityList.domain.model
 
 data class ActivityActorDisplayData(
-    val id: Long,
+    val activityId: Long,
     val localizedActorName: String,
     val actorImageData: ByteArray? = null,
 ) {
@@ -11,7 +11,7 @@ data class ActivityActorDisplayData(
 
         other as ActivityActorDisplayData
 
-        if (id != other.id) return false
+        if (activityId != other.activityId) return false
         if (localizedActorName != other.localizedActorName) return false
         if (!actorImageData.contentEquals(other.actorImageData)) return false
 
@@ -19,7 +19,7 @@ data class ActivityActorDisplayData(
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
+        var result = activityId.hashCode()
         result = 31 * result + localizedActorName.hashCode()
         result = 31 * result + (actorImageData?.contentHashCode() ?: 0)
         return result

@@ -1,10 +1,12 @@
 package ch.admin.foitt.wallet.platform.database.domain.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import java.time.Instant
@@ -30,6 +32,8 @@ data class CredentialActivityEntity(
     val type: ActivityType,
     val actorTrust: TrustStatus,
     val vcSchemaTrust: VcSchemaTrustStatus,
+    @ColumnInfo(defaultValue = "UNKNOWN")
+    val actorCompliance: ActorComplianceState,
     val nonComplianceData: String?,
     val createdAt: Long = Instant.now().epochSecond,
 )

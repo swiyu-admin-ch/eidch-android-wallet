@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 data class CompatibleCredential(
     val credentialId: Long,
     val requestedFields: List<PresentationRequestField>,
+    val dcqlQueryId: String? = null,
 )

@@ -4,7 +4,7 @@ import ch.admin.foitt.openid4vc.domain.model.KeyPairError
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
 import ch.admin.foitt.openid4vc.domain.usecase.GetHardwareKeyPair
@@ -50,7 +50,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
     private lateinit var mockCredential: VcSdJwtCredential
 
     @MockK
-    private lateinit var mockPresentationRequest: PresentationRequest
+    private lateinit var mockAuthorizationRequest: AuthorizationRequest
 
     @MockK
     private lateinit var mockKeyBinding: KeyBinding
@@ -85,7 +85,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
                 credential = mockCredential,
                 keyBinding = null,
                 requestedFields = mockRequestedFields,
-                presentationRequest = mockPresentationRequest,
+                authorizationRequest = mockAuthorizationRequest,
             ).assertOk()
 
             assertEquals(SD_JWT_WITH_DISCLOSURES, result)
@@ -99,7 +99,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
             credential = mockCredential,
             keyBinding = mockKeyBinding,
             requestedFields = mockRequestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
         ).assertOk()
 
         // The proofJwtString is not created the same every time ->
@@ -128,7 +128,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
             credential = mockCredential,
             keyBinding = mockKeyBinding,
             requestedFields = mockRequestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
@@ -141,7 +141,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
             credential = mockCredential,
             keyBinding = mockKeyBinding,
             requestedFields = mockRequestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
@@ -155,7 +155,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
             credential = mockCredential,
             keyBinding = mockKeyBinding,
             requestedFields = mockRequestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
@@ -168,7 +168,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
             credential = mockCredential,
             keyBinding = mockKeyBinding,
             requestedFields = mockRequestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
@@ -181,7 +181,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
         every { mockKeyBinding.publicKey } returns byteArrayOf()
         every { mockKeyBinding.privateKey } returns byteArrayOf()
 
-        every { mockPresentationRequest.clientId } returns CLIENT_ID
+        every { mockAuthorizationRequest.clientId } returns CLIENT_ID
 
         mockkStatic(String::createDigest)
         every { any<String>().createDigest(HASH_ALGORITHM) } returns BASE64_URL_ENCODED_HASH
@@ -192,7 +192,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
         coEvery { mockGetHardwareKeyPair(SIGNING_KEY_ID, ANDROID_KEY_STORE) } returns Ok(VALID_KEY_PAIR_HARDWARE.keyPair)
         coEvery { mockGetSoftwareKeyPair(any(), any()) } returns Ok(VALID_KEY_PAIR_HARDWARE.keyPair)
 
-        every { mockPresentationRequest.nonce } returns NONCE
+        every { mockAuthorizationRequest.nonce } returns NONCE
     }
 
     private companion object {

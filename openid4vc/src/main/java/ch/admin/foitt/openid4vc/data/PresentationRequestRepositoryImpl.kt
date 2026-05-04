@@ -2,13 +2,16 @@ package ch.admin.foitt.openid4vc.data
 
 import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.domain.model.HttpErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseConfig
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.FetchPresentationRequestError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitAnyCredentialPresentationError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitPresentationErrorError
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
+import ch.admin.foitt.openid4vc.utils.Constants
+import ch.admin.foitt.openid4vc.utils.ContentType
 import ch.admin.foitt.openid4vc.utils.JsonError
 import ch.admin.foitt.openid4vc.utils.JsonParsingError
 import ch.admin.foitt.openid4vc.utils.SafeJson
@@ -22,8 +25,8 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.parameters
@@ -36,30 +39,28 @@ internal class PresentationRequestRepositoryImpl @Inject constructor(
     @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
     private val safeJson: SafeJson,
 ) : PresentationRequestRepository {
-    override suspend fun fetchPresentationRequest(url: URL) =
-        runSuspendCatching<String> {
-            httpClient.get(url) {
-                contentType(ContentType.Application.Json)
-            }.body()
-        }.mapError(Throwable::toFetchPresentationRequestError)
+    override suspend fun fetchPresentationRequest(url: URL) = runSuspendCatching<String> {
+        httpClient.get(url) {
+            contentType(ContentType.applicationJwt)
+        }.body()
+    }.mapError(Throwable::toFetchPresentationRequestError)
 
     override suspend fun submitPresentation(
         url: URL,
-        presentationRequestType: PresentationRequestType,
+        authorizationResponseConfig: AuthorizationResponseConfig,
     ): Result<Unit, SubmitAnyCredentialPresentationError> = coroutineBinding {
         runSuspendCatching {
-            when (presentationRequestType) {
-                is PresentationRequestType.Json -> httpClient.submitForm(
-                    url = url.toExternalForm(),
-                    formParameters = parameters {
-                        append("vp_token", presentationRequestType.vpToken)
-                        append("presentation_submission", presentationRequestType.presentationSubmission)
-                    }
-                )
-                is PresentationRequestType.Jwt -> httpClient.submitForm(
-                    url = url.toExternalForm(),
-                    formParameters = parameters {
-                        append("response", presentationRequestType.response)
+            httpClient.submitForm(
+                url = url.toExternalForm(),
+                formParameters = parameters {
+                    authorizationResponseConfig.params.forEach { append(it.key.jsonName, it.value) }
+                }
+            ) {
+                header(
+                    Constants.SWIYU_API_VERSION_HEADER,
+                    when (authorizationResponseConfig.type) {
+                        AuthorizationResponseType.DCQL -> Constants.SWIYU_API_VERSION_2
+                        AuthorizationResponseType.DIF -> Constants.SWIYU_API_VERSION_1
                     }
                 )
             }
@@ -73,7 +74,7 @@ internal class PresentationRequestRepositoryImpl @Inject constructor(
 
     override suspend fun submitPresentationError(
         url: String,
-        body: PresentationRequestErrorBody,
+        body: AuthorizationResponseErrorBody,
     ) = runSuspendCatching<Unit> {
         httpClient.submitForm(
             url = url,

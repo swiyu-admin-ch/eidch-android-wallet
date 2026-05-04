@@ -28,16 +28,33 @@ interface DeferredCredentialDao {
 
     @Transaction
     @Query(
-        "UPDATE DeferredCredentialEntity SET " +
-            "progressionState = :progressionState," +
-            "polledAt = :polledAt," +
-            "pollInterval = :pollInterval" +
-            " WHERE credentialId = :credentialId"
+        """
+            UPDATE DeferredCredentialEntity 
+            SET progressionState = :progressionState,
+            polledAt = :polledAt, 
+            pollInterval = :pollInterval 
+            WHERE credentialId = :credentialId
+        """
     )
     fun updateStatusByCredentialId(
         credentialId: Long,
         progressionState: DeferredProgressionState,
         polledAt: Long,
         pollInterval: Int,
+    ): Int
+
+    @Transaction
+    @Query(
+        """
+            UPDATE DeferredCredentialEntity 
+            SET accessToken = :accessToken, 
+            refreshToken = COALESCE(:refreshToken, refreshToken)
+            WHERE credentialId = :credentialId 
+        """
+    )
+    fun updateTokensByCredentialId(
+        credentialId: Long,
+        accessToken: String,
+        refreshToken: String?,
     ): Int
 }

@@ -24,115 +24,197 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.unit.Dp
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
+import ch.admin.foitt.wallet.platform.utils.replaceContentDescription
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
 
 @Composable
+fun TrustBadge(
+    trustStatus: TrustStatus,
+    onClick: (BadgeType.ActorInfoBadge) -> Unit,
+) = when (trustStatus) {
+    TrustStatus.TRUSTED -> TrustBadgeTrusted(onClick = onClick)
+    TrustStatus.NOT_TRUSTED -> TrustBadgeNotTrusted(onClick = onClick)
+    TrustStatus.EXTERNAL -> TrustBadgeNotInSystem(onClick = onClick)
+    TrustStatus.UNKNOWN -> {}
+}
+
+@Composable
+fun NonComplianceBadge(
+    actorComplianceState: ActorComplianceState,
+    onClick: (BadgeType.ActorInfoBadge) -> Unit,
+) = when (actorComplianceState) {
+    ActorComplianceState.REPORTED -> NonCompliantActorBadge(
+        onClick = onClick,
+    )
+
+    ActorComplianceState.NOT_REPORTED,
+    ActorComplianceState.UNKNOWN -> {
+    }
+}
+
+@Composable
+fun LegitimateActorBadge(
+    actorType: ActorType,
+    vcSchemaTrustStatus: VcSchemaTrustStatus,
+    onClick: (BadgeType.ActorInfoBadge) -> Unit,
+) = when (actorType) {
+    ActorType.ISSUER if vcSchemaTrustStatus == VcSchemaTrustStatus.TRUSTED -> {
+        LegitimateIssuerBadge(onClick = onClick)
+    }
+
+    ActorType.ISSUER if vcSchemaTrustStatus == VcSchemaTrustStatus.NOT_TRUSTED -> {
+        NonLegitimateIssuerBadge(onClick = onClick)
+    }
+
+    ActorType.VERIFIER if vcSchemaTrustStatus == VcSchemaTrustStatus.TRUSTED -> {
+        LegitimateVerifierBadge(onClick = onClick)
+    }
+
+    ActorType.VERIFIER if vcSchemaTrustStatus == VcSchemaTrustStatus.NOT_TRUSTED -> {
+        NonLegitimateVerifierBadge(onClick = onClick)
+    }
+
+    else -> {}
+}
+
+@Composable
 fun TrustBadgeTrusted(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_trusted,
     text = stringResource(R.string.tk_issuer_trusted),
     contentColor = WalletTheme.colorScheme.onLightTertiary,
     backgroundColor = WalletTheme.colorScheme.lightTertiary,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.VerifiedTrust) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.VerifiedTrust)
+        }
+    }
 )
 
 @Composable
 fun TrustBadgeNotTrusted(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_questionmark_small,
     text = stringResource(R.string.tk_issuer_notTrusted),
     contentColor = WalletTheme.colorScheme.primary,
     backgroundColor = WalletTheme.colorScheme.lightPrimary,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.NotVerifiedTrust) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.NotVerifiedTrust)
+        }
+    }
 )
 
 @Composable
 fun TrustBadgeNotInSystem(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_non_legitimate_actor,
     text = stringResource(R.string.tk_issuer_notInSystem),
     contentColor = WalletTheme.colorScheme.onLightError,
     backgroundColor = WalletTheme.colorScheme.lightError,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.NotInSystemTrust) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.NotInSystemTrust)
+        }
+    }
 )
 
 @Composable
 fun LegitimateIssuerBadge(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_legitimate_actor,
     text = stringResource(R.string.tk_issuer_legitimate),
     contentColor = WalletTheme.colorScheme.onLightTertiary,
     backgroundColor = WalletTheme.colorScheme.lightTertiary,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.LegitimateIssuer) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.LegitimateIssuer)
+        }
+    }
 )
 
 @Composable
 fun NonLegitimateIssuerBadge(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_non_legitimate_actor,
     text = stringResource(R.string.tk_issuer_notLegitimate),
     contentColor = WalletTheme.colorScheme.onLightError,
     backgroundColor = WalletTheme.colorScheme.lightError,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.NonLegitimateIssuer) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.NonLegitimateIssuer)
+        }
+    }
 )
 
 @Composable
 fun LegitimateVerifierBadge(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_legitimate_actor,
     text = stringResource(R.string.tk_verifier_legitimate),
     contentColor = WalletTheme.colorScheme.onLightTertiary,
     backgroundColor = WalletTheme.colorScheme.lightTertiary,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.LegitimateVerifier) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.LegitimateVerifier)
+        }
+    }
 )
 
 @Composable
 fun NonLegitimateVerifierBadge(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_non_legitimate_actor,
     text = stringResource(R.string.tk_verifier_notLegitimate),
     contentColor = WalletTheme.colorScheme.onLightError,
     backgroundColor = WalletTheme.colorScheme.lightError,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.NonLegitimateVerifier) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.NonLegitimateVerifier)
+        }
+    }
 )
 
 @Composable
 fun NonSensitiveClaimInfoBadge(
     claimLabel: String,
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ClaimInfoBadge) -> Unit)? = null,
 ) = Badge(
     text = claimLabel,
     contentColor = WalletTheme.colorScheme.primary,
     backgroundColor = WalletTheme.colorScheme.lightPrimary,
-    onClick = {
-        onClick?.invoke(
-            BadgeType.ClaimInfoBadge.NonSensitiveClaim(
-                claimLabel = claimLabel,
-            )
-        )
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ClaimInfoBadge.NonSensitiveClaim(claimLabel))
+        }
     }
 )
 
 @Composable
 fun SensitiveClaimInfoBadge(
     claimLabel: String,
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ClaimInfoBadge) -> Unit)? = null,
 ) {
     val textDescription = "${stringResource(R.string.tk_global_sensitive_data)}: $claimLabel"
     Badge(
@@ -140,12 +222,10 @@ fun SensitiveClaimInfoBadge(
         text = claimLabel,
         contentColor = WalletTheme.colorScheme.onSensitiveBadge,
         backgroundColor = WalletTheme.colorScheme.sensitiveBadge,
-        onClick = {
-            onClick?.invoke(
-                BadgeType.ClaimInfoBadge.SensitiveClaim(
-                    claimLabel = claimLabel,
-                )
-            )
+        onClick = onClick?.let {
+            {
+                it.invoke(BadgeType.ClaimInfoBadge.SensitiveClaim(claimLabel))
+            }
         },
         textModifier = Modifier.semantics {
             contentDescription = textDescription
@@ -165,13 +245,17 @@ fun SensitiveBadge() {
 
 @Composable
 fun NonCompliantActorBadge(
-    onClick: ((BadgeType) -> Unit)? = null,
+    onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_non_legitimate_actor,
     text = stringResource(R.string.tk_actor_nonCompliant),
     contentColor = WalletTheme.colorScheme.onLightError,
     backgroundColor = WalletTheme.colorScheme.lightError,
-    onClick = { onClick?.invoke(BadgeType.ActorInfoBadge.NonCompliantActor) }
+    onClick = onClick?.let {
+        {
+            it.invoke(BadgeType.ActorInfoBadge.NonCompliantActor)
+        }
+    }
 )
 
 @Composable
@@ -181,7 +265,11 @@ private fun Badge(
     contentColor: Color,
     backgroundColor: Color,
     onClick: (() -> Unit)?,
-    textModifier: Modifier = Modifier
+    textModifier: Modifier = if (onClick != null) {
+        Modifier.replaceContentDescription(text + "," + stringResource(R.string.tk_accessibility_information_double_tap))
+    } else {
+        Modifier.replaceContentDescription(stringResource(R.string.tk_accessibility_information_about) + "," + text)
+    }
 ) = Box(
     modifier = Modifier
         .padding(top = Sizes.s02, bottom = Sizes.s02),
@@ -192,7 +280,10 @@ private fun Badge(
             .then(
                 if (onClick != null) {
                     Modifier
-                        .clickable(onClick = { onClick() })
+                        .clickable(
+                            onClick = { onClick() },
+                            role = Role.Button,
+                        )
                         .spaceBarKeyClickable(onSpace = { onClick() })
                 } else {
                     Modifier

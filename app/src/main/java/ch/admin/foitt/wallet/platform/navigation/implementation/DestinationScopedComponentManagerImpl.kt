@@ -24,7 +24,7 @@ internal class DestinationScopedComponentManagerImpl @Inject constructor(
     override fun <T> getEntryPoint(entryPointClass: Class<T>, componentScope: ComponentScope): T {
         val currentDestination = navManager.currentDestination
 
-        // Runtime exception when the current destination is not in the request scope.
+        // Runtime exception in case of coding error
         require(componentScope.contains(currentDestination)) {
             val msg = "current destination ${currentDestination::class.qualifiedName} is not in scope $componentScope"
             Timber.e(msg)

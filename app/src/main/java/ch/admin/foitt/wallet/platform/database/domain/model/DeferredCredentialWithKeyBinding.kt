@@ -19,5 +19,5 @@ data class DeferredCredentialWithKeyBinding(
         parentColumn = "credentialId",
         entityColumn = "credentialId"
     )
-    val keyBinding: CredentialKeyBindingEntity?
+    val keyBindings: List<CredentialKeyBindingEntity>
 )

@@ -49,15 +49,19 @@ private fun EIdIntroScreenContent(
         },
         stickyBottomBackgroundColor = Color.Transparent,
         stickyBottomContent = {
-            Buttons.TonalSecondary(
-                modifier = Modifier.testTag(TestTags.DECLINE_BUTTON.name),
-                text = stringResource(R.string.tk_getEid_intro_secondaryButton),
-                onClick = onSkip,
-            )
             Buttons.FilledPrimary(
-                modifier = Modifier.testTag(TestTags.ACCEPT_BUTTON.name),
                 text = stringResource(R.string.tk_getEid_intro_primaryButton),
                 onClick = onRequestEId,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.ACCEPT_BUTTON.name),
+            )
+            Buttons.TonalSecondary(
+                text = stringResource(R.string.tk_getEid_intro_secondaryButton),
+                onClick = onSkip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.DECLINE_BUTTON.name),
             )
         }
     ) {

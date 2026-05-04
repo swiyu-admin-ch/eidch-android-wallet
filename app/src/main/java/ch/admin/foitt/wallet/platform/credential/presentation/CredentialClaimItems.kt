@@ -28,6 +28,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.badges.presentation.SensitiveBadge
 import ch.admin.foitt.wallet.platform.composables.Avatar
@@ -190,7 +193,10 @@ private fun WrongDataCard(onWrongData: () -> Unit) = InfoClusterCard {
     ListItem(
         modifier = Modifier
             .clickable(onClick = onWrongData)
-            .spaceBarKeyClickable(onWrongData),
+            .spaceBarKeyClickable(onWrongData)
+            .semantics {
+                role = Role.Button
+            },
         colors = ListItemDefaults.colors(containerColor = WalletTheme.colorScheme.listItemBackground),
         headlineContent = {
             Text(

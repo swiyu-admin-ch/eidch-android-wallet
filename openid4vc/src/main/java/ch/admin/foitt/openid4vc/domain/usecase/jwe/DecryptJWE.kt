@@ -13,6 +13,7 @@ interface DecryptJWE {
 
     private companion object {
         // Nimbus JOSE Jwt library default is 100.000 which is not enough for our credentials containing large images etc.
-        private const val JWE_MAX_COMPRESSED_CIPHER_TEXT_LENGTH = 600000
+        // use 6mio for now, because the max we currently receive is 5.5mio
+        private const val JWE_MAX_COMPRESSED_CIPHER_TEXT_LENGTH = 6000000
     }
 }

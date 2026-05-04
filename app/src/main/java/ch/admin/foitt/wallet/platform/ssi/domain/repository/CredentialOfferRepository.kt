@@ -7,7 +7,6 @@ import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyIssuerDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialOfferRepositoryError
 import com.github.michaelbull.result.Result
@@ -33,6 +32,7 @@ interface CredentialOfferRepository {
     suspend fun saveDeferredCredentialOffer(
         transactionId: String,
         accessToken: String,
+        refreshToken: String?,
         endpoint: URL,
         pollInterval: Int,
         keyBindings: List<KeyBinding>?,
@@ -44,15 +44,12 @@ interface CredentialOfferRepository {
         rawCredentialData: RawCredentialData,
     ): Result<Long, CredentialOfferRepositoryError>
 
-    suspend fun updateDeferredCredentialOffer(
+    suspend fun updateDeferredCredentialMetaData(
         credentialId: Long,
-        progressionState: DeferredProgressionState,
-        polledAt: Long,
-        pollInterval: Int,
         issuerDisplays: List<AnyIssuerDisplay>,
         credentialDisplays: List<AnyCredentialDisplay>,
-        rawMetadata: ByteArray,
-    ): Result<Long, CredentialOfferRepositoryError>
+        rawMetadata: ByteArray
+    ): Result<Unit, CredentialOfferRepositoryError>
 
     suspend fun saveCredentialFromDeferred(
         credentialId: Long,

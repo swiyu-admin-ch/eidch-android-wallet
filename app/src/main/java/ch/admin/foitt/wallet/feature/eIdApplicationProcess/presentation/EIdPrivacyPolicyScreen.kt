@@ -48,6 +48,7 @@ private fun EIdPrivacyPolicyScreenContent(
             Buttons.FilledPrimary(
                 text = stringResource(R.string.tk_getEid_dataPrivacy_primaryButton),
                 onClick = onNext,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     ) {

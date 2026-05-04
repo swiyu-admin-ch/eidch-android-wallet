@@ -60,7 +60,7 @@ internal fun EIdWalletPairingQrCodeScreen(
     EIdWalletPairingQrCodeScreenContent(
         screenState = viewModel.screenUiState.collectAsStateWithLifecycle().value,
         qrBoxState = viewModel.qrBoxState.collectAsStateWithLifecycle().value,
-        onRefresh = viewModel::onResume,
+        onRefresh = viewModel::onRefresh,
         onClose = viewModel::onBack,
     )
 }
@@ -265,6 +265,8 @@ private class EIdWalletPairingQrCodePreviewParams : PreviewParameterProvider<Pre
         QrBoxUiState.Failure to WalletPairingQrCodeUiState.LoadingInvitationError,
         QrBoxUiState.Loading to WalletPairingQrCodeUiState.LoadingInvitation,
         QrBoxUiState.Loading to WalletPairingQrCodeUiState.NetworkError,
+        QrBoxUiState.Loading to WalletPairingQrCodeUiState.PairingTimeout,
+        QrBoxUiState.Loading to WalletPairingQrCodeUiState.UnexpectedError,
         QrBoxUiState.Loading to WalletPairingQrCodeUiState.PairingFailure,
     )
 }

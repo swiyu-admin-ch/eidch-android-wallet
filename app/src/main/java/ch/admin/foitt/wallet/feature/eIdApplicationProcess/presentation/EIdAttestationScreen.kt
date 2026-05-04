@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
 import androidx.activity.compose.BackHandler
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -157,129 +156,6 @@ private fun IntegrityErrorContent(
     WalletTexts.BodyLarge(
         modifier = Modifier.fillMaxWidth(),
         text = stringResource(id = R.string.tk_eidRequest_clientAttestation_android_platform_error_body),
-    )
-}
-
-@Composable
-private fun InvalidClientContent(
-    onClose: () -> Unit,
-    onHelp: () -> Unit,
-    onPlaystore: () -> Unit,
-) = WalletLayouts.ScrollableColumnWithPicture(
-    stickyStartContent = {
-        ScreenMainImage(
-            iconRes = R.drawable.wallet_ic_cross_circle_colored,
-            backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
-        )
-    },
-    stickyBottomBackgroundColor = Color.Transparent,
-    stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_attestation_clientNotSupported_button_playstore_text),
-            onClick = onPlaystore,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_attestation_clientNotSupported_button_close),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-    },
-) {
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    WalletTexts.TitleScreen(
-        text = stringResource(id = R.string.tk_eidRequest_attestation_clientNotSupported_primary),
-    )
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    WalletTexts.BodyLarge(
-        modifier = Modifier.fillMaxWidth(),
-        text = stringResource(id = R.string.tk_eidRequest_attestation_clientNotSupported_secondary),
-    )
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    Buttons.TextLink(
-        text = stringResource(id = R.string.tk_eidRequest_attestation_clientNotSupported_link_text),
-        onClick = onHelp,
-        endIcon = painterResource(id = R.drawable.wallet_ic_chevron),
-    )
-}
-
-@Composable
-private fun UnexpectedErrorContent(
-    onClose: () -> Unit,
-    onRetry: () -> Unit,
-) = WalletLayouts.ScrollableColumnWithPicture(
-    stickyStartContent = {
-        ScreenMainImage(
-            iconRes = R.drawable.wallet_ic_sadface_colored,
-            backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
-        )
-    },
-    stickyBottomBackgroundColor = Color.Transparent,
-    stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_retry),
-            onClick = onRetry,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_close),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-    },
-) {
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    WalletTexts.TitleScreen(
-        text = stringResource(id = R.string.tk_eidRequest_attestation_unexpectedError_primary),
-    )
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    WalletTexts.BodyLarge(
-        modifier = Modifier.fillMaxWidth(),
-        text = stringResource(id = R.string.tk_eidRequest_attestation_unexpectedError_secondary),
-    )
-}
-
-@Composable
-private fun NetworkErrorContent(
-    @StringRes titleText: Int,
-    @StringRes bodyText: Int,
-    onClose: () -> Unit,
-    onRetry: () -> Unit,
-) = WalletLayouts.ScrollableColumnWithPicture(
-    stickyStartContent = {
-        ScreenMainImage(
-            iconRes = R.drawable.wallet_ic_sadface_colored,
-            backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
-        )
-    },
-    stickyBottomBackgroundColor = Color.Transparent,
-    stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_retry),
-            onClick = onRetry,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_close),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-    },
-) {
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    WalletTexts.TitleScreen(
-        text = stringResource(id = titleText),
-    )
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    WalletTexts.BodyLarge(
-        modifier = Modifier.fillMaxWidth(),
-        text = stringResource(id = bodyText),
     )
 }
 

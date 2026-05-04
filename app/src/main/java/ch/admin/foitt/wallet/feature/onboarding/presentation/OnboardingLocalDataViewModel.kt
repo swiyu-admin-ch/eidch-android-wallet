@@ -22,6 +22,6 @@ class OnboardingLocalDataViewModel @Inject constructor(
 
     fun onMoreInformation() = appContext.openLink(R.string.tk_onboarding_introductionStep_yourData_tertiary_link_value)
 
-    fun onNext() = navManager.navigateTo(Destination.OnboardingPresentScreen)
+    fun onNext() = navManager.navigateTo(Destination.OnboardingActivityScreen)
     fun onBack() = navManager.popBackStack()
 }

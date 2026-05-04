@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.implementation
 
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitAnyCredentialPresentationError
 import ch.admin.foitt.openid4vc.domain.usecase.SubmitAnyCredentialPresentation
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.SubmitPresentationError
@@ -21,7 +22,7 @@ class SubmitPresentationImpl @Inject constructor(
     private val submitAnyCredentialPresentation: SubmitAnyCredentialPresentation,
 ) : SubmitPresentation {
     override suspend fun invoke(
-        presentationRequest: PresentationRequest,
+        authorizationRequest: AuthorizationRequest,
         compatibleCredential: CompatibleCredential,
     ): Result<Unit, SubmitPresentationError> =
         getAllAnyCredentialsByCredentialId(compatibleCredential.credentialId)
@@ -29,9 +30,16 @@ class SubmitPresentationImpl @Inject constructor(
             .andThen { anyCredentials ->
                 submitAnyCredentialPresentation(
                     anyCredential = anyCredentials.first(),
-                    requestedFields = compatibleCredential.requestedFields.map { it.key },
-                    presentationRequest = presentationRequest,
-                    usePayloadEncryption = environmentSetupRepository.payloadEncryptionEnabled
+                    requestedFields = compatibleCredential.requestedFields.map {
+                        if (it.path.size == 1) {
+                            it.path.toPointerString().removeSurrounding("[\"", "\"]")
+                        } else {
+                            it.path.toPointerString()
+                        }
+                    },
+                    authorizationRequest = authorizationRequest,
+                    usePayloadEncryption = environmentSetupRepository.payloadEncryptionEnabled,
+                    dcqlQueryId = compatibleCredential.dcqlQueryId,
                 ).mapError(SubmitAnyCredentialPresentationError::toSubmitPresentationError)
             }
 }

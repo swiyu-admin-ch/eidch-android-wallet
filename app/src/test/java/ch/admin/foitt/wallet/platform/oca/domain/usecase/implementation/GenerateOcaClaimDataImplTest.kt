@@ -13,6 +13,8 @@ import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ATTRIBUTE_LABEL
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ATTRIBUTE_LABEL_AGE_EN
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ATTRIBUTE_LABEL_FIRSTNAME_DE
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ATTRIBUTE_LABEL_FIRSTNAME_EN
+import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.CLAIMS_PATH_POINTER_AGE
+import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.CLAIMS_PATH_POINTER_FIRSTNAME
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.CREDENTIAL_FORMAT
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.DIGEST
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ENTRY_CODE_A
@@ -22,13 +24,13 @@ import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ENTRY_CODE_B
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ENTRY_CODE_B_DE
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ENTRY_CODE_B_EN
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.FORMAT
-import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.JSON_PATH_AGE
-import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.JSON_PATH_FIRSTNAME
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.LANGUAGE_DE
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.LANGUAGE_EN
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.UNKNOWN_ENCODING
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSensitiveEntry
-import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleDataSource
+import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleDataSourceMultiVersion
+import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleDataSourceV1
+import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleDataSourceV2
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleEncoding
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleEncodingNoDefault
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleEntry
@@ -42,7 +44,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 
 class GenerateOcaClaimDataImplTest {
 
@@ -88,30 +92,42 @@ class GenerateOcaClaimDataImplTest {
         assertEquals(expectedLabelsAge, overlayBundleAttributes[1].labels)
     }
 
-    @Test
-    fun `Generator correctly generates all attributes data sources`() = runTest {
-        val overlayBundleAttributes =
-            useCase(overlays = ocaSimpleDataSource.overlays, captureBases = ocaSimpleDataSource.captureBases)
-
-        val expectedDataSourcesFirstname = mapOf(
-            CREDENTIAL_FORMAT to JSON_PATH_FIRSTNAME
+    @TestFactory
+    fun `Generator correctly generates all attributes data sources overlay`(): List<DynamicTest> {
+        val input = listOf(
+            ocaSimpleDataSourceV1,
+            ocaSimpleDataSourceV2,
+            ocaSimpleDataSourceMultiVersion,
         )
 
-        val expectedDataSourcesAge = mapOf(
-            CREDENTIAL_FORMAT to JSON_PATH_AGE
-        )
+        return input.map { ocaBundle ->
+            DynamicTest.dynamicTest("Oca: $ocaBundle should return claim data containing claims path pointers") {
+                runTest {
+                    val overlayBundleAttributes =
+                        useCase(overlays = ocaBundle.overlays, captureBases = ocaBundle.captureBases)
 
-        assertEquals(2, overlayBundleAttributes.size)
+                    val expectedDataSourcesFirstname = mapOf(
+                        CREDENTIAL_FORMAT to CLAIMS_PATH_POINTER_FIRSTNAME
+                    )
 
-        assertEquals(DIGEST, overlayBundleAttributes[0].captureBaseDigest)
-        assertEquals(ATTRIBUTE_KEY_FIRSTNAME, overlayBundleAttributes[0].name)
-        assertEquals(AttributeType.Text, overlayBundleAttributes[0].attributeType)
-        assertEquals(expectedDataSourcesFirstname, overlayBundleAttributes[0].dataSources)
+                    val expectedDataSourcesAge = mapOf(
+                        CREDENTIAL_FORMAT to CLAIMS_PATH_POINTER_AGE
+                    )
 
-        assertEquals(DIGEST, overlayBundleAttributes[1].captureBaseDigest)
-        assertEquals(ATTRIBUTE_KEY_AGE, overlayBundleAttributes[1].name)
-        assertEquals(AttributeType.Numeric, overlayBundleAttributes[1].attributeType)
-        assertEquals(expectedDataSourcesAge, overlayBundleAttributes[1].dataSources)
+                    assertEquals(2, overlayBundleAttributes.size)
+
+                    assertEquals(DIGEST, overlayBundleAttributes[0].captureBaseDigest)
+                    assertEquals(ATTRIBUTE_KEY_FIRSTNAME, overlayBundleAttributes[0].name)
+                    assertEquals(AttributeType.Text, overlayBundleAttributes[0].attributeType)
+                    assertEquals(expectedDataSourcesFirstname, overlayBundleAttributes[0].dataSources)
+
+                    assertEquals(DIGEST, overlayBundleAttributes[1].captureBaseDigest)
+                    assertEquals(ATTRIBUTE_KEY_AGE, overlayBundleAttributes[1].name)
+                    assertEquals(AttributeType.Numeric, overlayBundleAttributes[1].attributeType)
+                    assertEquals(expectedDataSourcesAge, overlayBundleAttributes[1].dataSources)
+                }
+            }
+        }
     }
 
     @Test

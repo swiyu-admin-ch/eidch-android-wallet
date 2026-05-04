@@ -18,8 +18,12 @@ object EntryProviderInstallerModule {
     @IntoSet
     @Provides
     fun provideEntryProviderInstaller(): EntryProviderInstaller = {
-        entry<Destination.GenericErrorScreen> {
-            val viewModel = hiltViewModel<GenericErrorViewModel>()
+        entry<Destination.GenericErrorScreen> { navKey ->
+            val viewModel = hiltViewModel<GenericErrorViewModel, GenericErrorViewModel.Factory>(
+                creationCallback = { factory ->
+                    factory.create(error = navKey.error)
+                }
+            )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 GenericErrorScreen(viewModel = viewModel)
             }

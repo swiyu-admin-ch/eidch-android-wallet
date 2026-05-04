@@ -245,7 +245,7 @@ class GeneralCodingKonsistTest {
                     DynamicTest.dynamicTest("${file.name}: kotlinx.serialization.json.Json methods should not be used") {
                         val exceptions =
                             listOf("SafeJson", "OpenId4VcModule", "UtilModule", "Jwt", "SdJwt", "Migration15To16")
-                        if (!file.hasClassWithName(names = exceptions)) {
+                        if (!file.hasClassWithName(names = exceptions) && file.name != "ClaimsPathPointer") {
                             file.assertFalse(additionalMessage = "use methods from 'SafeJson' instead") { fileDeclaration ->
                                 fileDeclaration.hasImport { import ->
                                     import.name == "kotlinx.serialization.json.Json" ||

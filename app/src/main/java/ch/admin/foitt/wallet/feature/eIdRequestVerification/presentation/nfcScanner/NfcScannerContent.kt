@@ -2,13 +2,13 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcSca
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.Buttons
@@ -23,12 +23,12 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 @Composable
 internal fun NfcScannerInfoContent(
     onStart: () -> Unit,
-    onTips: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
         ScreenMainImage(
             iconRes = R.drawable.wallet_nfc_info,
-            backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
+            backgroundColor = WalletTheme.colorScheme.surfaceContainerLow,
+            paddingValues = PaddingValues(vertical = Sizes.s04)
         )
     },
     stickyBottomBackgroundColor = Color.Transparent,
@@ -48,12 +48,6 @@ internal fun NfcScannerInfoContent(
     WalletTexts.BodyLarge(
         modifier = Modifier.fillMaxWidth(),
         text = stringResource(R.string.tk_eidRequest_nfcScan_intro_secondary)
-    )
-    Spacer(modifier = Modifier.height(Sizes.s04))
-    Buttons.TextLink(
-        text = stringResource(id = R.string.tk_eidRequest_nfcScan_intro_tertiary),
-        onClick = onTips,
-        endIcon = painterResource(id = R.drawable.wallet_ic_chevron),
     )
 }
 
@@ -96,11 +90,26 @@ internal fun NfcScannerErrorContent(
     onRetry: () -> Unit,
 ) = NfcScannerContent(
     icon = R.drawable.wallet_ic_cross_circle_colored,
-    primaryText = R.string.tk_eidRequest_nfcScan_failure_primary,
-    secondaryText = R.string.tk_eidRequest_nfcScan_failure_secondary,
-    buttonText = R.string.tk_eidRequest_nfcScan_failure_button_retry,
+    primaryText = R.string.tk_eidRequest_nfcScan_error_primary,
+    secondaryText = R.string.tk_eidRequest_nfcScan_error_secondary,
+    buttonText = R.string.tk_eidRequest_nfcScan_error_button_retry,
     isButtonActive = false,
     onButtonClick = onRetry,
+)
+
+@Composable
+internal fun NfcScannerFailureContent(
+    onContinue: () -> Unit,
+    onRetry: () -> Unit,
+) = NfcScannerContent(
+    icon = R.drawable.wallet_ic_cross_circle_colored,
+    primaryText = R.string.tk_eidRequest_nfcScan_failure_primary,
+    secondaryText = R.string.tk_eidRequest_nfcScan_failure_secondary,
+    buttonText = R.string.tk_eidRequest_nfcScan_failure_button_continue,
+    isButtonActive = false,
+    onButtonClick = onContinue,
+    button2Text = R.string.tk_eidRequest_nfcScan_failure_button_retry,
+    onButton2Click = onRetry,
 )
 
 @Composable
@@ -137,6 +146,8 @@ private fun NfcScannerContent(
     @StringRes buttonText: Int?,
     onButtonClick: () -> Unit = {},
     isButtonActive: Boolean,
+    @StringRes button2Text: Int? = null,
+    onButton2Click: () -> Unit = {},
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
         ScreenMainImage(
@@ -151,6 +162,13 @@ private fun NfcScannerContent(
                 text = stringResource(buttonText),
                 onClick = onButtonClick,
                 isActive = isButtonActive,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        button2Text?.let {
+            Buttons.TonalSecondary(
+                text = stringResource(button2Text),
+                onClick = onButton2Click,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

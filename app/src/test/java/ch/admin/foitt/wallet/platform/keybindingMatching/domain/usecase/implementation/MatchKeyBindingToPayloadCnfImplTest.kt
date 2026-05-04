@@ -175,6 +175,6 @@ class MatchKeyBindingToPayloadCnfImplTest {
         val signed = SignedJWT(header, claims)
         val signer = MACSigner(ByteArray(32) { 1 })
         signed.sign(signer)
-        return signed.serialize()
+        return signed.serialize() + "~"
     }
 }

@@ -2,8 +2,8 @@ package ch.admin.foitt.wallet.platform.invitation
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.Grant
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockFetchCredential.CREDENTIAL_ISSUER
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetCredentialOfferFromUri
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetPresentationRequestFromUri
@@ -42,7 +42,7 @@ class ValidateInvitationImplTest {
     )
 
     @MockK
-    private lateinit var mockPresentationRequestContainer: PresentationRequestContainer
+    private lateinit var mockPresentationRequestWithRaw: PresentationRequestWithRaw
 
     private lateinit var validateInvitationUseCase: ValidateInvitation
 
@@ -56,7 +56,7 @@ class ValidateInvitationImplTest {
         )
 
         coEvery { mockGetCredentialOfferFromUri.invoke(uri = any()) } returns Ok(mockCredentialOffer)
-        coEvery { mockGetPresentationRequestFromUri.invoke(uri = any()) } returns Ok(mockPresentationRequestContainer)
+        coEvery { mockGetPresentationRequestFromUri.invoke(uri = any()) } returns Ok(mockPresentationRequestWithRaw)
     }
 
     @AfterEach
@@ -93,8 +93,8 @@ class ValidateInvitationImplTest {
             mockGetCredentialOfferFromUri.invoke(uri = any())
         }
 
-        val presentationRequestContainer = useCaseResult.assertSuccessType(PresentationRequestContainer::class)
-        assertEquals(mockPresentationRequestContainer, presentationRequestContainer)
+        val presentationRequestWithRaw = useCaseResult.assertSuccessType(PresentationRequestWithRaw::class)
+        assertEquals(mockPresentationRequestWithRaw, presentationRequestWithRaw)
     }
 
     @Test

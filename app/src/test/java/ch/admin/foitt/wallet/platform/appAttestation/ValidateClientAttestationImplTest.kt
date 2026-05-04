@@ -3,8 +3,8 @@ package ch.admin.foitt.wallet.platform.appAttestation
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwk.hasSameCurveAs
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationResponse
@@ -43,7 +43,7 @@ class ValidateClientAttestationImplTest {
     private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
 
     @MockK
-    private lateinit var mockVerifyJwtSignature: VerifyJwtSignature
+    private lateinit var mockVerifyJwtSignatureFromDid: VerifyJwtSignatureFromDid
 
     private var safeJson = spyk(SafeJsonTestInstance.safeJson)
 
@@ -63,7 +63,7 @@ class ValidateClientAttestationImplTest {
 
         useCase = ValidateClientAttestationImpl(
             environmentSetupRepo = mockEnvironmentSetupRepository,
-            verifyJwtSignature = mockVerifyJwtSignature,
+            verifyJwtSignatureFromDid = mockVerifyJwtSignatureFromDid,
             safeJson = safeJson,
         )
 
@@ -72,7 +72,7 @@ class ValidateClientAttestationImplTest {
         coEvery { anyConstructed<Jwt>().expInstant } returns Instant.MAX
         coEvery { mockEnvironmentSetupRepository.attestationsServiceTrustedDids } returns listOf(issuerDid)
         coEvery { mockEnvironmentSetupRepository.appId } returns "swiyu"
-        coEvery { mockVerifyJwtSignature(any(), any(), any()) } returns Ok(Unit)
+        coEvery { mockVerifyJwtSignatureFromDid(any(), any(), any()) } returns Ok(Unit)
     }
 
     @AfterEach
@@ -101,7 +101,7 @@ class ValidateClientAttestationImplTest {
         coVerify(exactly = 0) {
             anyConstructed<Jwt>().iss
             mockEnvironmentSetupRepository.attestationsServiceTrustedDids
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 
@@ -117,7 +117,7 @@ class ValidateClientAttestationImplTest {
 
         coVerify(exactly = 0) {
             mockEnvironmentSetupRepository.attestationsServiceTrustedDids
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 
@@ -134,7 +134,7 @@ class ValidateClientAttestationImplTest {
         }
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 
@@ -150,7 +150,7 @@ class ValidateClientAttestationImplTest {
         }
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 
@@ -166,20 +166,20 @@ class ValidateClientAttestationImplTest {
         }
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 
     @Test
     fun `failed signature verification fails validation`() = runTest {
-        coEvery { mockVerifyJwtSignature.invoke(any(), any(), any()) } returns Err(VcSdJwtError.IssuerValidationFailed)
+        coEvery { mockVerifyJwtSignatureFromDid(any(), any(), any()) } returns Err(JwtError.IssuerValidationFailed)
 
         val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
 
         result.assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 
@@ -196,7 +196,7 @@ class ValidateClientAttestationImplTest {
         }
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 
@@ -213,7 +213,7 @@ class ValidateClientAttestationImplTest {
         }
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignature.invoke(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any(), any())
         }
     }
 

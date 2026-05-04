@@ -69,7 +69,7 @@ class HandleInvitationProcessingSuccessTest {
     }
 
     companion object {
-        private val mockPresentationRequest = MockPresentationRequest.presentationRequest
+        private val mockPresentationRequest = MockPresentationRequest.authorizationRequest
         private val mockCredentialOfferResult = ProcessInvitationResult.CredentialOffer(0L)
         private const val RAW_JWT = "rawJwt"
 
@@ -86,13 +86,11 @@ class HandleInvitationProcessingSuccessTest {
         private val mockPresentationRequestResult = ProcessInvitationResult.PresentationRequest(
             mockCompatibleCredential,
             mockPresentationRequestWithRaw,
-            shouldCheckTrustStatement = true,
         )
 
         private val mockPresentationRequestListResult = ProcessInvitationResult.PresentationRequestCredentialList(
             setOf(mockCompatibleCredential),
             mockPresentationRequestWithRaw,
-            shouldCheckTrustStatement = true,
         )
 
         private val definedSuccessDestinations: Map<ProcessInvitationResult, Destination> = mapOf(
@@ -100,12 +98,10 @@ class HandleInvitationProcessingSuccessTest {
             mockPresentationRequestResult to Destination.PresentationRequestScreen(
                 compatibleCredential = mockPresentationRequestResult.credential,
                 presentationRequestWithRaw = mockPresentationRequestResult.request,
-                shouldFetchTrustStatement = true,
             ),
             mockPresentationRequestListResult to Destination.PresentationCredentialListScreen(
                 compatibleCredentials = mockPresentationRequestListResult.credentials,
                 presentationRequestWithRaw = mockPresentationRequestListResult.request,
-                shouldFetchTrustStatement = true,
             ),
         )
     }

@@ -25,7 +25,7 @@ interface PresentationRequestError {
         CreateAnyDescriptorMapsError,
         CreateVcSdJwtDescriptorMapError,
         SubmitPresentationErrorError,
-        GetPresentationRequestTypeError
+        GetAuthorizationResponseConfigError
 }
 
 sealed interface FetchPresentationRequestError : PresentationRequestError
@@ -36,7 +36,7 @@ internal sealed interface CreateAnyDescriptorMapsError : PresentationRequestErro
 internal sealed interface CreateVcSdJwtDescriptorMapError : PresentationRequestError
 sealed interface SubmitPresentationErrorError : PresentationRequestError
 
-sealed interface GetPresentationRequestTypeError : PresentationRequestError
+sealed interface GetAuthorizationResponseConfigError : PresentationRequestError
 
 internal fun CreateVcSdJwtVerifiablePresentationError.toCreateAnyVerifiablePresentationError(): CreateAnyVerifiablePresentationError =
     when (this) {
@@ -72,18 +72,20 @@ internal fun JsonParsingError.toCreateVcSdJwtVerifiablePresentationError(): Crea
     is JsonError.Unexpected -> PresentationRequestError.Unexpected(throwable)
 }
 
-internal fun JsonParsingError.toFetchPresentationRequestError(): FetchPresentationRequestError = when (this) {
+internal fun JsonParsingError.toGetPresentationRequestConfigError(): GetAuthorizationResponseConfigError = when (this) {
     is JsonError.Unexpected -> PresentationRequestError.Unexpected(throwable)
 }
 
-internal fun JsonParsingError.toGetPresentationRequestTypeError(): GetPresentationRequestTypeError = when (this) {
-    is JsonError.Unexpected -> PresentationRequestError.Unexpected(throwable)
-}
-
-internal fun CreateJWEError.toGetPresentationRequestTypeError(): GetPresentationRequestTypeError = when (this) {
+internal fun CreateJWEError.toGetPresentationRequestConfigError(): GetAuthorizationResponseConfigError = when (this) {
     is JWEError.Unexpected -> PresentationRequestError.Unexpected(throwable)
 }
 
-internal fun GetPresentationRequestTypeError.toSubmitAnyCredentialPresentationError(): SubmitAnyCredentialPresentationError = when (this) {
-    is PresentationRequestError.Unexpected -> this
+internal fun GetAuthorizationResponseConfigError.toSubmitAnyCredentialPresentationError(): SubmitAnyCredentialPresentationError =
+    when (this) {
+        is PresentationRequestError.Unexpected -> this
+    }
+
+internal fun Throwable.toFetchPresentationRequestError(message: String): FetchPresentationRequestError {
+    Timber.e(t = this, message = message)
+    return PresentationRequestError.Unexpected(this)
 }

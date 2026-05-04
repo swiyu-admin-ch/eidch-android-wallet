@@ -28,7 +28,7 @@ private fun InvitationFailureScreenContent(
     InvitationErrorScreenState.INVALID_CREDENTIAL -> InvalidCredential(onClose)
     InvitationErrorScreenState.UNKNOWN_ISSUER -> UnknownIssuer(onClose)
     InvitationErrorScreenState.INVALID_PRESENTATION -> InvalidPresentation(onClose)
-    InvitationErrorScreenState.EMPTY_WALLET -> EmptyWallet(onClose)
+    InvitationErrorScreenState.EMPTY_WALLET,
     InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL -> NoCompatibleCredential(onClose)
     InvitationErrorScreenState.UNSUPPORTED_KEY_STORAGE -> UnsupportedKeyStorageSecurityLevel(onClose)
     InvitationErrorScreenState.UNSUPPORTED_KEY_STORAGE_CAPABILITIES -> IncompatibleDeviceKeyStorage(onClose)
@@ -66,17 +66,8 @@ private fun InvalidPresentation(onClose: () -> Unit) = ErrorScreenContent(
 @Composable
 private fun NoCompatibleCredential(onClose: () -> Unit) = ErrorScreenContent(
     iconRes = R.drawable.wallet_ic_error_credential,
-    title = stringResource(R.string.tk_error_nosuchcredential_title),
-    body = stringResource(R.string.tk_error_nosuchcredential_body),
-    primaryButton = stringResource(id = R.string.tk_global_close),
-    onPrimaryClick = onClose,
-)
-
-@Composable
-private fun EmptyWallet(onClose: () -> Unit) = ErrorScreenContent(
-    iconRes = R.drawable.wallet_ic_error_credential,
-    title = stringResource(R.string.tk_error_emptywallet_title),
-    body = stringResource(R.string.tk_error_emptywallet_body),
+    title = stringResource(R.string.tk_present_credentialNotFound_title),
+    body = stringResource(R.string.tk_present_credentialNotFound_body),
     primaryButton = stringResource(id = R.string.tk_global_close),
     onPrimaryClick = onClose,
 )

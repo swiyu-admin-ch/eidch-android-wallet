@@ -6,7 +6,7 @@ import ch.admin.foitt.wallet.platform.activityList.domain.model.GetActivityDetai
 import ch.admin.foitt.wallet.platform.activityList.domain.model.toGetActivityDetailFlowError
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityWithDetailsRepository
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivityDetailFlow
-import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityDetailDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.MapToCredentialDisplayDataError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.MapToCredentialClaimCluster
@@ -25,7 +25,7 @@ import javax.inject.Inject
 class GetActivityDetailFlowImpl @Inject constructor(
     private val verifiableCredentialWithDisplaysAndClustersRepository: VerifiableCredentialWithDisplaysAndClustersRepository,
     private val activityWithDetailsRepository: ActivityWithDetailsRepository,
-    private val mapToActivityDisplayData: MapToActivityDisplayData,
+    private val mapToActivityDetailDisplayData: MapToActivityDetailDisplayData,
     private val mapToCredentialDisplayData: MapToCredentialDisplayData,
     private val mapToCredentialClaimCluster: MapToCredentialClaimCluster,
 ) : GetActivityDetailFlow {
@@ -45,7 +45,7 @@ class GetActivityDetailFlowImpl @Inject constructor(
 
         coroutineBinding {
             activityWithDisplays?.let { activityWithDetails ->
-                val activityDisplayData = mapToActivityDisplayData(activityWithDetails)
+                val activityDetailDisplayData = mapToActivityDetailDisplayData(activityWithDetails)
                 val credentialDisplayData = mapToCredentialDisplayData(
                     verifiableCredential = credentialWithDisplaysAndClusters.verifiableCredential,
                     credentialDisplays = credentialWithDisplaysAndClusters.credentialDisplays,
@@ -58,7 +58,7 @@ class GetActivityDetailFlowImpl @Inject constructor(
                 )
 
                 ActivityDetail(
-                    activity = activityDisplayData,
+                    activity = activityDetailDisplayData,
                     credential = credentialDisplayData,
                     claims = claims,
                 )

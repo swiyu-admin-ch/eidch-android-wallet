@@ -4,7 +4,7 @@ import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivitiesWithDisplaysFlow
 import ch.admin.foitt.wallet.platform.activityList.presentation.model.toActivityUiState
-import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.ActivityEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.ActivityEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -13,7 +13,6 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
-import ch.admin.foitt.wallet.platform.utils.toPainter
 import com.github.michaelbull.result.mapBoth
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -28,7 +27,6 @@ import kotlinx.coroutines.launch
 @HiltViewModel(assistedFactory = ActivityListViewModel.Factory::class)
 class ActivityListViewModel @AssistedInject constructor(
     getActivitiesWithDisplaysFlow: GetActivitiesWithDisplaysFlow,
-    private val getDrawableFromImageData: GetDrawableFromImageData,
     private val activityEventRepository: ActivityEventRepository,
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
@@ -55,11 +53,7 @@ class ActivityListViewModel @AssistedInject constructor(
                 success = { activitiesWithDisplays ->
                     _isLoading.value = false
                     activitiesWithDisplays.map { activityDisplayData ->
-                        val drawable = activityDisplayData.actorImageData?.let {
-                            getDrawableFromImageData(it)
-                        }
-
-                        activityDisplayData.toActivityUiState(drawable?.toPainter())
+                        activityDisplayData.toActivityUiState()
                     }
                 },
                 failure = {
@@ -82,6 +76,7 @@ class ActivityListViewModel @AssistedInject constructor(
                         delay(4000L)
                         activityEventRepository.resetEvent()
                     }
+                    ActivityEvent.DELETED_ALL -> {} // not used on this screen
                 }
             }
         }
@@ -103,6 +98,6 @@ class ActivityListViewModel @AssistedInject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
     }
 }

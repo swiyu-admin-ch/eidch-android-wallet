@@ -157,7 +157,7 @@ class MapToCredentialClaimDataImplTest {
             claim = CredentialClaim(
                 id = 1,
                 clusterId = 1,
-                key = "key",
+                path = "key",
                 value = input.first,
                 valueType = ValueType.NUMERIC.value
             ),

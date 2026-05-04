@@ -18,7 +18,7 @@ class MapToActivityActorDisplayDataImpl @Inject constructor(
         val imageData = actorDisplaysWithImages.find { it.actorDisplay == localizedActorDisplay }?.image?.image
 
         return ActivityActorDisplayData(
-            id = activityId,
+            activityId = activityId,
             localizedActorName = localizedActorDisplay?.name ?: "",
             actorImageData = imageData
         )

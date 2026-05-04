@@ -1,0 +1,81 @@
+package ch.admin.foitt.openid4vc.domain.usecase.jwt.implementation
+
+import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
+import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.util.assertErr
+import ch.admin.foitt.openid4vc.util.assertOk
+import com.nimbusds.jwt.SignedJWT
+import io.mockk.MockKAnnotations
+import io.mockk.every
+import io.mockk.impl.annotations.MockK
+import io.mockk.unmockkAll
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+
+class VerifyJwtSignatureImplTest {
+
+    @MockK
+    private lateinit var mockPublicKey: Jwk
+
+    @MockK
+    private lateinit var mockJwt: Jwt
+
+    @MockK
+    private lateinit var mockSignedJwt: SignedJWT
+
+    private lateinit var useCase: VerifyJwtSignature
+
+    @BeforeEach
+    fun setUp() {
+        MockKAnnotations.init(this)
+
+        every { mockPublicKey.crv } returns CURVE
+        every { mockPublicKey.x } returns X_VALUE
+        every { mockPublicKey.y } returns Y_VALUE
+        every { mockJwt.signedJwt } returns mockSignedJwt
+        every { mockSignedJwt.verify(any()) } returns true
+
+        useCase = VerifyJwtSignatureImpl()
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    @Test
+    fun `Successfully verifying a public key returns Ok`() = runTest {
+        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertOk()
+    }
+
+    @Test
+    fun `Verifying a signature that does not match returns an error`() = runTest {
+        every { mockSignedJwt.verify(any()) } returns false
+
+        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
+    }
+
+    @Test
+    fun `Error during curve creation returns an error`() = runTest {
+        every { mockPublicKey.crv } returns "something"
+
+        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
+    }
+
+    @Test
+    fun `Error during key creation returns an error`() = runTest {
+        every { mockPublicKey.x } returns "xValue"
+        every { mockPublicKey.y } returns "yValue"
+
+        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
+    }
+
+    private companion object Companion {
+        const val CURVE = "P-256"
+        const val X_VALUE = "_AJp5rIScnVgfu7QPOPYb3dAX9qdUjZ4BDWlIuaQhmA"
+        const val Y_VALUE = "RMk5JZx7riq5r54j96Mtje4NSR1tjP4XhedswL2MQfs"
+    }
+}

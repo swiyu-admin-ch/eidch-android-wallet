@@ -1,9 +1,11 @@
 package ch.admin.foitt.wallet.platform.credential.di
 
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndUpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchExistingIssuerCredentialInfo
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchTrustForIssuance
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataClaimDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentialsByCredentialId
@@ -13,12 +15,16 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleDeferredCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveCredentialFromDeferred
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveVcSdJwtCredentials
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.UpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.ValidateIssuerCredentialInfo
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.FetchAndSaveCredentialImpl
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.FetchAndUpdateDeferredCredentialImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.FetchExistingIssuerCredentialInfoImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.FetchTrustForIssuanceImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GenerateAnyDisplaysImpl
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GenerateMetadataClaimDisplaysImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GenerateMetadataDisplaysImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GetAllAnyCredentialsByCredentialIdImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GetAllAnyCredentialsImpl
@@ -28,7 +34,9 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.H
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.HandleDeferredCredentialResultImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.MapToCredentialDisplayDataImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.RefreshDeferredCredentialsImpl
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.SaveCredentialFromDeferredImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.SaveVcSdJwtCredentialsImpl
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.UpdateDeferredCredentialImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.ValidateIssuerCredentialInfoImpl
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.implementation.GetCredentialCardStateImpl
@@ -45,6 +53,11 @@ internal interface CredentialModule {
     fun bindFetchAndSaveCredential(
         useCase: FetchAndSaveCredentialImpl
     ): FetchAndSaveCredential
+
+    @Binds
+    fun bindFetchAndUpdateDeferredCredential(
+        useCase: FetchAndUpdateDeferredCredentialImpl
+    ): FetchAndUpdateDeferredCredential
 
     @Binds
     fun bindGetAnyCredential(
@@ -87,6 +100,11 @@ internal interface CredentialModule {
     ): GenerateMetadataDisplays
 
     @Binds
+    fun bindGenerateMetadataClaimDisplays(
+        useCase: GenerateMetadataClaimDisplaysImpl
+    ): GenerateMetadataClaimDisplays
+
+    @Binds
     fun bindHandleVcSdJwtCredentials(
         useCase: SaveVcSdJwtCredentialsImpl
     ): SaveVcSdJwtCredentials
@@ -120,4 +138,14 @@ internal interface CredentialModule {
     fun bindValidateIssuerCredentialInfo(
         useCase: ValidateIssuerCredentialInfoImpl
     ): ValidateIssuerCredentialInfo
+
+    @Binds
+    fun bindSaveCredentialFromDeferred(
+        useCase: SaveCredentialFromDeferredImpl
+    ): SaveCredentialFromDeferred
+
+    @Binds
+    fun bindUpdateDeferredCredential(
+        useCase: UpdateDeferredCredentialImpl
+    ): UpdateDeferredCredential
 }

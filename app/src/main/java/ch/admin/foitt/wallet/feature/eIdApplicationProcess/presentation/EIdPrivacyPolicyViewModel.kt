@@ -49,8 +49,7 @@ class EIdPrivacyPolicyViewModel @Inject constructor(
             }
         }
 
-        navManager.popUpToAndNavigate(
-            popToInclusive = Destination.EIdIntroScreen::class,
+        navManager.navigateTo(
             destination = Destination.EIdAttestationScreen
         )
     }

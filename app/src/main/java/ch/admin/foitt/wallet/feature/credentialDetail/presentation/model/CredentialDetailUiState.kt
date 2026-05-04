@@ -6,7 +6,7 @@ import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
@@ -15,6 +15,7 @@ data class CredentialDetailUiState(
     val credential: CredentialCardState,
     val clusterItems: List<CredentialClaimCluster>,
     val issuer: ActorUiState,
+    val areActivitiesEnabled: Boolean,
     val activities: List<ActivityUiState>,
 ) {
     companion object {
@@ -37,9 +38,10 @@ data class CredentialDetailUiState(
                 trustStatus = TrustStatus.UNKNOWN,
                 vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
                 actorType = ActorType.UNKNOWN,
-                nonComplianceState = NonComplianceState.UNKNOWN,
+                actorComplianceState = ActorComplianceState.UNKNOWN,
                 nonComplianceReason = null,
             ),
+            areActivitiesEnabled = true,
             activities = emptyList(),
         )
     }

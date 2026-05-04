@@ -1,14 +1,12 @@
 package ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureFromDidError
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyVcSdJwtSignatureError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.toVerifyVcSdJwtSignatureError
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.VerifyVcSdJwtSignature
-import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
@@ -16,7 +14,7 @@ import com.github.michaelbull.result.mapError
 import javax.inject.Inject
 
 class VerifyVcSdJwtSignatureImpl @Inject constructor(
-    private val verifyJwtSignature: VerifyJwtSignature,
+    private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
 ) : VerifyVcSdJwtSignature {
     override suspend operator fun invoke(
         keyBinding: KeyBinding?,
@@ -31,14 +29,6 @@ class VerifyVcSdJwtSignatureImpl @Inject constructor(
             throwable.toVerifyVcSdJwtSignatureError()
         }.bind()
 
-        if (credential.hasNonDisclosableClaims()) {
-            Err(
-                VcSdJwtError.InvalidVcSdJwt(
-                    IllegalStateException("VcSdJwt contains non-disclosable claims")
-                )
-            ).bind()
-        }
-
         val issuerDid = runSuspendCatching {
             credential.issuer
         }.mapError { throwable ->
@@ -51,11 +41,11 @@ class VerifyVcSdJwtSignatureImpl @Inject constructor(
             throwable.toVerifyVcSdJwtSignatureError()
         }.bind()
 
-        verifyJwtSignature(
+        verifyJwtSignatureFromDid(
             did = issuerDid,
             kid = keyId,
             jwt = credential,
-        ).mapError(VerifyJwtError::toVerifyVcSdJwtSignatureError).bind()
+        ).mapError(VerifyJwtSignatureFromDidError::toVerifyVcSdJwtSignatureError).bind()
 
         credential
     }

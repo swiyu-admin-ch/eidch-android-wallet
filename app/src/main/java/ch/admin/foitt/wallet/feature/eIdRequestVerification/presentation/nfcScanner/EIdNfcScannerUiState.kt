@@ -2,21 +2,11 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcSca
 
 sealed interface EIdNfcScannerUiState {
     data object Initializing : EIdNfcScannerUiState
-    data class Info(
-        val onStart: () -> Unit,
-        val onTips: () -> Unit,
-    ) : EIdNfcScannerUiState
-    data class Scanning(
-        val onStop: () -> Unit,
-    ) : EIdNfcScannerUiState
-    data class ReadingChipData(
-        val onStop: () -> Unit,
-    ) : EIdNfcScannerUiState
-    data class Error(
-        val onRetry: () -> Unit,
-    ) : EIdNfcScannerUiState
+    data object Info : EIdNfcScannerUiState
+    data object Scanning : EIdNfcScannerUiState
+    data object ReadingChipData : EIdNfcScannerUiState
+    data object Error : EIdNfcScannerUiState
+    data object Failure : EIdNfcScannerUiState
     data object Success : EIdNfcScannerUiState
-    data class NfcDisabled(
-        val onEnable: () -> Unit,
-    ) : EIdNfcScannerUiState
+    data object NfcDisabled : EIdNfcScannerUiState
 }

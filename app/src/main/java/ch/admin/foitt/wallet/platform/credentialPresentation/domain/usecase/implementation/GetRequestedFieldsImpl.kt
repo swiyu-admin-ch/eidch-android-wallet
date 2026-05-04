@@ -8,6 +8,7 @@ import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.GetReq
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestField
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.toGetRequestedFieldsError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.GetRequestedFields
+import ch.admin.foitt.wallet.platform.oca.domain.util.naiveJsonPathToClaimsPathPointer
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
@@ -48,7 +49,7 @@ class GetRequestedFieldsImpl @Inject constructor(
                 return@runSuspendCatching emptyList()
             } else if (matchingClaim.second.size == 1) {
                 PresentationRequestField(
-                    jsonPath = matchingClaim.first,
+                    path = naiveJsonPathToClaimsPathPointer(matchingClaim.first),
                     value = matchingClaim.second.first().toString()
                 )
             } else {

@@ -22,7 +22,7 @@ object MockCredentialClaim {
     ) = CredentialClaimWithDisplays(
         claim = CredentialClaim(
             clusterId = 1,
-            key = "key",
+            path = "[\"path\"]",
             value = value,
             valueType = ValueType.DATETIME.value,
             valueDisplayInfo = valueDisplayInfo,

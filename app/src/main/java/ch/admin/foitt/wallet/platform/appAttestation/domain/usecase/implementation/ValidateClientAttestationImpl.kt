@@ -3,7 +3,7 @@ package ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.implementat
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwk.hasSameCurveAs
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationAlgorithm
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
@@ -25,7 +25,7 @@ import javax.inject.Inject
 
 class ValidateClientAttestationImpl @Inject constructor(
     private val environmentSetupRepo: EnvironmentSetupRepository,
-    private val verifyJwtSignature: VerifyJwtSignature,
+    private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
     private val safeJson: SafeJson,
 ) : ValidateClientAttestation {
     override suspend operator fun invoke(
@@ -54,7 +54,7 @@ class ValidateClientAttestationImpl @Inject constructor(
             "algorithm is unsupported"
         }
 
-        val verificationResult = verifyJwtSignature(
+        val verificationResult = verifyJwtSignatureFromDid(
             did = issuer,
             kid = keyId,
             jwt = attestation,

@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.ssi.data.repository
 
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.TokenResponse
 import ch.admin.foitt.wallet.platform.database.data.dao.DaoProvider
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
@@ -46,6 +47,33 @@ class DeferredCredentialRepositoryImpl @Inject constructor(
         }
     }.mapError { throwable ->
         Timber.e(t = throwable, message = "Failed to update deferred credential")
+        SsiError.Unexpected(throwable)
+    }
+
+    override suspend fun getById(
+        credentialId: Long
+    ): Result<DeferredCredentialWithKeyBinding, DeferredCredentialRepositoryError> = runSuspendCatching {
+        withContext(ioDispatcher) {
+            dao().getById(credentialId)
+        }
+    }.mapError { throwable ->
+        Timber.e(throwable)
+        SsiError.Unexpected(throwable)
+    }
+
+    override suspend fun updateTokens(
+        credentialId: Long,
+        tokenResponse: TokenResponse,
+    ): Result<Int, DeferredCredentialRepositoryError> = runSuspendCatching {
+        withContext(ioDispatcher) {
+            dao().updateTokensByCredentialId(
+                credentialId = credentialId,
+                accessToken = tokenResponse.accessToken,
+                refreshToken = tokenResponse.refreshToken,
+            )
+        }
+    }.mapError { throwable ->
+        Timber.e(t = throwable, message = "Failed to update deferred credential tokens")
         SsiError.Unexpected(throwable)
     }
 

@@ -90,13 +90,8 @@ class FetchTypeMetadataImplTest {
     }
 
     @Test
-    fun `Fetching type metadata for VcSdJwt where credential vct integrity is null returns an error`() = runTest {
-        useCase(CREDENTIAL_VCT, typeMetadataUrl, null).assertErrorType(TypeMetadataError.InvalidData::class)
-    }
-
-    @Test
     fun `Fetching type metadata without expecting integrity allows a null integrity`() = runTest {
-        useCase(credentialVct = CREDENTIAL_VCT, url = typeMetadataUrl, integrity = null, expectIntegrity = false).assertOk()
+        useCase(credentialVct = CREDENTIAL_VCT, url = typeMetadataUrl, integrity = null).assertOk()
 
         coVerify(exactly = 0) { mockSRIValidator(any(), any()) }
     }

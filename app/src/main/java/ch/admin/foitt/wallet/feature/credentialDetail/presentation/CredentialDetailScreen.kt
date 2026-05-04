@@ -48,13 +48,13 @@ import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.V
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.model.CredentialDetailUiState
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.activityList.presentation.composables.activityListItem
+import ch.admin.foitt.wallet.platform.activityList.presentation.composables.disabledHistoryActivityListItem
 import ch.admin.foitt.wallet.platform.activityList.presentation.composables.emptyHistoryActivityListItem
 import ch.admin.foitt.wallet.platform.activityList.presentation.composables.entireHistoryButton
+import ch.admin.foitt.wallet.platform.activityList.presentation.composables.goToHistorySettingsButton
 import ch.admin.foitt.wallet.platform.activityList.presentation.model.ActivityUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
-import ch.admin.foitt.wallet.platform.composables.HiddenScrollToButton
-import ch.admin.foitt.wallet.platform.composables.HiddenScrollToTopButton
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.calculateVerticalPadding
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
@@ -69,7 +69,7 @@ import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.LargeCredentialCard
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
 import ch.admin.foitt.wallet.platform.preview.AllLargeScreensPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
@@ -126,6 +126,7 @@ fun CredentialDetailScreen(
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         credentialDetail = viewModel.credentialDetailUiState.stateFlow.collectAsStateWithLifecycle().value,
         onEntireHistory = viewModel::onEntireHistory,
+        onActivitySettings = viewModel::onActivitySettings,
         onWrongData = viewModel::onWrongData,
         onBack = viewModel::onBack,
         onMenu = viewModel::onMenu,
@@ -150,6 +151,7 @@ private fun CredentialDetailScreenContent(
     credentialDetail: CredentialDetailUiState,
     windowWidthClass: WindowWidthClass = currentWindowAdaptiveInfo().windowWidthClass(),
     onEntireHistory: () -> Unit,
+    onActivitySettings: () -> Unit,
     onWrongData: () -> Unit,
     onBack: () -> Unit,
     onMenu: () -> Unit,
@@ -163,6 +165,7 @@ private fun CredentialDetailScreenContent(
             WindowWidthClass.COMPACT -> CredentialDetailCompact(
                 credentialDetail = credentialDetail,
                 onEntireHistory = onEntireHistory,
+                onActivitySettings = onActivitySettings,
                 onWrongData = onWrongData,
                 onBack = onBack,
                 onMenu = onMenu,
@@ -171,6 +174,7 @@ private fun CredentialDetailScreenContent(
             else -> CredentialDetailLarge(
                 credentialDetail = credentialDetail,
                 onEntireHistory = onEntireHistory,
+                onActivitySettings = onActivitySettings,
                 onWrongData = onWrongData,
                 onBack = onBack,
                 onMenu = onMenu,
@@ -184,20 +188,12 @@ private fun CredentialDetailScreenContent(
 private fun BoxWithConstraintsScope.CredentialDetailCompact(
     credentialDetail: CredentialDetailUiState,
     onEntireHistory: () -> Unit,
+    onActivitySettings: () -> Unit,
     onWrongData: () -> Unit,
     onBack: () -> Unit,
     onMenu: () -> Unit,
 ) {
     val lazyListState = rememberLazyListState()
-    HiddenScrollToButton(
-        text = stringResource(id = R.string.tk_receive_jump_to_details),
-        lazyListState = lazyListState,
-        index = 1,
-    )
-    HiddenScrollToTopButton(
-        text = stringResource(id = R.string.tk_global_hiddenGoToTop),
-        lazyListState = lazyListState
-    )
     WalletLayouts.LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         state = lazyListState,
@@ -215,8 +211,10 @@ private fun BoxWithConstraintsScope.CredentialDetailCompact(
         }
 
         latestActivities(
+            areActivitiesEnabled = credentialDetail.areActivitiesEnabled,
             activities = credentialDetail.activities,
             onEntireHistory = onEntireHistory,
+            onActivitySettings = onActivitySettings,
         )
 
         item {
@@ -237,6 +235,7 @@ private fun BoxWithConstraintsScope.CredentialDetailCompact(
 private fun BoxWithConstraintsScope.CredentialDetailLarge(
     credentialDetail: CredentialDetailUiState,
     onEntireHistory: () -> Unit,
+    onActivitySettings: () -> Unit,
     onWrongData: () -> Unit,
     onBack: () -> Unit,
     onMenu: () -> Unit,
@@ -266,8 +265,10 @@ private fun BoxWithConstraintsScope.CredentialDetailLarge(
                 contentPadding = PaddingValues(start = Sizes.s04, end = Sizes.s04, bottom = Sizes.s02),
             ) {
                 latestActivities(
+                    areActivitiesEnabled = credentialDetail.areActivitiesEnabled,
                     activities = credentialDetail.activities,
                     onEntireHistory = onEntireHistory,
+                    onActivitySettings = onActivitySettings,
                 )
 
                 item {
@@ -282,10 +283,6 @@ private fun BoxWithConstraintsScope.CredentialDetailLarge(
                     onWrongData = onWrongData,
                 )
             }
-            HiddenScrollToTopButton(
-                text = stringResource(id = R.string.tk_global_hiddenGoToTop),
-                lazyListState = lazyListState
-            )
         }
     }
 }
@@ -360,8 +357,10 @@ private fun MenuButton(onBack: () -> Unit) {
 }
 
 private fun LazyListScope.latestActivities(
+    areActivitiesEnabled: Boolean,
     activities: List<ActivityUiState>,
     onEntireHistory: () -> Unit,
+    onActivitySettings: () -> Unit,
 ) {
     val contentPadding = PaddingValues(horizontal = Sizes.s04)
     item {
@@ -372,12 +371,34 @@ private fun LazyListScope.latestActivities(
         Spacer(modifier = Modifier.height(Sizes.s02))
     }
 
+    if (areActivitiesEnabled) {
+        enabledActivityList(
+            contentPadding = contentPadding,
+            activities = activities,
+            onEntireHistory = onEntireHistory,
+        )
+    } else {
+        disabledActivityList(
+            contentPadding = contentPadding,
+            onActivitySettings = onActivitySettings,
+        )
+    }
+}
+
+private fun LazyListScope.enabledActivityList(
+    contentPadding: PaddingValues,
+    activities: List<ActivityUiState>,
+    onEntireHistory: () -> Unit,
+) {
     if (activities.isEmpty()) {
         emptyHistoryActivityListItem(paddingValues = contentPadding)
     } else {
         activities.forEachIndexed { index, activity ->
             this.activityListItem(
-                activity = activity,
+                activityType = activity.activityType,
+                activityId = activity.id,
+                activityActorName = activity.localizedActorName,
+                activityDate = activity.date,
                 isFirstItem = index == activities.indices.first,
                 isLastItem = false, // it can never be the last item, because of the entire history button
                 paddingValues = contentPadding,
@@ -389,6 +410,17 @@ private fun LazyListScope.latestActivities(
             onClick = onEntireHistory,
         )
     }
+}
+
+private fun LazyListScope.disabledActivityList(
+    contentPadding: PaddingValues,
+    onActivitySettings: () -> Unit,
+) {
+    disabledHistoryActivityListItem(paddingValues = contentPadding)
+    goToHistorySettingsButton(
+        paddingValues = contentPadding,
+        onClick = onActivitySettings,
+    )
 }
 
 @AllCompactScreensPreview
@@ -420,21 +452,22 @@ private fun CredentialDetailScreenPreview(windowWidthClass: WindowWidthClass) {
                 trustStatus = TrustStatus.TRUSTED,
                 vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
                 actorType = ActorType.ISSUER,
-                nonComplianceState = NonComplianceState.REPORTED,
+                actorComplianceState = ActorComplianceState.REPORTED,
                 nonComplianceReason = "report reason",
             ),
+            areActivitiesEnabled = true,
             activities = listOf(
                 ActivityUiState(
                     id = 1,
                     activityType = ActivityType.ISSUANCE,
                     date = "01.01.2025 | 12:34",
                     localizedActorName = "actor name",
-                    actorImage = null,
                 )
             ),
         ),
         windowWidthClass = windowWidthClass,
         onEntireHistory = {},
+        onActivitySettings = {},
         onWrongData = {},
         onBack = {},
         onMenu = {},

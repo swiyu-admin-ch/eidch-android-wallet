@@ -63,7 +63,7 @@ class ProcessIdentityV1TrustStatementImpl @Inject constructor(
         }
 
         val identityTrustStatement = safeJson.safeDecodeElementTo<IdentityV1TrustStatement>(
-            validIdentityStatements.first().sdJwtJson
+            validIdentityStatements.first().processedJson
         ).mapError(JsonParsingError::toProcessIdentityV1TrustStatementError)
             .bind()
 

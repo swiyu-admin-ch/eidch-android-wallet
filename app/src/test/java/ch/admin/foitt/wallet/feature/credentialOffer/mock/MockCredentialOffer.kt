@@ -13,7 +13,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithD
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.mock.MockCredentialDetail
@@ -49,7 +49,7 @@ object MockCredentialOffer {
     private val claim1 = CredentialClaim(
         id = CLAIM_ID_1,
         clusterId = CLUSTER_ID,
-        key = "key1",
+        path = "path1",
         value = "value1",
         valueType = "valueType1",
         order = 0,
@@ -58,7 +58,7 @@ object MockCredentialOffer {
     private val claim2 = CredentialClaim(
         id = CLAIM_ID_2,
         clusterId = CLUSTER_ID,
-        key = "key2",
+        path = "path2",
         value = "value2",
         valueType = "valueType2",
         order = 1,
@@ -148,7 +148,7 @@ object MockCredentialOffer {
         trustStatus = TrustStatus.TRUSTED,
         vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
         actorType = ActorType.ISSUER,
-        nonComplianceState = NonComplianceState.REPORTED,
+        actorComplianceState = ActorComplianceState.REPORTED,
         nonComplianceReason = null
     )
 

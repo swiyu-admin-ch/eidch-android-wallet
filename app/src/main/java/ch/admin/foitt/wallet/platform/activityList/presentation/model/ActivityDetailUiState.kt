@@ -1,37 +1,32 @@
 package ch.admin.foitt.wallet.platform.activityList.presentation.model
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDetailDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
-import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
-import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 
 data class ActivityDetailUiState(
-    val activity: ActivityUiState,
-    val credential: CredentialCardState,
-    val claims: List<CredentialClaimCluster>,
-) {
-    companion object {
-        val EMPTY = ActivityDetailUiState(
-            credential = CredentialCardState(
-                credentialId = -1,
-                status = CredentialDisplayStatus.Unknown,
-                title = "",
-                subtitle = null,
-                logo = null,
-                backgroundColor = Color.Transparent,
-                contentColor = Color.Transparent,
-                borderColor = Color.Transparent,
-                isCredentialFromBetaIssuer = false
-            ),
-            activity = ActivityUiState(
-                id = -1,
-                activityType = ActivityType.ISSUANCE,
-                date = "01.01.1970 | 00:00",
-                localizedActorName = "",
-                actorImage = null
-            ),
-            claims = emptyList(),
-        )
-    }
-}
+    val id: Long,
+    val activityType: ActivityType,
+    val date: String,
+    val localizedActorName: String,
+    val actorImage: Painter? = null,
+    val actorTrust: TrustStatus,
+    val vcSchemaTrust: VcSchemaTrustStatus,
+    val actorCompliance: ActorComplianceState,
+    val nonComplianceReason: String? = null,
+)
+
+fun ActivityDetailDisplayData.toActivityDetailUiState(actorImage: Painter?) = ActivityDetailUiState(
+    id = activityId,
+    activityType = activityType,
+    date = date,
+    localizedActorName = localizedActorName,
+    actorImage = actorImage,
+    actorTrust = actorTrustStatus,
+    vcSchemaTrust = vcSchemaTrustStatus,
+    actorCompliance = actorComplianceState,
+    nonComplianceReason = localizedNonComplianceReason
+)

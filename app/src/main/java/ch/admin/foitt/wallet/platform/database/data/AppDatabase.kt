@@ -35,6 +35,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestCaseWithStateD
 import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestFileDao
 import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestStateDao
 import ch.admin.foitt.wallet.platform.database.data.dao.ImageEntityDao
+import ch.admin.foitt.wallet.platform.database.data.dao.NonComplianceReasonDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.RawCredentialDataDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWithBundleItemsWithKeyBindingDao
@@ -60,6 +61,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestCase
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFile
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestState
 import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.NonComplianceReasonDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import com.github.michaelbull.result.Result
@@ -81,6 +83,7 @@ import timber.log.Timber
         CredentialClaimClusterDisplayEntity::class,
         CredentialKeyBindingEntity::class,
         CredentialActivityEntity::class,
+        NonComplianceReasonDisplayEntity::class,
         ActivityClaimEntity::class,
         ActivityActorDisplayEntity::class,
         ImageEntity::class,
@@ -110,7 +113,11 @@ import timber.log.Timber
         // Migration14to15 -> No Schema change, Schema 6.1
         // Migration15to16 -> Schema 6.1 to 6.2
         // Migration16to17 -> Schema 6.2 to 6.3
-        AutoMigration(from = 17, to = 18, spec = Migration17to18::class), // Schema 6.3 to 6.4
+        AutoMigration(from = 17, to = 18, spec = Migration17to18::class),
+        AutoMigration(from = 18, to = 19), // Schema 6.3 to 6.4
+        // Migration19to20 -> Schema 6.4 to 6.5
+        AutoMigration(from = 20, to = 21), // Schema 6.5 to 6.7
+        // Migration21to22 -> Schema 6.7 to 6.6
     ], // see also migrations in SqlCipherDatabaseInitializer
     exportSchema = true,
 )
@@ -134,6 +141,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun credentialKeyBindingEntityDao(): CredentialKeyBindingEntityDao
 
     abstract fun credentialActivityEntityDao(): CredentialActivityEntityDao
+    abstract fun nonComplianceReasonDisplayEntityDao(): NonComplianceReasonDisplayEntityDao
     abstract fun activityClaimEntityDao(): ActivityClaimEntityDao
     abstract fun activityActorDisplayEntityDao(): ActivityActorDisplayEntityDao
     abstract fun activityActorDisplayWithImageDao(): ActivityActorDisplayWithImageDao
@@ -181,6 +189,6 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     companion object {
-        internal const val DATABASE_VERSION = 18 // db scheme v6.4
+        internal const val DATABASE_VERSION = 22 // db scheme v6.7
     }
 }

@@ -23,5 +23,5 @@ detekt {
 }
 
 dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
+    detektPlugins(versionCatalogs.named("libs").findLibrary("detekt-formatting").orElseThrow(::AssertionError))
 }

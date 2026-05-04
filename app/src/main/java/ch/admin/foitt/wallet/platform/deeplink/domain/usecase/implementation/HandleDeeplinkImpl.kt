@@ -6,7 +6,7 @@ import ch.admin.foitt.wallet.platform.deeplink.domain.usecase.HandleDeeplink
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationResult
-import ch.admin.foitt.wallet.platform.invitation.domain.model.toErrorDisplay
+import ch.admin.foitt.wallet.platform.invitation.domain.model.toErrorDestination
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ProcessInvitation
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialOfferEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialOfferEventRepository
@@ -46,8 +46,9 @@ class HandleDeeplinkImpl @Inject constructor(
         fromOnboarding: Boolean,
     ) = if (fromOnboarding) {
         if (environmentSetupRepository.eIdRequestEnabled) {
+            // Temporarily disabling the navigate to EidIntroScreen after onboarding while the OTP last
             navigateTo(
-                direction = Destination.EIdIntroScreen,
+                direction = Destination.HomeScreen,
                 fromOnboarding = true
             )
         } else {
@@ -98,18 +99,15 @@ class HandleDeeplinkImpl @Inject constructor(
         is ProcessInvitationResult.PresentationRequest -> PresentationRequestScreen(
             compatibleCredential = invitation.credential,
             presentationRequestWithRaw = invitation.request,
-            shouldFetchTrustStatement = invitation.shouldCheckTrustStatement
         )
 
         is ProcessInvitationResult.PresentationRequestCredentialList -> PresentationCredentialListScreen(
             compatibleCredentials = invitation.credentials,
             presentationRequestWithRaw = invitation.request,
-            shouldFetchTrustStatement = invitation.shouldCheckTrustStatement
         )
     }
 
-    private fun handleFailure(invitationError: ProcessInvitationError): Destination =
-        Destination.InvitationFailureScreen(invitationError = invitationError.toErrorDisplay(), uri = null)
+    private fun handleFailure(invitationError: ProcessInvitationError): Destination = invitationError.toErrorDestination(null)
 
     private fun navigateTo(direction: Destination, fromOnboarding: Boolean) = NavigationAction {
         if (fromOnboarding) {

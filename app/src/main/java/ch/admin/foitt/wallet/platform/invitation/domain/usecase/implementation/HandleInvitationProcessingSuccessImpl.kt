@@ -40,7 +40,6 @@ class HandleInvitationProcessingSuccessImpl @Inject constructor(
         Destination.PresentationRequestScreen(
             compatibleCredential = presentationRequest.credential,
             presentationRequestWithRaw = presentationRequest.request,
-            shouldFetchTrustStatement = presentationRequest.shouldCheckTrustStatement,
         )
     )
 
@@ -50,7 +49,6 @@ class HandleInvitationProcessingSuccessImpl @Inject constructor(
         Destination.PresentationCredentialListScreen(
             compatibleCredentials = presentationRequest.credentials,
             presentationRequestWithRaw = presentationRequest.request,
-            shouldFetchTrustStatement = presentationRequest.shouldCheckTrustStatement,
         )
     )
 

@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,25 +34,36 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.LoadingContent
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.OrientationLocker
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerButton
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerButtonState
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerCamera
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerInfoBox
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.faceScanner.EIdFaceScannerUiState
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.faceScanner.FaceScannerErrorContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.SDKInfoState
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
+import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
+import ch.admin.foitt.wallet.platform.composables.presentation.addTopScaffoldPadding
+import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
+import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
-import ch.admin.foitt.wallet.platform.scaffold.presentation.TopBarBackArrow
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.platform.utils.OnPauseEventHandler
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
-import ch.admin.foitt.wallet.platform.utils.lockOrientation
-import ch.admin.foitt.wallet.platform.utils.unlockOrientation
+import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTheme
-import ch.admin.foitt.wallet.theme.WalletTopBarColors
 
 @Composable
 fun EIdFaceScannerScreen(
     viewModel: EIdFaceScannerViewModel,
 ) {
     val currentActivity = LocalActivity.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val shouldLock by viewModel.shouldLock.collectAsStateWithLifecycle()
+
     OnResumeEventHandler(viewModel::onResume)
     OnPauseEventHandler(viewModel::onPause)
     BackHandler(enabled = true, viewModel::onUp)
@@ -59,51 +72,63 @@ fun EIdFaceScannerScreen(
         viewModel.initScannerSdk(currentActivity)
     }
 
-    val shouldLock by viewModel.lockOrientation.collectAsStateWithLifecycle()
-
-    LaunchedEffect(shouldLock) {
-        currentActivity.let {
-            if (shouldLock) {
-                it.lockOrientation()
-            } else {
-                it.unlockOrientation()
-            }
-        }
-    }
+    OrientationLocker(currentActivity, shouldLock)
 
     EIdFaceScannerScreenContent(
-        infoState = viewModel.infoState.collectAsStateWithLifecycle().value,
-        infoText = viewModel.infoText.collectAsStateWithLifecycle().value,
-        isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
+        uiState = uiState,
+        isLoading = isLoading,
         getScannerView = viewModel::getScannerView,
         onAfterViewLayout = viewModel::onAfterViewLayout,
-        onUp = viewModel::onUp,
+        onHelp = viewModel::onHelp,
+        onToggleScan = viewModel::onToggleScan
     )
+}
+
+@Composable
+private fun EIdFaceScannerScreenContent(
+    uiState: EIdFaceScannerUiState,
+    isLoading: Boolean,
+    getScannerView: suspend (width: Int, height: Int) -> View,
+    onAfterViewLayout: (width: Int, height: Int) -> Unit,
+    onHelp: () -> Unit,
+    onToggleScan: () -> Unit,
+) = when (uiState) {
+    is EIdFaceScannerUiState.Error -> FaceScannerErrorContent(onRetry = uiState.onRetry, onHelp = onHelp)
+
+    EIdFaceScannerUiState.Initializing -> LoadingContent()
+
+    else -> {
+        val scanState = uiState as? EIdFaceScannerUiState.Scan
+        EIdFaceScannerScannerContent(
+            infoState = scanState?.infoState ?: SDKInfoState.Empty,
+            infoText = scanState?.infoText,
+            isLoading = isLoading,
+            scannerButtonState = scanState?.scannerButtonState ?: ScannerButtonState.Ready,
+            getScannerView = getScannerView,
+            onAfterViewLayout = onAfterViewLayout,
+            onToggleScan = onToggleScan,
+        )
+    }
 }
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EIdFaceScannerScreenContent(
+private fun EIdFaceScannerScannerContent(
     infoState: SDKInfoState,
     infoText: Int?,
     isLoading: Boolean,
+    scannerButtonState: ScannerButtonState,
     getScannerView: suspend (width: Int, height: Int) -> View,
     onAfterViewLayout: (width: Int, height: Int) -> Unit,
-    onUp: () -> Unit,
+    onToggleScan: () -> Unit,
 ) = Column(
-    modifier = Modifier
-        .fillMaxSize()
-        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+    modifier = Modifier.fillMaxSize()
 ) {
-    TopBarBackArrow(
-        titleId = null,
-        showButtonBackground = false,
-        onUp = onUp,
-        actionButton = {},
-        colors = WalletTopBarColors.transparent(),
-    )
-    BoxWithConstraints {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
         ScannerCamera(
             containerWidth = constraints.maxWidth,
             containerHeight = constraints.maxHeight,
@@ -111,19 +136,61 @@ private fun EIdFaceScannerScreenContent(
             onAfterViewLayout = onAfterViewLayout,
         )
 
-        if (!isLoading) {
+        val windowWidthClass = currentWindowAdaptiveInfo().windowWidthClass()
+        val isCompact = windowWidthClass == WindowWidthClass.COMPACT
+
+        if (!isLoading && scannerButtonState != ScannerButtonState.Done) {
             ScanBox(
-                modifier = Modifier.align(Alignment.Center)
-            )
-            ScannerInfoBox(
-                infoState = infoState,
-                infoText = infoText,
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
+                    .align(Alignment.Center)
+                    .then(
+                        if (isCompact) {
+                            Modifier
+                        } else {
+                            Modifier.padding(top = Sizes.s10)
+                        }
+                    )
             )
         }
+
+        ScannerButton(
+            onClick = onToggleScan,
+            state = scannerButtonState,
+            modifier = Modifier
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                )
+                .then(
+                    if (isCompact) {
+                        Modifier
+                            .bottomSafeDrawing()
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = Sizes.s04)
+                    } else {
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = Sizes.s04)
+                    }
+                )
+        )
+
+        ScannerInfoBox(
+            infoState = infoState,
+            infoText = infoText,
+            modifier = Modifier
+                .then(
+                    if (isCompact) {
+                        Modifier
+                            .padding(top = Sizes.s04)
+                    } else {
+                        Modifier
+                    }
+                )
+                .addTopScaffoldPadding()
+                .align(Alignment.TopCenter)
+        )
+        LoadingOverlay(isLoading)
     }
-    LoadingOverlay(isLoading)
 }
 
 @Composable
@@ -143,7 +210,7 @@ private fun ScanBox(
             contentScale = ContentScale.Fit,
             colorFilter = ColorFilter.tint(WalletTheme.colorScheme.onPrimaryFixed),
             modifier = Modifier
-                .sizeIn(maxWidth = 1200.dp, maxHeight = 1200.dp)
+                .sizeIn(maxWidth = 1000.dp, maxHeight = 1000.dp)
         )
     }
 }
@@ -168,12 +235,16 @@ private fun EIdFaceScannerScreenPreview(
     WalletTheme {
         val currentContext = LocalContext.current
         EIdFaceScannerScreenContent(
-            infoState = previewParams.infoState,
-            infoText = R.string.avbeam_error_unknown,
+            uiState = EIdFaceScannerUiState.Scan(
+                infoState = previewParams.infoState,
+                infoText = R.string.avbeam_error_unknown,
+                scannerButtonState = ScannerButtonState.Ready,
+            ),
             isLoading = false,
             getScannerView = { _, _ -> View(currentContext) },
             onAfterViewLayout = { _, _ -> },
-            onUp = {},
+            onHelp = {},
+            onToggleScan = {},
         )
     }
 }

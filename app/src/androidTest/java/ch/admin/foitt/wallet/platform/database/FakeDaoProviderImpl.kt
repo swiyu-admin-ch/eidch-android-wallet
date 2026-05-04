@@ -26,6 +26,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestCaseWithStateD
 import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestFileDao
 import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestStateDao
 import ch.admin.foitt.wallet.platform.database.data.dao.ImageEntityDao
+import ch.admin.foitt.wallet.platform.database.data.dao.NonComplianceReasonDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.RawCredentialDataDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWithBundleItemsWithKeyBindingDao
@@ -109,6 +110,10 @@ class FakeDaoProviderImpl : DaoProvider {
             override fun updatedAt(id: Long, updatedAt: Long): Int {
                 return 3
             }
+
+            override fun updateNextBundleIdByCredentialId(credentialId: Long, nextPresentableBundleItemId: Long): Int {
+                return 1
+            }
         })
 
     override val verifiableCredentialWithDisplaysAndClustersDaoFlow: StateFlow<VerifiableCredentialWithDisplaysAndClustersDao?>
@@ -123,6 +128,8 @@ class FakeDaoProviderImpl : DaoProvider {
         get() = MutableStateFlow(null)
 
     override val credentialActivityEntityDao: StateFlow<CredentialActivityEntityDao?>
+        get() = MutableStateFlow(null)
+    override val nonComplianceReasonDisplayEntityDao: StateFlow<NonComplianceReasonDisplayEntityDao?>
         get() = MutableStateFlow(null)
     override val activityClaimEntityDao: StateFlow<ActivityClaimEntityDao?>
         get() = MutableStateFlow(null)

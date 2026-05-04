@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementatio
 
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityRepository
+import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityStateRepository
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.SaveIssuanceActivity
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
 import com.github.michaelbull.result.Ok
@@ -19,6 +20,9 @@ import org.junit.jupiter.api.Test
 class SaveIssuanceActivityImplTest {
 
     @MockK
+    private lateinit var mockActivityStateRepository: ActivityStateRepository
+
+    @MockK
     private lateinit var mockActivityRepository: ActivityRepository
 
     private lateinit var useCase: SaveIssuanceActivity
@@ -27,8 +31,13 @@ class SaveIssuanceActivityImplTest {
     fun setUp() {
         MockKAnnotations.init(this)
         useCase = SaveIssuanceActivityImpl(
+            activityStateRepository = mockActivityStateRepository,
             activityRepository = mockActivityRepository,
         )
+
+        coEvery {
+            mockActivityStateRepository.areActivitiesEnabled()
+        } returns true
 
         coEvery {
             mockActivityRepository.saveActivity(any(), any(), any(), any(), any(), any())
@@ -41,7 +50,7 @@ class SaveIssuanceActivityImplTest {
     }
 
     @Test
-    fun `Saving an issuance activity calls the repo with the correct parameters`() = runTest {
+    fun `Saving an issuance activity where activity list is enabled calls the repo with the correct parameters`() = runTest {
         val credentialId = 1L
         val actorDisplayData = mockk<ActorDisplayData>()
         val actorFallbackName = "fallback"
@@ -53,6 +62,33 @@ class SaveIssuanceActivityImplTest {
         )
 
         coVerify {
+            mockActivityRepository.saveActivity(
+                activityType = ActivityType.ISSUANCE,
+                credentialId = credentialId,
+                actorDisplayData = actorDisplayData,
+                actorFallbackName = actorFallbackName,
+                nonComplianceData = null,
+            )
+        }
+    }
+
+    @Test
+    fun `Saving an issuance activity where activity list is disabled does not call the repo`() = runTest {
+        coEvery {
+            mockActivityStateRepository.areActivitiesEnabled()
+        } returns false
+
+        val credentialId = 1L
+        val actorDisplayData = mockk<ActorDisplayData>()
+        val actorFallbackName = "fallback"
+
+        useCase(
+            credentialId = credentialId,
+            actorDisplayData = actorDisplayData,
+            issuerFallbackName = actorFallbackName
+        )
+
+        coVerify(exactly = 0) {
             mockActivityRepository.saveActivity(
                 activityType = ActivityType.ISSUANCE,
                 credentialId = credentialId,

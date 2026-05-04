@@ -26,6 +26,7 @@ interface SsiError {
         CredentialWithKeyBindingRepositoryError,
         BundleItemWithKeyBindingRepositoryError,
         DeferredCredentialRepositoryError,
+        DeleteDeferredCredentialError,
         RawCredentialDataRepositoryError
 }
 
@@ -45,6 +46,7 @@ sealed interface GetCredentialsWithDetailsFlowError
 sealed interface CredentialWithKeyBindingRepositoryError
 sealed interface BundleItemWithKeyBindingRepositoryError
 sealed interface DeferredCredentialRepositoryError
+sealed interface DeleteDeferredCredentialError
 sealed interface RawCredentialDataRepositoryError
 
 internal fun BundleItemRepositoryError.toRefreshBatchCredentialsError(): RefreshBatchCredentialsError = when (this) {
@@ -120,4 +122,12 @@ internal fun MapToCredentialDisplayDataError.toGetCredentialDetailFlowError(): G
 
 internal fun MapToCredentialDisplayDataError.toGetCredentialsWithDisplaysFlowError(): GetCredentialsWithDetailsFlowError = when (this) {
     is CredentialError.Unexpected -> SsiError.Unexpected(cause)
+}
+
+internal fun DeferredCredentialRepositoryError.toDeleteDeferredCredentialError() = when (this) {
+    is SsiError.Unexpected -> SsiError.Unexpected(cause)
+}
+
+internal fun CredentialRepositoryError.toDeleteDeferredCredentialError2() = when (this) {
+    is SsiError.Unexpected -> SsiError.Unexpected(cause)
 }

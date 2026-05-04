@@ -12,8 +12,11 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.model.RawOcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchDeferredVcMetadataByFormat
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchOcaBundle
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.ResolveMetaDataIntegrity
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.FetchDeferredVcMetadataByFormatImpl
 import ch.admin.foitt.wallet.platform.oca.mock.TypeMetadataMocks
+import ch.admin.foitt.wallet.platform.oca.mock.TypeMetadataMocks.VCT_METADATA_URI
+import ch.admin.foitt.wallet.platform.oca.mock.TypeMetadataMocks.VCT_METADATA_URI_INTEGRITY
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.net.URL
 
 @OptIn(UnsafeResultValueAccess::class)
 class FetchDeferredVcMetadataByFormatImplTest {
@@ -64,6 +68,9 @@ class FetchDeferredVcMetadataByFormatImplTest {
         safeJson.safeDecodeStringTo<TypeMetadata>(TypeMetadataMocks.typeMetadataFullExample).value
     }
 
+    @MockK
+    private lateinit var mockResolveMetaDataIntegrity: ResolveMetaDataIntegrity
+
     private lateinit var useCase: FetchDeferredVcMetadataByFormat
 
     @BeforeEach
@@ -71,6 +78,7 @@ class FetchDeferredVcMetadataByFormatImplTest {
         MockKAnnotations.init(this)
 
         useCase = FetchDeferredVcMetadataByFormatImpl(
+            resolveMetaDataIntegrity = mockResolveMetaDataIntegrity,
             fetchTypeMetadata = mockFetchTypeMetadata,
             fetchVcSchema = mockFetchVcSchema,
             fetchOcaBundle = mockFetchOcaBundle,
@@ -93,7 +101,7 @@ class FetchDeferredVcMetadataByFormatImplTest {
 
         coVerifyOrder {
             mockCredentialConfig.vct
-            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any(), expectIntegrity = any())
+            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any())
             mockFetchVcSchema(schemaUrl = any(), schemaUriIntegrity = any())
             mockFetchOcaBundle(uri = any(), integrity = any())
         }
@@ -102,7 +110,7 @@ class FetchDeferredVcMetadataByFormatImplTest {
     @Test
     fun `Fetching deferred credential metadata with no displays successfully returns a TypeMetadata`() = runTest {
         coEvery {
-            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any(), expectIntegrity = any())
+            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any())
         } returns Ok(testTypeMetadata.copy(displays = null))
 
         val result = useCase(credentialConfig = mockCredentialConfig).assertOk()
@@ -114,11 +122,22 @@ class FetchDeferredVcMetadataByFormatImplTest {
     @Test
     fun `Fetching deferred credential metadata with non url vct successfully returns an empty TypeMetadata`() = runTest {
         coEvery { mockCredentialConfig.vct } returns vctString
-
+        coEvery {
+            mockResolveMetaDataIntegrity(any())
+        } returns Ok(Pair(null, null))
         val result = useCase(credentialConfig = mockCredentialConfig).assertOk()
 
         assertEquals(null, result.vcSchema)
         assertEquals(null, result.rawOcaBundle)
+    }
+
+    @Test
+    fun `Fetching deferred credential metadata maps errors from resolving meta data integrity`() = runTest {
+        coEvery {
+            mockResolveMetaDataIntegrity(any())
+        } returns Err(OcaError.Unexpected(IllegalStateException("Vct is not a url, but vct#integrity is provided")))
+
+        useCase(mockCredentialConfig).assertErrorType(OcaError.Unexpected::class)
     }
 
     @Test
@@ -132,7 +151,7 @@ class FetchDeferredVcMetadataByFormatImplTest {
     fun `Fetch type metadata errors are mapped`() = runTest {
         val exception = Exception("my exception")
         coEvery {
-            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any(), expectIntegrity = any())
+            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any())
         } returns Err(TypeMetadataError.Unexpected(exception))
 
         val error = useCase(credentialConfig = mockCredentialConfig).assertErrorType(OcaError.Unexpected::class)
@@ -164,7 +183,7 @@ class FetchDeferredVcMetadataByFormatImplTest {
     @Test
     fun `Fetching deferred credential metadata with an improper typeMetadata schema Uri returns an error`() = runTest {
         coEvery {
-            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any(), expectIntegrity = any())
+            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any())
         } returns Ok(testTypeMetadata.copy(schemaUri = "not an uri"))
 
         useCase(credentialConfig = mockCredentialConfig).assertErrorType(OcaError.InvalidOca::class)
@@ -172,10 +191,13 @@ class FetchDeferredVcMetadataByFormatImplTest {
 
     private fun setupDefaultMocks() {
         coEvery {
-            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any(), expectIntegrity = any())
+            mockFetchTypeMetadata(credentialVct = any(), url = any(), integrity = any())
         } returns Ok(testTypeMetadata)
 
         coEvery { mockCredentialConfig.vct } returns vctUrl
+        coEvery { mockCredentialConfig.vctIntegrity } returns null
+        coEvery { mockCredentialConfig.vctMetadataUri } returns null
+        coEvery { mockCredentialConfig.vctMetadataUriIntegrity } returns null
 
         coEvery { mockCredentialConfig.format } returns CredentialFormat.VC_SD_JWT
 
@@ -186,5 +208,9 @@ class FetchDeferredVcMetadataByFormatImplTest {
         coEvery {
             mockFetchVcSchema(schemaUrl = any(), schemaUriIntegrity = any())
         } returns Ok(testVcSchema)
+
+        coEvery {
+            mockResolveMetaDataIntegrity(any())
+        } returns Ok(Pair(URL(VCT_METADATA_URI), VCT_METADATA_URI_INTEGRITY))
     }
 }

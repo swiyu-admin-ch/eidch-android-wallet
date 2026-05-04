@@ -2,15 +2,16 @@ package ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.implementati
 
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
+import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureFromDidError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwt
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusProperties
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.FetchCredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.ValidateTrustStatementError
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.toValidateTrustStatementError
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.GetTrustDomainFromDid
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ValidateTrustStatement
 import ch.admin.foitt.wallet.platform.utils.SafeJson
 import com.github.michaelbull.result.Result
@@ -21,8 +22,9 @@ import com.github.michaelbull.result.mapError
 import javax.inject.Inject
 
 internal class ValidateTrustStatementImpl @Inject constructor(
+    private val getTrustDomainFromDid: GetTrustDomainFromDid,
     private val environmentSetupRepo: EnvironmentSetupRepository,
-    private val verifyJwtSignature: VerifyJwtSignature,
+    private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
     private val fetchCredentialStatus: FetchCredentialStatus,
     private val safeJson: SafeJson,
 ) : ValidateTrustStatement {
@@ -31,7 +33,7 @@ internal class ValidateTrustStatementImpl @Inject constructor(
         actorDid: String,
     ): Result<VcSdJwt, ValidateTrustStatementError> = coroutineBinding {
         runSuspendCatching {
-            check(trustStatement.hasTrustedDid()) {
+            check(trustStatement.hasTrustedDid(actorDid)) {
                 errorMessageStart + "issuer did is not trusted"
             }
 
@@ -43,12 +45,11 @@ internal class ValidateTrustStatementImpl @Inject constructor(
                 errorMessageStart + "algorithm is unsupported"
             }
 
-            verifyJwtSignature(
+            verifyJwtSignatureFromDid(
                 did = trustStatement.vcIssuer,
                 kid = trustStatement.kid,
                 jwt = trustStatement,
-            )
-                .mapError(VerifyJwtError::toValidateTrustStatementError)
+            ).mapError(VerifyJwtSignatureFromDidError::toValidateTrustStatementError)
                 .bind()
 
             // Claim checks
@@ -78,7 +79,11 @@ internal class ValidateTrustStatementImpl @Inject constructor(
         }.bind()
     }
 
-    private fun VcSdJwt.hasTrustedDid() = environmentSetupRepo.trustRegistryTrustedDids.contains(vcIssuer)
+    private fun VcSdJwt.hasTrustedDid(actorDid: String): Boolean {
+        val trustDomain = getTrustDomainFromDid(actorDid).get() ?: return false
+
+        return environmentSetupRepo.trustRegistryTrustedDids[trustDomain]?.contains(this.vcIssuer) ?: false
+    }
 
     private val errorMessageStart = "Trust statement "
 

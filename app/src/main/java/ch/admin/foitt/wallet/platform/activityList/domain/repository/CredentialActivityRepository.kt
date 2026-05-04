@@ -8,4 +8,5 @@ interface CredentialActivityRepository {
     suspend fun insert(credentialActivityEntity: CredentialActivityEntity): Result<Long, CredentialActivityRepositoryError>
     suspend fun getById(activityId: Long): Result<CredentialActivityEntity, CredentialActivityRepositoryError>
     suspend fun deleteById(activityId: Long): Result<Unit, CredentialActivityRepositoryError>
+    suspend fun deleteAllActivities(): Result<Unit, CredentialActivityRepositoryError>
 }

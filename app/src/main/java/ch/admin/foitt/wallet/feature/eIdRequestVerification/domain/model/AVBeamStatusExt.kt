@@ -74,30 +74,30 @@ fun AVBeamStatus.toTextRes(): Int? = when (this) {
     AVBeamStatus.SecurityFeaturesTracking -> R.string.avbeam_notification_securityFeaturesTracking
     AVBeamStatus.SecurityFeaturesTrackingLost -> R.string.avbeam_notification_securityFeaturesTrackingLost
     AVBeamStatus.StreamingStarted -> R.string.avbeam_notification_streamingStarted
-    AVBeamStatus.NFC_AuthenticationPass_DEPRECATED -> R.string.avbeam_notification_nfcAuthenticationPassDeprecated
-    AVBeamStatus.NFC_DataReadingStart -> R.string.avbeam_notification_nfcDataReadingStart
-    AVBeamStatus.NFC_DataReadingEndSuccess -> R.string.avbeam_notification_nfcDataReadingEndSuccess
-    AVBeamStatus.NFC_DataReadingEndFail -> R.string.avbeam_notification_nfcDataReadingEndFail
-    AVBeamStatus.NFC_PhotoReadingStart_DEPRECATED -> R.string.avbeam_notification_nfcPhotoReadingStartDeprecated
-    AVBeamStatus.NFC_PhotoReadingFinish_DEPRECATED -> R.string.avbeam_notification_nfcPhotoReadingFinishDeprecated
-    AVBeamStatus.NFC_ReadingStopped -> R.string.avbeam_notification_nfcReadingStopped
-    AVBeamStatus.NFC_Unavailable -> R.string.avbeam_notification_nfcUnavailable
-    AVBeamStatus.NFC_ReadAtrInfo -> R.string.avbeam_notification_nfcReadAtrInfo
-    AVBeamStatus.NFC_AccessControl -> R.string.avbeam_notification_nfcAccessControl
-    AVBeamStatus.NFC_ReadSod -> R.string.avbeam_notification_nfcReadSod
-    AVBeamStatus.NFC_ReadDg14 -> R.string.avbeam_notification_nfcReadDg14
-    AVBeamStatus.NFC_ChipAuthentication -> R.string.avbeam_notification_nfcChipAuthentication
-    AVBeamStatus.NFC_ReadDg15 -> R.string.avbeam_notification_nfcReadDg15
-    AVBeamStatus.NFC_ActiveAuthentication -> R.string.avbeam_notification_nfcActiveAuthentication
-    AVBeamStatus.NFC_ReadDg1 -> R.string.avbeam_notification_nfcReadDg1
-    AVBeamStatus.NFC_ReadDg2 -> R.string.avbeam_notification_nfcReadDg2
-    AVBeamStatus.NFC_ReadDg7 -> R.string.avbeam_notification_nfcReadDg7
-    AVBeamStatus.NFC_ReadDg11 -> R.string.avbeam_notification_nfcReadDg11
-    AVBeamStatus.NFC_ReadDg12 -> R.string.avbeam_notification_nfcReadDg12
-    AVBeamStatus.NFC_PassiveAuthentication -> R.string.avbeam_notification_nfcPassiveAuthentication
-    AVBeamStatus.NFC_ChipClonedDetectionStart -> R.string.avbeam_notification_nfcChipClonedDetectionStart
-    AVBeamStatus.NFC_ChipClonedDetectionEndSuccess -> R.string.avbeam_notification_nfcChipClonedDetectionEndSuccess
-    AVBeamStatus.NFC_ConnectingToServer -> R.string.avbeam_notification_nfcConnectingToServer
+    AVBeamStatus.NfcAuthenticationPass_DEPRECATED -> R.string.avbeam_notification_nfcAuthenticationPassDeprecated
+    AVBeamStatus.NfcDataReadingStart -> R.string.avbeam_notification_nfcDataReadingStart
+    AVBeamStatus.NfcDataReadingEndSuccess -> R.string.avbeam_notification_nfcDataReadingEndSuccess
+    AVBeamStatus.NfcDataReadingEndFail -> R.string.avbeam_notification_nfcDataReadingEndFail
+    AVBeamStatus.NfcPhotoReadingStart_DEPRECATED -> R.string.avbeam_notification_nfcPhotoReadingStartDeprecated
+    AVBeamStatus.NfcPhotoReadingFinish_DEPRECATED -> R.string.avbeam_notification_nfcPhotoReadingFinishDeprecated
+    AVBeamStatus.NfcReadingStopped -> R.string.avbeam_notification_nfcReadingStopped
+    AVBeamStatus.NfcUnavailable -> R.string.avbeam_notification_nfcUnavailable
+    AVBeamStatus.NfcReadAtrInfo -> R.string.avbeam_notification_nfcReadAtrInfo
+    AVBeamStatus.NfcAccessControl -> R.string.avbeam_notification_nfcAccessControl
+    AVBeamStatus.NfcReadSod -> R.string.avbeam_notification_nfcReadSod
+    AVBeamStatus.NfcReadDg14 -> R.string.avbeam_notification_nfcReadDg14
+    AVBeamStatus.NfcChipAuthentication -> R.string.avbeam_notification_nfcChipAuthentication
+    AVBeamStatus.NfcReadDg15 -> R.string.avbeam_notification_nfcReadDg15
+    AVBeamStatus.NfcActiveAuthentication -> R.string.avbeam_notification_nfcActiveAuthentication
+    AVBeamStatus.NfcReadDg1 -> R.string.avbeam_notification_nfcReadDg1
+    AVBeamStatus.NfcReadDg2 -> R.string.avbeam_notification_nfcReadDg2
+    AVBeamStatus.NfcReadDg7 -> R.string.avbeam_notification_nfcReadDg7
+    AVBeamStatus.NfcReadDg11 -> R.string.avbeam_notification_nfcReadDg11
+    AVBeamStatus.NfcReadDg12 -> R.string.avbeam_notification_nfcReadDg12
+    AVBeamStatus.NfcPassiveAuthentication -> R.string.avbeam_notification_nfcPassiveAuthentication
+    AVBeamStatus.NfcChipClonedDetectionStart -> R.string.avbeam_notification_nfcChipClonedDetectionStart
+    AVBeamStatus.NfcChipClonedDetectionEndSuccess -> R.string.avbeam_notification_nfcChipClonedDetectionEndSuccess
+    AVBeamStatus.NfcConnectingToServer -> R.string.avbeam_notification_nfcConnectingToServer
     AVBeamStatus.DocRecordingStarted -> R.string.avbeam_notification_docRecordingStarted
     AVBeamStatus.DocRecordingStopped -> R.string.avbeam_notification_docRecordingStopped
     AVBeamStatus.DocRecorded -> R.string.avbeam_notification_docRecorded

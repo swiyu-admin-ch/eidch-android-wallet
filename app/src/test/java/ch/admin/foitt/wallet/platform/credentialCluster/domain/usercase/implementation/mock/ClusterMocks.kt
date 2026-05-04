@@ -83,7 +83,7 @@ object ClusterMocks {
         claim = CredentialClaim(
             id = CLAIM_ID_MINUS_1,
             clusterId = CLUSTER_ID_MINUS_1,
-            key = "key",
+            path = "key",
             value = "value",
             valueType = "string"
         ),
@@ -101,7 +101,7 @@ object ClusterMocks {
         claim = CredentialClaim(
             id = CLAIM_ID_1,
             clusterId = CLUSTER_ID_1,
-            key = "key",
+            path = "key",
             value = "value",
             valueType = "string"
         ),
@@ -119,7 +119,7 @@ object ClusterMocks {
         claim = CredentialClaim(
             id = CLAIM_ID_2,
             clusterId = CLUSTER_ID_2,
-            key = "key",
+            path = "key",
             value = "value",
             valueType = "string",
         ),
@@ -137,7 +137,7 @@ object ClusterMocks {
         claim = CredentialClaim(
             id = CLAIM_ID_3,
             clusterId = CLUSTER_ID_3,
-            key = "key",
+            path = "key",
             value = "value",
             valueType = "string"
         ),
@@ -155,7 +155,7 @@ object ClusterMocks {
         claim = CredentialClaim(
             id = CLAIM_ID_4,
             clusterId = CLUSTER_ID_4,
-            key = "key",
+            path = "key",
             value = "value",
             valueType = "string"
         ),
@@ -173,7 +173,7 @@ object ClusterMocks {
         claim = CredentialClaim(
             id = CLAIM_ID_5,
             clusterId = CLUSTER_ID_5,
-            key = "key",
+            path = "key",
             value = "value",
             valueType = "string"
         ),

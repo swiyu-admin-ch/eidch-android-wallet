@@ -9,6 +9,8 @@ enum class ValueType(val value: String) {
     UNSUPPORTED("unsupported");
 
     companion object {
+        fun isImageMimeType(mimeType: String): Boolean = mimeType.startsWith("image/")
+
         private val mapping: Map<String, ValueType> = ValueType.entries
             .filterNot { it.value == IMAGE.value } // do not map generic ValueType.IMAGE value
             .associateBy { it.value } +

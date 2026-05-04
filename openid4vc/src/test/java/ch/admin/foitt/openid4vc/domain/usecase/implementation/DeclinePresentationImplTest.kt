@@ -1,7 +1,7 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseErrorBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
 import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
 import ch.admin.foitt.openid4vc.util.assertErrorType
@@ -29,7 +29,7 @@ class DeclinePresentationImplTest {
         MockKAnnotations.init(this)
 
         coEvery {
-            mockPresentationRequestRepository.submitPresentationError(URL, presentationRequestErrorBody)
+            mockPresentationRequestRepository.submitPresentationError(URL, authorizationResponseErrorBody)
         } returns Ok(Unit)
 
         useCase = DeclinePresentationImpl(
@@ -50,7 +50,7 @@ class DeclinePresentationImplTest {
     @Test
     fun `Error during submission returns the error`() = runTest {
         coEvery {
-            mockPresentationRequestRepository.submitPresentationError(URL, presentationRequestErrorBody)
+            mockPresentationRequestRepository.submitPresentationError(URL, authorizationResponseErrorBody)
         } returns Err(PresentationRequestError.NetworkError)
 
         useCase(URL, errorType).assertErrorType(PresentationRequestError.NetworkError::class)
@@ -58,7 +58,7 @@ class DeclinePresentationImplTest {
 
     private companion object {
         const val URL = "url"
-        val errorType = PresentationRequestErrorBody.ErrorType.CLIENT_REJECTED
-        val presentationRequestErrorBody = PresentationRequestErrorBody(errorType)
+        val errorType = AuthorizationResponseErrorBody.ErrorType.CLIENT_REJECTED
+        val authorizationResponseErrorBody = AuthorizationResponseErrorBody(errorType)
     }
 }

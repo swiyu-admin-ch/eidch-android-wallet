@@ -81,6 +81,7 @@ fun WalletLayouts.ScrollableColumnWithPicture(
         }
 
         else -> LargeContainer(
+            modifier = modifier,
             onBottomHeightMeasured = { height -> bottomBlockHeightDp = height },
             isStickyStartScrollable = false,
             stickyBottomHorizontalArrangement = stickyBottomHorizontalArrangement,

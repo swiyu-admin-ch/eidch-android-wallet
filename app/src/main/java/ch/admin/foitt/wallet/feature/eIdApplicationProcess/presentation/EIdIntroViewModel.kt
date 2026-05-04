@@ -13,7 +13,10 @@ class EIdIntroViewModel @Inject constructor(
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Empty
+    override val topBarState = TopBarState.Details(
+        titleId = null,
+        onUp = ::onBack,
+    )
 
     fun onRequestEId() = navManager.navigateTo(EIdPrivacyPolicyScreen)
 

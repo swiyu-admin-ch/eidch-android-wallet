@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation
 
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusList
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusListResponse
@@ -20,13 +20,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
-import java.lang.IllegalStateException
 import java.text.ParseException
 
 class ValidateTokenStatusListImplTest {
 
     @MockK
-    private lateinit var mockVerifyJwtSignature: VerifyJwtSignature
+    private lateinit var mockVerifyJwtSignatureFromDid: VerifyJwtSignatureFromDid
 
     private lateinit var useCase: ValidateTokenStatusListImpl
 
@@ -36,10 +35,10 @@ class ValidateTokenStatusListImplTest {
 
         useCase = ValidateTokenStatusListImpl(
             safeJson = safeJson,
-            verifyJwtSignature = mockVerifyJwtSignature,
+            verifyJwtSignatureFromDid = mockVerifyJwtSignatureFromDid,
         )
 
-        coEvery { mockVerifyJwtSignature(did = any(), kid = any(), jwt = any()) } returns Ok(Unit)
+        coEvery { mockVerifyJwtSignatureFromDid(did = any(), kid = any(), jwt = any()) } returns Ok(Unit)
     }
 
     @AfterEach

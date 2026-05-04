@@ -146,7 +146,6 @@ internal class EIdGuardianVerificationViewModel @AssistedInject constructor(
             val destination = Destination.PresentationRequestScreen(
                 compatibleCredential = processInvitationResult.credential,
                 presentationRequestWithRaw = processInvitationResult.request,
-                shouldFetchTrustStatement = processInvitationResult.shouldCheckTrustStatement
             )
             navManager.navigateTo(destination)
             wasPresentationTriggered.update { true }
@@ -157,7 +156,6 @@ internal class EIdGuardianVerificationViewModel @AssistedInject constructor(
             val destination = Destination.PresentationCredentialListScreen(
                 compatibleCredentials = processInvitationResult.credentials,
                 presentationRequestWithRaw = processInvitationResult.request,
-                shouldFetchTrustStatement = processInvitationResult.shouldCheckTrustStatement
             )
             navManager.navigateTo(destination)
             wasPresentationTriggered.update { true }
@@ -182,6 +180,21 @@ internal class EIdGuardianVerificationViewModel @AssistedInject constructor(
         InvitationError.UnknownIssuer,
         InvitationError.UnknownVerifier,
         is InvitationError.MetadataMisconfiguration,
+        InvitationError.CredentialRequestDenied,
+        InvitationError.InsufficientScope,
+        InvitationError.InvalidCredentialOffer,
+        InvitationError.InvalidCredentialRequest,
+        InvitationError.InvalidEncryptionParameters,
+        InvitationError.InvalidClient,
+        InvitationError.InvalidNonce,
+        InvitationError.InvalidProof,
+        InvitationError.InvalidRequest,
+        InvitationError.InvalidToken,
+        InvitationError.InvalidRequestBearerToken,
+        InvitationError.UnauthorizedClient,
+        InvitationError.UnauthorizedGrantType,
+        InvitationError.UnknownCredentialConfiguration,
+        InvitationError.UnknownCredentialIdentifier,
         InvitationError.UnsupportedKeyStorageSecurityLevel -> uiStateUnexpectedError
     }
 
@@ -216,11 +229,15 @@ internal class EIdGuardianVerificationViewModel @AssistedInject constructor(
                 deadline = null
             )
 
+            SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING,
+            SIdRequestDisplayStatus.IN_AUTO_VERIFICATION,
+            SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK,
             SIdRequestDisplayStatus.IN_ISSUANCE,
             SIdRequestDisplayStatus.IN_AGENT_REVIEW,
             SIdRequestDisplayStatus.REFUSED,
-            SIdRequestDisplayStatus.UNKNOWN,
-            SIdRequestDisplayStatus.OTHER -> navManager.navigateBackToHomeScreen(Destination.EIdGuardianSelectionScreen::class)
+            SIdRequestDisplayStatus.CANCELLED,
+            SIdRequestDisplayStatus.CLOSED,
+            SIdRequestDisplayStatus.UNKNOWN -> navManager.navigateBackToHomeScreen(Destination.EIdGuardianSelectionScreen::class)
         }
         return uiStateLoading
     }

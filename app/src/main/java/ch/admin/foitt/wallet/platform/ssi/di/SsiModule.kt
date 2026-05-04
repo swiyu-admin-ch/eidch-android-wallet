@@ -26,16 +26,20 @@ import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredential
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithDisplaysAndClustersRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteBundleItems
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteCredential
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteDeferred
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteKeyStoreEntry
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetCredentialDetailFlow
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetCredentialsWithDetailsFlow
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetDeferredCredentialWithDetailFlow
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetDeferredCredentialsWithDetailsFlow
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.MapToCredentialClaimData
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.DeleteBundleItemsImpl
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.DeleteCredentialImpl
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.DeleteDeferredImpl
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.DeleteKeyStoreEntryImpl
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.GetCredentialDetailFlowImpl
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.GetCredentialsWithDetailsFlowImpl
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.GetDeferredCredentialWithDetailFlowImpl
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.GetDeferredCredentialsWithDetailsFlowImpl
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation.MapToCredentialClaimDataImpl
 import dagger.Binds
@@ -152,4 +156,14 @@ interface SsiModule {
     fun bindGetGetDeferredCredentialsWithDetailsFlow(
         useCase: GetDeferredCredentialsWithDetailsFlowImpl
     ): GetDeferredCredentialsWithDetailsFlow
+
+    @Binds
+    fun bindGetGetDeferredCredentialWithDetailFlow(
+        useCase: GetDeferredCredentialWithDetailFlowImpl
+    ): GetDeferredCredentialWithDetailFlow
+
+    @Binds
+    fun bindDeleteDeferredCredential(
+        useCase: DeleteDeferredImpl
+    ): DeleteDeferred
 }

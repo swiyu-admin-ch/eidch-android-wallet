@@ -29,4 +29,13 @@ interface VerifiableCredentialDao {
 
     @Query("UPDATE VerifiableCredentialEntity SET updatedAt = :updatedAt WHERE credentialId = :id")
     fun updatedAt(id: Long, updatedAt: Long): Int
+
+    @Query(
+        """
+        UPDATE VerifiableCredentialEntity 
+        SET nextPresentableBundleItemId = :nextPresentableBundleItemId
+        WHERE credentialId = :credentialId
+    """
+    )
+    fun updateNextBundleIdByCredentialId(credentialId: Long, nextPresentableBundleItemId: Long): Int
 }

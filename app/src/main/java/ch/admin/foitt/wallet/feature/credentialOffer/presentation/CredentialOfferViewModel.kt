@@ -9,16 +9,17 @@ import ch.admin.foitt.wallet.feature.credentialOffer.domain.usecase.AcceptCreden
 import ch.admin.foitt.wallet.feature.credentialOffer.domain.usecase.GetCredentialOfferFlow
 import ch.admin.foitt.wallet.feature.credentialOffer.presentation.model.CredentialOfferUiState
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.SaveIssuanceActivity
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheIssuerDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.adapter.GetActorUiState
-import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
 import ch.admin.foitt.wallet.platform.appSetupState.domain.usecase.SaveFirstCredentialWasAdded
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.badges.presentation.model.toBadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialOfferEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialOfferEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -33,7 +34,7 @@ import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteCredential
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.utils.openLink
-import com.github.michaelbull.result.mapBoth
+import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dagger.assisted.Assisted
@@ -42,11 +43,9 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -82,42 +81,43 @@ class CredentialOfferViewModel @AssistedInject constructor(
     val showConfirmationBottomSheet = _showConfirmationBottomSheet.asStateFlow()
 
     private val actorDisplayData = getActorForScope(ComponentScope.CredentialIssuer)
-    private val issuerUiState = actorDisplayData.map { displayData ->
-        getActorUiState(
-            actorDisplayData = displayData,
-        )
-    }.toStateFlow(ActorUiState.EMPTY, 0)
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
-    private val credentialOffer: StateFlow<CredentialOffer?> = getCredentialOfferFlow(credentialId = credentialId)
-        .map { result ->
-            result.mapBoth(
-                success = { credentialOffer ->
+    @OptIn(UnsafeResultValueAccess::class)
+    val credentialOfferUiState = refreshableStateFlow(initialData = CredentialOfferUiState.EMPTY) {
+        combine(
+            getCredentialOfferFlow(credentialId),
+            actorDisplayData,
+        ) { credentialOfferResult, actorDisplayData ->
+            when {
+                credentialOfferResult.isOk -> {
                     _isLoading.value = false
-                    credentialOffer
-                },
-                failure = {
+                    mapToUiState(
+                        credentialOffer = credentialOfferResult.value,
+                        actorDisplayData = actorDisplayData,
+                    )
+                }
+
+                else -> {
                     navigateToErrorScreen()
                     null
                 }
-            )
-        }.toStateFlow(null)
-
-    val credentialOfferUiState = refreshableStateFlow(initialData = CredentialOfferUiState.EMPTY) {
-        combine(
-            credentialOffer,
-            issuerUiState,
-        ) { credentialOffer, issuerUiState ->
-            credentialOffer?.let {
-                CredentialOfferUiState(
-                    issuer = issuerUiState,
-                    credential = getCredentialCardState(credentialOffer.credential),
-                    claims = credentialOffer.claims,
-                )
             }
         }.filterNotNull()
+    }
+
+    private suspend fun mapToUiState(
+        credentialOffer: CredentialOffer?,
+        actorDisplayData: ActorDisplayData,
+    ) = when (credentialOffer) {
+        null -> CredentialOfferUiState.EMPTY
+        else -> CredentialOfferUiState(
+            issuer = getActorUiState(actorDisplayData),
+            credential = getCredentialCardState(credentialOffer.credential),
+            claims = credentialOffer.claims,
+        )
     }
 
     init {
@@ -127,7 +127,7 @@ class CredentialOfferViewModel @AssistedInject constructor(
         }
     }
 
-    fun onAcceptClicked() = if (issuerUiState.value.trustStatus != TrustStatus.EXTERNAL) {
+    fun onAcceptClicked() = if (credentialOfferUiState.stateFlow.value.issuer.trustStatus != TrustStatus.EXTERNAL) {
         acceptCredential()
     } else {
         _showConfirmationBottomSheet.value = true
@@ -156,27 +156,23 @@ class CredentialOfferViewModel @AssistedInject constructor(
         )
     }
 
-    fun onDeclineBottomSheet() {
+    fun onDeclineBottomSheet() = viewModelScope.launch {
         // User declined a VC from an unknown issuer. Delete immediately and navigate to home
-        credentialOffer.value?.let {
-            viewModelScope.launch {
-                deleteCredential(credentialId).onFailure { error ->
-                    when (error) {
-                        is SsiError.Unexpected -> Timber.e(error.cause)
-                    }
-                }.onSuccess {
-                    credentialOfferEventRepository.setEvent(CredentialOfferEvent.DECLINED)
-                }
-                navManager.navigateOutAndTo(DestinationGroup.CredentialOffer::class, Destination.HomeScreen)
+        deleteCredential(credentialId).onFailure { error ->
+            when (error) {
+                is SsiError.Unexpected -> Timber.e(error.cause)
             }
-        } ?: navigateToErrorScreen()
+        }.onSuccess {
+            credentialOfferEventRepository.setEvent(CredentialOfferEvent.DECLINED)
+        }
+        navManager.navigateOutAndTo(DestinationGroup.CredentialOffer::class, Destination.HomeScreen)
     }
 
     fun onBadge(badgeType: BadgeType) {
         _badgeBottomSheetUiState.value = when (badgeType) {
             is BadgeType.ActorInfoBadge -> badgeType.toBadgeBottomSheetUiState(
-                actorName = issuerUiState.value.name ?: "",
-                reason = issuerUiState.value.nonComplianceReason,
+                actorName = credentialOfferUiState.stateFlow.value.issuer.name ?: "",
+                reason = credentialOfferUiState.stateFlow.value.issuer.nonComplianceReason,
                 onMoreInformation = { onMoreInformation(R.string.tk_badgeInformation_furtherInformation_link_value) },
             )
 
@@ -195,7 +191,7 @@ class CredentialOfferViewModel @AssistedInject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
     }
 
     fun onReportWrongDataClicked() {

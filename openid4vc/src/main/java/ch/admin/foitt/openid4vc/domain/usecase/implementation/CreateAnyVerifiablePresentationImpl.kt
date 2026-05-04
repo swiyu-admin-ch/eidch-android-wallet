@@ -1,9 +1,9 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.CreateAnyVerifiablePresentationError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.CreateVcSdJwtVerifiablePresentationError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.toCreateAnyVerifiablePresentationError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
@@ -21,14 +21,14 @@ internal class CreateAnyVerifiablePresentationImpl @Inject constructor(
     override suspend fun invoke(
         anyCredential: AnyCredential,
         requestedFields: List<String>,
-        presentationRequest: PresentationRequest,
+        authorizationRequest: AuthorizationRequest,
     ): Result<String, CreateAnyVerifiablePresentationError> =
         when (anyCredential) {
             is VcSdJwtCredential -> createVcSdJwtVerifiablePresentation(
                 credential = anyCredential,
                 keyBinding = anyCredential.keyBinding,
                 requestedFields = requestedFields,
-                presentationRequest = presentationRequest,
+                authorizationRequest = authorizationRequest,
             ).mapError(CreateVcSdJwtVerifiablePresentationError::toCreateAnyVerifiablePresentationError)
 
             else -> {

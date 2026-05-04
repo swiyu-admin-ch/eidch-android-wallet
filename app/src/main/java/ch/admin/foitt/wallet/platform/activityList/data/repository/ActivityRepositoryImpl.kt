@@ -10,12 +10,15 @@ import ch.admin.foitt.wallet.platform.database.data.dao.ActivityClaimEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialActivityEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.DaoProvider
 import ch.admin.foitt.wallet.platform.database.data.dao.ImageEntityDao
+import ch.admin.foitt.wallet.platform.database.data.dao.NonComplianceReasonDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityActorDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityClaimEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialActivityEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.NonComplianceReasonDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.usecase.RunInTransaction
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
+import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
 import ch.admin.foitt.wallet.platform.utils.domain.usecase.GetImageDataFromUri
 import ch.admin.foitt.wallet.platform.utils.suspendUntilNonNull
 import com.github.michaelbull.result.Result
@@ -30,6 +33,7 @@ class ActivityRepositoryImpl @Inject constructor(
     daoProvider: DaoProvider,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val runInTransaction: RunInTransaction,
+    private val getLocalizedDisplay: GetLocalizedDisplay,
     private val getImageDataFromUri: GetImageDataFromUri,
 ) : ActivityRepository {
     override suspend fun saveActivity(
@@ -46,11 +50,25 @@ class ActivityRepositoryImpl @Inject constructor(
                 type = activityType,
                 actorTrust = actorDisplayData.trustStatus,
                 vcSchemaTrust = actorDisplayData.vcSchemaTrustStatus,
+                actorCompliance = actorDisplayData.actorComplianceState,
                 nonComplianceData = nonComplianceData,
             )
 
             val activityId = runInTransaction {
                 val activityId = activityDao().insert(activity)
+
+                actorDisplayData.nonComplianceReason?.let {
+                    it.forEach { (reason, locale) ->
+                        reason?.let {
+                            val nonComplianceReasonDisplay = NonComplianceReasonDisplayEntity(
+                                activityId = activityId,
+                                locale = locale,
+                                reason = reason,
+                            )
+                            nonComplianceReasonDisplayDao().insert(nonComplianceReasonDisplay)
+                        }
+                    }
+                }
 
                 claimIds?.let {
                     it.forEach { claimId ->
@@ -69,7 +87,10 @@ class ActivityRepositoryImpl @Inject constructor(
                 val messageDigest = MessageDigest.getInstance("SHA-256")
 
                 locales.forEach { locale ->
-                    val imageHash = images[locale]?.value?.let { imageUri ->
+                    val image = actorDisplayData.image?.let {
+                        getLocalizedDisplay(it, locale)
+                    }
+                    val imageHash = image?.value?.let { imageUri ->
                         val imageDataByteArray = getImageDataFromUri(imageUri)
                         imageDataByteArray?.let {
                             val hash = messageDigest.digest(imageDataByteArray).toHexString()
@@ -102,6 +123,9 @@ class ActivityRepositoryImpl @Inject constructor(
     }
 
     private suspend fun activityDao(): CredentialActivityEntityDao = suspendUntilNonNull { activityDaoFlow.value }
+    private suspend fun nonComplianceReasonDisplayDao(): NonComplianceReasonDisplayEntityDao = suspendUntilNonNull {
+        nonComplianceReasonDisplayDaoFlow.value
+    }
     private suspend fun activityClaimDao(): ActivityClaimEntityDao = suspendUntilNonNull { activityClaimDaoFlow.value }
     private suspend fun activityActorDisplayDao(): ActivityActorDisplayEntityDao = suspendUntilNonNull {
         activityActorDisplayDaoFlow.value
@@ -109,6 +133,7 @@ class ActivityRepositoryImpl @Inject constructor(
     private suspend fun imageDao(): ImageEntityDao = suspendUntilNonNull { imageDaoFlow.value }
 
     private val activityDaoFlow = daoProvider.credentialActivityEntityDao
+    private val nonComplianceReasonDisplayDaoFlow = daoProvider.nonComplianceReasonDisplayEntityDao
     private val activityClaimDaoFlow = daoProvider.activityClaimEntityDao
     private val activityActorDisplayDaoFlow = daoProvider.activityActorDisplayEntityDao
     private val imageDaoFlow = daoProvider.imageEntityDao

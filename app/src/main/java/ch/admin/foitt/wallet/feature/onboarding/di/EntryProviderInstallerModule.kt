@@ -1,6 +1,8 @@
 package ch.admin.foitt.wallet.feature.onboarding.di
 
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingActivityScreen
+import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingActivityViewModel
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingConfirmPassphraseFailureScreen
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingConfirmPassphraseScreen
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingConfirmPassphraseViewModel
@@ -50,6 +52,13 @@ object EntryProviderInstallerModule {
             val viewModel = hiltViewModel<OnboardingLocalDataViewModel>()
             SyncedScaffoldScreen(viewModel = viewModel) {
                 OnboardingLocalDataScreen(viewModel = it)
+            }
+        }
+
+        entry<Destination.OnboardingActivityScreen> {
+            val viewModel = hiltViewModel<OnboardingActivityViewModel>()
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                OnboardingActivityScreen(viewModel = it)
             }
         }
 

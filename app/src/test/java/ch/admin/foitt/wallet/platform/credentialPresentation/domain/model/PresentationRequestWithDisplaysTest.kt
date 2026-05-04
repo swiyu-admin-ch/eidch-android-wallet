@@ -8,7 +8,7 @@ class PresentationRequestWithDisplaysTest {
 
     @Test
     fun `Mapping from ClientNameRequest to ClientNameDisplay is correct`() {
-        val mockPresentationRequest = MockPresentationRequest.presentationRequestWithDisplays
+        val mockPresentationRequest = MockPresentationRequest.authorizationRequestWithDisplays
         val result = ClientNameDisplay.fromClientName(mockPresentationRequest.clientMetaData?.clientNameList ?: emptyList())
 
         assertEquals(result.size, mockPresentationRequest.clientMetaData?.clientNameList?.size)
@@ -24,7 +24,7 @@ class PresentationRequestWithDisplaysTest {
 
     @Test
     fun `Mapping from PresentationRequest with LogoUri to LogoUriDisplay is correct`() {
-        val mockPresentationRequest = MockPresentationRequest.presentationRequestWithDisplays
+        val mockPresentationRequest = MockPresentationRequest.authorizationRequestWithDisplays
         val result = LogoUriDisplay.fromLogoUri(mockPresentationRequest.clientMetaData?.logoUriList ?: emptyList())
 
         assertEquals(result.size, mockPresentationRequest.clientMetaData?.logoUriList?.size)

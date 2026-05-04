@@ -12,9 +12,7 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationCha
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationResponse
-import ch.admin.foitt.wallet.platform.appAttestation.domain.model.IntegrityToken
 import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.AppAttestationRepository
-import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.AppIntegrityRepository
 import ch.admin.foitt.wallet.platform.appAttestation.domain.repository.CurrentClientAttestationRepository
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.ValidateClientAttestation
@@ -57,14 +55,10 @@ class RequestClientAttestationImplTest {
     private val clientAttestationRawJwt = ClientAttestationMocks.jwtAttestation01
     private val clientAttestationJwt = Jwt(clientAttestationRawJwt)
     private val mockClientAttestation = ClientAttestation(keyStoreAlias, clientAttestationJwt)
-    private val integrityToken = IntegrityToken("integrityToken")
     private val signedChallenge = byteArrayOf(1, 2, 3)
 
     @MockK
     private lateinit var mockAppAttestationRepository: AppAttestationRepository
-
-    @MockK
-    private lateinit var mockAppIntegrityRepository: AppIntegrityRepository
 
     @MockK
     private lateinit var mockClientAttestationRepository: CurrentClientAttestationRepository
@@ -89,7 +83,6 @@ class RequestClientAttestationImplTest {
 
         useCase = RequestClientAttestationImpl(
             appAttestationRepository = mockAppAttestationRepository,
-            appIntegrityRepository = mockAppIntegrityRepository,
             currentClientAttestationRepository = mockClientAttestationRepository,
             validateClientAttestation = mockValidateClientAttestation,
             createJWSKeyPairInHardware = mockCreateJWSKeyPairInHardware,
@@ -109,13 +102,12 @@ class RequestClientAttestationImplTest {
         mockkStatic(JWSKeyPair::getBase64CertificateChain)
         coEvery { any<JWSKeyPair>().getBase64CertificateChain() } returns Ok(listOf("base64Certificate"))
 
-        coEvery { mockAppAttestationRepository.fetchClientAttestation(any(), any()) } returns Ok(
+        coEvery { mockAppAttestationRepository.fetchClientAttestation(publicKey = any()) } returns Ok(
             ClientAttestationResponse(
                 clientAttestationRawJwt
             )
         )
 
-        coEvery { mockAppIntegrityRepository.fetchIntegrityToken(any()) } returns Ok(integrityToken)
         coEvery { mockValidateClientAttestation(any(), any(), any()) } returns Ok(mockClientAttestation)
         coEvery { mockClientAttestationRepository.save(mockClientAttestation) } returns Ok(0L)
         // Mock signature instance
@@ -145,8 +137,7 @@ class RequestClientAttestationImplTest {
             mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any())
             mockClientAttestationRepository.delete(any())
             mockCreateJwk.invoke(keyPair = keyPair, any(), any())
-            mockAppIntegrityRepository.fetchIntegrityToken(any())
-            mockAppAttestationRepository.fetchClientAttestation(integrityToken = integrityToken, any())
+            mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
             mockValidateClientAttestation.invoke(any(), any(), any())
             mockClientAttestationRepository.save(mockClientAttestation)
         }
@@ -170,8 +161,7 @@ class RequestClientAttestationImplTest {
             mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any())
             mockClientAttestationRepository.delete(any())
             mockCreateJwk.invoke(keyPair = keyPair, any(), any())
-            mockAppIntegrityRepository.fetchIntegrityToken(any())
-            mockAppAttestationRepository.fetchClientAttestation(integrityToken = integrityToken, any())
+            mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
             mockValidateClientAttestation.invoke(any(), any(), any())
             mockClientAttestationRepository.save(mockClientAttestation)
         }
@@ -261,19 +251,10 @@ class RequestClientAttestationImplTest {
     }
 
     @Test
-    fun `An integrity token fetching failure is propagated`() = runTest {
-        val exception = Exception("myException")
-        coEvery { mockAppIntegrityRepository.fetchIntegrityToken(any()) } returns Err(AttestationError.Unexpected(exception))
-        val result = useCase()
-        val error = result.assertErrorType(AttestationError.Unexpected::class)
-        assertEquals(exception, error.throwable)
-    }
-
-    @Test
     fun `A client attestation fetching failure is propagated`() = runTest {
         val exception = Exception("myException")
         coEvery {
-            mockAppAttestationRepository.fetchClientAttestation(any(), any())
+            mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
         } returns Err(AttestationError.Unexpected(exception))
         val result = useCase()
         val error = result.assertErrorType(AttestationError.Unexpected::class)

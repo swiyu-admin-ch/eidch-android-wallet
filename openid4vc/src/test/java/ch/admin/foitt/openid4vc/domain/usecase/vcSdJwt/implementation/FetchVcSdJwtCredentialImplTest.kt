@@ -126,6 +126,6 @@ class FetchVcSdJwtCredentialImplTest {
 
     private companion object {
         const val VALID_JWT =
-            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJzdWIiOiJzdWJqZWN0IiwiZXhwIjoxOTI0OTg4Mzk5LCJpYXQiOjAsIm5iZiI6MSwidmN0IjoidmN0In0.jX5Mfxyh_gJ9VhagwlL80QFZjNgOPgdASjP3awIX-ty_LimDlNDZY3eCpjyecqcKFskkVx55gFs9h8_sENvNyQ"
+            "eyJhbGciOiJFUzI1NiIsInR5cCI6InR5cGUiLCJraWQiOiJrZXlJZCJ9.eyJpc3MiOiJpc3N1ZXIiLCJleHAiOjE5MjQ5ODgzOTksImlhdCI6MCwibmJmIjoxLCJ2Y3QiOiJ2Y3QifQ.XV3KwWV9EKACPBsD7IGuTIXcEp6ur0rNmzd5WAXD6FrRLB0iAnEXKNWt3pSYL_MQHx3t-W1splQzBGwjgZePdQ~"
     }
 }

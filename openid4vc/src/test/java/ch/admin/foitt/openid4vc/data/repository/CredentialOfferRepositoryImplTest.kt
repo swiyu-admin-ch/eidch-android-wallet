@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.data.repository
 
+import android.webkit.URLUtil
 import ch.admin.foitt.openid4vc.data.CredentialOfferRepositoryImpl
 import ch.admin.foitt.openid4vc.data.repository.mock.CredentialOfferRepoMocks.mockSoftwareKeyPair
 import ch.admin.foitt.openid4vc.domain.model.CredentialRequestType
@@ -8,6 +9,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferErro
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.JWSKeyPair
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.TokenResponse
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerConfigurationResponse
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionKeyPair
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
@@ -29,8 +31,10 @@ import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.ECDHEncrypter
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
+import io.ktor.client.request.HttpResponseData
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -38,8 +42,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
@@ -54,44 +60,19 @@ import java.security.interfaces.ECPublicKey
 
 class CredentialOfferRepositoryImplTest {
 
+    private lateinit var handler: (suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData)
+
     @MockK
     private lateinit var mockDecryptJWE: DecryptJWE
 
     private val json = SafeJsonTestInstance.safeJson
 
-    private var httpResponseString = ""
+    private val mockHttpClient by lazy {
 
-    private val mockHttpClient = HttpClient(MockEngine) {
-        engine {
-            addHandler { request ->
-                when {
-                    request.isVerifiableCredentialRequestWithJsonResponse() -> respond(
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
-                        content = httpResponseString,
-                    )
-
-                    request.isDeferredCredentialRequestWithJsonResponse() -> respond(
-                        status = HttpStatusCode.Accepted,
-                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
-                        content = httpResponseString,
-                    )
-
-                    request.isVerifiableCredentialRequestWithResponseEncryption() -> respond(
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, applicationJwt.content),
-                        content = httpResponseString,
-                    )
-
-                    request.isDeferredCredentialRequestWithResponseEncryption() -> respond(
-                        status = HttpStatusCode.Accepted,
-                        headers = headersOf(HttpHeaders.ContentType, applicationJwt.content),
-                        content = httpResponseString,
-                    )
-
-                    request.isErrorResponse() -> throw IOException("network failure")
-
-                    else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+        HttpClient(MockEngine) {
+            engine {
+                addHandler { request ->
+                    handler(request)
                 }
             }
         }
@@ -102,6 +83,9 @@ class CredentialOfferRepositoryImplTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
+
+        mockkStatic(URLUtil::class)
+        every { URLUtil.isHttpsUrl(any()) } returns true
 
         repo = CredentialOfferRepositoryImpl(
             httpClient = mockHttpClient,
@@ -116,8 +100,163 @@ class CredentialOfferRepositoryImplTest {
     }
 
     @Test
+    fun `Fetching issuer metadata correctly sets Accept-Language header`() = runTest {
+        handler = { request ->
+            when {
+                request.isAcceptLanguageIssuerResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = createIssuerMetadataJson(ISSUER_ACCEPT_LANGUAGE)
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create("$BASE_URL$ISSUER_ACCEPT_LANGUAGE").toURL()
+
+        val result = repo.fetchRawAndParsedIssuerCredentialInformation(
+            issuerEndpoint = url,
+        ).assertOk()
+
+        val expected = "$BASE_URL$CREDENTIAL_PATH$ISSUER_ACCEPT_LANGUAGE"
+
+        assertEquals(expected, result.issuerCredentialInfo.credentialIssuer.toString())
+    }
+
+    @Test
+    fun `Fetching credential issuer metadata uses OID4VCI url as first prio`() = runTest {
+        handler = { request ->
+            when {
+                request.isMetadataOID4VCIIssuerResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = credentialIssuerMetadataOID4VCIResponse
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create("$BASE_URL$ISSUER_OID4VCI").toURL()
+
+        val result = repo.fetchRawAndParsedIssuerCredentialInformation(url).assertOk()
+
+        val expected = "$BASE_URL$CREDENTIAL_PATH$ISSUER_OID4VCI"
+
+        assertEquals(expected, result.issuerCredentialInfo.credentialIssuer.toString())
+    }
+
+    @Test
+    fun `Fetching credential issuer metadata uses OIDC url as second prio`() = runTest {
+        handler = { request ->
+            when {
+                request.isMetadataOID4VCIIssuerErrorResponse() -> throw IOException("network failure")
+
+                request.isMetadataOIDCIssuerResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = credentialIssuerMetadataOIDCResponse
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create("$BASE_URL$ISSUER_OIDC").toURL()
+
+        val result = repo.fetchRawAndParsedIssuerCredentialInformation(url).assertOk()
+
+        val expected = "$BASE_URL$CREDENTIAL_PATH$ISSUER_OIDC"
+
+        assertEquals(expected, result.issuerCredentialInfo.credentialIssuer.toString())
+    }
+
+    @Test
+    fun `Fetching credential issuer metadata returns error if both return an error`() = runTest {
+        handler = { request ->
+            when {
+                request.isMetadataOID4VCIOtherIssuerErrorResponse() -> throw IOException("network failure")
+                request.isMetadataOIDCOtherIssuerErrorResponse() -> throw IOException("network failure")
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create("$BASE_URL/otherIssuer").toURL()
+
+        repo.fetchRawAndParsedIssuerCredentialInformation(url).assertErrorType(CredentialOfferError.NetworkInfoError::class)
+    }
+
+    @Test
+    fun `Fetching credential issuer config uses OID4VCI url as first prio`() = runTest {
+        handler = { request ->
+            when {
+                request.isConfigOID4VCIIssuerResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = credentialIssuerConfigOID4VCIResponse
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create("$BASE_URL$ISSUER_OID4VCI").toURL()
+
+        val result = repo.fetchIssuerConfiguration(url).assertOk() as IssuerConfigurationResponse.Plain
+
+        val expected = "$BASE_URL$ISSUER_PATH$ISSUER_OID4VCI"
+
+        assertEquals(expected, result.config.issuer.toString())
+    }
+
+    @Test
+    fun `Fetching credential issuer config uses OIDC url as second prio`() = runTest {
+        handler = { request ->
+            when {
+                request.isConfigOID4VCIIssuerErrorResponse() -> throw IOException("network failure")
+
+                request.isConfigOIDCIssuerResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = credentialIssuerConfigOIDCResponse
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create("$BASE_URL$ISSUER_OIDC").toURL()
+
+        val result = repo.fetchIssuerConfiguration(url).assertOk() as IssuerConfigurationResponse.Plain
+
+        val expected = "$BASE_URL$ISSUER_PATH$ISSUER_OIDC"
+
+        assertEquals(expected, result.config.issuer.toString())
+    }
+
+    @Test
+    fun `Fetching credential issuer config returns error if both return an error`() = runTest {
+        handler = { request ->
+            when {
+                request.isConfigOID4VCIOtherIssuerErrorResponse() -> throw IOException("network failure")
+                request.isConfigOIDCOtherIssuerErrorResponse() -> throw IOException("network failure")
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create("$BASE_URL/otherIssuer").toURL()
+
+        repo.fetchIssuerConfiguration(url).assertErrorType(CredentialOfferError.NetworkInfoError::class)
+    }
+
+    @Test
     fun `Fetching verifiable credential returns verifiable credential result`() = runTest {
-        httpResponseString = verifiableCredentialResponseJson
+        handler = { request ->
+            when {
+                request.isVerifiableCredentialRequestWithJsonResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = verifiableCredentialResponseJson,
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         val result = repo.fetchCredential(
             issuerEndpoint = verifiableCredentialUrl,
@@ -133,7 +272,16 @@ class CredentialOfferRepositoryImplTest {
 
     @Test
     fun `Fetching deferred credential returns deferred credential result`() = runTest {
-        httpResponseString = deferredCredentialResponseJson
+        handler = { request ->
+            when {
+                request.isDeferredCredentialRequestWithJsonResponse() -> respond(
+                    status = HttpStatusCode.Accepted,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = deferredCredentialResponseJson,
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         val result = repo.fetchCredential(
             issuerEndpoint = deferredCredentialUrl,
@@ -150,7 +298,18 @@ class CredentialOfferRepositoryImplTest {
     @Test
     fun `Fetching encrypted verifiable credential returns verifiable credential result`() = runTest {
         val keyPair = mockSoftwareKeyPair
-        httpResponseString = createCredentialJwe(keyPair)
+        val httpResponseString = createCredentialJwe(keyPair)
+
+        handler = { request ->
+            when {
+                request.isVerifiableCredentialRequestWithResponseEncryption() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, applicationJwt.content),
+                    content = httpResponseString,
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         coEvery { mockDecryptJWE(httpResponseString, keyPair.private) } returns Ok(verifiableCredentialResponseJson)
 
@@ -169,7 +328,18 @@ class CredentialOfferRepositoryImplTest {
     @Test
     fun `Fetching encrypted deferred credential returns deferred credential result`() = runTest {
         val keyPair = mockSoftwareKeyPair
-        httpResponseString = createCredentialJwe(keyPair)
+        val httpResponseString = createCredentialJwe(keyPair)
+
+        handler = { request ->
+            when {
+                request.isDeferredCredentialRequestWithResponseEncryption() -> respond(
+                    status = HttpStatusCode.Accepted,
+                    headers = headersOf(HttpHeaders.ContentType, applicationJwt.content),
+                    content = httpResponseString,
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         coEvery { mockDecryptJWE(httpResponseString, keyPair.private) } returns Ok(deferredCredentialResponseJson)
 
@@ -187,13 +357,21 @@ class CredentialOfferRepositoryImplTest {
 
     @Test
     fun `Receiving an encrypted response without requesting it returns an error`() = runTest {
-        val keyPair = mockSoftwareKeyPair
-        httpResponseString = createCredentialJwe(keyPair)
+        handler = { request ->
+            when {
+                request.isVerifiableCredentialRequestWithJsonResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, applicationJwt.content),
+                    content = createCredentialJwe(mockSoftwareKeyPair),
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         val result = repo.fetchCredential(
             issuerEndpoint = verifiableCredentialUrl,
             tokenResponse = tokenResponse,
-            credentialRequestType = CredentialRequestType.Jwt("credentialRequest"),
+            credentialRequestType = CredentialRequestType.Json("credentialRequest"),
             payloadEncryptionType = PayloadEncryptionType.None
         ).assertErrorType(CredentialOfferError.Unexpected::class)
 
@@ -202,7 +380,16 @@ class CredentialOfferRepositoryImplTest {
 
     @Test
     fun `Receiving a verifiable credential response with empty credential array returns an error`() = runTest {
-        httpResponseString = emptyCredentialResponseJson
+        handler = { request ->
+            when {
+                request.isVerifiableCredentialRequestWithJsonResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = emptyCredentialResponseJson,
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         repo.fetchCredential(
             issuerEndpoint = verifiableCredentialUrl,
@@ -214,7 +401,16 @@ class CredentialOfferRepositoryImplTest {
 
     @Test
     fun `Receiving a credential with an invalid json structure returns an error`() = runTest {
-        httpResponseString = invalidCredentialResponseJson
+        handler = { request ->
+            when {
+                request.isVerifiableCredentialRequestWithJsonResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.content),
+                    content = invalidCredentialResponseJson,
+                )
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         repo.fetchCredential(
             issuerEndpoint = verifiableCredentialUrl,
@@ -226,7 +422,12 @@ class CredentialOfferRepositoryImplTest {
 
     @Test
     fun `Network error during fetching credential returns an error`() = runTest {
-        httpResponseString = verifiableCredentialResponseJson
+        handler = { request ->
+            when {
+                request.isErrorResponse() -> throw IOException("network failure")
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
 
         repo.fetchCredential(
             issuerEndpoint = errorUrl,
@@ -262,23 +463,121 @@ class CredentialOfferRepositoryImplTest {
         )
     )
 
-    private fun HttpRequestData.isVerifiableCredentialRequestWithJsonResponse() =
-        this.method == HttpMethod.Post && this.url.encodedPath == "$CREDENTIAL_PATH$VERIFIABLE_PATH" && this.body.contentType?.content == ContentType.Application.Json.content
+    private fun HttpRequestData.isAcceptLanguageIssuerResponse() =
+        this.method == HttpMethod.Get && this.url.encodedPath == "$ISSUER_METADATA_PATH$ISSUER_ACCEPT_LANGUAGE" &&
+            this.headers[HttpHeaders.AcceptLanguage] == "de-CH, en, fr-CH, it-CH, rm"
 
-    private fun HttpRequestData.isDeferredCredentialRequestWithJsonResponse() =
-        this.method == HttpMethod.Post && this.url.encodedPath == "$CREDENTIAL_PATH$DEFERRED_PATH" && this.body.contentType?.content == ContentType.Application.Json.content
+    private fun HttpRequestData.isMetadataOID4VCIIssuerResponse() = mockResponse(expectedPath = "$ISSUER_METADATA_PATH$ISSUER_OID4VCI")
 
-    private fun HttpRequestData.isVerifiableCredentialRequestWithResponseEncryption() =
-        this.method == HttpMethod.Post && this.url.encodedPath == "$CREDENTIAL_PATH$VERIFIABLE_PATH" && this.body.contentType?.content == applicationJwt.content
+    private fun HttpRequestData.isMetadataOID4VCIIssuerErrorResponse() = mockResponse(expectedPath = "$ISSUER_METADATA_PATH$ISSUER_OIDC")
 
-    private fun HttpRequestData.isDeferredCredentialRequestWithResponseEncryption() =
-        this.method == HttpMethod.Post && this.url.encodedPath == "$CREDENTIAL_PATH$DEFERRED_PATH" && this.body.contentType?.content == applicationJwt.content
+    private fun HttpRequestData.isMetadataOIDCIssuerResponse() = mockResponse(expectedPath = "$ISSUER_OIDC$ISSUER_METADATA_PATH")
 
-    private fun HttpRequestData.isErrorResponse() =
-        this.method == HttpMethod.Post && this.url.encodedPath == "$CREDENTIAL_PATH$ERROR_PATH"
+    private fun HttpRequestData.isMetadataOID4VCIOtherIssuerErrorResponse() = mockResponse(
+        expectedPath = "$ISSUER_METADATA_PATH/otherIssuer"
+    )
+
+    private fun HttpRequestData.isMetadataOIDCOtherIssuerErrorResponse() = mockResponse(expectedPath = "/otherIssuer$ISSUER_METADATA_PATH")
+
+    private fun HttpRequestData.isConfigOID4VCIIssuerResponse() = mockResponse(expectedPath = "$ISSUER_CONFIG_PATH$ISSUER_OID4VCI")
+
+    private fun HttpRequestData.isConfigOID4VCIIssuerErrorResponse() = mockResponse(expectedPath = "$ISSUER_CONFIG_PATH$ISSUER_OIDC")
+
+    private fun HttpRequestData.isConfigOIDCIssuerResponse() = mockResponse(expectedPath = "$ISSUER_OIDC$ISSUER_CONFIG_PATH")
+
+    private fun HttpRequestData.isConfigOID4VCIOtherIssuerErrorResponse() = mockResponse(expectedPath = "$ISSUER_CONFIG_PATH/otherIssuer")
+
+    private fun HttpRequestData.isConfigOIDCOtherIssuerErrorResponse() = mockResponse(expectedPath = "/otherIssuer$ISSUER_CONFIG_PATH")
+
+    private fun HttpRequestData.isVerifiableCredentialRequestWithJsonResponse() = mockResponse(
+        method = HttpMethod.Post,
+        expectedPath = "$CREDENTIAL_PATH$VERIFIABLE_PATH",
+        contentType = ContentType.Application.Json.content
+    )
+
+    private fun HttpRequestData.isDeferredCredentialRequestWithJsonResponse() = mockResponse(
+        method = HttpMethod.Post,
+        expectedPath = "$CREDENTIAL_PATH$DEFERRED_PATH",
+        contentType = ContentType.Application.Json.content
+    )
+
+    private fun HttpRequestData.isVerifiableCredentialRequestWithResponseEncryption() = mockResponse(
+        method = HttpMethod.Post,
+        expectedPath = "$CREDENTIAL_PATH$VERIFIABLE_PATH",
+        contentType = applicationJwt.content
+    )
+
+    private fun HttpRequestData.isDeferredCredentialRequestWithResponseEncryption() = mockResponse(
+        method = HttpMethod.Post,
+        expectedPath = "$CREDENTIAL_PATH$DEFERRED_PATH",
+        contentType = applicationJwt.content
+    )
+
+    private fun HttpRequestData.isErrorResponse() = mockResponse(method = HttpMethod.Post, expectedPath = "$CREDENTIAL_PATH$ERROR_PATH")
+
+    private fun HttpRequestData.mockResponse(
+        method: HttpMethod = HttpMethod.Get,
+        expectedPath: String,
+        contentType: String? = null
+    ): Boolean {
+        val result = this.method == method && this.url.encodedPath == expectedPath
+
+        return if (contentType != null) {
+            result && this.body.contentType?.content == contentType
+        } else {
+            result
+        }
+    }
 
     private companion object {
+        const val ISSUER_METADATA_PATH = "/.well-known/openid-credential-issuer"
+        const val ISSUER_CONFIG_PATH = "/.well-known/oauth-authorization-server"
+        const val ISSUER_ACCEPT_LANGUAGE = "/issuerAcceptLanguage"
+        const val ISSUER_OID4VCI = "/issuerOID4VCI"
+        const val ISSUER_OIDC = "/issuerOIDC"
+
+        fun createIssuerMetadataJson(issuer: String) = """
+            {
+                "credential_endpoint": "https://example.com/credential/endpoint",
+                "credential_issuer": "https://example.com/credential$issuer",
+                "credential_configurations_supported": {
+                    "identifier": {
+                        "format": "vc+sd-jwt",
+                        "vct": "vct",
+                        "credential_signing_alg_values_supported": [
+                            "ES256"
+                        ],
+                        "proof_types_supported": {
+                            "jwt": {
+                                "proof_signing_alg_values_supported": [
+                                    "ES256"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        """.trimIndent()
+        val credentialIssuerMetadataOID4VCIResponse = createIssuerMetadataJson(ISSUER_OID4VCI)
+
+        val credentialIssuerMetadataOIDCResponse = createIssuerMetadataJson(ISSUER_OIDC)
+
+        val credentialIssuerConfigOID4VCIResponse = """
+            {
+                "issuer": "https://example.com/issuer$ISSUER_OID4VCI",
+                "token_endpoint": "https://example.com/token/endpoint"
+            }
+        """.trimIndent()
+
+        val credentialIssuerConfigOIDCResponse = """
+            {
+                "issuer": "https://example.com/issuer$ISSUER_OIDC",
+                "token_endpoint": "https://example.com/token/endpoint"
+            }
+        """.trimIndent()
+
         const val BASE_URL = "https://example.com"
+        const val ISSUER_PATH = "/issuer"
         const val CREDENTIAL_PATH = "/credential"
         const val VERIFIABLE_PATH = "/verifiable"
         const val DEFERRED_PATH = "/deferred"

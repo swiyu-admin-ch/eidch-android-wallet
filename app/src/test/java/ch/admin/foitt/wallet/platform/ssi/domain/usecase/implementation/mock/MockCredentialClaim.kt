@@ -25,7 +25,7 @@ object MockCredentialClaim {
     ) = CredentialClaimWithDisplays(
         claim = CredentialClaim(
             clusterId = 1,
-            key = "key",
+            path = "key",
             value = value,
             valueType = valueType,
             valueDisplayInfo = valueDisplayInfo

@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.platform.invitation.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestContainer
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
@@ -12,6 +11,7 @@ import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.Proces
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ProcessPresentationRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationResult
+import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ProcessInvitation
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ValidateInvitation
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -43,12 +43,12 @@ class ProcessInvitationImplTest {
     private lateinit var mockProcessPresentationRequest: ProcessPresentationRequest
 
     @MockK
-    private lateinit var mockJwtPresentationRequestContainer: PresentationRequestContainer.Jwt
+    private lateinit var mockPresentationRequestWithRaw: PresentationRequestWithRaw
 
     @MockK
     private lateinit var mockCredentialOffer: CredentialOffer
 
-    private lateinit var useCase: ProcessInvitationImpl
+    private lateinit var useCase: ProcessInvitation
 
     @BeforeEach
     fun setUp() {
@@ -91,14 +91,14 @@ class ProcessInvitationImplTest {
     fun `Processing a valid presentation request matching one credential returns the credential and request`() = runTest {
         val request = mockk<PresentationRequestWithRaw>()
         val credential = mockk<CompatibleCredential>()
-        val requestResult = ProcessPresentationRequestResult.Credential(credential, request, true)
-        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockJwtPresentationRequestContainer)
-        coEvery { mockProcessPresentationRequest(mockJwtPresentationRequestContainer) } returns Ok(requestResult)
+        val requestResult = ProcessPresentationRequestResult.Credential(credential, request)
+        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockPresentationRequestWithRaw)
+        coEvery { mockProcessPresentationRequest(mockPresentationRequestWithRaw) } returns Ok(requestResult)
 
         val result = useCase(INVITATION_URI)
 
         val processInvitationResult = result.assertSuccessType(ProcessInvitationResult.PresentationRequest::class)
-        val expected = ProcessInvitationResult.PresentationRequest(credential, request, true)
+        val expected = ProcessInvitationResult.PresentationRequest(credential, request)
         assertEquals(expected, processInvitationResult)
     }
 
@@ -106,23 +106,23 @@ class ProcessInvitationImplTest {
     fun `Processing a valid presentation request matching multiple credential returns the credentials and request`() = runTest {
         val request = mockk<PresentationRequestWithRaw>()
         val credentials = setOf(mockk<CompatibleCredential>())
-        val requestResult = ProcessPresentationRequestResult.CredentialList(credentials, request, true)
-        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockJwtPresentationRequestContainer)
-        coEvery { mockProcessPresentationRequest(mockJwtPresentationRequestContainer) } returns Ok(requestResult)
+        val requestResult = ProcessPresentationRequestResult.CredentialList(credentials, request)
+        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockPresentationRequestWithRaw)
+        coEvery { mockProcessPresentationRequest(mockPresentationRequestWithRaw) } returns Ok(requestResult)
 
         val result = useCase(INVITATION_URI)
 
         val processInvitationResult = result.assertSuccessType(ProcessInvitationResult.PresentationRequestCredentialList::class)
-        val expected = ProcessInvitationResult.PresentationRequestCredentialList(credentials, request, true)
+        val expected = ProcessInvitationResult.PresentationRequestCredentialList(credentials, request)
         assertEquals(expected, processInvitationResult)
     }
 
     @Test
     fun `Processing a valid presentation request maps errors from processing presentation request`() = runTest {
         val exception = IllegalStateException()
-        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockJwtPresentationRequestContainer)
+        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockPresentationRequestWithRaw)
         coEvery {
-            mockProcessPresentationRequest(mockJwtPresentationRequestContainer)
+            mockProcessPresentationRequest(mockPresentationRequestWithRaw)
         } returns Err(CredentialPresentationError.Unexpected(exception))
 
         val result = useCase(INVITATION_URI)

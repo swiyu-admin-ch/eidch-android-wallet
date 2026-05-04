@@ -3,9 +3,9 @@ package ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementatio
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityListError
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityWithActorDisplaysRepository
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivitiesWithDisplaysFlow
-import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityWithActorDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.CREDENTIAL_ID
-import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityWithActorDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityWithActorDisplays
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -30,7 +30,7 @@ class GetActivitiesWithDisplaysFlowImplTest {
     private lateinit var mockActivityWithActorDisplaysRepository: ActivityWithActorDisplaysRepository
 
     @MockK
-    private lateinit var mockMapToActivityDisplayData: MapToActivityDisplayData
+    private lateinit var mockMapToActivityWithActorDisplayData: MapToActivityWithActorDisplayData
 
     private lateinit var useCase: GetActivitiesWithDisplaysFlow
 
@@ -39,7 +39,7 @@ class GetActivitiesWithDisplaysFlowImplTest {
         MockKAnnotations.init(this)
         useCase = GetActivitiesWithDisplaysFlowImpl(
             activityWithActorDisplaysRepository = mockActivityWithActorDisplaysRepository,
-            mapToActivityDisplayData = mockMapToActivityDisplayData,
+            mapToActivityWithActorDisplayData = mockMapToActivityWithActorDisplayData,
         )
 
         setupDefaultMocks()
@@ -56,7 +56,7 @@ class GetActivitiesWithDisplaysFlowImplTest {
 
         assertNotNull(result)
         val displayData = result.assertOk()
-        assertEquals(listOf(activityDisplayData), displayData)
+        assertEquals(listOf(activityWithActorDisplayData), displayData)
     }
 
     @Test
@@ -77,7 +77,7 @@ class GetActivitiesWithDisplaysFlowImplTest {
         } returns flowOf(Ok(listOf(activityWithActorDisplays)))
 
         coEvery {
-            mockMapToActivityDisplayData(activityWithActorDisplays)
-        } returns activityDisplayData
+            mockMapToActivityWithActorDisplayData(activityWithActorDisplays)
+        } returns activityWithActorDisplayData
     }
 }

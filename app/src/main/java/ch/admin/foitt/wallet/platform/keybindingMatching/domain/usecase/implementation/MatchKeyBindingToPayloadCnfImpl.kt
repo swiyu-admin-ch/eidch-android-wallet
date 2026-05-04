@@ -39,7 +39,7 @@ class MatchKeyBindingToPayloadCnfImpl @Inject constructor(
         }
 
         val sdJwt = SdJwt(payload)
-        val cnfJsonElement = sdJwt.sdJwtJson.jsonObject["cnf"]
+        val cnfJsonElement = sdJwt.processedJson.jsonObject["cnf"]
         val confirmation: Confirmation? = cnfJsonElement?.let {
             safeJson.safeDecodeFromJsonElement<Confirmation>(it)
                 .mapError(JsonParsingError::toMatchKeyBindingToPayloadCnfError)

@@ -162,6 +162,7 @@ class GetAllAnyCredentialsByCredentialIdImplTest {
         validFrom = 0,
         validUntil = 17768026519L,
         credentialId = CREDENTIAL_ID,
+        nextPresentableBundleItemId = 1,
     )
 
     private fun createMockKeyBinding(
@@ -180,7 +181,7 @@ class GetAllAnyCredentialsByCredentialIdImplTest {
         const val PAYLOAD_1 = "ewogICJ0eXAiOiJ2YytzZC1qd3QiLAogICJhbGciOiJFUzI1NiIsCiAgImtpZCI6ImtleUlkIgp9." +
             "ewogICJpc3MiOiJkaWQ6dGR3OmlkZW50aWZpZXIiLAogICJ2Y3QiOiJ2Y3QiCn0." +
             "ZXdvZ0lDSjBlWEFpT2lKMll5dHpaQzFxZDNRaUxBb2dJQ0poYkdjaU9pSkZVekkxTmlJc0NpQWdJbXRwWkNJNkltdGxlVWxrSWdwOS4uNHNwTXBzWE1" +
-            "nYlNyY0lqMFdNbXJNYXdhcVRzeG9GWmItcjdwTWlubEhvZklRRUhhS2pzV1J0dENzUTkyd0tfa3RpaDQta2VCdjdVbkc2MkRPa2NDbGc"
+            "nYlNyY0lqMFdNbXJNYXdhcVRzeG9GWmItcjdwTWlubEhvZklRRUhhS2pzV1J0dENzUTkyd0tfa3RpaDQta2VCdjdVbkc2MkRPa2NDbGc~"
         const val PAYLOAD_2 = PAYLOAD_1 // payload content not relevant for the test logic
         val KEY_BINDING_ALGORITHM = SigningAlgorithm.ES512
     }

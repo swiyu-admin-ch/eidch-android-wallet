@@ -2,19 +2,21 @@ package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponse
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseConfig
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseParam
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.Constraints
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.DescriptorMap
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptor
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationSubmission
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
-import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyDescriptorMaps
+import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyDescriptorMapByPresentationDefinition
 import ch.admin.foitt.openid4vc.domain.usecase.CreateAnyVerifiablePresentation
-import ch.admin.foitt.openid4vc.domain.usecase.GetPresentationRequestType
+import ch.admin.foitt.openid4vc.domain.usecase.GetAuthorizationResponseConfig
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
 import com.github.michaelbull.result.Err
@@ -40,10 +42,11 @@ class SubmitAnyCredentialPresentationImplTest {
     private lateinit var mockCreateAnyVerifiablePresentation: CreateAnyVerifiablePresentation
 
     @MockK
-    private lateinit var mockCreateAnyDescriptorMaps: CreateAnyDescriptorMaps
+    private lateinit var mockCreateAnyDescriptorMapByPresentationDefinition:
+        CreateAnyDescriptorMapByPresentationDefinition
 
     @MockK
-    private lateinit var mockGetPresentationRequestType: GetPresentationRequestType
+    private lateinit var mockGetAuthorizationResponseConfig: GetAuthorizationResponseConfig
 
     @MockK
     private lateinit var mockPresentationRequestRepository: PresentationRequestRepository
@@ -52,7 +55,7 @@ class SubmitAnyCredentialPresentationImplTest {
     private lateinit var mockAnyCredential: AnyCredential
 
     @MockK
-    private lateinit var mockPresentationRequest: PresentationRequest
+    private lateinit var mockAuthorizationRequest: AuthorizationRequest
 
     private lateinit var useCase: SubmitAnyCredentialPresentationImpl
 
@@ -62,12 +65,12 @@ class SubmitAnyCredentialPresentationImplTest {
 
         useCase = SubmitAnyCredentialPresentationImpl(
             createAnyVerifiablePresentation = mockCreateAnyVerifiablePresentation,
-            createAnyDescriptorMaps = mockCreateAnyDescriptorMaps,
-            getPresentationRequestType = mockGetPresentationRequestType,
+            createAnyDescriptorMapByPresentationDefinition = mockCreateAnyDescriptorMapByPresentationDefinition,
+            getAuthorizationResponseConfig = mockGetAuthorizationResponseConfig,
             presentationRequestRepository = mockPresentationRequestRepository,
         )
 
-        success()
+        setupMockResponses()
     }
 
     @AfterEach
@@ -76,18 +79,30 @@ class SubmitAnyCredentialPresentationImplTest {
     }
 
     @Test
-    fun `Submitting presentation for any credential just runs`() = runTest {
+    fun `Submitting dif presentation for any credential just runs`() = runTest {
         useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
+        ).assertOk()
+    }
+
+    @Test
+    fun `Submitting dcql presentation for any credential just runs`() = runTest {
+        useCase(
+            anyCredential = mockAnyCredential,
+            requestedFields = requestedFields,
+            authorizationRequest = mockAuthorizationRequest,
+            usePayloadEncryption = true,
+            dcqlQueryId = DCQL_QUERY_ID,
         ).assertOk()
     }
 
     @Test
     fun `Submitting a presentation where the repository returns VerificationError returns an error`() = runTest {
-        mockPresentationRequest(
+        mockAuthorizationRequest(
             inputDescriptorFormats = listOf(
                 InputDescriptorFormat.VcSdJwt(
                     sdJwtAlgorithms = emptyList(),
@@ -99,40 +114,49 @@ class SubmitAnyCredentialPresentationImplTest {
         useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
     @Test
     fun `Submitting a presentation for multiple input descriptor with same format just runs`() = runTest {
-        mockPresentationRequest(
+        mockAuthorizationRequest(
             inputDescriptorFormats = listOf(validVcSdJwt, validVcSdJwt)
         )
 
         useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
         ).assertOk()
     }
 
     @Test
     fun `Submitting a presentation with an invalid response uri returns an error`() = runTest {
-        every { mockPresentationRequest.responseUri } returns "invalid"
+        every { mockAuthorizationRequest.responseUri } returns "invalid"
         coEvery {
             mockPresentationRequestRepository.submitPresentation(
                 url = any(),
-                presentationRequestType = PresentationRequestType.Json(vpToken = VP_TOKEN, presentationSubmission = ""),
+                authorizationResponseConfig = AuthorizationResponseConfig(
+                    type = AuthorizationResponseType.DIF,
+                    params = mapOf(
+                        AuthorizationResponseParam.VP_TOKEN to VP_TOKEN,
+                        AuthorizationResponseParam.PRESENTATION_SUBMISSION to "",
+                    )
+                )
             )
         } returns Ok(Unit)
 
         useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
@@ -146,8 +170,9 @@ class SubmitAnyCredentialPresentationImplTest {
         val result = useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
         )
 
         val error = result.assertErrorType(PresentationRequestError.Unexpected::class)
@@ -156,13 +181,14 @@ class SubmitAnyCredentialPresentationImplTest {
 
     @Test
     fun `Submitting a presentation for any credential maps errors from invalid response uri`() = runTest {
-        every { mockPresentationRequest.responseUri } returns "invalid uri"
+        every { mockAuthorizationRequest.responseUri } returns "invalid uri"
 
         useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
@@ -170,14 +196,15 @@ class SubmitAnyCredentialPresentationImplTest {
     fun `Submitting a presentation for any credential maps errors from getting presentation request type`() = runTest {
         val exception = IllegalStateException()
         coEvery {
-            mockGetPresentationRequestType(any(), any(), any())
+            mockGetAuthorizationResponseConfig(any(), any(), any())
         } returns Err(PresentationRequestError.Unexpected(exception))
 
         val result = useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
         )
 
         val error = result.assertErrorType(PresentationRequestError.Unexpected::class)
@@ -194,33 +221,44 @@ class SubmitAnyCredentialPresentationImplTest {
         val result = useCase(
             anyCredential = mockAnyCredential,
             requestedFields = requestedFields,
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             usePayloadEncryption = true,
+            dcqlQueryId = null,
         )
 
         val error = result.assertErrorType(PresentationRequestError.Unexpected::class)
         assertEquals(exception, error.throwable)
     }
 
-    private fun success() {
-        mockPresentationRequest(listOf(validVcSdJwt))
+    private fun setupMockResponses() {
+        mockAuthorizationRequest(listOf(validVcSdJwt))
         coEvery {
             mockCreateAnyVerifiablePresentation(
                 anyCredential = mockAnyCredential,
                 requestedFields = requestedFields,
-                presentationRequest = mockPresentationRequest,
+                authorizationRequest = mockAuthorizationRequest,
             )
         } returns Ok(VP_TOKEN)
 
-        coEvery { mockCreateAnyDescriptorMaps(mockPresentationRequest) } returns mockDescriptorMaps
+        coEvery {
+            mockCreateAnyDescriptorMapByPresentationDefinition(any())
+        } returns mockDescriptorMaps
 
         coEvery {
-            mockGetPresentationRequestType(
-                presentationRequest = mockPresentationRequest,
-                presentationRequestBody = presentationRequestBody,
+            mockGetAuthorizationResponseConfig(
+                authorizationRequest = mockAuthorizationRequest,
+                authorizationResponse = authorizationResponseDif,
                 usePayloadEncryption = true,
             )
-        } returns Ok(presentationRequestType)
+        } returns Ok(authorizationResponseConfigDif)
+
+        coEvery {
+            mockGetAuthorizationResponseConfig(
+                authorizationRequest = mockAuthorizationRequest,
+                authorizationResponse = authorizationResponseDCQL,
+                usePayloadEncryption = true,
+            )
+        } returns Ok(authorizationResponseConfigDcql)
 
         mockkStatic(UUID::class)
         every { UUID.randomUUID().toString() } returns PRESENTATION_SUBMISSION_ID
@@ -228,19 +266,27 @@ class SubmitAnyCredentialPresentationImplTest {
         coEvery {
             mockPresentationRequestRepository.submitPresentation(
                 url = URL(RESPONSE_URI),
-                presentationRequestType = presentationRequestType,
+                authorizationResponseConfig = authorizationResponseConfigDif,
+            )
+        } returns Ok(Unit)
+
+        coEvery {
+            mockPresentationRequestRepository.submitPresentation(
+                url = URL(RESPONSE_URI),
+                authorizationResponseConfig = authorizationResponseConfigDcql,
             )
         } returns Ok(Unit)
     }
 
-    private fun mockPresentationRequest(inputDescriptorFormats: List<InputDescriptorFormat>) {
-        every { mockPresentationRequest.presentationDefinition } returns mockk {
+    private fun mockAuthorizationRequest(inputDescriptorFormats: List<InputDescriptorFormat>) {
+        every { mockAuthorizationRequest.presentationDefinition } returns mockk {
             every { inputDescriptors } returns inputDescriptorFormats.map { format ->
                 createInputDescriptor(format)
             }
             every { id } returns PRESENTATION_DEFINITION_ID
         }
-        every { mockPresentationRequest.responseUri } returns RESPONSE_URI
+        every { mockAuthorizationRequest.responseUri } returns RESPONSE_URI
+        every { mockAuthorizationRequest.state } returns STATE
     }
 
     private fun createInputDescriptor(format: InputDescriptorFormat) = InputDescriptor(
@@ -251,11 +297,22 @@ class SubmitAnyCredentialPresentationImplTest {
         purpose = "purpose",
     )
 
-    private val presentationRequestType = PresentationRequestType.Jwt(
-        response = PRESENTATION_REQUEST_TYPE_JWE
+    private val authorizationResponseConfigDif = AuthorizationResponseConfig(
+        type = AuthorizationResponseType.DIF,
+        params = mapOf(
+            AuthorizationResponseParam.RESPONSE to AUTHORIZATION_RESPONSE_JWE,
+        )
+    )
+
+    private val authorizationResponseConfigDcql = AuthorizationResponseConfig(
+        type = AuthorizationResponseType.DCQL,
+        params = mapOf(
+            AuthorizationResponseParam.RESPONSE to AUTHORIZATION_RESPONSE_JWE,
+        )
     )
 
     private companion object {
+        const val STATE = "state"
         const val RESPONSE_URI = "https://example.com"
         const val FIELD = "field"
         val requestedFields = listOf(FIELD)
@@ -266,6 +323,7 @@ class SubmitAnyCredentialPresentationImplTest {
 
         const val PRESENTATION_DEFINITION_ID = "presentationDefinitionId"
         const val VP_TOKEN = "vpToken"
+        const val DCQL_QUERY_ID = "dcql query id"
         const val PRESENTATION_SUBMISSION_ID = "presentationSubmissionId"
         val mockDescriptorMaps = listOf(mockk<DescriptorMap>())
         val presentationSubmission = PresentationSubmission(
@@ -273,8 +331,16 @@ class SubmitAnyCredentialPresentationImplTest {
             descriptorMap = mockDescriptorMaps,
             id = PRESENTATION_SUBMISSION_ID,
         )
-        val presentationRequestBody = PresentationRequestBody(VP_TOKEN, presentationSubmission)
+        val authorizationResponseDif = AuthorizationResponse.Dif(
+            vpToken = VP_TOKEN,
+            presentationSubmission = presentationSubmission,
+            state = STATE
+        )
+        val authorizationResponseDCQL = AuthorizationResponse.Dcql(
+            vpToken = mapOf(DCQL_QUERY_ID to listOf(VP_TOKEN)),
+            state = STATE
+        )
 
-        const val PRESENTATION_REQUEST_TYPE_JWE = "jwe"
+        const val AUTHORIZATION_RESPONSE_JWE = "jwe"
     }
 }

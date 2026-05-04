@@ -11,6 +11,7 @@ data class DeferredCredential(
     override val format: CredentialFormat,
     override val transactionId: String,
     override val accessToken: String,
+    override val refreshToken: String?,
     override val endpoint: URL,
     override val pollInterval: Int,
     override val keyBindings: List<KeyBinding>?,

@@ -5,8 +5,8 @@ import androidx.navigation3.runtime.NavKey
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.DocumentScannerErrorType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.GuardianConsentResultState
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationErrorScreenState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
 import kotlinx.serialization.Serializable
@@ -56,7 +56,12 @@ sealed interface Destination : NavKey {
     data object CredentialDetailWrongDataScreen : Destination
 
     // endregion feature/credentialDetail
+    // region feature/deferredDetail
 
+    @Serializable
+    data class DeferredDetailScreen(val credentialId: Long) : Destination
+
+    // endregion feature/deferredDetail
     // region feature/settings
 
     @Serializable
@@ -75,6 +80,9 @@ sealed interface Destination : NavKey {
     data object ImpressumScreen : Destination
 
     @Serializable
+    data object LottieViewerScreen : Destination
+
+    @Serializable
     data object LanguageScreen : Destination
 
     @Serializable
@@ -89,6 +97,9 @@ sealed interface Destination : NavKey {
     @Serializable
     data object DataAnalysisScreen : Destination
 
+    @Serializable
+    data object ActivityListSettingsScreen : Destination
+
     // endregion feature/settings
     // region feature/onboarding
 
@@ -97,6 +108,9 @@ sealed interface Destination : NavKey {
 
     @Serializable
     data object OnboardingLocalDataScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+
+    @Serializable
+    data object OnboardingActivityScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
 
     @Serializable
     data object OnboardingPresentScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
@@ -236,10 +250,27 @@ sealed interface Destination : NavKey {
         DestinationGroup.EIdRequestVerification
 
     @Serializable
+    data class EIdDocumentScanSummaryScreen(
+        val caseId: String,
+    ) :
+        Destination,
+        ScopedComponentGroup.EidApplicationProcess,
+        ScopedComponentGroup.EidDocumentScan,
+        ScopedComponentGroup.EidOnlineSession,
+        DestinationGroup.EIdApplicationProcess,
+        DestinationGroup.EIdRequestVerification
+
+    @Serializable
     data class EIdDocumentScannerInfoScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.EidOnlineSession,
         DestinationGroup.EIdApplicationProcess,
+        DestinationGroup.EIdRequestVerification
+
+    @Serializable
+    data class EIdDocumentRecordingInfoScreen(val caseId: String) :
+        Destination,
+        ScopedComponentGroup.EidOnlineSession,
         DestinationGroup.EIdRequestVerification
 
     @Serializable
@@ -279,13 +310,6 @@ sealed interface Destination : NavKey {
         DestinationGroup.EIdApplicationProcess
 
     @Serializable
-    data class EIdDocumentScannerErrorScreen(val type: DocumentScannerErrorType) :
-        Destination,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdApplicationProcess,
-        DestinationGroup.EIdRequestVerification
-
-    @Serializable
     data class MrzScanPermissionScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.EidOnlineSession,
@@ -312,6 +336,9 @@ sealed interface Destination : NavKey {
 
     @Serializable
     data class EIdWalletPairingScreen(val caseId: String) : Destination, DestinationGroup.EIdRequestVerification
+
+    @Serializable
+    data object EIdWalletPairingTimeoutScreen : Destination, DestinationGroup.EIdRequestVerification
 
     // endregion feature/walletPairing
     // region feature/qrscan
@@ -342,7 +369,6 @@ sealed interface Destination : NavKey {
     data class PresentationCredentialListScreen(
         val compatibleCredentials: Set<CompatibleCredential>,
         val presentationRequestWithRaw: PresentationRequestWithRaw,
-        val shouldFetchTrustStatement: Boolean,
     ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
@@ -352,7 +378,6 @@ sealed interface Destination : NavKey {
     data class PresentationFailureScreen(
         val compatibleCredential: CompatibleCredential,
         val presentationRequestWithRaw: PresentationRequestWithRaw,
-        val shouldFetchTrustStatement: Boolean,
     ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
@@ -365,7 +390,6 @@ sealed interface Destination : NavKey {
     data class PresentationRequestScreen(
         val compatibleCredential: CompatibleCredential,
         val presentationRequestWithRaw: PresentationRequestWithRaw,
-        val shouldFetchTrustStatement: Boolean,
     ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
@@ -430,9 +454,8 @@ sealed interface Destination : NavKey {
 
     // endregion platform/invitation
     // region platform/screens
-
     @Serializable
-    data object GenericErrorScreen : Destination
+    data class GenericErrorScreen(val error: GenericErrorScreenState) : Destination
 
     // endregion platform/screens
     // region platform/versionEnforcement
@@ -441,13 +464,27 @@ sealed interface Destination : NavKey {
     data class AppVersionBlockedScreen(val title: String?, val text: String?) : Destination, NoAutoLogout
 
     // endregion platform/versionEnforcement
-
     // region platform/reportWrongData
 
     @Serializable
     data object ReportWrongDataScreen : Destination
 
     // endregion platform/reportWrongData
+    // region platform/otp
+
+    @Serializable
+    data object OtpIntroScreen : Destination
+
+    @Serializable
+    data object OtpLegalScreen : Destination
+
+    @Serializable
+    data object OtpEmailInputScreen : Destination, ScopedComponentGroup.Otp
+
+    @Serializable
+    data object OtpCodeInputScreen : Destination, ScopedComponentGroup.Otp
+
+    // endregion platform/otp
 }
 
 fun Destination?.canTriggerAutoLogout(): Boolean {

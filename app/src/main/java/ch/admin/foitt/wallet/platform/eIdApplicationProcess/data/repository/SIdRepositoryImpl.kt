@@ -16,6 +16,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdChal
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.WalletPairingStateResponse
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toPairWalletError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toSIdRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toValidateAttestationsError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.repository.SIdRepository
@@ -132,8 +133,8 @@ class SIdRepositoryImpl @Inject constructor(
             header(ClientAttestation.REQUEST_HEADER, clientAttestation.attestation.rawJwt)
             header(ClientAttestationPoP.REQUEST_HEADER, clientAttestationPoP.value)
         }.body()
-    }.mapError { throwable ->
-        throwable.toSIdRepositoryError("pairWallet error")
+    }.mapError { error ->
+        error.toPairWalletError()
     }
 
     override suspend fun startAutoVerification(

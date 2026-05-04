@@ -13,6 +13,7 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VerificationV1T
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.toFetchVcSchemaTrustStatusError
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.repository.TrustStatementRepository
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.FetchVcSchemaTrustStatus
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.GetTrustDomainFromDid
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.GetTrustUrlFromDid
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ValidateTrustStatement
 import ch.admin.foitt.wallet.platform.utils.SafeJson
@@ -27,6 +28,7 @@ import javax.inject.Inject
 class FetchVcSchemaTrustStatusImpl @Inject constructor(
     private val getTrustUrlFromDid: GetTrustUrlFromDid,
     private val trustStatementRepository: TrustStatementRepository,
+    private val getTrustDomainFromDid: GetTrustDomainFromDid,
     private val environmentSetupRepo: EnvironmentSetupRepository,
     private val validateTrustStatement: ValidateTrustStatement,
     private val safeJson: SafeJson,
@@ -65,7 +67,11 @@ class FetchVcSchemaTrustStatusImpl @Inject constructor(
                     TrustStatementActor.ISSUER -> it.vct == ISSUANCE_VCT
                     TrustStatementActor.VERIFIER -> it.vct == VERIFICATION_VCT
                 }
-            }.filter { environmentSetupRepo.trustRegistryTrustedDids.contains(it.vcIssuer) }
+            }.filter { trustStatement ->
+                val trustDomain = getTrustDomainFromDid(actorDid).get() ?: return@filter false
+
+                environmentSetupRepo.trustRegistryTrustedDids[trustDomain]?.contains(trustStatement.vcIssuer) ?: false
+            }
 
         if (filteredStatements.isEmpty()) {
             return@coroutineBinding Ok(VcSchemaTrustStatus.UNPROTECTED).bind()
@@ -79,12 +85,12 @@ class FetchVcSchemaTrustStatusImpl @Inject constructor(
             when (trustStatementActor) {
                 TrustStatementActor.ISSUER -> {
                     safeJson.safeDecodeElementTo<IssuanceV1TrustStatement>(
-                        validTrustStatements.first().sdJwtJson
+                        validTrustStatements.first().processedJson
                     ).get()
                 }
                 TrustStatementActor.VERIFIER -> {
                     safeJson.safeDecodeElementTo<VerificationV1TrustStatement>(
-                        validTrustStatements.first().sdJwtJson
+                        validTrustStatements.first().processedJson
                     ).get()
                 }
             }

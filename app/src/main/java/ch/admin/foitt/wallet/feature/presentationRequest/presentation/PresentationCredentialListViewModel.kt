@@ -16,6 +16,7 @@ import ch.admin.foitt.wallet.platform.badges.presentation.model.toBadgeBottomShe
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
@@ -48,7 +49,6 @@ class PresentationCredentialListViewModel @AssistedInject constructor(
     setTopBarState: SetTopBarState,
     @Assisted private val compatibleCredentials: Set<CompatibleCredential>,
     @Assisted private val presentationRequestWithRaw: PresentationRequestWithRaw,
-    @Assisted private val shouldFetchTrustStatement: Boolean,
 ) : ScreenViewModel(setTopBarState) {
 
     @AssistedFactory
@@ -56,7 +56,6 @@ class PresentationCredentialListViewModel @AssistedInject constructor(
         fun create(
             compatibleCredentials: Set<CompatibleCredential>,
             presentationRequestWithRaw: PresentationRequestWithRaw,
-            shouldFetchTrustStatement: Boolean
         ): PresentationCredentialListViewModel
     }
 
@@ -107,7 +106,6 @@ class PresentationCredentialListViewModel @AssistedInject constructor(
                 destination = Destination.PresentationRequestScreen(
                     compatibleCredential = compatibleCredential,
                     presentationRequestWithRaw = presentationRequestWithRaw,
-                    shouldFetchTrustStatement = false,
                 )
             )
         } ?: navigateToErrorScreen()
@@ -117,13 +115,12 @@ class PresentationCredentialListViewModel @AssistedInject constructor(
 
     private suspend fun updateVerifierDisplayData() {
         fetchAndCacheVerifierDisplayData(
-            presentationRequest = presentationRequestWithRaw.presentationRequest,
-            shouldFetchTrustStatement = shouldFetchTrustStatement,
+            authorizationRequest = presentationRequestWithRaw.authorizationRequest,
         )
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
     }
 
     fun onBadge(badgeType: BadgeType) {

@@ -7,6 +7,7 @@ import ch.admin.foitt.wallet.feature.home.domain.usecase.DeleteEIdRequestCase
 import ch.admin.foitt.wallet.feature.home.domain.usecase.GetEIdRequestsFlow
 import ch.admin.foitt.wallet.feature.home.presentation.model.HomeContainerState
 import ch.admin.foitt.wallet.feature.home.presentation.model.HomeScreenState
+import ch.admin.foitt.wallet.feature.otp.domain.repository.OtpStateCompletionRepository
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
@@ -19,6 +20,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequ
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayStatus
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.UpdateAllSIdStatuses
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialOfferEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialOfferEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -41,6 +43,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -58,6 +61,7 @@ class HomeViewModel @Inject constructor(
     environmentSetupRepository: EnvironmentSetupRepository,
     private val navManager: NavigationManager,
     private val credentialOfferEventRepository: CredentialOfferEventRepository,
+    private val otpStateCompletionRepository: OtpStateCompletionRepository,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.None
@@ -83,7 +87,7 @@ class HomeViewModel @Inject constructor(
                 )
 
                 else -> {
-                    navigateTo(Destination.GenericErrorScreen)
+                    navigateTo(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
                     null
                 }
             }
@@ -96,7 +100,15 @@ class HomeViewModel @Inject constructor(
             showBetaIdRequestButton = environmentSetupRepository.betaIdRequestEnabled,
             showMenu = false,
             onScan = { navigateTo(Destination.QrScanPermissionScreen) },
-            onGetEId = { navigateTo(Destination.EIdIntroScreen) },
+            onGetEId = {
+                viewModelScope.launch {
+                    if (otpStateCompletionRepository.getOtpFlowWasDone()) {
+                        navigateTo(Destination.EIdIntroScreen)
+                    } else {
+                        navigateTo(Destination.OtpIntroScreen)
+                    }
+                }
+            },
             onGetBetaId = { navigateTo(Destination.BetaIdScreen) },
             onSettings = { navigateTo(Destination.SettingsScreen) },
             onHelp = { onHelp() },
@@ -127,7 +139,7 @@ class HomeViewModel @Inject constructor(
     ): HomeScreenState = when {
         credentials.isNotEmpty() || deferredCredentials.isNotEmpty() -> {
             HomeScreenState.CredentialList(
-                eIdRequests = filterEIdRequests(eIdRequestCases),
+                eIdRequests = eIdRequestCases,
                 credentials = getCredentialStateList(
                     credentialsDisplayData = credentials,
                     deferredCredentialsDisplayData = deferredCredentials,
@@ -137,16 +149,10 @@ class HomeViewModel @Inject constructor(
         }
 
         eIdRequestCases.isNotEmpty() -> HomeScreenState.NoCredential(
-            eIdRequests = filterEIdRequests(eIdRequestCases),
+            eIdRequests = eIdRequestCases,
         )
 
         else -> HomeScreenState.WalletEmpty
-    }
-
-    private fun filterEIdRequests(eIdRequestCases: List<SIdRequestDisplayData>): List<SIdRequestDisplayData> {
-        return eIdRequestCases.filter { requestCase ->
-            requestCase.status != SIdRequestDisplayStatus.OTHER
-        }
     }
 
     private suspend fun getCredentialStateList(
@@ -163,6 +169,7 @@ class HomeViewModel @Inject constructor(
                             else -> 0
                         }
                     }
+
                     DeferredProgressionState.IN_PROGRESS -> -1
                     DeferredProgressionState.INVALID -> 1
                 }
@@ -189,7 +196,7 @@ class HomeViewModel @Inject constructor(
         }.trackCompletion(_isRefreshing)
     }
 
-    fun onRefreshSIdStatuses() {
+    private fun onRefreshSIdStatuses() {
         if (!isRefreshing.value) {
             viewModelScope.launch {
                 refreshDeferredCredentials()
@@ -203,12 +210,29 @@ class HomeViewModel @Inject constructor(
         credentialOfferEventRepository.resetEvent()
     }
 
-    fun onStartOnlineIdentification(caseId: String) {
-        navigateTo(Destination.EIdStartAvSessionScreen(caseId = caseId))
-    }
-
-    fun onObtainConsent(caseId: String) {
-        navigateTo(Destination.EIdGuardianSelectionScreen(caseId = caseId))
+    fun onEidNotificationAction(caseId: String, status: SIdRequestDisplayStatus) {
+        when (status) {
+            SIdRequestDisplayStatus.AV_READY,
+            SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_OK -> navigateTo(Destination.EIdStartAvSessionScreen(caseId = caseId))
+            SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_PENDING,
+            SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_PENDING -> navigateTo(Destination.EIdGuardianSelectionScreen(caseId = caseId))
+            SIdRequestDisplayStatus.IN_AUTO_VERIFICATION -> navigateTo(Destination.EIdStartAutoVerificationScreen(caseId = caseId))
+            SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING -> navigateTo(Destination.EIdPairingOverviewScreen(caseId = caseId))
+            SIdRequestDisplayStatus.UNKNOWN -> onRefreshSIdStatuses()
+            SIdRequestDisplayStatus.REFUSED -> onLearnMore()
+            SIdRequestDisplayStatus.QUEUEING,
+            SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_OK,
+            SIdRequestDisplayStatus.IN_AGENT_REVIEW,
+            SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK,
+            SIdRequestDisplayStatus.IN_ISSUANCE,
+            SIdRequestDisplayStatus.AV_EXPIRED,
+            SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK,
+            SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING,
+            SIdRequestDisplayStatus.CANCELLED,
+            SIdRequestDisplayStatus.CLOSED -> {
+                Timber.w(message = "EIdRequest notification should not be clickable in this state ${status.name}")
+            }
+        }
     }
 
     fun onCloseEId(caseId: String) {
@@ -217,7 +241,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onLearnMore() = appContext.openLink(R.string.tk_getEid_notification_declined_faqLink)
+    private fun onLearnMore() = appContext.openLink(R.string.tk_getEid_notification_declined_faqLink)
 
     fun onMenu(showMenu: Boolean) {
         _homeContainerState.update { currentState ->
@@ -225,14 +249,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun handleCredentialClick(id: Long, progressState: VerifiableProgressionState) {
-        when (progressState) {
-            VerifiableProgressionState.ACCEPTED -> navigateTo(
-                Destination.CredentialDetailScreen(credentialId = id)
-            )
-            VerifiableProgressionState.UNACCEPTED -> navigateTo(
-                Destination.CredentialOfferScreen(credentialId = id)
-            )
+    private fun handleCredentialClick(id: Long, progressState: VerifiableProgressionState, isDeferred: Boolean) {
+        if (isDeferred) {
+            navigateTo(Destination.DeferredDetailScreen(credentialId = id))
+        } else {
+            when (progressState) {
+                VerifiableProgressionState.ACCEPTED -> navigateTo(
+                    Destination.CredentialDetailScreen(credentialId = id)
+                )
+
+                VerifiableProgressionState.UNACCEPTED -> navigateTo(
+                    Destination.CredentialOfferScreen(credentialId = id)
+                )
+            }
         }
     }
 

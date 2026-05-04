@@ -40,7 +40,6 @@ object EntryProviderInstallerModule {
                         factory.create(
                             compatibleCredentials = navKey.compatibleCredentials,
                             presentationRequestWithRaw = navKey.presentationRequestWithRaw,
-                            shouldFetchTrustStatement = navKey.shouldFetchTrustStatement
                         )
                     }
                 )
@@ -63,7 +62,6 @@ object EntryProviderInstallerModule {
                         factory.create(
                             compatibleCredential = navKey.compatibleCredential,
                             presentationRequestWithRaw = navKey.presentationRequestWithRaw,
-                            shouldFetchTrustStatement = navKey.shouldFetchTrustStatement
                         )
                     }
                 )
@@ -91,7 +89,6 @@ object EntryProviderInstallerModule {
                         factory.create(
                             compatibleCredential = navKey.compatibleCredential,
                             presentationRequestWithRaw = navKey.presentationRequestWithRaw,
-                            shouldFetchTrustStatement = navKey.shouldFetchTrustStatement
                         )
                     }
                 )

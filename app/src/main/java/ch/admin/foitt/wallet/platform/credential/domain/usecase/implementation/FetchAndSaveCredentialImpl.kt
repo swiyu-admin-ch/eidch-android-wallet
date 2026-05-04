@@ -6,7 +6,7 @@ import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedCredential
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchCredentialByConfigError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerCredentialInfoError
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.PrepareFetchVerifiableCredentialError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetVerifiableCredentialParamsError
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import ch.admin.foitt.openid4vc.domain.usecase.FetchCredentialByConfig
 import ch.admin.foitt.openid4vc.domain.usecase.FetchRawAndParsedIssuerCredentialInfo
@@ -48,10 +48,10 @@ class FetchAndSaveCredentialImpl @Inject constructor(
     override suspend fun invoke(
         credentialOffer: CredentialOffer,
     ): Result<FetchCredentialResult, FetchCredentialError> = coroutineBinding {
-        val rawAndParsedCredentialInfo =
-            fetchRawAndParsedIssuerCredentialInfo(credentialOffer.credentialIssuer)
-                .mapError(FetchIssuerCredentialInfoError::toFetchCredentialError)
-                .bind()
+        val rawAndParsedCredentialInfo = fetchRawAndParsedIssuerCredentialInfo(
+            issuerEndpoint = credentialOffer.credentialIssuer,
+        ).mapError(FetchIssuerCredentialInfoError::toFetchCredentialError)
+            .bind()
 
         val issuerInfo = rawAndParsedCredentialInfo.issuerCredentialInfo
 
@@ -79,7 +79,7 @@ class FetchAndSaveCredentialImpl @Inject constructor(
             issuerCredentialInfo = issuerInfo,
             credentialConfiguration = config,
             credentialOffer = credentialOffer,
-        ).mapError(PrepareFetchVerifiableCredentialError::toFetchCredentialError).bind()
+        ).mapError(GetVerifiableCredentialParamsError::toFetchCredentialError).bind()
 
         val batchSize = if (environmentSetupRepository.batchIssuanceEnabled.not() && verifiableCredentialParams.isBatch) {
             // This is a workaround for the BETA-ID, which is already issued as a batch

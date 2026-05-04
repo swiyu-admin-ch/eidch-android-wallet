@@ -48,7 +48,7 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayo
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialListRow
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
@@ -225,7 +225,7 @@ private fun PresentationCredentialListScreenPreview() {
                 trustStatus = TrustStatus.TRUSTED,
                 vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
                 actorType = ActorType.VERIFIER,
-                nonComplianceState = NonComplianceState.REPORTED,
+                actorComplianceState = ActorComplianceState.REPORTED,
                 nonComplianceReason = "report reason",
             ),
             credentialCardStates = CredentialMocks.cardStates.toList().map { it.value() },

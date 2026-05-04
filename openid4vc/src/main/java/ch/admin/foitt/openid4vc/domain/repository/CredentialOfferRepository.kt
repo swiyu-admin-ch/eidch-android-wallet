@@ -3,6 +3,7 @@ package ch.admin.foitt.openid4vc.domain.repository
 import androidx.annotation.CheckResult
 import ch.admin.foitt.openid4vc.domain.model.CredentialRequestType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchAccessTokenError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchDeferredCredentialError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerConfigurationError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerCredentialInfoError
@@ -20,7 +21,7 @@ interface CredentialOfferRepository {
 
     @CheckResult
     suspend fun fetchRawAndParsedIssuerCredentialInformation(
-        issuerEndpoint: URL
+        issuerEndpoint: URL,
     ): Result<RawAndParsedIssuerCredentialInfo, FetchIssuerCredentialInfoError>
 
     @CheckResult
@@ -42,13 +43,13 @@ interface CredentialOfferRepository {
     suspend fun fetchAccessToken(
         tokenEndpoint: URL,
         preAuthorizedCode: String
-    ): Result<TokenResponse, FetchVerifiableCredentialError>
+    ): Result<TokenResponse, FetchAccessTokenError>
 
     @CheckResult
     suspend fun fetchAccessTokenByRefreshToken(
         tokenEndpoint: URL,
         refreshToken: String
-    ): Result<TokenResponse, FetchVerifiableCredentialError>
+    ): Result<TokenResponse, FetchAccessTokenError>
 
     @CheckResult
     suspend fun fetchCredential(

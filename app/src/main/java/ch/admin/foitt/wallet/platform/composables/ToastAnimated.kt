@@ -29,6 +29,7 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 
 @Composable
 fun ToastAnimated(
+    modifier: Modifier = Modifier.fillMaxSize(),
     isVisible: Boolean,
     @DrawableRes iconEnd: Int? = null,
     isSnackBarDesign: Boolean,
@@ -36,8 +37,7 @@ fun ToastAnimated(
     @StringRes messageToast: Int?,
     onCloseToast: () -> Unit = {},
 ) = Box(
-    modifier = Modifier
-        .fillMaxSize()
+    modifier = modifier
         .horizontalSafeDrawing(),
 ) {
     AnimatedVisibility(

@@ -2,8 +2,8 @@
 
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.model
 
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
+import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
+import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureFromDidError
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.GetAllAnyCredentialsByCredentialIdError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError.DidDocumentDeactivated
@@ -75,12 +75,12 @@ internal fun JsonParsingError.toValidateTokenStatusListError(): ValidateTokenSta
     is JsonError.Unexpected -> Unexpected(throwable)
 }
 
-fun VerifyJwtError.toValidateTokenStatusListError(): ValidateTokenStatusStatusListError = when (this) {
-    VcSdJwtError.NetworkError -> NetworkError
-    VcSdJwtError.InvalidJwt,
-    VcSdJwtError.IssuerValidationFailed -> Unexpected(Exception("Validation failed"))
-    VcSdJwtError.DidDocumentDeactivated -> DidDocumentDeactivated
-    is VcSdJwtError.Unexpected -> Unexpected(cause)
+fun VerifyJwtSignatureFromDidError.toValidateTokenStatusListError(): ValidateTokenStatusStatusListError = when (this) {
+    JwtError.DidDocumentDeactivated -> DidDocumentDeactivated
+    JwtError.NetworkError -> NetworkError
+    is JwtError.InvalidJwt,
+    JwtError.IssuerValidationFailed -> Unexpected(null)
+    is JwtError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun Throwable.toValidateTokenStatusStatusListError(message: String): ValidateTokenStatusStatusListError {

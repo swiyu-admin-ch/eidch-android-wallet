@@ -1,15 +1,21 @@
 package ch.admin.foitt.wallet.platform.activityList.presentation
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDetail
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.DeleteActivity
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivityDetailFlow
-import ch.admin.foitt.wallet.platform.activityList.presentation.model.ActivityDetailUiState
-import ch.admin.foitt.wallet.platform.activityList.presentation.model.toActivityUiState
+import ch.admin.foitt.wallet.platform.activityList.presentation.model.ActivityDetailScreenUiState
+import ch.admin.foitt.wallet.platform.activityList.presentation.model.toActivityDetailUiState
+import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
+import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheetUiState
+import ch.admin.foitt.wallet.platform.badges.presentation.model.toBadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.ActivityEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.NonComplianceEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.ActivityEventRepository
@@ -19,13 +25,16 @@ import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
+import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
+import ch.admin.foitt.wallet.platform.utils.openLink
 import ch.admin.foitt.wallet.platform.utils.toPainter
 import com.github.michaelbull.result.mapBoth
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +44,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel(assistedFactory = ActivityDetailViewModel.Factory::class)
 class ActivityDetailViewModel @AssistedInject constructor(
+    @param:ApplicationContext private val appContext: Context,
     getActivityDetailFlow: GetActivityDetailFlow,
     private val getDrawableFromImageData: GetDrawableFromImageData,
     private val getCredentialCardState: GetCredentialCardState,
@@ -66,23 +76,27 @@ class ActivityDetailViewModel @AssistedInject constructor(
 
     val nonComplianceEnabled = environmentSetupRepository.nonComplianceEnabled
 
+    private val _badgeBottomSheetUiState: MutableStateFlow<BadgeBottomSheetUiState?> = MutableStateFlow(null)
+    val badgeBottomSheet = _badgeBottomSheetUiState.asStateFlow()
+
     private val _showConfirmationBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val showConfirmationBottomSheet = _showConfirmationBottomSheet.asStateFlow()
 
-    val activity = getActivityDetailFlow(credentialId = credentialId, activityId = activityId)
-        .map { result ->
-            result.mapBoth(
-                success = { activityDetail ->
-                    _isLoading.value = false
-                    mapToUiState(activityDetail)
-                },
-                failure = {
-                    navigateToErrorScreen()
-                    null
-                }
-            )
-        }.filterNotNull()
-        .toStateFlow(ActivityDetailUiState.EMPTY)
+    val activityDetailUiState = refreshableStateFlow(ActivityDetailScreenUiState.EMPTY) {
+        getActivityDetailFlow(credentialId = credentialId, activityId = activityId)
+            .map { result ->
+                result.mapBoth(
+                    success = { activityDetail ->
+                        _isLoading.value = false
+                        mapToUiState(activityDetail)
+                    },
+                    failure = {
+                        navigateToErrorScreen()
+                        null
+                    }
+                )
+            }.filterNotNull()
+    }
 
     private val _isSnackbarVisible = MutableStateFlow(false)
     val isSnackbarVisible = _isSnackbarVisible.asStateFlow()
@@ -105,39 +119,51 @@ class ActivityDetailViewModel @AssistedInject constructor(
     fun hideNonComplianceSnackbar() = nonComplianceEventRepository.resetEvent()
 
     private suspend fun mapToUiState(activityDetail: ActivityDetail?) = when (activityDetail) {
-        null -> ActivityDetailUiState.EMPTY
+        null -> ActivityDetailScreenUiState.EMPTY
         else -> {
             val drawable = activityDetail.activity.actorImageData?.let {
                 getDrawableFromImageData(it)
             }
 
-            ActivityDetailUiState(
-                activity = activityDetail.activity.toActivityUiState(drawable?.toPainter()),
+            ActivityDetailScreenUiState(
+                activity = activityDetail.activity.toActivityDetailUiState(drawable?.toPainter()),
                 credential = getCredentialCardState(activityDetail.credential).copy(status = null),
                 claims = activityDetail.claims,
             )
         }
     }
 
+    fun onBadge(badgeType: BadgeType.ActorInfoBadge) {
+        _badgeBottomSheetUiState.value = badgeType.toBadgeBottomSheetUiState(
+            actorName = activityDetailUiState.stateFlow.value.activity.localizedActorName,
+            reason = activityDetailUiState.stateFlow.value.activity.nonComplianceReason,
+            onMoreInformation = { onMoreInformation(R.string.tk_badgeInformation_furtherInformation_link_value) },
+        )
+    }
+
+    fun onDismissBadgeBottomSheet() {
+        _badgeBottomSheetUiState.value = null
+    }
+
     fun onDeleteActivity() {
         _showConfirmationBottomSheet.value = true
     }
 
-    fun hideConfirmationBottomSheet() {
-        _showConfirmationBottomSheet.value = false
-    }
-
-    fun deleteActivity() = viewModelScope.launch {
+    fun onDeleteActivityConfirmed() = viewModelScope.launch {
         deleteActivity(activityId)
         activityEventRepository.setEvent(ActivityEvent.DELETED)
         onBack()
+    }
+
+    fun onDismissConfirmationBottomSheet() {
+        _showConfirmationBottomSheet.value = false
     }
 
     fun onReportActor() {
         navManager.navigateTo(
             Destination.NonComplianceListScreen(
                 activityId = activityId,
-                activityType = activity.value.activity.activityType,
+                activityType = activityDetailUiState.stateFlow.value.activity.activityType,
             )
         )
     }
@@ -146,7 +172,9 @@ class ActivityDetailViewModel @AssistedInject constructor(
         navManager.popBackStack()
     }
 
+    private fun onMoreInformation(@StringRes uriResource: Int) = appContext.openLink(uriResource)
+
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
     }
 }

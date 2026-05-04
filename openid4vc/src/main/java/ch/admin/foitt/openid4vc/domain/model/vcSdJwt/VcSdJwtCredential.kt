@@ -15,7 +15,7 @@ class VcSdJwtCredential(
     override val payload: String,
     validFrom: Long? = null,
     validUntil: Long? = null,
-) : VcSdJwt(rawVcSdJwt = payload, reservedClaimNames = RESERVED_CLAIM_NAMES), AnyCredential {
+) : VcSdJwt(rawVcSdJwt = payload), AnyCredential {
 
     override val issuer: String = this.vcIssuer
     override val format: CredentialFormat = CredentialFormat.VC_SD_JWT
@@ -34,31 +34,15 @@ class VcSdJwtCredential(
     /**
      * @returns all claims that we want to save in the database (i. e. only the disclosable claims)
      */
-    override fun getClaimsToSave(): JsonElement = getDisclosableClaimsJson()
+    override fun getClaimsToSave(): JsonElement {
+        val claims = processedJson.jsonObject.filterNot { it.key in NON_SELECTIVELY_DISCLOSABLE_CLAIMS }
+        return JsonObject(claims)
+    }
 
     /**
      * @returns all claims that can be requested by a verifier (i. e. disclosable claims + technical (=reserved) claims)
      */
-    override fun getClaimsForPresentation(): JsonElement = sdJwtJson
+    override fun getClaimsForPresentation(): JsonElement = processedJson
 
     override fun createVerifiableCredential(requestedFieldKeys: List<String>): String = createSelectiveDisclosure(requestedFieldKeys)
-
-    fun hasNonDisclosableClaims(): Boolean = (payloadJson.keys - RESERVED_CLAIM_NAMES).isNotEmpty()
-
-    private fun getDisclosableClaimsJson(): JsonElement {
-        val disclosableClaims = sdJwtJson.jsonObject.entries.filterNot { RESERVED_CLAIM_NAMES.contains(it.key) }
-        val disclosableClaimsJson = JsonObject(disclosableClaims.associate { it.toPair() })
-        return disclosableClaimsJson
-    }
-
-    private companion object {
-        // Reserved claim names
-        // See https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-04.html#name-registered-jwt-claims and
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-selective-disclosure-jwt-10.html#section-5.1
-        private val RESERVED_CLAIM_NAMES = setOf(
-            "iss", "nbf", "exp", "sub", "iat", "aud", "jti", // JWT
-            "_sd_alg", "_sd", // SD-JWT
-            "cnf", "vct", "vct#integrity", "vct_metadata_uri", "vct_metadata_uri#integrity", "status", // VcSdJwt
-        )
-    }
 }

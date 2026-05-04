@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.wallet.platform.activityList.domain.model.CredentialActivityRepositoryError
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.CredentialActivityRepository
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
@@ -108,32 +108,32 @@ class SendNonComplianceReportImpl @Inject constructor(
             .bind()
     }
 
-    private fun getPresentationRequest(nonComplianceData: String?): Result<PresentationRequest, SendNonComplianceReportError> = binding {
+    private fun getPresentationRequest(nonComplianceData: String?): Result<AuthorizationRequest, SendNonComplianceReportError> = binding {
         if (nonComplianceData == null) {
             return@binding Err(
                 NonComplianceError.Unexpected(IllegalStateException("nonComplianceData must not be null"))
-            ).bind<PresentationRequest>()
+            ).bind<AuthorizationRequest>()
         }
-        val presentationRequest = runSuspendCatching {
+        val authorizationRequest = runSuspendCatching {
             Jwt(nonComplianceData)
         }.mapBoth(
             success = { jwt ->
-                safeJson.safeDecodeElementTo<PresentationRequest>(jwt.payloadJson)
+                safeJson.safeDecodeElementTo<AuthorizationRequest>(jwt.payloadJson)
                     .mapError(JsonParsingError::toSendNonComplianceReportError)
                     .bind()
             },
             failure = {
-                safeJson.safeDecodeStringTo<PresentationRequest>(nonComplianceData)
+                safeJson.safeDecodeStringTo<AuthorizationRequest>(nonComplianceData)
                     .mapError(JsonParsingError::toSendNonComplianceReportError)
                     .bind()
             },
         )
 
-        presentationRequest
+        authorizationRequest
     }
 
-    private fun getPresentationRequestFields(presentationRequest: PresentationRequest) =
-        presentationRequest.presentationDefinition.inputDescriptors.firstOrNull()?.constraints?.fields?.map { (filter, path) ->
+    private fun getPresentationRequestFields(authorizationRequest: AuthorizationRequest) =
+        authorizationRequest.presentationDefinition?.inputDescriptors?.firstOrNull()?.constraints?.fields?.map { (filter, path) ->
             val constraint = filter?.const
             val name = path.joinToString(", ")
 

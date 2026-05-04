@@ -35,7 +35,6 @@ object NonComplianceMocks {
     val presentationRequestJson = """
 {
   "response_uri": "https://example.com",
-  "client_id_scheme": "did",
   "iss": "did:example:1234",
   "response_type": "vp_token",
   "presentation_definition": {

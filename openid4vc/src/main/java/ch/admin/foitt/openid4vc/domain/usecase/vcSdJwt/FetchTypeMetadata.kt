@@ -9,7 +9,6 @@ interface FetchTypeMetadata {
     suspend operator fun invoke(
         credentialVct: String,
         url: URL,
-        integrity: String?,
-        expectIntegrity: Boolean = true,
+        integrity: String?
     ): Result<TypeMetadata, FetchTypeMetadataError>
 }

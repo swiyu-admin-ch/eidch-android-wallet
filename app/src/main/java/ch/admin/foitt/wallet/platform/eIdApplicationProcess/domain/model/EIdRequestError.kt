@@ -10,6 +10,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequ
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError.InvalidDeferredCredentialOffer
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError.InvalidKeyAttestation
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError.NetworkError
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError.RequestInWrongState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError.Unexpected
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationError
@@ -37,7 +38,8 @@ interface EIdRequestError {
         AvRepositoryError,
         AvUploadFilesError,
         AvSubmitCaseError,
-        WalletPairingStateError
+        WalletPairingStateError,
+        SIdAPIError
 
     data object InvalidClientAttestation :
         ValidateAttestationsError,
@@ -48,18 +50,20 @@ interface EIdRequestError {
         PairCurrentWalletError,
         StartAutoVerificationError,
         StartOnlineSessionError,
-        WalletPairingStateError
+        WalletPairingStateError,
+        SIdAPIError
 
-    data object InvalidKeyAttestation : ValidateAttestationsError
-    data object InsufficientKeyStorageResistance : ValidateAttestationsError
+    data object InvalidKeyAttestation : ValidateAttestationsError, SIdAPIError
+    data object InsufficientKeyStorageResistance : ValidateAttestationsError, SIdAPIError
     data class DeclinedProcessData(val cause: String?) :
         AvRepositoryError,
         AvUploadFilesError,
         AvSubmitCaseError
     data class FileNotFound(val fileName: String) : AvUploadFilesError
 
-    data object InvalidDeferredCredentialOffer :
-        PairCurrentWalletError
+    data object InvalidDeferredCredentialOffer : PairCurrentWalletError
+
+    data object RequestInWrongState : SIdAPIError, PairWalletError, PairCurrentWalletError
 
     data class Unexpected(val cause: Throwable?) :
         EIdRequestCaseRepositoryError,
@@ -78,7 +82,8 @@ interface EIdRequestError {
         AvRepositoryError,
         AvUploadFilesError,
         AvSubmitCaseError,
-        WalletPairingStateError
+        WalletPairingStateError,
+        SIdAPIError
 }
 
 sealed interface EIdRequestCaseRepositoryError
@@ -98,6 +103,8 @@ sealed interface AvRepositoryError
 sealed interface AvUploadFilesError
 sealed interface AvSubmitCaseError
 sealed interface WalletPairingStateError
+
+sealed interface SIdAPIError
 
 internal fun SIdRepositoryError.toStartOnlineSessionError(): StartOnlineSessionError = when (this) {
     is Unexpected -> this
@@ -155,6 +162,7 @@ internal fun EIdRequestCaseRepositoryError.toPairCurrentWalletError(): PairCurre
 internal fun PairWalletError.toPairCurrentWalletError(): PairCurrentWalletError = when (this) {
     is InvalidClientAttestation -> this
     is NetworkError -> this
+    is RequestInWrongState -> this
     is Unexpected -> this
 }
 
@@ -172,6 +180,21 @@ internal fun ProcessInvitationError.toPairCurrentWalletError(): PairCurrentWalle
     InvitationError.UnknownIssuer,
     InvitationError.UnknownVerifier,
     is InvitationError.MetadataMisconfiguration,
+    InvitationError.CredentialRequestDenied,
+    InvitationError.InsufficientScope,
+    InvitationError.InvalidCredentialOffer,
+    InvitationError.InvalidCredentialRequest,
+    InvitationError.InvalidEncryptionParameters,
+    InvitationError.InvalidClient,
+    InvitationError.InvalidNonce,
+    InvitationError.InvalidProof,
+    InvitationError.InvalidRequest,
+    InvitationError.InvalidToken,
+    InvitationError.InvalidRequestBearerToken,
+    InvitationError.UnauthorizedClient,
+    InvitationError.UnauthorizedGrantType,
+    InvitationError.UnknownCredentialConfiguration,
+    InvitationError.UnknownCredentialIdentifier,
     InvitationError.UnsupportedKeyStorageSecurityLevel -> InvalidDeferredCredentialOffer
 }
 
@@ -275,29 +298,68 @@ internal fun Throwable.toAvRepositoryError(message: String): AvRepositoryError {
     }
 }
 
-internal suspend fun Throwable.toValidateAttestationsError(message: String): ValidateAttestationsError {
+internal suspend fun Throwable.toSIdClientError(message: String): SIdAPIError {
     Timber.e(t = this, message = message)
     return when (this) {
-        is ClientRequestException -> this.toValidateAttestationsErrors()
+        is ClientRequestException -> this.toSIdClientError()
         is IOException -> NetworkError
         else -> Unexpected(this)
     }
 }
 
-private suspend fun ClientRequestException.toValidateAttestationsErrors(): ValidateAttestationsError = when (this.response.status.value) {
-    HttpStatusCode.UnprocessableEntity.value -> {
-        val errors = runSuspendCatching { this.response.body<SIdErrorResponse>() }
-            .getOrElse {
-                return Unexpected(this)
-            }
-        when {
-            errors.contains(SIdError.INSUFFICIENT_KEY_STORAGE_RESISTANCE) -> InsufficientKeyStorageResistance
-            errors.contains(SIdError.INVALID_KEY_ATTESTATION) -> InvalidKeyAttestation
-            errors.contains(SIdError.INVALID_CLIENT_ATTESTATION) -> InvalidClientAttestation
-            else -> Unexpected(this)
+private suspend fun ClientRequestException.toSIdClientError(): SIdAPIError {
+    val statusCode = this.response.status.value
+    val errors = runSuspendCatching { this.response.body<SIdErrorResponse>() }
+        .getOrElse {
+            return Unexpected(this)
         }
+
+    return when (statusCode) {
+        HttpStatusCode.UnprocessableEntity.value -> {
+            when {
+                errors.contains(SIdError.INSUFFICIENT_KEY_STORAGE_RESISTANCE) -> InsufficientKeyStorageResistance
+                errors.contains(SIdError.INVALID_KEY_ATTESTATION) -> InvalidKeyAttestation
+                errors.contains(SIdError.INVALID_CLIENT_ATTESTATION) -> InvalidClientAttestation
+                else -> Unexpected(this)
+            }
+        }
+        HttpStatusCode.BadRequest.value -> {
+            when {
+                errors.contains(SIdError.REQUEST_IN_WRONG_STATE) -> RequestInWrongState
+                else -> Unexpected(this)
+            }
+        }
+        HttpStatusCode.Unauthorized.value -> {
+            when {
+                errors.contains(SIdError.INVALID_KEY_ATTESTATION) -> InvalidKeyAttestation
+                errors.contains(SIdError.INVALID_CLIENT_ATTESTATION) -> InvalidClientAttestation
+                else -> Unexpected(this)
+            }
+        }
+        else -> Unexpected(this)
     }
-    else -> Unexpected(this)
+}
+
+suspend fun Throwable.toValidateAttestationsError(message: String): ValidateAttestationsError = when (
+    val apiError = this.toSIdClientError(message)
+) {
+    is InsufficientKeyStorageResistance -> apiError
+    is InvalidClientAttestation -> apiError
+    is InvalidKeyAttestation -> apiError
+    is RequestInWrongState -> Unexpected(IllegalStateException("Request in wrong state"))
+    is Unexpected -> apiError
+    is NetworkError -> apiError
+}
+
+suspend fun Throwable.toPairWalletError(): PairWalletError = when (
+    val apiError = this.toSIdClientError("pairWallet error")
+) {
+    is InsufficientKeyStorageResistance -> Unexpected(IllegalStateException("Insufficient key storage resistance"))
+    is InvalidClientAttestation -> apiError
+    is InvalidKeyAttestation -> Unexpected(IllegalStateException("Invalid key attestation"))
+    is RequestInWrongState -> apiError
+    is NetworkError -> apiError
+    is Unexpected -> apiError
 }
 
 private fun SIdErrorResponse.contains(errorCode: String) = errors.any { error -> error.code == errorCode }

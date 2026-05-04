@@ -29,6 +29,7 @@ import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerifyOrder
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
@@ -101,6 +102,7 @@ class HandleDeferredCredentialResultImplTest {
             mockCredentialOfferRepository.saveDeferredCredentialOffer(
                 transactionId = deferredCredential.transactionId,
                 accessToken = deferredCredential.accessToken,
+                refreshToken = deferredCredential.refreshToken,
                 endpoint = deferredCredential.endpoint,
                 pollInterval = deferredCredential.pollInterval,
                 keyBindings = deferredCredential.keyBindings,
@@ -187,6 +189,8 @@ class HandleDeferredCredentialResultImplTest {
     private fun setupDefaultMocks(
         credentialInfo: IssuerCredentialInfo = oneConfigCredentialInformation,
     ) {
+        every { credentialConfig.format } returns CredentialFormat.VC_SD_JWT
+
         coEvery { mockOcaBundler(any()) } returns Ok(ocaBundle)
 
         coEvery {
@@ -203,6 +207,7 @@ class HandleDeferredCredentialResultImplTest {
             mockCredentialOfferRepository.saveDeferredCredentialOffer(
                 transactionId = any(),
                 accessToken = any(),
+                refreshToken = any(),
                 endpoint = any(),
                 pollInterval = any(),
                 keyBindings = any(),
@@ -240,6 +245,7 @@ class HandleDeferredCredentialResultImplTest {
             keyBindings = listOf(keyBinding),
             transactionId = "transactionId",
             accessToken = "accessToken",
+            refreshToken = "refreshToken",
             endpoint = URL("https://example"),
             pollInterval = 1,
         )

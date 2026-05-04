@@ -113,7 +113,7 @@ internal class EIdStartAutoVerificationViewModel @AssistedInject constructor(
     ): Destination = when {
         useNfc -> Destination.EIdNfcScannerScreen(caseId = caseId)
         scanDocument -> Destination.EIdDocumentScannerInfoScreen(caseId = caseId)
-        recordDocumentVideo -> Destination.EIdDocumentRecordingScreen(caseId = caseId)
+        recordDocumentVideo -> Destination.EIdDocumentRecordingInfoScreen(caseId = caseId)
         // At this point, default is to do a face scan
         else -> Destination.EIdStartSelfieVideoScreen(caseId = caseId)
     }

@@ -63,6 +63,7 @@ class HandleDeferredCredentialResultImpl @Inject constructor(
         credentialOfferRepository.saveDeferredCredentialOffer(
             transactionId = deferredCredential.transactionId,
             accessToken = deferredCredential.accessToken,
+            refreshToken = deferredCredential.refreshToken,
             endpoint = deferredCredential.endpoint,
             pollInterval = deferredCredential.pollInterval,
             keyBindings = deferredCredential.keyBindings,

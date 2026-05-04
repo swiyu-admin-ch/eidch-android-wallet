@@ -72,16 +72,18 @@ private fun InitialContent(
     },
     stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_getEid_walletPairing1_secondaryButton),
-            onClick = onMultiDeviceFlow,
-            enabled = !isLoading,
-        )
         Buttons.FilledPrimary(
             text = stringResource(R.string.tk_getEid_walletPairing1_primaryButton),
             onClick = onSingleDeviceFlow,
+            modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading,
             isActive = isLoading,
+        )
+        Buttons.TonalSecondary(
+            text = stringResource(R.string.tk_getEid_walletPairing1_secondaryButton),
+            onClick = onMultiDeviceFlow,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
         )
     }
 ) {

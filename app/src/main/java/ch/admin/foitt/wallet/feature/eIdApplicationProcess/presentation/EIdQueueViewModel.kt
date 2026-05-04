@@ -27,7 +27,7 @@ class EIdQueueViewModel @AssistedInject constructor(
         fun create(rawDeadline: String?): EIdQueueViewModel
     }
 
-    override val topBarState = TopBarState.EmptyWithCloseButton(
+    override val topBarState = TopBarState.WithCloseButton(
         onClose = { navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class) }
     )
 

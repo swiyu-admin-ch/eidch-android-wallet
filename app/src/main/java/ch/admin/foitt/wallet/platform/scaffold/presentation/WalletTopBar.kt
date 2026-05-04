@@ -5,10 +5,13 @@ package ch.admin.foitt.wallet.platform.scaffold.presentation
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
@@ -32,6 +35,7 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.utils.TestTags
 import ch.admin.foitt.wallet.platform.utils.TraversalIndex
+import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
 import ch.admin.foitt.wallet.theme.WalletTopBarColors
@@ -62,6 +66,17 @@ private fun WalletTopAppBarContent(
             },
         )
 
+        is TopBarState.DetailsWithCloseRoundButtons -> TopBarRoundButtons(
+            titleId = topBarState.titleId,
+            colors = getBackgroundColor(topBarState.topBarBackground),
+            onUp = topBarState.onUp,
+            actionButton = {
+                CloseRoundButton(
+                    onClose = topBarState.onClose
+                )
+            },
+        )
+
         is TopBarState.Details -> TopBarBackArrow(
             titleId = topBarState.titleId,
             titleAltTextId = topBarState.titleAltTextId,
@@ -70,12 +85,15 @@ private fun WalletTopAppBarContent(
             actionButton = {},
         )
 
-        is TopBarState.EmptyWithCloseButton -> TopBarEmptyWithClose(
+        is TopBarState.WithCloseButton -> TopBarWithClose(
             actionButton = {
                 CloseButton(
-                    onClose = topBarState.onClose
+                    onClose = topBarState.onClose,
                 )
             },
+            titleId = topBarState.titleId,
+            titleAltTextId = topBarState.titleAltTextId,
+            colors = getBackgroundColor(topBarState.topBarBackground),
         )
 
         is TopBarState.OnGradient -> TopAppBarOnGradient(
@@ -89,14 +107,40 @@ private fun WalletTopAppBarContent(
 }
 
 @Composable
-private fun TopBarEmptyWithClose(
+private fun TopBarWithClose(
     actionButton: @Composable () -> Unit,
+    @StringRes titleId: Int? = null,
+    @StringRes titleAltTextId: Int? = null,
+    colors: TopAppBarColors = WalletTopBarColors.transparent(),
 ) = TopAppBar(
-    title = {},
+    title = {
+        titleId?.let {
+            val altText = titleAltTextId?.let {
+                stringResource(it)
+            }
+
+            WalletTexts.TitleTopBar(
+                text = stringResource(id = titleId),
+                color = colors.titleContentColor,
+                modifier = Modifier
+                    .semantics {
+                        heading()
+                        traversalIndex = TraversalIndex.HIGH2.value
+                        if (altText != null) {
+                            contentDescription = altText
+                        }
+                    }
+                    .padding(
+                        horizontal = Sizes.s04,
+                        vertical = Sizes.s02,
+                    )
+            )
+        }
+    },
     actions = {
         actionButton()
     },
-    colors = WalletTopBarColors.transparent(),
+    colors = colors,
 )
 
 @Composable
@@ -259,6 +303,111 @@ fun TopBarButton(
     }
 }
 
+/**
+ * Used for EId scanner
+ **/
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun TopBarRoundButtons(
+    modifier: Modifier = Modifier,
+    @StringRes titleId: Int?,
+    @StringRes titleAltTextId: Int? = null,
+    colors: TopAppBarColors = WalletTopBarColors.transparent(),
+    onUp: () -> Unit,
+    actionButton: @Composable () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            titleId?.let {
+                val altText = titleAltTextId?.let {
+                    stringResource(it)
+                }
+
+                WalletTexts.TitleTopBar(
+                    text = stringResource(id = titleId),
+                    color = WalletTheme.colorScheme.secondaryFixed,
+                    modifier = Modifier
+                        .semantics {
+                            heading()
+                            traversalIndex = TraversalIndex.HIGH2.value
+                            if (altText != null) {
+                                contentDescription = altText
+                            }
+                        }
+                )
+            }
+        },
+        navigationIcon = {
+            BackRoundButton(
+                onUp = onUp,
+                iconTint = WalletTheme.colorScheme.secondaryFixed,
+                modifier = Modifier
+                    .semantics {
+                        traversalIndex = TraversalIndex.HIGH1.value
+                    }
+                    .testTag(TestTags.BACK_BUTTON.name)
+            )
+        },
+        actions = {
+            actionButton()
+        },
+        colors = colors,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun TopBarRoundButton(
+    onClick: () -> Unit,
+    @DrawableRes icon: Int,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    iconTint: Color = WalletTheme.colorScheme.secondaryFixed,
+    backgroundColors: IconButtonColors = IconButtonColors(
+        containerColor = WalletTheme.colorScheme.onSecondaryFixed,
+        contentColor = WalletTheme.colorScheme.onSecondaryFixed,
+        disabledContainerColor = WalletTheme.colorScheme.onLightPrimary,
+        disabledContentColor = WalletTheme.colorScheme.onLightPrimary
+    )
+) {
+    FilledIconButton(
+        modifier = Modifier
+            .then(modifier)
+            .spaceBarKeyClickable(onClick)
+            .testTag(TestTags.BACK_BUTTON.name),
+        onClick = onClick,
+        colors = backgroundColors
+    ) {
+        Icon(
+            painter = painterResource(id = icon),
+            contentDescription = contentDescription,
+            tint = iconTint,
+        )
+    }
+}
+
+@Composable
+private fun BackRoundButton(
+    modifier: Modifier = Modifier,
+    iconTint: Color = WalletTheme.colorScheme.onSecondaryContainer,
+    onUp: () -> Unit,
+) = TopBarRoundButton(
+    onClick = onUp,
+    icon = R.drawable.wallet_ic_back_navigation,
+    iconTint = iconTint,
+    contentDescription = stringResource(id = R.string.tk_global_back_alt),
+    modifier = modifier
+)
+
+@Composable
+private fun CloseRoundButton(
+    onClose: () -> Unit,
+) = TopBarRoundButton(
+    onClick = onClose,
+    icon = R.drawable.wallet_ic_cross,
+    contentDescription = stringResource(id = R.string.tk_global_close_alt),
+)
+
 @Composable
 private fun getBackgroundColor(topBarBackground: TopBarBackground) = when (topBarBackground) {
     TopBarBackground.DEFAULT -> WalletTopBarColors.default()
@@ -269,8 +418,14 @@ private fun getBackgroundColor(topBarBackground: TopBarBackground) = when (topBa
 private class TopBarPreviewParamsProvider : PreviewParameterProvider<TopBarState> {
     override val values = sequenceOf(
         TopBarState.DetailsWithCloseButton(onUp = {}, titleId = R.string.tk_present_result_success_primary, onClose = {}),
+        TopBarState.DetailsWithCloseRoundButtons(
+            onUp = {},
+            titleId = R.string.tk_eidRequest_recordDocument_verso,
+            onClose = {}
+        ),
         TopBarState.Details(onUp = {}, titleId = R.string.tk_settings_imprint_title),
         TopBarState.Details(onUp = {}, titleId = null),
+        TopBarState.WithCloseButton(onClose = {}, titleId = R.string.tk_settings_imprint_title),
         TopBarState.None
     )
 }

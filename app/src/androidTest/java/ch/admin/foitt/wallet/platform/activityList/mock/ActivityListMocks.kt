@@ -10,8 +10,10 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialActivityEn
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.NonComplianceReasonDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import java.net.URL
@@ -24,6 +26,12 @@ object ActivityListMocks {
         issuerUrl = URL("https://issuer.example.com")
     )
 
+    val credential2 = Credential(
+        id = 2,
+        format = CredentialFormat.VC_SD_JWT,
+        issuerUrl = URL("https://issuer.example.com")
+    )
+
     val verifiableCredential1 = VerifiableCredentialEntity(
         credentialId = 1,
         progressionState = VerifiableProgressionState.ACCEPTED,
@@ -32,6 +40,7 @@ object ActivityListMocks {
         validUntil = 123456789,
         createdAt = 1,
         updatedAt = 1,
+        nextPresentableBundleItemId = 1,
     )
 
     val cluster1 = CredentialClaimClusterEntity(
@@ -44,7 +53,7 @@ object ActivityListMocks {
     val claim1 = CredentialClaim(
         id = 1,
         clusterId = 1,
-        key = "key",
+        path = "[\"path\"]",
         value = "value",
         valueType = "valueType",
         valueDisplayInfo = null,
@@ -57,6 +66,7 @@ object ActivityListMocks {
         type = ActivityType.ISSUANCE,
         actorTrust = TrustStatus.TRUSTED,
         vcSchemaTrust = VcSchemaTrustStatus.TRUSTED,
+        actorCompliance = ActorComplianceState.REPORTED,
         nonComplianceData = null
     )
 
@@ -66,6 +76,7 @@ object ActivityListMocks {
         type = ActivityType.PRESENTATION_ACCEPTED,
         actorTrust = TrustStatus.TRUSTED,
         vcSchemaTrust = VcSchemaTrustStatus.TRUSTED,
+        actorCompliance = ActorComplianceState.NOT_REPORTED,
         nonComplianceData = null
     )
 
@@ -75,7 +86,25 @@ object ActivityListMocks {
         type = ActivityType.PRESENTATION_DECLINED,
         actorTrust = TrustStatus.TRUSTED,
         vcSchemaTrust = VcSchemaTrustStatus.TRUSTED,
+        actorCompliance = ActorComplianceState.NOT_REPORTED,
         nonComplianceData = null
+    )
+
+    val credentialActivity4 = CredentialActivityEntity(
+        id = 4,
+        credentialId = 2,
+        type = ActivityType.ISSUANCE,
+        actorTrust = TrustStatus.TRUSTED,
+        vcSchemaTrust = VcSchemaTrustStatus.TRUSTED,
+        actorCompliance = ActorComplianceState.NOT_REPORTED,
+        nonComplianceData = null
+    )
+
+    val nonComplianceReasonDisplay1 = NonComplianceReasonDisplayEntity(
+        id = 1,
+        activityId = 2,
+        locale = "de-CH",
+        reason = "reason de-CH"
     )
 
     val activityClaim1 = ActivityClaimEntity(

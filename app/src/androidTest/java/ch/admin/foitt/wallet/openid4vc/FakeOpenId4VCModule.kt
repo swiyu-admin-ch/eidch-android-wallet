@@ -4,7 +4,7 @@ import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcBindings
 import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule
 import ch.admin.foitt.openid4vc.domain.repository.CredentialOfferRepository
 import ch.admin.foitt.openid4vc.domain.repository.PresentationRequestRepository
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignature
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.VerifyVcSdJwtSignature
 import ch.admin.foitt.wallet.platform.utils.SafeJson
 import dagger.Binds

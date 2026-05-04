@@ -5,20 +5,21 @@ import ch.admin.foitt.wallet.feature.credentialDetail.domain.model.IssuerDisplay
 import ch.admin.foitt.wallet.feature.credentialDetail.domain.usecase.GetCredentialIssuerDisplaysFlow
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.VisibleBottomSheet
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.model.CredentialDetailUiState
-import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityWithActorDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityStateRepository
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivitiesWithDisplaysFlow
 import ch.admin.foitt.wallet.platform.activityList.presentation.model.toActivityUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
-import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromUri
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
+import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
@@ -48,10 +49,10 @@ class CredentialDetailViewModel @AssistedInject constructor(
     getCredentialDetailFlow: GetCredentialDetailFlow,
     getCredentialIssuerDisplaysFlow: GetCredentialIssuerDisplaysFlow,
     getActivitiesWithDisplaysFlow: GetActivitiesWithDisplaysFlow,
+    activityStateRepository: ActivityStateRepository,
     private val getCredentialCardState: GetCredentialCardState,
     private val updateCredentialStatus: UpdateCredentialStatus,
     private val getDrawableFromUri: GetDrawableFromUri,
-    private val getDrawableFromImageData: GetDrawableFromImageData,
     private val navManager: NavigationManager,
     private val deleteCredential: DeleteCredential,
     setTopBarState: SetTopBarState,
@@ -71,18 +72,22 @@ class CredentialDetailViewModel @AssistedInject constructor(
     private val _visibleBottomSheet = MutableStateFlow(VisibleBottomSheet.NONE)
     val visibleBottomSheet = _visibleBottomSheet.asStateFlow()
 
+    val areActivitiesEnabled = activityStateRepository.areActivitiesEnabledFlow()
+
     val credentialDetailUiState = refreshableStateFlow(CredentialDetailUiState.EMPTY) {
         combine(
             getCredentialDetailFlow(credentialId),
             getCredentialIssuerDisplaysFlow(credentialId),
             getActivitiesWithDisplaysFlow(credentialId),
-        ) { detailsResult, issuerDisplayResult, activitiesResult ->
+            areActivitiesEnabled,
+        ) { detailsResult, issuerDisplayResult, activitiesResult, areActivitiesEnabled ->
             when {
                 detailsResult.isOk -> {
                     _isLoading.value = false
                     mapToUiState(
                         credentialDetail = detailsResult.get(),
                         issuerDisplay = issuerDisplayResult.get(),
+                        areActivitiesEnabled = areActivitiesEnabled,
                         activities = activitiesResult.get() ?: emptyList(),
                     )
                 }
@@ -98,19 +103,17 @@ class CredentialDetailViewModel @AssistedInject constructor(
     private suspend fun mapToUiState(
         credentialDetail: CredentialDetail?,
         issuerDisplay: IssuerDisplay?,
-        activities: List<ActivityDisplayData>,
+        areActivitiesEnabled: Boolean,
+        activities: List<ActivityWithActorDisplayData>,
     ) = when (credentialDetail) {
         null -> CredentialDetailUiState.EMPTY
         else -> CredentialDetailUiState(
             credential = getCredentialCardState(credentialDetail.credential),
             clusterItems = credentialDetail.clusterItems,
             issuer = issuerDisplay.toActorUiState(),
+            areActivitiesEnabled = areActivitiesEnabled,
             activities = activities.take(2).map { activityDisplayData ->
-                val drawable = activityDisplayData.actorImageData?.let {
-                    getDrawableFromImageData(it)
-                }
-
-                activityDisplayData.toActivityUiState(drawable?.toPainter())
+                activityDisplayData.toActivityUiState()
             },
         )
     }
@@ -156,7 +159,7 @@ class CredentialDetailViewModel @AssistedInject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen)
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
     }
 
     fun onWrongData() {
@@ -172,6 +175,10 @@ class CredentialDetailViewModel @AssistedInject constructor(
         )
     }
 
+    fun onActivitySettings() {
+        navManager.navigateTo(Destination.SecuritySettingsScreen)
+    }
+
     private suspend fun IssuerDisplay?.toActorUiState() = this?.let {
         ActorUiState(
             name = if (locale == DisplayLanguage.FALLBACK) {
@@ -185,7 +192,7 @@ class CredentialDetailViewModel @AssistedInject constructor(
             trustStatus = TrustStatus.UNKNOWN,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
             actorType = ActorType.ISSUER,
-            nonComplianceState = NonComplianceState.UNKNOWN,
+            actorComplianceState = ActorComplianceState.UNKNOWN,
             nonComplianceReason = null,
         )
     } ?: ActorUiState.EMPTY.copy(actorType = ActorType.ISSUER)

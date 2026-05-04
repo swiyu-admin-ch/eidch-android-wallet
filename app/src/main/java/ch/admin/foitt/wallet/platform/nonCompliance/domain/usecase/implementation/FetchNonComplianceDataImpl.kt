@@ -1,8 +1,8 @@
 package ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceData
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReasonDisplay
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.repository.NonComplianceTrustRepository
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.GetTrustDomainFromDid
@@ -36,7 +36,7 @@ class FetchNonComplianceDataImpl @Inject constructor(
                     }.toList()
 
                     NonComplianceData(
-                        state = NonComplianceState.REPORTED,
+                        state = ActorComplianceState.REPORTED,
                         reasonDisplays = displays,
                     )
                 } ?: notReported
@@ -47,12 +47,12 @@ class FetchNonComplianceDataImpl @Inject constructor(
         )
 
     private val notReported = NonComplianceData(
-        state = NonComplianceState.NOT_REPORTED,
+        state = ActorComplianceState.NOT_REPORTED,
         reasonDisplays = null,
     )
 
     private val unknown = NonComplianceData(
-        state = NonComplianceState.UNKNOWN,
+        state = ActorComplianceState.UNKNOWN,
         reasonDisplays = null,
     )
 }

@@ -14,6 +14,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.model.RawOcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchOcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchVcMetadataByFormat
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.ResolveMetaDataIntegrity
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.FetchVcMetadataByFormatImpl
 import ch.admin.foitt.wallet.platform.oca.mock.TypeMetadataMocks.CREDENTIAL_VCT
 import ch.admin.foitt.wallet.platform.oca.mock.TypeMetadataMocks.OCA_URL
@@ -74,15 +75,19 @@ class FetchVcMetadataByFormatImplTest {
 
     private lateinit var useCase: FetchVcMetadataByFormat
 
+    @MockK
+    private lateinit var mockResolveMetaDataIntegrity: ResolveMetaDataIntegrity
+
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
 
         useCase = FetchVcMetadataByFormatImpl(
+            resolveMetaDataIntegrity = mockResolveMetaDataIntegrity,
             fetchTypeMetadata = mockFetchTypeMetadata,
             fetchVcSchema = mockFetchVcSchema,
             fetchOcaBundle = mockFetchOcaBundle,
-            vcSdJwtJsonSchemaValidator = mockJsonSchemaValidator,
+            vcSdJwtJsonSchemaValidator = mockJsonSchemaValidator
         )
 
         setupDefaultMocks()
@@ -97,6 +102,9 @@ class FetchVcMetadataByFormatImplTest {
     fun `Fetching vc metadata for VcSdJwt credential from vct returns vc metadata`() = runTest {
         every { mockVcSdJwtCredential.vctMetadataUri } returns null
         every { mockVcSdJwtCredential.vctMetadataUriIntegrity } returns null
+        coEvery {
+            mockResolveMetaDataIntegrity(any())
+        } returns Ok(Pair(URL(CREDENTIAL_VCT), VCT_URL_INTEGRITY))
 
         val result = useCase(mockVcSdJwtCredential)
 
@@ -148,6 +156,10 @@ class FetchVcMetadataByFormatImplTest {
     fun `Fetching vc metadata for VcSdJwt credential where vct is no url does not fetch anything`() = runTest {
         every { mockVcSdJwtCredential.vctMetadataUri } returns null
         every { mockVcSdJwtCredential.vct } returns "not a url"
+        every { mockVcSdJwtCredential.vctIntegrity } returns null
+        coEvery {
+            mockResolveMetaDataIntegrity(any())
+        } returns Ok(Pair(null, null))
 
         val result = useCase(mockVcSdJwtCredential).assertOk()
         assertNull(result.vcSchema)
@@ -162,17 +174,12 @@ class FetchVcMetadataByFormatImplTest {
     }
 
     @Test
-    fun `Fetching vc metadata for VcSdJwt credential where vct_metadata_uri is an invalid url returns an error`() = runTest {
-        every { mockVcSdJwtCredential.vctMetadataUri } returns "not a url"
+    fun `Fetching vc metadata for VcSdJwt credential maps errors from resolving meta data integrity`() = runTest {
+        coEvery {
+            mockResolveMetaDataIntegrity(any())
+        } returns Err(OcaError.Unexpected(IllegalStateException("Vct is not a url, but vct#integrity is provided")))
 
-        useCase(mockVcSdJwtCredential).assertErrorType(OcaError.InvalidOca::class)
-
-        coVerify(exactly = 0) {
-            mockFetchTypeMetadata(any(), any(), any())
-            mockFetchVcSchema(any(), any())
-            mockJsonSchemaValidator(any(), any())
-            mockFetchOcaBundle(any(), any())
-        }
+        useCase(mockVcSdJwtCredential).assertErrorType(OcaError.Unexpected::class)
     }
 
     @Test
@@ -301,6 +308,9 @@ class FetchVcMetadataByFormatImplTest {
         coEvery { mockFetchVcSchema(URL(VC_SCHEMA_URL), VC_SCHEMA_URL_INTEGRITY) } returns Ok(VcSchema(VC_SCHEMA))
 
         coEvery { mockFetchOcaBundle(OCA_URL, OCA_URL_INTEGRITY) } returns Ok(RawOcaBundle(ocaResponse))
+        coEvery {
+            mockResolveMetaDataIntegrity(any())
+        } returns Ok(Pair(URL(VCT_METADATA_URI), VCT_METADATA_URI_INTEGRITY))
     }
 
     private companion object {

@@ -9,6 +9,7 @@ import ch.admin.foitt.openid4vc.domain.model.VerifiableCredentialParams
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CreateCredentialRequestError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchAccessTokenError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchNonceError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchVerifiableCredentialError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.Grant
@@ -42,7 +43,7 @@ internal class FetchVerifiableCredentialImpl @Inject constructor(
         verifiableCredentialParams: VerifiableCredentialParams,
         bindingKeyPairs: List<BindingKeyPair>?,
         payloadEncryptionType: PayloadEncryptionType,
-    ) = coroutineBinding {
+    ): Result<FetchCredentialResult, FetchVerifiableCredentialError> = coroutineBinding {
         val tokenResponse = getToken(verifiableCredentialParams.tokenEndpoint, verifiableCredentialParams.grants)
             .bind()
         val proofs = bindingKeyPairs?.let {
@@ -59,7 +60,6 @@ internal class FetchVerifiableCredentialImpl @Inject constructor(
                 )
             }.bind()
         }
-
         val credentialRequestType = createCredentialRequest(
             payloadEncryptionType = payloadEncryptionType,
             credentialType = CredentialType.Verifiable(
@@ -90,12 +90,12 @@ internal class FetchVerifiableCredentialImpl @Inject constructor(
             credentialOfferRepository.fetchAccessToken(
                 tokenEndpoint,
                 grant.preAuthorizedCode.preAuthorizedCode
-            )
+            ).mapError(FetchAccessTokenError::toFetchVerifiableCredentialError)
         } else if (grant.refreshToken != null) {
             credentialOfferRepository.fetchAccessTokenByRefreshToken(
                 tokenEndpoint,
                 grant.refreshToken
-            )
+            ).mapError(FetchAccessTokenError::toFetchVerifiableCredentialError)
         } else {
             Err(CredentialOfferError.UnsupportedGrantType)
         }
@@ -135,6 +135,7 @@ internal class FetchVerifiableCredentialImpl @Inject constructor(
                         format = verifiableCredentialParams.credentialConfiguration.format,
                         keyBindings = keyBindings,
                         accessToken = accessToken,
+                        refreshToken = refreshToken,
                         endpoint = verifiableCredentialParams.deferredCredentialEndpoint,
                     )
                 } else {

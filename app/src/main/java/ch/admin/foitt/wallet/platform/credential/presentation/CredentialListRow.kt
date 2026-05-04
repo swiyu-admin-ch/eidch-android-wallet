@@ -42,14 +42,10 @@ fun CredentialListRow(
     modifier: Modifier = Modifier,
     backgroundColor: Color = Color.Unspecified,
 ) {
-    val clickableModifier = if (!credentialState.isDeferred) {
+    val clickableModifier =
         Modifier
             .clickable(onClick = onClick)
             .spaceBarKeyClickable(onClick)
-    } else {
-        Modifier
-    }
-
     Row(
         modifier = modifier
             .then(clickableModifier)
@@ -80,15 +76,13 @@ fun CredentialListRow(
                 showStatus(credentialState)
             }
         }
-        if (!credentialState.isDeferred) {
-            Spacer(modifier = Modifier.width(Sizes.s04))
-            Icon(
-                modifier = Modifier.size(Sizes.s06),
-                painter = painterResource(id = R.drawable.wallet_ic_chevron),
-                contentDescription = null,
-                tint = WalletTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Spacer(modifier = Modifier.width(Sizes.s04))
+        Icon(
+            modifier = Modifier.size(Sizes.s06),
+            painter = painterResource(id = R.drawable.wallet_ic_chevron),
+            contentDescription = null,
+            tint = WalletTheme.colorScheme.onSurfaceVariant,
+        )
     }
     if (showDivider) {
         HorizontalDivider(
@@ -108,7 +102,7 @@ private fun showStatus(credentialState: CredentialCardState) {
                 DemoBadge()
                 Spacer(modifier = Modifier.width(Sizes.s02))
             }
-            CredentialStatus(status = credentialState.status,)
+            CredentialStatus(status = credentialState.status)
         }
     }
 }

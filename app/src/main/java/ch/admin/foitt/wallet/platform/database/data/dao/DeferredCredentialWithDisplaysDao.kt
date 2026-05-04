@@ -11,4 +11,8 @@ interface DeferredCredentialWithDisplaysDao {
     @Transaction
     @Query("SELECT * FROM DeferredCredentialEntity ORDER BY createdAt DESC")
     fun getAll(): Flow<List<DeferredCredentialWithDisplays>>
+
+    @Transaction
+    @Query("SELECT * FROM DeferredCredentialEntity WHERE credentialId = :id")
+    fun getById(id: Long): Flow<DeferredCredentialWithDisplays>
 }

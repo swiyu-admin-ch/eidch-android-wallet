@@ -7,4 +7,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface DeferredCredentialWithDisplaysRepository {
     fun getAllFlow(): Flow<Result<List<DeferredCredentialWithDisplays>, CredentialWithDisplaysRepositoryError>>
+    fun getByIdFlow(credentialId: Long): Flow<Result<DeferredCredentialWithDisplays, CredentialWithDisplaysRepositoryError>>
 }

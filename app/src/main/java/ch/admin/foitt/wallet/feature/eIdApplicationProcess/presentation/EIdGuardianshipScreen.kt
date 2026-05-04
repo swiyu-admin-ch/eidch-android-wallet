@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -43,15 +44,15 @@ private fun EIdGuardianshipScreenContent(
         },
         stickyBottomBackgroundColor = Color.Transparent,
         stickyBottomContent = {
+            Buttons.FilledPrimary(
+                text = stringResource(R.string.tk_getEid_guardianship_button_no),
+                onClick = { onDeclareGuardianship(false) },
+                modifier = Modifier.fillMaxWidth(),
+            )
             Buttons.TonalSecondary(
                 text = stringResource(R.string.tk_getEid_guardianship_button_yes),
                 onClick = { onDeclareGuardianship(true) },
-                modifier = Modifier.weight(1f),
-            )
-            Buttons.TonalSecondary(
-                text = stringResource(R.string.tk_getEid_guardianship_button_no),
-                onClick = { onDeclareGuardianship(false) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
         },
     ) {

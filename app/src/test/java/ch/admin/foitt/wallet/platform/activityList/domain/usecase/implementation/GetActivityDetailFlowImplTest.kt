@@ -4,10 +4,10 @@ import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDetail
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityListError
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityWithDetailsRepository
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.GetActivityDetailFlow
-import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.MapToActivityDetailDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.ACTIVITY_ID
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.CREDENTIAL_ID
-import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityDisplayData
+import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityDetailDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.activityWithDetails
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.claimsWithDisplays
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock.ActivityListMocks.credentialClaimCluster
@@ -48,7 +48,7 @@ class GetActivityDetailFlowImplTest {
     private lateinit var mockActivityWithDetailsRepository: ActivityWithDetailsRepository
 
     @MockK
-    private lateinit var mockMapToActivityDisplayData: MapToActivityDisplayData
+    private lateinit var mockMapToActivityDetailDisplayData: MapToActivityDetailDisplayData
 
     @MockK
     private lateinit var mockMapToCredentialDisplayData: MapToCredentialDisplayData
@@ -64,7 +64,7 @@ class GetActivityDetailFlowImplTest {
         useCase = GetActivityDetailFlowImpl(
             verifiableCredentialWithDisplaysAndClustersRepository = mockVerifiableCredentialWithDisplaysAndClustersRepository,
             activityWithDetailsRepository = mockActivityWithDetailsRepository,
-            mapToActivityDisplayData = mockMapToActivityDisplayData,
+            mapToActivityDetailDisplayData = mockMapToActivityDetailDisplayData,
             mapToCredentialDisplayData = mockMapToCredentialDisplayData,
             mapToCredentialClaimCluster = mockMapToCredentialClaimCluster,
         )
@@ -85,7 +85,7 @@ class GetActivityDetailFlowImplTest {
         val activityDetail = result.assertOk()
 
         val expected = ActivityDetail(
-            activity = activityDisplayData,
+            activity = activityDetailDisplayData,
             credential = mockCredentialDisplayData,
             claims = emptyList(),
         )
@@ -103,7 +103,7 @@ class GetActivityDetailFlowImplTest {
         val activityDetail = result.assertOk()
 
         val expected = ActivityDetail(
-            activity = activityDisplayData,
+            activity = activityDetailDisplayData,
             credential = mockCredentialDisplayData,
             claims = listOf(credentialClaimCluster),
         )
@@ -161,8 +161,8 @@ class GetActivityDetailFlowImplTest {
         } returns flowOf(Ok(activityWithDetails))
 
         coEvery {
-            mockMapToActivityDisplayData(activityWithDetails)
-        } returns activityDisplayData
+            mockMapToActivityDetailDisplayData(activityWithDetails)
+        } returns activityDetailDisplayData
 
         coEvery {
             mockMapToCredentialDisplayData(

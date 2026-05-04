@@ -1,8 +1,10 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
+import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.Overlay
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.TransformOcaOverlays
 import javax.inject.Inject
@@ -60,6 +62,7 @@ class TransformOcaOverlaysImpl @Inject constructor() : TransformOcaOverlays {
         .find { it.captureBaseDigest == digest }
         ?.let { dataSourceOverlay ->
             when (dataSourceOverlay) {
+                is DataSourceOverlay2x0 -> dataSourceOverlay.attributeSources[attribute]?.toPointerString() ?: ""
                 is DataSourceOverlay1x0 -> dataSourceOverlay.attributeSources[attribute] ?: ""
             }
         } ?: ""

@@ -13,7 +13,7 @@ class EIdProcessDataConfirmationViewModel @Inject constructor(
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState: TopBarState = TopBarState.EmptyWithCloseButton(
+    override val topBarState: TopBarState = TopBarState.WithCloseButton(
         onClose = { onClose() },
     )
 

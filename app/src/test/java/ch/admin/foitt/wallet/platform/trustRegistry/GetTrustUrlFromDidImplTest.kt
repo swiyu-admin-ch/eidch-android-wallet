@@ -42,20 +42,6 @@ class GetTrustUrlFromDidImplTest {
     }
 
     @Test
-    fun `A did for a metadata trust statement is built correctly`() = runTest {
-        val result = useCase(
-            trustStatementType = TrustStatementType.METADATA,
-            actorDid = inputWithDomain01,
-            vcSchemaId = null
-        ).assertOk()
-
-        val didUrlEncoded = URLEncoder.encode(inputWithDomain01, Charsets.UTF_8.name)
-        val expected = "https://example.org/api/v1/truststatements/$didUrlEncoded"
-
-        assertEquals(expected, result.toString())
-    }
-
-    @Test
     fun `A did for a identity trust statement is built correctly`() = runTest {
         val result = useCase(
             trustStatementType = TrustStatementType.IDENTITY,

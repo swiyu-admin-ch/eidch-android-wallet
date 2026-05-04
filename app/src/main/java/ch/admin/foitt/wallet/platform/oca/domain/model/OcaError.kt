@@ -9,6 +9,8 @@ import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSchemaError
 import ch.admin.foitt.openid4vc.utils.SafeGetError
 import ch.admin.foitt.openid4vc.utils.SafeGetUrlError
 import ch.admin.foitt.sriValidator.domain.model.SRIError
+import ch.admin.foitt.wallet.platform.imageValidation.domain.model.ImageValidationError
+import ch.admin.foitt.wallet.platform.imageValidation.domain.model.ValidateImageError
 import ch.admin.foitt.wallet.platform.jsonSchema.domain.model.JsonSchemaError
 import ch.admin.foitt.wallet.platform.utils.JsonError
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
@@ -40,6 +42,7 @@ sealed interface OcaError {
     data object InvalidEntryCodeOverlay : OcaOverlayValidationError
     data object InvalidEntryOverlay : OcaOverlayValidationError
     data object UnsupportedCredentialFormat : FetchVcMetadataByFormatError
+    data object UnsupportedImageFormat : GenerateOcaDisplaysError
 
     data class InvalidCESRHash(val msg: String) : OcaCesrHashValidatorError, OcaBundlerError
 
@@ -151,4 +154,8 @@ fun GetRootCaptureBaseError.toOcaCaptureBaseValidationError(): OcaCaptureBaseVal
 
 fun GetRootCaptureBaseError.toGenerateOcaDisplaysError(): GenerateOcaDisplaysError = when (this) {
     is OcaError.InvalidRootCaptureBase -> this
+}
+
+fun ValidateImageError.toGenerateOcaDisplaysError(): GenerateOcaDisplaysError = when (this) {
+    is ImageValidationError.UnsupportedImageFormat -> OcaError.UnsupportedImageFormat
 }

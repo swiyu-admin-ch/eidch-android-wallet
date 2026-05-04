@@ -9,6 +9,6 @@ import java.net.URL
 interface FetchRawAndParsedIssuerCredentialInfo {
     @CheckResult
     suspend operator fun invoke(
-        issuerEndpoint: URL
+        issuerEndpoint: URL,
     ): Result<RawAndParsedIssuerCredentialInfo, FetchIssuerCredentialInfoError>
 }

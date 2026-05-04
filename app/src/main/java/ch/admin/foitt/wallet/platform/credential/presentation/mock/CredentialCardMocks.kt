@@ -6,6 +6,7 @@ import androidx.compose.ui.res.painterResource
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.preview.ComposableWrapper
 import ch.admin.foitt.wallet.theme.WalletTheme
 
@@ -85,6 +86,32 @@ object CredentialCardMocks {
         isCredentialFromBetaIssuer = true,
     )
 
+    val state7 @Composable get() = CredentialCardState(
+        credentialId = 7L,
+        title = "Deferred Credential In Progress",
+        subtitle = null,
+        status = null,
+        logo = null,
+        backgroundColor = Color(0xFF772277),
+        contentColor = WalletTheme.colorScheme.onPrimaryContainer,
+        borderColor = WalletTheme.colorScheme.primaryContainer,
+        isCredentialFromBetaIssuer = false,
+        deferredStatus = DeferredProgressionState.IN_PROGRESS,
+    )
+
+    val state8 @Composable get() = CredentialCardState(
+        credentialId = 7L,
+        title = "Deferred Credential Invalid",
+        subtitle = null,
+        status = null,
+        logo = null,
+        backgroundColor = Color(0xFF772277),
+        contentColor = WalletTheme.colorScheme.onPrimaryContainer,
+        borderColor = WalletTheme.colorScheme.primaryContainer,
+        isCredentialFromBetaIssuer = false,
+        deferredStatus = DeferredProgressionState.INVALID,
+    )
+
     val mocks = sequenceOf(
         ComposableWrapper { state1 },
         ComposableWrapper { state2 },
@@ -92,5 +119,7 @@ object CredentialCardMocks {
         ComposableWrapper { state4 },
         ComposableWrapper { state5 },
         ComposableWrapper { state6 },
+        ComposableWrapper { state7 },
+        ComposableWrapper { state8 }
     )
 }

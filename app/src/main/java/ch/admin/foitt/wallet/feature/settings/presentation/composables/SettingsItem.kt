@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -74,9 +75,18 @@ fun WalletListItems.SwitchSettingsItem(
     isSwitchEnabled: Boolean = true,
     isSwitchChecked: Boolean,
     onSwitchChange: (Boolean) -> Unit,
+    @DrawableRes leadingIcon: Int? = null,
 ) = SettingsItem(
     title = title,
     subtitle = subtitle,
+    leadingContent = leadingIcon?.let {
+        {
+            Icon(
+                painter = painterResource(id = it),
+                contentDescription = null
+            )
+        }
+    },
     trailingContent = {
         Switch(
             enabled = isSwitchEnabled,
@@ -108,6 +118,28 @@ fun WalletListItems.ClickableTextSettingsItem(
             painter = painterResource(id = R.drawable.wallet_ic_chevron_right),
             contentDescription = null
         )
+    },
+)
+
+@Composable
+fun WalletListItems.ButtonSettingsItem(
+    title: String,
+    onClick: () -> Unit,
+    contentColor: Color = LocalContentColor.current,
+    @DrawableRes leadingIcon: Int? = null,
+) = SettingsItem(
+    title = title,
+    titleTextColor = contentColor,
+    backgroundColor = WalletTheme.colorScheme.listItemBackground,
+    onClick = onClick,
+    leadingContent = leadingIcon?.let {
+        {
+            Icon(
+                painter = painterResource(id = it),
+                contentDescription = null,
+                tint = contentColor,
+            )
+        }
     },
 )
 
@@ -309,6 +341,10 @@ fun SettingsItemPreview() {
             )
             WalletListItems.ClickableTextSettingsItem(
                 title = "Item clickable text",
+                onClick = {},
+            )
+            WalletListItems.ButtonSettingsItem(
+                title = "Button",
                 onClick = {},
             )
             WalletListItems.TextSettingsItem(

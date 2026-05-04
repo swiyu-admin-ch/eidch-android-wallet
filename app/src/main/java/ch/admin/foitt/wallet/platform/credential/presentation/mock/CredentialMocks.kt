@@ -103,6 +103,20 @@ object CredentialMocks {
             progressionState = VerifiableProgressionState.UNACCEPTED,
         )
 
+    private val cardState10
+        @Composable get() = CredentialCardState(
+            credentialId = 0L,
+            title = "Deferred Credential Rejected",
+            subtitle = null,
+            status = null,
+            logo = painterResource(R.drawable.wallet_ic_dotted_cross),
+            backgroundColor = Color(0xFFEE9922),
+            contentColor = Color.DarkGray,
+            borderColor = Color(0xFFBB9977),
+            isCredentialFromBetaIssuer = false,
+            deferredStatus = DeferredProgressionState.INVALID,
+        )
+
     val cardStates by lazy {
         sequenceOf(
             ComposableWrapper { cardState01 },
@@ -114,6 +128,7 @@ object CredentialMocks {
             ComposableWrapper { cardState07 },
             ComposableWrapper { cardState08 },
             ComposableWrapper { cardState09 },
+            ComposableWrapper { cardState10 },
         )
     }
 

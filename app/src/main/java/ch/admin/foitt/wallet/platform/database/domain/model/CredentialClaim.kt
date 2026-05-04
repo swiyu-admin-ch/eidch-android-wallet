@@ -24,7 +24,7 @@ data class CredentialClaim(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val clusterId: Long, // Foreign key
-    override val key: String,
+    override val path: String,
     override val value: String?,
     override val valueType: String?,
     val valueDisplayInfo: String? = null,

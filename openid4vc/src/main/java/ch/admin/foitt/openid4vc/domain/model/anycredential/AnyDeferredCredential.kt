@@ -8,6 +8,7 @@ interface AnyDeferredCredential : AnyCredentialResult {
     val format: CredentialFormat
     val transactionId: String
     val accessToken: String
+    val refreshToken: String?
     val endpoint: URL
     val pollInterval: Int
     val keyBindings: List<KeyBinding>?

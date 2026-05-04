@@ -18,8 +18,8 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDispl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveVcSdJwtCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockFetchCredential.credentialConfig
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockFetchCredential.oneConfigCredentialInformation
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceData
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
@@ -242,6 +242,8 @@ class SaveVcSdJwtCredentialsImplTest {
     private fun setupDefaultMocks(
         credentialInfo: IssuerCredentialInfo = oneConfigCredentialInformation,
     ) {
+        every { credentialConfig.format } returns CredentialFormat.VC_SD_JWT
+
         every {
             mockVcSdJwtCredential.getClaimsForPresentation()
         } returns parseToJsonElement(CREDENTIAL_CLAIMS_FOR_PRESENTATION)
@@ -259,7 +261,7 @@ class SaveVcSdJwtCredentialsImplTest {
 
         coEvery { mockFetchVcMetadataByFormat(mockVcSdJwtCredential) } returns Ok(vcMetadata)
 
-        coEvery { mockFetchNonComplianceData(any()) } returns NonComplianceData(NonComplianceState.UNKNOWN, emptyList())
+        coEvery { mockFetchNonComplianceData(any()) } returns NonComplianceData(ActorComplianceState.UNKNOWN, emptyList())
 
         coEvery { mockCacheIssuerDisplayData(any(), any(), any()) } returns Unit
 
@@ -302,6 +304,7 @@ class SaveVcSdJwtCredentialsImplTest {
             mockCredentialOfferRepository.saveDeferredCredentialOffer(
                 transactionId = any(),
                 accessToken = any(),
+                refreshToken = any(),
                 endpoint = any(),
                 pollInterval = any(),
                 keyBindings = any(),

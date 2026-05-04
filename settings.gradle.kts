@@ -11,11 +11,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-}
+    }
 }
 
 rootProject.name = "SwiyuWallet"
 include(":app")
 include(":theme")
 include(":openid4vc")
-

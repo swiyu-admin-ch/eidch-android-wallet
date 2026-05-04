@@ -36,7 +36,6 @@ class PresentationFailureViewModel @AssistedInject constructor(
     setTopBarState: SetTopBarState,
     @Assisted private val compatibleCredential: CompatibleCredential,
     @Assisted private val presentationRequestWithRaw: PresentationRequestWithRaw,
-    @Assisted private val shouldFetchTrustStatement: Boolean
 ) : ScreenViewModel(setTopBarState) {
 
     @AssistedFactory
@@ -44,7 +43,6 @@ class PresentationFailureViewModel @AssistedInject constructor(
         fun create(
             compatibleCredential: CompatibleCredential,
             presentationRequestWithRaw: PresentationRequestWithRaw,
-            shouldFetchTrustStatement: Boolean
         ): PresentationFailureViewModel
     }
 
@@ -62,7 +60,6 @@ class PresentationFailureViewModel @AssistedInject constructor(
         destination = Destination.PresentationRequestScreen(
             compatibleCredential = compatibleCredential,
             presentationRequestWithRaw = presentationRequestWithRaw,
-            shouldFetchTrustStatement = shouldFetchTrustStatement,
         )
     )
 

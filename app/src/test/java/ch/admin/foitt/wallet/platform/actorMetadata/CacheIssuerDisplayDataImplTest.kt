@@ -7,9 +7,9 @@ import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.CacheIssuerDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.InitializeActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.CacheIssuerDisplayDataImpl
+import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.actorComplianceState
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceData
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceReasons
-import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceState
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyIssuerDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
@@ -77,7 +77,7 @@ class CacheIssuerDisplayDataImplTest {
             vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
             preferredLanguage = null,
             actorType = ActorType.ISSUER,
-            nonComplianceState = nonComplianceState,
+            actorComplianceState = actorComplianceState,
             nonComplianceReason = nonComplianceReasons,
         )
 

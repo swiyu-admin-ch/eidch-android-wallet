@@ -26,6 +26,11 @@ sealed interface ScopedComponentGroup {
      * [ScopedComponentGroup] for keeping the result of the current e-ID online session call in memory.
      */
     sealed interface EidOnlineSession : ScopedComponentGroup
+
+    /**
+     * [ScopedComponentGroup] for keeping the otp variables in memory.
+     */
+    sealed interface Otp : ScopedComponentGroup
 }
 
 /**
@@ -38,6 +43,7 @@ enum class ComponentScope {
     EidApplicationProcess,
     EidDocumentScan,
     EidOnlineSession,
+    Otp,
 }
 
 internal fun ComponentScope.contains(destination: Destination?): Boolean = when (this) {
@@ -47,4 +53,5 @@ internal fun ComponentScope.contains(destination: Destination?): Boolean = when 
     ComponentScope.EidApplicationProcess -> destination is ScopedComponentGroup.EidApplicationProcess
     ComponentScope.EidDocumentScan -> destination is ScopedComponentGroup.EidDocumentScan
     ComponentScope.EidOnlineSession -> destination is ScopedComponentGroup.EidOnlineSession
+    ComponentScope.Otp -> destination is ScopedComponentGroup.Otp
 }

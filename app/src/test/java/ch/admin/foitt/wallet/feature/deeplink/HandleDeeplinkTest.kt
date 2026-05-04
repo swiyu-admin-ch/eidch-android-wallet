@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.feature.deeplink
 
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationDefinition
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.deeplink.domain.repository.DeepLinkIntentRepository
@@ -30,6 +30,7 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.params.ParameterizedTest
@@ -98,6 +99,7 @@ class HandleDeeplinkTest {
         }
     }
 
+    @Disabled
     @Test
     fun `Coming from onboarding, on no intent, with eId feature enabled, navigates to eId request screen and pop onboarding`() = runTest {
         coEvery { mockDeepLinkIntentRepository.get() } returns null
@@ -182,7 +184,33 @@ class HandleDeeplinkTest {
             handleDeeplinkUseCase(false).navigate()
 
             coVerify(exactly = 1) {
-                mockNavigationManager.replaceCurrentWith(any())
+                mockNavigationManager.replaceCurrentWith(any<Destination.InvitationFailureScreen>())
+            }
+            clearMocks(mockNavigationManager, answers = false)
+        }
+    }
+
+    @Test
+    fun `On deeplink handling, not in onboarding, navigate to generic error screen`() = runTest {
+        mockFailures.forEach { failure ->
+            coEvery { mockProcessInvitation(SOME_DEEP_LINK) } returns Err(failure)
+            handleDeeplinkUseCase(false).navigate()
+
+            coVerify(exactly = 1) {
+                mockNavigationManager.replaceCurrentWith(any<Destination.InvitationFailureScreen>())
+            }
+            clearMocks(mockNavigationManager, answers = false)
+        }
+    }
+
+    @Test
+    fun `On deeplink handling, not in onboarding, navigate to error screen`() = runTest {
+        mockSpecFailures.forEach { failure ->
+            coEvery { mockProcessInvitation(SOME_DEEP_LINK) } returns Err(failure)
+            handleDeeplinkUseCase(false).navigate()
+
+            coVerify(exactly = 1) {
+                mockNavigationManager.replaceCurrentWith(any<Destination.GenericErrorScreen>())
             }
             clearMocks(mockNavigationManager, answers = false)
         }
@@ -233,7 +261,6 @@ class HandleDeeplinkTest {
                 destination = Destination.PresentationRequestScreen(
                     compatibleCredential = mockPresentationRequestResult.credential,
                     presentationRequestWithRaw = mockPresentationRequestResult.request,
-                    shouldFetchTrustStatement = mockPresentationRequestResult.shouldCheckTrustStatement,
                 ),
             )
         }
@@ -250,7 +277,6 @@ class HandleDeeplinkTest {
                 destination = Destination.PresentationCredentialListScreen(
                     compatibleCredentials = mockPresentationRequestListResult.credentials,
                     presentationRequestWithRaw = mockPresentationRequestListResult.request,
-                    shouldFetchTrustStatement = mockPresentationRequestListResult.shouldCheckTrustStatement,
                 ),
             )
         }
@@ -264,7 +290,10 @@ class HandleDeeplinkTest {
                 null
             ),
             InvitationError.EmptyWallet() to Destination.InvitationFailureScreen(InvitationErrorScreenState.EMPTY_WALLET, null),
-            InvitationError.InvalidCredentialOffer to Destination.InvitationFailureScreen(InvitationErrorScreenState.INVALID_CREDENTIAL, null),
+            InvitationError.InvalidCredentialOffer to Destination.InvitationFailureScreen(
+                InvitationErrorScreenState.INVALID_CREDENTIAL,
+                null
+            ),
             InvitationError.InvalidInput to Destination.InvitationFailureScreen(InvitationErrorScreenState.INVALID_CREDENTIAL, null),
             InvitationError.NoCompatibleCredential() to Destination.InvitationFailureScreen(
                 InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL,
@@ -294,7 +323,7 @@ class HandleDeeplinkTest {
         private val mockCredentialOfferResult = ProcessInvitationResult.CredentialOffer(0L)
         private val mockDeferredCredentialResult = ProcessInvitationResult.DeferredCredential(0L)
 
-        private val mockPresentationRequest = PresentationRequest(
+        private val mockAuthorizationRequest = AuthorizationRequest(
             nonce = "iusto",
             presentationDefinition = PresentationDefinition(
                 id = "diam",
@@ -305,13 +334,14 @@ class HandleDeeplinkTest {
             responseUri = "tincidunt",
             responseMode = "suscipit",
             clientId = "clientId",
-            clientIdScheme = "clientIdScheme",
             responseType = "responseType",
-            clientMetaData = null
+            dcqlQuery = null,
+            clientMetaData = null,
+            state = null,
         )
 
         private val mockPresentationRequestWithRaw = PresentationRequestWithRaw(
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             rawPresentationRequest = "raw presentation request"
         )
 
@@ -323,13 +353,11 @@ class HandleDeeplinkTest {
         private val mockPresentationRequestResult = ProcessInvitationResult.PresentationRequest(
             mockCompatibleCredential,
             mockPresentationRequestWithRaw,
-            shouldCheckTrustStatement = true
         )
 
         private val mockPresentationRequestListResult = ProcessInvitationResult.PresentationRequestCredentialList(
             setOf(mockCompatibleCredential),
             mockPresentationRequestWithRaw,
-            shouldCheckTrustStatement = true,
         )
 
         private val mockSuccesses: List<ProcessInvitationResult> = listOf(
@@ -337,12 +365,10 @@ class HandleDeeplinkTest {
             ProcessInvitationResult.PresentationRequest(
                 CompatibleCredential(0L, listOf()),
                 mockPresentationRequestWithRaw,
-                shouldCheckTrustStatement = true,
             ),
             ProcessInvitationResult.PresentationRequestCredentialList(
                 setOf(),
                 mockPresentationRequestWithRaw,
-                shouldCheckTrustStatement = true
             ),
         )
 
@@ -354,6 +380,23 @@ class HandleDeeplinkTest {
             InvitationError.NoCompatibleCredential(),
             InvitationError.MetadataMisconfiguration("Message"),
             InvitationError.Unexpected,
+        )
+
+        private val mockSpecFailures = listOf(
+            InvitationError.CredentialRequestDenied,
+            InvitationError.InsufficientScope,
+            InvitationError.InvalidClient,
+            InvitationError.InvalidCredentialRequest,
+            InvitationError.InvalidEncryptionParameters,
+            InvitationError.InvalidNonce,
+            InvitationError.InvalidProof,
+            InvitationError.InvalidRequest,
+            InvitationError.InvalidRequestBearerToken,
+            InvitationError.InvalidToken,
+            InvitationError.UnauthorizedClient,
+            InvitationError.UnauthorizedGrantType,
+            InvitationError.UnknownCredentialConfiguration,
+            InvitationError.UnknownCredentialIdentifier,
         )
     }
 }

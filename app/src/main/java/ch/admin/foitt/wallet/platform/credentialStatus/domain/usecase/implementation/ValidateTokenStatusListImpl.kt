@@ -1,8 +1,8 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureFromDidError
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusListResponse
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.ValidateTokenStatusStatusListError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.toValidateTokenStatusListError
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 class ValidateTokenStatusListImpl @Inject constructor(
     private val safeJson: SafeJson,
-    private val verifyJwtSignature: VerifyJwtSignature,
+    private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
 ) : ValidateTokenStatusList {
     override suspend fun invoke(
         credentialIssuer: String,
@@ -41,11 +41,11 @@ class ValidateTokenStatusListImpl @Inject constructor(
 
             val keyId = checkNotNull(jwt.keyId) { "keyId is missing" }
 
-            verifyJwtSignature(
+            verifyJwtSignatureFromDid(
                 did = jwtIssuer,
                 kid = keyId,
                 jwt = jwt,
-            ).mapError(VerifyJwtError::toValidateTokenStatusListError)
+            ).mapError(VerifyJwtSignatureFromDidError::toValidateTokenStatusListError)
                 .bind()
 
             parseResponse(jwt.payloadString).bind()

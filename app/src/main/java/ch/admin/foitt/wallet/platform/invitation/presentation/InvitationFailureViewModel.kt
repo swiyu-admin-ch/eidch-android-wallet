@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.invitation.presentation
 
 import androidx.lifecycle.viewModelScope
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseErrorBody
 import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationErrorScreenState
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -37,7 +37,7 @@ class InvitationFailureViewModel @AssistedInject constructor(
             InvitationErrorScreenState.EMPTY_WALLET,
             InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL -> {
                 if (uri != null) {
-                    declinePresentation(url = uri, reason = PresentationRequestErrorBody.ErrorType.CLIENT_REJECTED)
+                    declinePresentation(url = uri, reason = AuthorizationResponseErrorBody.ErrorType.CLIENT_REJECTED)
                 }
             }
             else -> {}

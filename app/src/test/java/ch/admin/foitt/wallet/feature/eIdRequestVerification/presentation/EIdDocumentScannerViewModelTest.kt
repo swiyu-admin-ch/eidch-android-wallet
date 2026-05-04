@@ -8,11 +8,9 @@ import ch.admin.foitt.avwrapper.AvBeamNotification
 import ch.admin.foitt.avwrapper.AvBeamScanDocumentNotification
 import ch.admin.foitt.avwrapper.DocumentScanPackageResult
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.AreEIdDocumentsEqual
-import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveEIdRequestFiles
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AutoVerificationResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetDocumentType
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetDocumentScanResult
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -26,6 +24,7 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,12 +58,6 @@ class EIdDocumentScannerViewModelTest {
     lateinit var setTopBarState: SetTopBarState
 
     @MockK(relaxed = true)
-    lateinit var saveEIdRequestFiles: SaveEIdRequestFiles
-
-    @MockK(relaxed = true)
-    lateinit var getStartAutoVerificationResult: GetStartAutoVerificationResult
-
-    @MockK(relaxed = true)
     lateinit var environmentSetupRepository: EnvironmentSetupRepository
 
     @MockK(relaxed = true)
@@ -81,7 +74,6 @@ class EIdDocumentScannerViewModelTest {
     private lateinit var scanDocumentFlow: MutableStateFlow<AvBeamScanDocumentNotification>
     private lateinit var statusFlow: MutableStateFlow<AVBeamStatus>
     private lateinit var errorFlow: MutableStateFlow<AVBeamError>
-    private lateinit var startAutoVerificationFlow: MutableStateFlow<AutoVerificationResponse?>
     private lateinit var viewModel: EIdDocumentScannerViewModel
     private lateinit var documentTypeFlow: MutableStateFlow<EIdDocumentType>
 
@@ -93,7 +85,6 @@ class EIdDocumentScannerViewModelTest {
         scanDocumentFlow = MutableStateFlow(AvBeamNotification.Empty)
         statusFlow = MutableStateFlow(AVBeamStatus.Init)
         errorFlow = MutableStateFlow(AVBeamError.None)
-        startAutoVerificationFlow = MutableStateFlow(null)
         documentTypeFlow = MutableStateFlow(EIdDocumentType.IDENTITY_CARD)
 
         coEvery { avBeam.initializedFlow } returns MutableStateFlow(true)
@@ -105,20 +96,19 @@ class EIdDocumentScannerViewModelTest {
         every { avBeam.statusFlow } returns statusFlow
         every { avBeam.errorFlow } returns errorFlow
         coEvery { areEIdDocumentsEqual(any(), any()) } returns Ok(true)
-        coEvery { getStartAutoVerificationResult.invoke() } returns startAutoVerificationFlow
         every { getDocumentType() } returns documentTypeFlow
 
         viewModel = EIdDocumentScannerViewModel(
             navManager = navManager,
             avBeam = avBeam,
+            ioDispatcherScope = CoroutineScope(testDispatcher),
             setDocumentScanResult = setDocumentScanResult,
-            getStartAutoVerificationResult = getStartAutoVerificationResult,
-            saveEIdRequestFiles = saveEIdRequestFiles,
             environmentSetupRepository = environmentSetupRepository,
             setTopBarState = setTopBarState,
             areEIdDocumentsEqual = areEIdDocumentsEqual,
             caseId = "",
             getDocumentType = getDocumentType,
+            appContext = mockk()
         )
     }
 
@@ -129,7 +119,7 @@ class EIdDocumentScannerViewModelTest {
     }
 
     @Test
-    fun `calls avBeam_shutDown and stopCamera when DocumentScanCompleted is emitted`() = runTest {
+    fun `calls avBeam_shutDown and stopCamera when DocumentScanCompleted is emitted`() = runTest(testDispatcher) {
         // Given
         val fakePackageData = mockk<DocumentScanPackageResult>(relaxed = true)
         val startedCamera = AVBeamStatus.StreamingStarted
@@ -140,7 +130,6 @@ class EIdDocumentScannerViewModelTest {
         viewModel.onResume()
         viewModel.onAfterViewLayout(100, 100)
         statusFlow.update { startedCamera }
-        startAutoVerificationFlow.update { autoVerificationResponse }
         scanDocumentFlow.update { notification }
         advanceUntilIdle()
 

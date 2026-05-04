@@ -9,7 +9,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.CredentialClaimDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
-import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.KEY
+import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.PATH
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.VALUE
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.cluster1
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.cluster2
@@ -77,7 +77,7 @@ class CredentialClaimDaoTest {
 
     @Test(expected = SQLiteConstraintException::class)
     fun insertWithoutMatchingForeignKeyShouldThrow() {
-        val credentialClaim = CredentialClaim(id = 1, clusterId = -1, key = KEY, value = VALUE, valueType = null)
+        val credentialClaim = CredentialClaim(id = 1, clusterId = -1, path = PATH, value = VALUE, valueType = null)
         credentialClaimDao.insert(credentialClaim)
     }
 }

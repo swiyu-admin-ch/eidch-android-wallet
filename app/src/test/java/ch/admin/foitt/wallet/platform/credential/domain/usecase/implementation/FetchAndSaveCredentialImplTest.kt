@@ -166,7 +166,7 @@ class FetchAndSaveCredentialImplTest {
         assertEquals(CREDENTIAL_ID, credentialId.credentialId)
 
         coVerify {
-            mockFetchRawAndParsedCredentialInfo(CREDENTIAL_ISSUER)
+            mockFetchRawAndParsedCredentialInfo(issuerEndpoint = CREDENTIAL_ISSUER)
             mockValidateIssuerCredentialInfo(oneConfigCredentialInformation)
             mockGetPayloadEncryptionType(
                 requestEncryption = requestEncryption,
@@ -473,7 +473,7 @@ class FetchAndSaveCredentialImplTest {
         assertEquals(DEFERRED_CREDENTIAL_ID, deferredResult.credentialId)
 
         coVerifyOrder {
-            mockFetchRawAndParsedCredentialInfo(CREDENTIAL_ISSUER)
+            mockFetchRawAndParsedCredentialInfo(issuerEndpoint = CREDENTIAL_ISSUER)
             mockGetVerifiableCredentialParams(
                 issuerCredentialInfo = oneConfigCredentialInformation,
                 credentialConfiguration = credentialConfig,
@@ -573,8 +573,9 @@ class FetchAndSaveCredentialImplTest {
         coEvery { mockVcSdJwtCredential.validFromInstant } returns VC_VALID_FROM
         coEvery { mockVcSdJwtCredential.validUntilInstant } returns VC_VALID_UNTIL
 
-        coEvery { mockFetchRawAndParsedCredentialInfo(CREDENTIAL_ISSUER) } returns
-            Ok(RawAndParsedIssuerCredentialInfo(issuerCredentialInfo = credentialInfo, rawIssuerCredentialInfo = ""))
+        coEvery {
+            mockFetchRawAndParsedCredentialInfo(issuerEndpoint = CREDENTIAL_ISSUER)
+        } returns Ok(RawAndParsedIssuerCredentialInfo(issuerCredentialInfo = credentialInfo, rawIssuerCredentialInfo = ""))
 
         coEvery { mockValidateIssuerCredentialInfo(credentialInfo) } returns true
 
@@ -685,6 +686,7 @@ class FetchAndSaveCredentialImplTest {
                 rawCredentialData = any(),
                 selectedConfigurationId = any(),
                 issuerUrl = any(),
+                refreshToken = any(),
             )
         } returns Ok(DEFERRED_CREDENTIAL_ID)
     }
@@ -704,11 +706,6 @@ class FetchAndSaveCredentialImplTest {
         val VC_VALID_FROM: Instant = Instant.ofEpochSecond(0)
         val VC_VALID_UNTIL: Instant = Instant.ofEpochSecond(100)
 
-        val orgNames = mapOf(
-            "en" to "issuer name en",
-            "de" to "issuer name de",
-        )
-
         private val keyBinding = KeyBinding(
             identifier = "keyId",
             algorithm = SigningAlgorithm.ES512,
@@ -722,6 +719,7 @@ class FetchAndSaveCredentialImplTest {
             accessToken = "accessToken",
             endpoint = URL("https://example"),
             pollInterval = 1,
+            refreshToken = "refreshToken",
         )
 
         val mockPayloadEncryptionJwsKeyPair = mockk<JWSKeyPair>()

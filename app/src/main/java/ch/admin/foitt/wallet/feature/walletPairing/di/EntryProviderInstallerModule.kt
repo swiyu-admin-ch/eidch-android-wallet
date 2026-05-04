@@ -6,6 +6,8 @@ import ch.admin.foitt.wallet.feature.walletPairing.presentation.EIdPairingOvervi
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.EIdWalletPairingQrCodeScreen
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.EIdWalletPairingQrCodeViewModel
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.EIdWalletPairingScreen
+import ch.admin.foitt.wallet.feature.walletPairing.presentation.EIdWalletPairingTimeoutScreen
+import ch.admin.foitt.wallet.feature.walletPairing.presentation.EIdWalletPairingTimeoutViewModel
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.EIdWalletPairingViewModel
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
@@ -56,6 +58,14 @@ object EntryProviderInstallerModule {
                 )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 EIdWalletPairingScreen(viewModel = viewModel)
+            }
+        }
+
+        entry<Destination.EIdWalletPairingTimeoutScreen> {
+            val viewModel =
+                hiltViewModel<EIdWalletPairingTimeoutViewModel>()
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                EIdWalletPairingTimeoutScreen(viewModel = viewModel)
             }
         }
     }

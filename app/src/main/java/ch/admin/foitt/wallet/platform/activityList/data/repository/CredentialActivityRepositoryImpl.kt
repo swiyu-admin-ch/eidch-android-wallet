@@ -54,6 +54,17 @@ class CredentialActivityRepositoryImpl @Inject constructor(
         ActivityListError.Unexpected(throwable)
     }
 
+    override suspend fun deleteAllActivities(): Result<Unit, CredentialActivityRepositoryError> = runSuspendCatching {
+        withContext(ioDispatcher) {
+            credentialActivityDao().deleteAllActivities()
+            // also clean up images without children
+            imageDao().deleteImagesWithoutChildren()
+        }
+    }.mapError { throwable ->
+        Timber.e(t = throwable, message = "Error when deleting all activity entities")
+        ActivityListError.Unexpected(throwable)
+    }
+
     private suspend fun credentialActivityDao(): CredentialActivityEntityDao = suspendUntilNonNull {
         credentialActivityDaoFlow.value
     }

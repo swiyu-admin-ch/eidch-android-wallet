@@ -25,5 +25,12 @@ class DeferredCredentialWithDisplaysRepositoryImpl @Inject constructor(
             } ?: emptyFlow()
         }
 
+    override fun getByIdFlow(credentialId: Long): Flow<Result<DeferredCredentialWithDisplays, CredentialWithDisplaysRepositoryError>> =
+        daoFlow.flatMapLatest { dao ->
+            dao?.getById(credentialId)?.catchAndMap {
+                SsiError.Unexpected(it)
+            } ?: emptyFlow()
+        }
+
     private val daoFlow = daoProvider.deferredCredentialWithDisplaysDao
 }

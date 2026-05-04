@@ -24,7 +24,7 @@ class EIdGuardianConsentResultViewModel @AssistedInject constructor(
     @Assisted val screenState: GuardianConsentResultState,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.EmptyWithCloseButton(
+    override val topBarState = TopBarState.WithCloseButton(
         onClose = { navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class) }
     )
 

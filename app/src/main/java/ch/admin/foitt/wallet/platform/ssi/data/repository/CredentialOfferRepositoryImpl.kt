@@ -29,7 +29,6 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
@@ -84,6 +83,7 @@ class CredentialOfferRepositoryImpl @Inject constructor(
             credentialDisplays = credentialDisplays,
             rawCredentialData = rawCredentialData,
         ) { credentialId ->
+
             val verifiableCredential = createVerifiableCredential(
                 credentialId = credentialId,
                 validFrom = validFrom,
@@ -92,8 +92,15 @@ class CredentialOfferRepositoryImpl @Inject constructor(
             )
             verifiableCredentialDao().insert(verifiableCredential)
 
-            payloads.forEach { payload ->
+            payloads.forEachIndexed { index, payload ->
                 val bundleItemId: Long = bundleItemEntityDao().insert(createBundleItem(credentialId, payload))
+
+                if (index == 0) {
+                    verifiableCredentialDao().updateNextBundleIdByCredentialId(
+                        credentialId = credentialId,
+                        nextPresentableBundleItemId = bundleItemId,
+                    )
+                }
 
                 val keyBinding = matchKeyBindingToPayloadCnf(
                     keyBindings = keyBindings,
@@ -120,6 +127,7 @@ class CredentialOfferRepositoryImpl @Inject constructor(
     override suspend fun saveDeferredCredentialOffer(
         transactionId: String,
         accessToken: String,
+        refreshToken: String?,
         endpoint: URL,
         pollInterval: Int,
         keyBindings: List<KeyBinding>?,
@@ -147,6 +155,7 @@ class CredentialOfferRepositoryImpl @Inject constructor(
                 credentialId = credentialId,
                 transactionId = transactionId,
                 accessToken = accessToken,
+                refreshToken = refreshToken,
                 endpoint = endpoint.toExternalForm(),
                 pollInterval = pollInterval,
             )
@@ -155,24 +164,14 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         throwable.toCredentialOfferRepositoryError("saveDeferredCredentialOffer error")
     }
 
-    override suspend fun updateDeferredCredentialOffer(
+    override suspend fun updateDeferredCredentialMetaData(
         credentialId: Long,
-        progressionState: DeferredProgressionState,
-        polledAt: Long,
-        pollInterval: Int,
         issuerDisplays: List<AnyIssuerDisplay>,
         credentialDisplays: List<AnyCredentialDisplay>,
         rawMetadata: ByteArray
-    ): Result<Long, CredentialOfferRepositoryError> = withContext(ioDispatcher) {
+    ): Result<Unit, CredentialOfferRepositoryError> = withContext(ioDispatcher) {
         runSuspendCatching {
             runInTransaction {
-                val updatedCredential = deferredCredentialDao().updateStatusByCredentialId(
-                    credentialId = credentialId,
-                    progressionState = progressionState,
-                    polledAt = polledAt,
-                    pollInterval = pollInterval,
-                )
-
                 credentialIssuerDisplayDao().deleteByCredentialId(credentialId)
                 val issuerDisplays = createCredentialIssuerDisplays(issuerDisplays, credentialId)
                 credentialIssuerDisplayDao().insertAll(issuerDisplays)
@@ -182,8 +181,7 @@ class CredentialOfferRepositoryImpl @Inject constructor(
                 credentialDisplayDao().insertAll(credDisplays)
 
                 rawCredentialDataDao().updateMetadataByCredentialId(credentialId, rawMetadata)
-
-                updatedCredential.toLong()
+                Unit
             } ?: error("updateDeferredCredentialOffer: transaction failed")
         }.mapError { throwable ->
             throwable.toCredentialOfferRepositoryError("updateDeferredCredentialOffer error")
@@ -216,6 +214,10 @@ class CredentialOfferRepositoryImpl @Inject constructor(
 
                 deferredCredentialDao().deleteById(credentialId)
 
+                val keyBindings = credentialKeyBindingDao().getByCredentialId(credentialId).map {
+                    it.toKeyBinding()
+                }
+
                 val verifiableCredential = createVerifiableCredential(
                     credentialId = credentialId,
                     validFrom = validFrom,
@@ -224,12 +226,15 @@ class CredentialOfferRepositoryImpl @Inject constructor(
                 )
                 verifiableCredentialDao().insert(verifiableCredential)
 
-                val keyBindings = credentialKeyBindingDao().getByCredentialId(credentialId).map {
-                    it.toKeyBinding()
-                }
-
-                payloads.forEach { payload ->
+                payloads.forEachIndexed { index, payload ->
                     val bundleItemId: Long = bundleItemEntityDao().insert(createBundleItem(credentialId, payload))
+
+                    if (index == 0) {
+                        verifiableCredentialDao().updateNextBundleIdByCredentialId(
+                            credentialId = credentialId,
+                            nextPresentableBundleItemId = bundleItemId,
+                        )
+                    }
 
                     val keyBinding = matchKeyBindingToPayloadCnf(
                         keyBindings = keyBindings,
@@ -293,11 +298,13 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         validFrom: Long?,
         validUntil: Long?,
         issuer: String?,
+        nextPresentableBundleItemId: Long = -1,
     ) = VerifiableCredentialEntity(
         issuer = issuer,
         validFrom = validFrom,
         validUntil = validUntil,
         credentialId = credentialId,
+        nextPresentableBundleItemId = nextPresentableBundleItemId,
     )
 
     private fun createBundleItem(

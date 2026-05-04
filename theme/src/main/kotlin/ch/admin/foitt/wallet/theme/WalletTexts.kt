@@ -40,34 +40,31 @@ object WalletTexts {
         text: String,
         depth: Int,
     ) {
-        val h1TopPadding = Sizes.s04
-        val h2TopPadding = Sizes.s08
-        val h3TopPadding = Sizes.s06
-
         if (text.isNotBlank()) {
             // Show text if not blank. Set padding, style and textItem according to depth
             val paddingValues = when (depth) {
-                0 -> PaddingValues(start = Sizes.s08, top = h1TopPadding, bottom = Sizes.s01, end = Sizes.s04)
-                1 -> PaddingValues(start = Sizes.s04, top = h2TopPadding, end = Sizes.s04)
-                else -> PaddingValues(start = Sizes.s04, top = h3TopPadding, end = Sizes.s04)
+                0 -> PaddingValues(start = Sizes.s08, top = Sizes.s01, bottom = Sizes.s01, end = Sizes.s04)
+                1 -> PaddingValues(start = Sizes.s04, top = Sizes.s06, end = Sizes.s04)
+                else -> PaddingValues(start = Sizes.s04, top = Sizes.s04, end = Sizes.s04)
             }
 
             when (depth) {
-                0 -> HeadlineSmallEmphasized(
+                0 -> TitleMediumEmphasized(
                     text = text,
                     modifier = Modifier
                         .padding(paddingValues)
-                        .semantics { heading() }
+                        .semantics { heading() },
+                    color = WalletTheme.colorScheme.secondary,
                 )
 
-                1 -> TitleLarge(
+                1 -> TitleLargeEmphasized(
                     text = text,
                     modifier = Modifier
                         .padding(paddingValues)
                         .background(WalletTheme.colorScheme.listItemBackground),
                 )
 
-                else -> TitleMedium(
+                else -> TitleMediumEmphasized(
                     text = text,
                     modifier = Modifier
                         .padding(paddingValues)
@@ -77,9 +74,9 @@ object WalletTexts {
         } else {
             // If text is blank, add a spacer with height according to depth
             val height = when (depth) {
-                0 -> h1TopPadding
-                1 -> h2TopPadding
-                else -> h3TopPadding
+                0 -> Sizes.s08
+                1 -> Sizes.s12
+                else -> Sizes.s10
             }
             Spacer(modifier = Modifier.height(height))
         }
@@ -291,6 +288,24 @@ object WalletTexts {
     )
 
     @Composable
+    fun TitleLargeEmphasized(
+        text: String,
+        modifier: Modifier = Modifier,
+        textAlign: TextAlign = TextAlign.Start,
+        maxLines: Int = 3,
+        color: Color = WalletTheme.colorScheme.onSurface
+    ) = Text(
+        text = text,
+        color = color,
+        style = WalletTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
+        textAlign = textAlign,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = maxLines,
+        modifier = modifier
+            .semantics { heading() },
+    )
+
+    @Composable
     fun TitleMedium(
         text: String,
         modifier: Modifier = Modifier,
@@ -301,6 +316,21 @@ object WalletTexts {
         text = text,
         color = color,
         style = WalletTheme.typography.titleMedium,
+        textAlign = textAlign,
+        overflow = TextOverflow.Ellipsis,
+    )
+
+    @Composable
+    fun TitleMediumEmphasized(
+        text: String,
+        modifier: Modifier = Modifier,
+        textAlign: TextAlign = TextAlign.Start,
+        color: Color = WalletTheme.colorScheme.onSurface
+    ) = Text(
+        modifier = modifier,
+        text = text,
+        color = color,
+        style = WalletTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
         textAlign = textAlign,
         overflow = TextOverflow.Ellipsis,
     )

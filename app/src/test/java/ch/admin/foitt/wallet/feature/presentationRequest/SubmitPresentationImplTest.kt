@@ -1,7 +1,8 @@
 package ch.admin.foitt.wallet.feature.presentationRequest
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.usecase.SubmitAnyCredentialPresentation
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.PresentationRequestError
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.SubmitPresentation
@@ -38,7 +39,7 @@ class SubmitPresentationImplTest {
     private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
 
     @MockK
-    private lateinit var mockPresentationRequest: PresentationRequest
+    private lateinit var mockAuthorizationRequest: AuthorizationRequest
 
     @MockK
     private lateinit var mockAnyCredential: AnyCredential
@@ -66,7 +67,7 @@ class SubmitPresentationImplTest {
     @Test
     fun `Submitting a presentation for a compatible credential just runs`() = runTest {
         val result = submitPresentationUseCase(
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             compatibleCredential = compatibleCredential,
         )
 
@@ -79,7 +80,7 @@ class SubmitPresentationImplTest {
         coEvery { mockGetAllAnyCredentialsByCredentialId.invoke(any()) } returns Err(CredentialError.Unexpected(exception))
 
         val result = submitPresentationUseCase(
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             compatibleCredential = compatibleCredential,
         )
 
@@ -94,13 +95,14 @@ class SubmitPresentationImplTest {
             mockSubmitAnyCredentialPresentation(
                 anyCredential = any(),
                 requestedFields = any(),
-                presentationRequest = any(),
+                authorizationRequest = any(),
                 usePayloadEncryption = any(),
+                dcqlQueryId = any()
             )
         } returns Err(OpenIdPresentationRequestError.Unexpected(exception))
 
         val result = submitPresentationUseCase(
-            presentationRequest = mockPresentationRequest,
+            authorizationRequest = mockAuthorizationRequest,
             compatibleCredential = compatibleCredential,
         )
 
@@ -115,8 +117,9 @@ class SubmitPresentationImplTest {
             mockSubmitAnyCredentialPresentation(
                 anyCredential = mockAnyCredential,
                 requestedFields = listOf(FIELD_KEY_1, FIELD_KEY_2),
-                presentationRequest = mockPresentationRequest,
+                authorizationRequest = mockAuthorizationRequest,
                 usePayloadEncryption = true,
+                dcqlQueryId = null
             )
         } returns Ok(Unit)
 
@@ -126,12 +129,13 @@ class SubmitPresentationImplTest {
     private companion object {
         const val FIELD_KEY_1 = "fieldKey1"
         const val FIELD_KEY_2 = "fieldKey2"
-        val FIELD_1 = PresentationRequestField(FIELD_KEY_1, "value1")
-        val FIELD_2 = PresentationRequestField(FIELD_KEY_2, "value2")
+        val fieldPath1 = listOf(ClaimsPathPointerComponent.String(FIELD_KEY_1))
+        val fieldPath2 = listOf(ClaimsPathPointerComponent.String(FIELD_KEY_2))
+        val FIELD_1 = PresentationRequestField(fieldPath1, "value1")
+        val FIELD_2 = PresentationRequestField(fieldPath2, "value2")
         val requestedFields = listOf(FIELD_1, FIELD_2)
 
         const val CREDENTIAL_ID = 1L
-        const val ISSUER = "issuer"
         val compatibleCredential = CompatibleCredential(CREDENTIAL_ID, requestedFields)
     }
 }

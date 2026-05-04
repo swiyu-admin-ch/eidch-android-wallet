@@ -20,11 +20,6 @@ data class UnknownCredentialConfiguration(
     @SerialName("proof_types_supported")
     override val proofTypesSupported: Map<ProofType, ProofTypeConfig> =
         mapOf(ProofType.UNKNOWN to ProofTypeConfig(proofSigningAlgValuesSupported = emptyList())),
-    @SerialName("display")
-    override val display: List<OidCredentialDisplay>? = null,
-    @SerialName("order")
-    override val order: List<String>? = null,
-
-    @SerialName("claims")
-    override val claims: String? = null,
+    @SerialName("credential_metadata")
+    override val credentialMetadata: CredentialMetadata? = null,
 ) : AnyCredentialConfiguration()

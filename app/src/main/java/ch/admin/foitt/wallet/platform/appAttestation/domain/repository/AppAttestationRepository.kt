@@ -4,14 +4,12 @@ import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AppAttestationRepositoryError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationChallengeResponse
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationResponse
-import ch.admin.foitt.wallet.platform.appAttestation.domain.model.IntegrityToken
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestationResponse
 import com.github.michaelbull.result.Result
 
 interface AppAttestationRepository {
     suspend fun fetchChallenge(): Result<AttestationChallengeResponse, AppAttestationRepositoryError>
     suspend fun fetchClientAttestation(
-        integrityToken: IntegrityToken,
         publicKey: Jwk,
     ): Result<ClientAttestationResponse, AppAttestationRepositoryError>
 

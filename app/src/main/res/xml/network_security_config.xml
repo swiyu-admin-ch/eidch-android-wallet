@@ -4,18 +4,21 @@
         <domain includeSubdomains="false">mam-managed.bit.admin.ch</domain>
         <trust-anchors>
             <certificates src="@raw/root_admin_ch" />
+            <certificates src="@raw/swiss_government_root_ca_vi" />
         </trust-anchors>
     </domain-config>
     <domain-config>
         <domain includeSubdomains="false">enforcement-service.bit.admin.ch</domain>
         <trust-anchors>
             <certificates src="@raw/root_admin_ch" />
+            <certificates src="@raw/swiss_government_root_ca_vi" />
         </trust-anchors>
     </domain-config>
     <domain-config>
         <domain includeSubdomains="false">attestations.trust-infra.swiyu.admin.ch</domain>
         <trust-anchors>
             <certificates src="@raw/root_admin_ch" />
+            <certificates src="@raw/swiss_government_root_ca_vi" />
         </trust-anchors>
     </domain-config>
     <domain-config>
@@ -23,6 +26,7 @@
         <domain includeSubdomains="true">trust-infra.swiyu.admin.ch</domain>
         <trust-anchors>
             <certificates src="@raw/root_admin_ch" />
+            <certificates src="@raw/swiss_government_root_ca_vi" />
         </trust-anchors>
     </domain-config>
 </network-security-config>

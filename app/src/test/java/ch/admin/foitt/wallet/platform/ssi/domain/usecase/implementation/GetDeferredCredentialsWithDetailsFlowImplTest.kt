@@ -147,6 +147,7 @@ class GetDeferredCredentialsWithDetailsFlowImplTest {
             credentialId = CREDENTIAL_ID,
             transactionId = "transactionId",
             accessToken = "accessToken",
+            refreshToken = "refreshToken",
             endpoint = ENDPOINT,
         )
 

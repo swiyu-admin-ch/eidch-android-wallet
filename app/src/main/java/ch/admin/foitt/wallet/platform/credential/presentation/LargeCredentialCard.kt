@@ -18,14 +18,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialCardMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
 import ch.admin.foitt.wallet.platform.preview.ComposableWrapper
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
 import ch.admin.foitt.wallet.theme.Gradients
@@ -52,8 +54,23 @@ fun LargeCredentialCard(
     if (credentialCardState.useDefaultBackground) {
         CredentialBackgroundFallbackPattern()
     }
+
+    val inactiveColor = WalletTheme.colorScheme.inactiveOverlay
+    val inactiveModifier = if (credentialCardState.isDeferred) {
+        Modifier.drawBehind {
+            drawRoundRect(color = inactiveColor)
+            drawRoundRect(
+                color = credentialCardState.backgroundColor,
+                style = dashedStroke,
+                cornerRadius = CornerRadius(Sizes.s05.toPx()),
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Column(
-        modifier = Modifier
+        modifier = inactiveModifier
             .fillMaxSize()
             .drawBehind {
                 drawRect(brush = Gradients.diagonalCredentialBrush())
@@ -66,7 +83,7 @@ fun LargeCredentialCard(
         Spacer(modifier = Modifier.weight(1f))
         Spacer(modifier = Modifier.height(Sizes.s04))
         Badges(
-            credentialStatus = credentialCardState.status,
+            credentialState = credentialCardState,
             textColor = credentialCardState.contentColor,
             isCredentialFromBetaIssuer = credentialCardState.isCredentialFromBetaIssuer,
         )
@@ -126,15 +143,24 @@ private fun CredentialText(
 @Composable
 private fun Badges(
     isCredentialFromBetaIssuer: Boolean,
-    credentialStatus: CredentialDisplayStatus?,
+    credentialState: CredentialCardState,
     textColor: Color,
 ) = Row {
     if (isCredentialFromBetaIssuer) {
         DemoBadge()
         Spacer(modifier = Modifier.width(Sizes.s02))
     }
-    CredentialStatusBadge(status = credentialStatus, textColor = textColor)
+    if (credentialState.deferredStatus != null) {
+        DeferredCredentialStatusBadge(credentialState.deferredStatus)
+    } else {
+        CredentialStatusBadge(credentialState.status, textColor)
+    }
 }
+
+private val dashedStroke = Stroke(
+    width = 8f,
+    pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 16f)),
+)
 
 private class LargeCredentialCardPreviewParams :
     PreviewParameterProvider<ComposableWrapper<CredentialCardState>> {

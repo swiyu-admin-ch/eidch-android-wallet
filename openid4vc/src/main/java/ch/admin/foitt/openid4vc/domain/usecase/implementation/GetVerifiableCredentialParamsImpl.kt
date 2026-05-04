@@ -5,11 +5,11 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerConfigurationError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerCredentialInfoError
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.PrepareFetchVerifiableCredentialError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetVerifiableCredentialParamsError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.AnyCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.ProofType
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toPrepareFetchVerifiableCredentialError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toGetVerifiableCredentialParamsError
 import ch.admin.foitt.openid4vc.domain.repository.CredentialOfferRepository
 import ch.admin.foitt.openid4vc.domain.usecase.FetchIssuerConfiguration
 import ch.admin.foitt.openid4vc.domain.usecase.GetVerifiableCredentialParams
@@ -27,7 +27,7 @@ internal class GetVerifiableCredentialParamsImpl @Inject constructor(
         issuerCredentialInfo: IssuerCredentialInfo,
         credentialConfiguration: AnyCredentialConfiguration,
         credentialOffer: CredentialOffer,
-    ): Result<VerifiableCredentialParams, PrepareFetchVerifiableCredentialError> = coroutineBinding {
+    ): Result<VerifiableCredentialParams, GetVerifiableCredentialParamsError> = coroutineBinding {
         val issuerEndpoint = credentialOffer.credentialIssuer
         if (credentialConfiguration.identifier !in credentialOffer.credentialConfigurationIds) {
             return@coroutineBinding Err(CredentialOfferError.InvalidCredentialOffer).bind<VerifiableCredentialParams>()
@@ -48,11 +48,11 @@ internal class GetVerifiableCredentialParamsImpl @Inject constructor(
         }
 
         val issuerConfig = fetchIssuerConfiguration(issuerEndpoint)
-            .mapError(FetchIssuerConfigurationError::toPrepareFetchVerifiableCredentialError)
+            .mapError(FetchIssuerConfigurationError::toGetVerifiableCredentialParamsError)
             .bind()
 
         val issuerInfo = credentialOfferRepository.getIssuerCredentialInfo(issuerEndpoint = issuerEndpoint)
-            .mapError(FetchIssuerCredentialInfoError::toPrepareFetchVerifiableCredentialError)
+            .mapError(FetchIssuerCredentialInfoError::toGetVerifiableCredentialParamsError)
             .bind()
 
         val proofTypeConfig = credentialConfiguration.proofTypesSupported.entries.firstOrNull {

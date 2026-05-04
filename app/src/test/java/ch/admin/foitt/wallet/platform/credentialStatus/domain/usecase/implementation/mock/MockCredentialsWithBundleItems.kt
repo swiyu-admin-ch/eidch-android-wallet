@@ -34,6 +34,7 @@ object MockCredentialsWithBundleItems {
         validFrom = 0,
         credentialId = 0,
         validUntil = 17768026519L,
+        nextPresentableBundleItemId = 1,
     )
 
     private val verifiableCredentials = listOf(

@@ -14,8 +14,8 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.m
 import ch.admin.foitt.wallet.platform.credential.domain.util.entityNames
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceData
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialIssuerDisplayRepo
@@ -256,7 +256,7 @@ class FetchAndCacheIssuerDisplayDataImplTest {
     @Test
     fun `A failed nonCompliance call does not stop the execution`() = runTest {
         coEvery { mockFetchNonComplianceData(actorDid = any()) } returns NonComplianceData(
-            state = NonComplianceState.UNKNOWN,
+            state = ActorComplianceState.UNKNOWN,
             reasonDisplays = null,
         )
 

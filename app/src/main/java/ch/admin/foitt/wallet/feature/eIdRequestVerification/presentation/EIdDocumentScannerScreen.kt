@@ -3,23 +3,14 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 import android.annotation.SuppressLint
 import android.view.View
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -31,44 +22,47 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.DocumentScanOverlay
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.LoadingContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.OrientationLocker
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerButton
-import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerButtonState
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerCamera
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerInfoBox
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentScanner.DocumentScannerBacksideInfoContent
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentScanner.DocumentScannerErrorContent
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentScanner.EIdDocumentScanStatus
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentScanner.EIdDocumentScannerUiState
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.DocumentTypeDrawable
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.SDKInfoState
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
+import ch.admin.foitt.wallet.platform.composables.presentation.addTopScaffoldPadding
+import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
-import ch.admin.foitt.wallet.platform.scaffold.presentation.TopBarBackArrow
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.platform.utils.OnPauseEventHandler
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTheme
-import ch.admin.foitt.wallet.theme.WalletTopBarColors
 
 @Composable
 fun EIdDocumentScannerScreen(
     viewModel: EIdDocumentScannerViewModel,
 ) {
     val currentActivity = LocalActivity.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val shouldLock by viewModel.shouldLock.collectAsStateWithLifecycle()
 
-    val documentTypeDrawables = when (viewModel.documentType) {
+    val documentType = viewModel.documentType
+    val documentTypeDrawables = when (documentType) {
         EIdDocumentType.PASSPORT -> DocumentTypeDrawable(
             front = R.drawable.wallet_passport_front_overlay,
             back = R.drawable.wallet_passport_back_overlay
@@ -80,8 +74,6 @@ fun EIdDocumentScannerScreen(
         )
     }
 
-    OrientationLocker()
-
     OnResumeEventHandler(viewModel::onResume)
     OnPauseEventHandler(viewModel::onPause)
     BackHandler(enabled = true, viewModel::onUp)
@@ -90,137 +82,143 @@ fun EIdDocumentScannerScreen(
         viewModel.initScannerSdk(currentActivity)
     }
 
+    OrientationLocker(currentActivity, shouldLock)
+
     EIdDocumentScannerScreenContent(
-        infoState = viewModel.infoState.collectAsStateWithLifecycle().value,
-        infoText = viewModel.infoText.collectAsStateWithLifecycle().value,
-        showSecondSide = viewModel.changeToBackCard.collectAsStateWithLifecycle().value,
-        isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
-        scannerButtonState = viewModel.scannerButtonState.collectAsStateWithLifecycle().value,
+        uiState = uiState,
+        isLoading = isLoading,
+        documentTypeDrawables = documentTypeDrawables,
+        documentType = documentType,
         getScannerView = viewModel::getScannerView,
         onAfterViewLayout = viewModel::onAfterViewLayout,
-        documentTypeDrawables = documentTypeDrawables,
-        onUp = viewModel::onUp,
         onToggleScan = viewModel::onToggleScan,
+        onContinueToBackside = viewModel::onContinueToBackside,
     )
+}
+
+@Composable
+private fun EIdDocumentScannerScreenContent(
+    uiState: EIdDocumentScannerUiState,
+    isLoading: Boolean,
+    documentTypeDrawables: DocumentTypeDrawable,
+    documentType: EIdDocumentType,
+    getScannerView: suspend (width: Int, height: Int) -> View,
+    onAfterViewLayout: (width: Int, height: Int) -> Unit,
+    onToggleScan: () -> Unit,
+    onContinueToBackside: () -> Unit,
+) = when (uiState) {
+    is EIdDocumentScannerUiState.Error -> DocumentScannerErrorContent(
+        onRetry = uiState.onRetry,
+        onHelp = uiState.onHelp,
+        type = uiState.type
+    )
+
+    EIdDocumentScannerUiState.Initializing -> LoadingContent()
+
+    is EIdDocumentScannerUiState.Scan -> {
+        EIdDocumentContent(
+            infoState = uiState.infoState,
+            infoText = uiState.infoText,
+            status = uiState.status,
+            isLoading = isLoading,
+            getScannerView = getScannerView,
+            onAfterViewLayout = onAfterViewLayout,
+            documentTypeDrawables = documentTypeDrawables,
+            documentType = documentType,
+            onToggleScan = onToggleScan,
+            onContinueToBackside = onContinueToBackside,
+        )
+    }
 }
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EIdDocumentScannerScreenContent(
+private fun EIdDocumentContent(
     infoState: SDKInfoState,
     infoText: Int?,
-    showSecondSide: Boolean,
+    status: EIdDocumentScanStatus,
     isLoading: Boolean,
-    scannerButtonState: ScannerButtonState,
     getScannerView: suspend (width: Int, height: Int) -> View,
     onAfterViewLayout: (width: Int, height: Int) -> Unit,
     documentTypeDrawables: DocumentTypeDrawable,
-    onUp: () -> Unit,
+    documentType: EIdDocumentType,
     onToggleScan: () -> Unit,
-) = Column(
-    modifier = Modifier
-        .fillMaxSize()
-        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+    onContinueToBackside: () -> Unit,
 ) {
-    TopBarBackArrow(
-        titleId = null,
-        showButtonBackground = false,
-        onUp = onUp,
-        actionButton = {},
-        colors = WalletTopBarColors.transparent(),
-    )
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        ScannerCamera(
-            containerWidth = constraints.maxWidth,
-            containerHeight = constraints.maxHeight,
-            getScannerView = getScannerView,
-            onAfterViewLayout = onAfterViewLayout,
-        )
-
-        if (!isLoading && scannerButtonState != ScannerButtonState.Done) {
-            ScanBox(
-                changeToBackCard = showSecondSide,
-                modifier = Modifier.align(Alignment.Center),
-                documentTypeDrawables = documentTypeDrawables
-            )
-        }
-        ScannerButton(
-            onClick = onToggleScan,
-            state = scannerButtonState,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = Sizes.s04)
-        )
-        ScannerInfoBox(
-            infoState = infoState,
-            infoText = infoText,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-        )
-        LoadingOverlay(isLoading)
-    }
-}
-
-@Composable
-private fun ScanBox(
-    changeToBackCard: Boolean,
-    modifier: Modifier,
-    documentTypeDrawables: DocumentTypeDrawable,
-) {
-    val rotation = remember { Animatable(0f) }
-    var currentCardFront by remember { mutableStateOf(true) }
-    val cardOrientation = when (currentWindowAdaptiveInfo().windowWidthClass()) {
-        WindowWidthClass.COMPACT -> 90f
-        else -> 0f
-    }
-
-    LaunchedEffect(changeToBackCard) {
-        if (changeToBackCard && currentCardFront) {
-            rotation.animateTo(
-                targetValue = 90f,
-                animationSpec = tween(durationMillis = 250, easing = LinearEasing)
-            )
-            currentCardFront = false
-            rotation.animateTo(
-                targetValue = 180f,
-                animationSpec = tween(durationMillis = 250, easing = LinearEasing)
-            )
-            rotation.snapTo(targetValue = 0f)
-        } else {
-            currentCardFront = true
-        }
-    }
-
-    val overlayRes = if (changeToBackCard) {
-        documentTypeDrawables.back
-    } else {
-        documentTypeDrawables.front
-    }
+    val windowWidthClass = currentWindowAdaptiveInfo().windowWidthClass()
+    val isCompact = windowWidthClass == WindowWidthClass.COMPACT
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .navigationBarsPadding(),
-        contentAlignment = Alignment.Center,
+        Modifier.fillMaxSize()
     ) {
-        Image(
-            painter = painterResource(id = overlayRes),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(WalletTheme.colorScheme.onPrimaryFixed),
-            modifier = Modifier
-                .rotate(cardOrientation)
-                .sizeIn(maxWidth = 1200.dp, maxHeight = 1200.dp)
-                .graphicsLayer {
-                    rotationY = rotation.value
-                    cameraDistance = 8 * density
-                }
-        )
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            ScannerCamera(
+                containerWidth = constraints.maxWidth,
+                containerHeight = constraints.maxHeight,
+                getScannerView = getScannerView,
+                onAfterViewLayout = onAfterViewLayout,
+            )
+
+            if (!isLoading && status != EIdDocumentScanStatus.FINISHED) {
+                val overlayOrientation = if (isCompact) 90f else 0f
+
+                DocumentScanOverlay(
+                    documentTypeDrawables = documentTypeDrawables,
+                    showBackside = status.shouldShowOverlayBackside,
+                    modifier = Modifier.align(Alignment.Center),
+                    cardOrientation = overlayOrientation,
+                )
+            }
+
+            ScannerButton(
+                onClick = onToggleScan,
+                state = status.toScannerButtonState(),
+                modifier = Modifier
+                    .padding(bottom = Sizes.s04)
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                    )
+                    .then(
+                        if (isCompact) {
+                            Modifier
+                                .bottomSafeDrawing()
+                                .align(Alignment.BottomCenter)
+                        } else {
+                            Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = Sizes.s04)
+                        }
+                    )
+            )
+
+            ScannerInfoBox(
+                infoState = infoState,
+                infoText = infoText,
+                modifier = Modifier
+                    .then(
+                        if (isCompact) {
+                            Modifier
+                                .padding(top = Sizes.s04)
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .addTopScaffoldPadding()
+                    .align(Alignment.TopCenter)
+            )
+            LoadingOverlay(isLoading)
+        }
+
+        if (status == EIdDocumentScanStatus.BACKSIDE_INFO) {
+            // Use as overlay to avoid a new layout of ScannerCamera
+            DocumentScannerBacksideInfoContent(
+                documentType = documentType,
+                onButtonClick = onContinueToBackside,
+            )
+        }
     }
 }
 
@@ -242,21 +240,44 @@ private fun EIdDocumentScannerPreview(
     @PreviewParameter(DocumentScannerPreviewParamsProvider::class) previewParams: DocumentScannerPreviewParams,
 ) {
     WalletTheme {
+        var uiState by remember {
+            mutableStateOf(
+                EIdDocumentScannerUiState.Scan(
+                    infoState = previewParams.infoState,
+                    infoText = R.string.avbeam_error_unknown,
+                    status = EIdDocumentScanStatus.FRONTSIDE,
+                )
+            )
+        }
+
         val currentContext = LocalContext.current
         EIdDocumentScannerScreenContent(
-            infoState = previewParams.infoState,
-            infoText = R.string.avbeam_error_unknown,
-            scannerButtonState = ScannerButtonState.Ready,
-            showSecondSide = false,
+            uiState = uiState,
             isLoading = false,
             getScannerView = { _, _ -> View(currentContext) },
             onAfterViewLayout = { _, _ -> },
-            onUp = {},
-            onToggleScan = {},
+            onToggleScan = {
+                uiState = uiState.copy(
+                    status = when (uiState.status) {
+                        EIdDocumentScanStatus.FRONTSIDE -> EIdDocumentScanStatus.FRONTSIDE_SCANNING
+                        EIdDocumentScanStatus.FRONTSIDE_SCANNING -> EIdDocumentScanStatus.BACKSIDE_INFO
+                        EIdDocumentScanStatus.BACKSIDE_INFO -> EIdDocumentScanStatus.BACKSIDE
+                        EIdDocumentScanStatus.BACKSIDE -> EIdDocumentScanStatus.BACKSIDE_SCANNING
+                        EIdDocumentScanStatus.BACKSIDE_SCANNING -> EIdDocumentScanStatus.FINISHED
+                        EIdDocumentScanStatus.FINISHED -> EIdDocumentScanStatus.FRONTSIDE
+                    }
+                )
+            },
+            onContinueToBackside = {
+                uiState = uiState.copy(
+                    status = EIdDocumentScanStatus.BACKSIDE
+                )
+            },
             documentTypeDrawables = DocumentTypeDrawable(
                 front = R.drawable.wallet_id_card_front_overlay,
                 back = R.drawable.wallet_id_card_back_overlay
-            )
+            ),
+            documentType = EIdDocumentType.IDENTITY_CARD,
         )
     }
 }

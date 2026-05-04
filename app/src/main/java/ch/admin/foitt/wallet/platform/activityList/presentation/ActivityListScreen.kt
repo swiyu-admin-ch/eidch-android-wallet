@@ -72,10 +72,13 @@ fun ActivityListScreenContent(
         } else {
             activities.forEachIndexed { index, activity ->
                 activityListItem(
-                    activity = activity,
+                    activityType = activity.activityType,
+                    activityId = activity.id,
+                    activityActorName = activity.localizedActorName,
+                    activityDate = activity.date,
                     isFirstItem = activities.indices.first == index,
                     isLastItem = activities.lastIndex == index,
-                    onClick = onActivity
+                    onClick = onActivity,
                 )
             }
         }

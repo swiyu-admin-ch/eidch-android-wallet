@@ -44,7 +44,7 @@ fun ScanInfoToast(
     text: Int
 ) = Toast(
     modifier = modifier,
-    modifierRow = Modifier,
+    useContentMaxWidth = false,
     shouldRequestFocus = shouldRequestFocus,
     isSnackBarDesign = false,
     backgroundColor = WalletTheme.colorScheme.surface,
@@ -93,10 +93,11 @@ fun PassphraseValidationErrorToast(
     onIconEnd = onIconEnd
 )
 
+@Suppress("CyclomaticComplexMethod")
 @Composable
 fun Toast(
     modifier: Modifier = Modifier,
-    modifierRow: Modifier = Modifier.fillMaxWidth(),
+    useContentMaxWidth: Boolean = true,
     shouldRequestFocus: Boolean = false,
     isSnackBarDesign: Boolean = false,
     backgroundColor: Color = WalletTheme.colorScheme.surface,
@@ -123,7 +124,8 @@ fun Toast(
         color = backgroundColor,
     ) {
         Row(
-            modifier = modifierRow
+            modifier = Modifier
+                .then(if (useContentMaxWidth) Modifier.fillMaxWidth() else Modifier)
                 .then(
                     if (isSnackBarDesign) {
                         Modifier.padding(start = Sizes.s04, top = Sizes.s01, bottom = Sizes.s01, end = Sizes.s01)
@@ -146,7 +148,7 @@ fun Toast(
             Column(
                 modifier = Modifier
                     .then(if (shouldRequestFocus) Modifier.requestFocus(focusRequester) else Modifier)
-                    .weight(1f, fill = false)
+                    .then(if (useContentMaxWidth) Modifier.weight(1f) else Modifier)
             ) {
                 headline?.let {
                     WalletTexts.TitleSmall(
@@ -238,6 +240,16 @@ private fun ErrorToastPreview() {
         PassphraseValidationErrorToast(
             text = R.string.tk_global_warning_alt,
             onIconEnd = {},
+        )
+    }
+}
+
+@WalletComponentPreview
+@Composable
+private fun ScanInfoToastPreview() {
+    WalletTheme {
+        ScanInfoToast(
+            text = R.string.avbeam_error_empty_package
         )
     }
 }

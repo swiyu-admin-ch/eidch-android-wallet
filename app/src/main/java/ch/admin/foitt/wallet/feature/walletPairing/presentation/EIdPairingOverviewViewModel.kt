@@ -2,10 +2,14 @@ package ch.admin.foitt.wallet.feature.walletPairing.presentation
 
 import android.os.Build
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.GetEIdRequestCaseError
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdRequestCase
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.PairingMainWalletUiState
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.PairingOtherWalletUiState
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetLocalizedDateTime
+import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestCase
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairCurrentWalletError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
@@ -15,15 +19,16 @@ import ch.admin.foitt.wallet.platform.messageEvents.domain.model.WalletPairingEv
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.WalletPairingEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.epochSecondsToZonedDateTime
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.get
+import com.github.michaelbull.result.mapOr
 import com.github.michaelbull.result.onFailure
-import com.github.michaelbull.result.onSuccess
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -33,6 +38,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -54,49 +60,68 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
         fun create(caseId: String): EIdPairingOverviewViewModel
     }
 
-    override val topBarState = TopBarState.DetailsWithCloseButton(
+    override val topBarState = TopBarState.Details(
         titleId = null,
-        onUp = navManager::popBackStack,
-        onClose = {
+        onUp = {
             navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class)
-        }
+        },
     )
 
     private val deviceModel = Build.MODEL
     private val deviceManufacturer = Build.MANUFACTURER
     val deviceName = "$deviceManufacturer $deviceModel"
     private val fetchSIdStatusResult = MutableStateFlow<Result<StateResponse, StateRequestError>?>(null)
-    private val limitReached = MutableStateFlow(false)
-    private val _numberOfDevices = MutableStateFlow(0)
-    val numberOfDevices = _numberOfDevices.asStateFlow()
+    private val getEIdRequestCaseResult = MutableStateFlow<Result<EIdRequestCase, GetEIdRequestCaseError>?>(null)
     private val _isToastVisible = MutableStateFlow(false)
     val isToastVisible = _isToastVisible.asStateFlow()
     private val isWaitingForDevicePairing = MutableStateFlow(false)
     private val pairCurrentWalletResult = MutableStateFlow<Result<Unit, PairCurrentWalletError>?>(null)
     private val _dateAdded = MutableStateFlow<String?>(null)
     val dateAdded = _dateAdded.asStateFlow()
-    private val currentWalletAdded = MutableStateFlow<Int>(0)
 
-    val otherWalletUiState: StateFlow<PairingOtherWalletUiState> = combine(
-        limitReached,
-        fetchSIdStatusResult,
-    ) { isLimitReached, fetchSIdStatusResult ->
+    val mainWalletUiState: StateFlow<PairingMainWalletUiState> = combine(
+        isWaitingForDevicePairing,
+        getEIdRequestCaseResult
+    ) { isWaitingForDevicePairing, getEIdRequestCaseResult ->
+        val mainDeviceRequestValue = getEIdRequestCaseResult?.get()
         when {
-            isLimitReached -> PairingOtherWalletUiState.LimitReached
+            isWaitingForDevicePairing -> PairingMainWalletUiState.SyncMainWallet
+            mainDeviceRequestValue != null && mainDeviceRequestValue.credentialId != null -> {
+                val dateTime = getLocalizedDateTime(mainDeviceRequestValue.createdAt.epochSecondsToZonedDateTime())
+                _dateAdded.value = dateTime
+                PairingMainWalletUiState.MainWalletAdded
+            }
+            else -> PairingMainWalletUiState.Initial
+        }
+    }.toStateFlow(PairingMainWalletUiState.Initial)
+
+    val otherWalletUiState: StateFlow<PairingOtherWalletUiState> = fetchSIdStatusResult.map { fetchSIdStatusResult ->
+        val fetchSIdStatusValue = fetchSIdStatusResult?.get()
+        when {
+            fetchSIdStatusValue == null -> PairingOtherWalletUiState.Open
+            fetchSIdStatusValue.state != EIdRequestQueueState.IN_TARGET_WALLET_PAIRING -> {
+                handlePairingWindowTimeout()
+                PairingOtherWalletUiState.Open
+            }
+            fetchSIdStatusValue.targetWallets?.limitReached == true -> PairingOtherWalletUiState.LimitReached
             else -> PairingOtherWalletUiState.Open
         }
     }.toStateFlow(PairingOtherWalletUiState.Open)
 
-    val mainWalletUiState: StateFlow<PairingMainWalletUiState> = combine(
-        pairCurrentWalletResult,
-        isWaitingForDevicePairing,
-    ) { pairCurrentWallet, isWaitingForDevicePairing ->
-        when {
-            isWaitingForDevicePairing -> PairingMainWalletUiState.SyncMainWallet
-            pairCurrentWallet == null || pairCurrentWallet.isErr -> PairingMainWalletUiState.Initial
-            else -> PairingMainWalletUiState.MainWalletAdded
-        }
-    }.toStateFlow(PairingMainWalletUiState.Initial)
+    val numberOfDevices: StateFlow<Int> = combine(
+        fetchSIdStatusResult,
+        mainWalletUiState,
+    ) { fetchSIdStatusResult, mainWalletUiState ->
+        fetchSIdStatusResult?.mapOr(0) {
+            it.targetWallets?.pairedWallets?.size?.let { deviceNumber ->
+                if (mainWalletUiState == PairingMainWalletUiState.MainWalletAdded) {
+                    deviceNumber - 1
+                } else {
+                    deviceNumber
+                }
+            } ?: 0
+        } ?: 0
+    }.toStateFlow(0)
 
     init {
         viewModelScope.launch {
@@ -115,26 +140,26 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
 
     fun onResume() {
         viewModelScope.launch {
-            fetchSIdStatusResult.update { fetchSIdStatus(caseId) }
-            verifyCurrentWalletAdded()
-            fetchSIdStatusResult.value?.onSuccess {
-                val limit = it.targetWallets?.limitReached ?: false
-                limitReached.update { limit }
-                _numberOfDevices.value = (it.targetWallets?.pairedWallets?.size?.minus(currentWalletAdded.value)) ?: 0
-            }
+            refreshRequestStatus()
         }
     }
 
     fun onThisDeviceClick() {
         viewModelScope.launch {
-            val result = pairCurrentWallet(caseId = caseId)
-            pairCurrentWalletResult.update { result }
-
-            result.onSuccess {
-                verifyCurrentWalletAdded()
-            }.onFailure {
-                Timber.d("Cannot pair current wallet")
-            }
+            val pairingResult = pairCurrentWallet(caseId = caseId)
+                .onFailure { error ->
+                    when (error) {
+                        is EIdRequestError.InvalidClientAttestation,
+                        is EIdRequestError.InvalidDeferredCredentialOffer,
+                        is EIdRequestError.Unexpected,
+                        is EIdRequestError.NetworkError -> {
+                            Timber.e("Pairing Overview: Cannot pair current wallet, $error")
+                        }
+                        is EIdRequestError.RequestInWrongState -> handlePairingWindowTimeout()
+                    }
+                }
+            pairCurrentWalletResult.update { pairingResult }
+            refreshRequestStatus()
         }.trackCompletion(isWaitingForDevicePairing)
     }
 
@@ -150,14 +175,13 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
         )
     }
 
-    suspend fun verifyCurrentWalletAdded() {
-        getEIdRequestCase(caseId).onSuccess { eIdCase ->
-            if (eIdCase.credentialId != null) {
-                val dateTime = getLocalizedDateTime(eIdCase.createdAt.epochSecondsToZonedDateTime())
-                _dateAdded.value = dateTime
-                currentWalletAdded.update { 1 }
-                pairCurrentWalletResult.update { Ok(Unit) }
-            }
-        }
+    private suspend fun refreshRequestStatus() {
+        fetchSIdStatusResult.update { fetchSIdStatus(caseId) }
+        getEIdRequestCaseResult.update { getEIdRequestCase(caseId) }
     }
+
+    private fun handlePairingWindowTimeout() = navManager.navigateOutAndTo(
+        destinationGroup = DestinationGroup.EIdRequestVerification::class,
+        destination = Destination.EIdWalletPairingTimeoutScreen,
+    )
 }

@@ -14,6 +14,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaBundler
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaCaptureBaseValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaCesrHashValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaOverlayValidator
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.ResolveMetaDataIntegrity
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.TransformOcaOverlays
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.FetchDeferredVcMetadataByFormatImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.FetchOcaBundleImpl
@@ -27,6 +28,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.OcaBundl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.OcaCaptureBaseValidatorImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.OcaCesrHashValidatorImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.OcaOverlayValidatorImpl
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.ResolveMetaDataIntegrityImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.TransformOcaOverlaysImpl
 import dagger.Binds
 import dagger.Module
@@ -107,4 +109,9 @@ internal interface OcaModule {
     fun bindGetRootCaptureBase(
         useCase: GetRootCaptureBaseImpl
     ): GetRootCaptureBase
+
+    @Binds
+    fun bindResolveMetaDataIntegrity(
+        useCase: ResolveMetaDataIntegrityImpl
+    ): ResolveMetaDataIntegrity
 }

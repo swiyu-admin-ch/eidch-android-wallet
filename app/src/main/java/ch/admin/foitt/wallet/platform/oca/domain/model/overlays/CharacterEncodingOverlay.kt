@@ -21,6 +21,7 @@ data class CharacterEncodingOverlay1x0(
 
 sealed interface CharacterEncoding {
     data object Base64 : CharacterEncoding
+    data object Utf8 : CharacterEncoding
     data class Unknown(val rawValue: String) : CharacterEncoding
 
     companion object {
@@ -28,6 +29,7 @@ sealed interface CharacterEncoding {
             return when {
                 input == null -> null
                 input.contentEquals("base64", ignoreCase = true) -> Base64
+                input.contentEquals("utf-8", ignoreCase = true) -> Utf8
                 else -> Unknown(input)
             }
         }

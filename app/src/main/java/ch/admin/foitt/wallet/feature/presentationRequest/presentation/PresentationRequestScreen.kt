@@ -51,10 +51,10 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayo
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialCardSmall
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
-import ch.admin.foitt.wallet.platform.credential.presentation.credentialInfoWithBadgesWidget
+import ch.admin.foitt.wallet.platform.credential.presentation.credentialInfoWithClaimBadgesWidget
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
@@ -252,7 +252,7 @@ private fun ContentList(
     }
     item { Spacer(modifier = Modifier.height(Sizes.s04)) }
 
-    credentialInfoWithBadgesWidget(
+    credentialInfoWithClaimBadgesWidget(
         credentialCardState = presentationRequestUiState.credentialCardState,
         claimBadgesUiStates = presentationRequestUiState.claimBadgesUiStates,
         onBadge = onBadge
@@ -351,7 +351,7 @@ private fun PresentationRequestScreenPreview() {
                 trustStatus = TrustStatus.TRUSTED,
                 vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
                 actorType = ActorType.VERIFIER,
-                nonComplianceState = NonComplianceState.REPORTED,
+                actorComplianceState = ActorComplianceState.REPORTED,
                 nonComplianceReason = "report reason",
             ),
             presentationRequestUiState = PresentationRequestUiState(

@@ -7,9 +7,9 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferErro
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.ValidateIssuerMetadataJwtError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toValidateIssuerMetadataJwtError
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
+import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureFromDidError
 import ch.admin.foitt.openid4vc.domain.usecase.ValidateIssuerMetadataJwt
-import ch.admin.foitt.openid4vc.domain.usecase.VerifyJwtSignature
+import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
@@ -17,7 +17,7 @@ import com.github.michaelbull.result.mapError
 import javax.inject.Inject
 
 internal class ValidateIssuerMetadataJwtImpl @Inject constructor(
-    private val verifyJwtSignature: VerifyJwtSignature,
+    private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
 ) : ValidateIssuerMetadataJwt {
     override suspend fun invoke(credentialIssuerIdentifier: String, jwt: Jwt, type: String?): Result<Unit, ValidateIssuerMetadataJwtError> =
         coroutineBinding {
@@ -38,8 +38,12 @@ internal class ValidateIssuerMetadataJwtImpl @Inject constructor(
 
                 val issuer = checkNotNull(jwt.issuer) { "iss is missing and kid parameter does not contain issuer did" }
                 val keyId = checkNotNull(jwt.keyId) { "keyId is missing" }
-                verifyJwtSignature(issuer, keyId, jwt)
-                    .mapError(VerifyJwtError::toValidateIssuerMetadataJwtError)
+
+                verifyJwtSignatureFromDid(
+                    did = issuer,
+                    kid = keyId,
+                    jwt = jwt,
+                ).mapError(VerifyJwtSignatureFromDidError::toValidateIssuerMetadataJwtError)
                     .bind()
             }.mapError {
                 CredentialOfferError.InvalidSignedMetadata(it.localizedMessage ?: "Unknown")

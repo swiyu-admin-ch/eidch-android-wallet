@@ -50,6 +50,14 @@ class SafeJson @Inject constructor(
     }.mapError { throwable ->
         throwable.toJsonError("safeEncodeObjectToJsonElement error")
     }
+
+    fun safeParseToJsonElement(
+        stringToParse: String,
+    ): Result<JsonElement, JsonParsingError> = runSuspendCatching {
+        json.parseToJsonElement(stringToParse)
+    }.mapError { throwable ->
+        throwable.toJsonError("safeParseToJsonElement error")
+    }
 }
 
 interface JsonError {

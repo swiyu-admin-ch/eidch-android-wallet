@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.oca.data
 
 import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.utils.acceptLanguageHeader
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaRepositoryError
 import ch.admin.foitt.wallet.platform.oca.domain.model.toOcaRepositoryError
 import ch.admin.foitt.wallet.platform.oca.domain.repository.OcaRepository
@@ -22,6 +23,7 @@ class OcaRepositoryImpl @Inject constructor(
     override suspend fun fetchOcaBundleByUrl(url: URL): Result<String, OcaRepositoryError> = runSuspendCatching<String> {
         httpClient.get(url) {
             accept(ContentType.Application.Json)
+            acceptLanguageHeader()
         }.body()
     }.mapError { throwable ->
         throwable.toOcaRepositoryError("fetchOcaBundle error")

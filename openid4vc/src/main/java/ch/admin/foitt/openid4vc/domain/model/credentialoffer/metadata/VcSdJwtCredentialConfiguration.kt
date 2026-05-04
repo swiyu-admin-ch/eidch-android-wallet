@@ -1,6 +1,5 @@
 package ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata
 
-import ch.admin.foitt.openid4vc.domain.model.JsonAsStringSerializer
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,10 +19,8 @@ data class VcSdJwtCredentialConfiguration(
     @Serializable
     @SerialName("proof_types_supported")
     override val proofTypesSupported: Map<ProofType, ProofTypeConfig> = emptyMap(),
-    @SerialName("display")
-    override val display: List<OidCredentialDisplay>? = null,
-    @SerialName("order")
-    override val order: List<String>? = null,
+    @SerialName("credential_metadata")
+    override val credentialMetadata: CredentialMetadata? = null,
 
     @SerialName("vct")
     val vct: String,
@@ -33,8 +30,4 @@ data class VcSdJwtCredentialConfiguration(
     val vctMetadataUri: String?,
     @SerialName("vct_metadata_uri#integrity")
     val vctMetadataUriIntegrity: String?,
-
-    @SerialName("claims")
-    @Serializable(with = JsonAsStringSerializer::class)
-    override val claims: String? = null,
 ) : AnyCredentialConfiguration()

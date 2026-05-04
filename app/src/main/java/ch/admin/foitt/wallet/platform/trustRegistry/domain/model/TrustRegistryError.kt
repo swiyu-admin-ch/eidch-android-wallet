@@ -2,8 +2,9 @@
 
 package ch.admin.foitt.wallet.platform.trustRegistry.domain.model
 
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyJwtError
+import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
+import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureFromDidError
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustRegistryError.Unexpected
 import ch.admin.foitt.wallet.platform.utils.JsonError
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
 import timber.log.Timber
@@ -47,23 +48,6 @@ fun GetTrustDomainFromDidError.toGetTrustUrlFromDidError(): GetTrustUrlFromDidEr
         Timber.w(message = this.message)
         TrustRegistryError.Unexpected(null)
     }
-}
-
-fun GetTrustUrlFromDidError.toProcessMetadataV1TrustStatementError(): ProcessMetadataV1TrustStatementError = when (this) {
-    is TrustRegistryError.Unexpected -> this
-}
-
-fun TrustStatementRepositoryError.toProcessMetadataV1TrustStatementError(): ProcessMetadataV1TrustStatementError = when (this) {
-    is TrustRegistryError.Unexpected -> this
-}
-
-fun Throwable.toProcessMetadataV1TrustStatementError(message: String): ProcessMetadataV1TrustStatementError {
-    Timber.e(t = this, message = message)
-    return TrustRegistryError.Unexpected(this)
-}
-
-fun JsonParsingError.toProcessMetadataV1TrustStatementError(): ProcessMetadataV1TrustStatementError = when (this) {
-    is JsonError.Unexpected -> TrustRegistryError.Unexpected(throwable)
 }
 
 fun GetTrustUrlFromDidError.toProcessIdentityV1TrustStatementError(): ProcessIdentityV1TrustStatementError = when (this) {
@@ -111,12 +95,12 @@ fun Throwable.toGetTrustUrlFromDidError(message: String): GetTrustUrlFromDidErro
     return TrustRegistryError.Unexpected(this)
 }
 
-fun VerifyJwtError.toValidateTrustStatementError(): ValidateTrustStatementError = when (this) {
-    VcSdJwtError.NetworkError,
-    VcSdJwtError.InvalidJwt,
-    VcSdJwtError.IssuerValidationFailed -> TrustRegistryError.Unexpected(null)
-    VcSdJwtError.DidDocumentDeactivated -> TrustRegistryError.Unexpected(null)
-    is VcSdJwtError.Unexpected -> TrustRegistryError.Unexpected(cause)
+fun VerifyJwtSignatureFromDidError.toValidateTrustStatementError(): ValidateTrustStatementError = when (this) {
+    is JwtError.InvalidJwt,
+    JwtError.DidDocumentDeactivated,
+    JwtError.IssuerValidationFailed,
+    JwtError.NetworkError -> Unexpected(null)
+    is JwtError.Unexpected -> Unexpected(throwable)
 }
 
 fun Throwable.toValidateTrustStatementError(message: String): ValidateTrustStatementError {

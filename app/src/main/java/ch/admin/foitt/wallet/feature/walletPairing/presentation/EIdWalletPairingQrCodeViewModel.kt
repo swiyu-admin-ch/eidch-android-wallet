@@ -14,6 +14,8 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.Walle
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.WalletPairingEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.WalletPairingEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
@@ -22,6 +24,7 @@ import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
+import com.github.michaelbull.result.onSuccess
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -81,7 +84,7 @@ internal class EIdWalletPairingQrCodeViewModel @AssistedInject constructor(
         pairWalletResponse,
         walletPairingStatusResponse,
     ) { pairWalletResponse, walletPairingStatusResponse ->
-        Timber.d(message = "new screenUiState: $pairWalletResponse, $walletPairingStatusResponse, $qrBoxState")
+        Timber.d(message = "new screenUiState: $pairWalletResponse, $walletPairingStatusResponse, ${qrBoxState.value}")
         val pairWalletResponseValue = pairWalletResponse?.get()
         val pairWalletResponseError = pairWalletResponse?.getError()
         val walletPairingStatusResponseValue = walletPairingStatusResponse?.get()
@@ -89,29 +92,35 @@ internal class EIdWalletPairingQrCodeViewModel @AssistedInject constructor(
 
         when {
             pairWalletResponse == null -> WalletPairingQrCodeUiState.LoadingInvitation
-            pairWalletResponseError != null -> WalletPairingQrCodeUiState.LoadingInvitationError
-            pairWalletResponseValue != null && walletPairingStatusResponse == null -> startPolling(pairWalletResponseValue)
-            walletPairingStatusResponseValue != null -> handleWalletPairingState(walletPairingStatusResponseValue.state)
+            pairWalletResponseValue != null && walletPairingStatusResponse == null -> WalletPairingQrCodeUiState.Polling
             walletPairingStatusResponseError != null -> handleWalletPairingStatusError(walletPairingStatusResponseError)
+            pairWalletResponseError != null -> handlePairingError(pairWalletResponseError)
+            walletPairingStatusResponseValue != null -> handleWalletPairingState(walletPairingStatusResponseValue.state)
             else -> WalletPairingQrCodeUiState.UnexpectedError
         }
     }.toStateFlow(WalletPairingQrCodeUiState.LoadingInvitation)
 
     fun onResume() {
+        Timber.d("PairingQrCode: onResume")
         if (isRequestLoading.value) return
-
         viewModelScope.launch {
-            if (
-                pairWalletResponse.value?.get() !is PairWalletResponse ||
-                walletPairingStatusResponse.value?.getError() != null
-            ) {
-                refreshRequest()
+            val pairWalletResponseValue = pairWalletResponse.value?.get()
+            when {
+                pairWalletResponseValue == null -> refreshRequest()
+                walletPairingStatusResponse.value?.getError() == null -> startPolling(pairWalletResponseValue)
             }
         }.trackCompletion(isRequestLoading)
     }
 
     fun onPause() {
         stopPolling()
+    }
+
+    fun onRefresh() {
+        if (isRequestLoading.value) return
+        viewModelScope.launch {
+            refreshRequest()
+        }.trackCompletion(isRequestLoading)
     }
 
     private fun startPolling(walletResponse: PairWalletResponse): WalletPairingQrCodeUiState {
@@ -121,10 +130,16 @@ internal class EIdWalletPairingQrCodeViewModel @AssistedInject constructor(
             walletPairingStatusResponse.update { null }
 
             while (shouldPoll()) {
-                walletPairingStatusResponse.update {
-                    walletPairingStatus(caseId, walletResponse.walletPairingId)
+                val statusResponse = walletPairingStatus(caseId, walletResponse.walletPairingId)
+                if (statusResponse.get()?.state == WalletPairingState.REJECTED) {
+                    pairWalletResponse.update {
+                        pairWallet(caseId)
+                    }
                 }
-                delay(5000L)
+                walletPairingStatusResponse.update {
+                    statusResponse
+                }
+                delay(POLLING_DELAY)
             }
         }
 
@@ -162,16 +177,40 @@ internal class EIdWalletPairingQrCodeViewModel @AssistedInject constructor(
         is EIdRequestError.Unexpected -> WalletPairingQrCodeUiState.UnexpectedError
     }
 
+    private fun handlePairingError(error: PairWalletError): WalletPairingQrCodeUiState {
+        when (error) {
+            EIdRequestError.InvalidClientAttestation,
+            EIdRequestError.NetworkError,
+            is EIdRequestError.Unexpected -> {
+                Timber.d("Pairing error: $error")
+            }
+            EIdRequestError.RequestInWrongState -> handlePairingWindowTimeout()
+        }
+        return WalletPairingQrCodeUiState.LoadingInvitationError
+    }
+
+    private fun handlePairingWindowTimeout() = navManager.navigateOutAndTo(
+        destinationGroup = DestinationGroup.EIdRequestVerification::class,
+        destination = Destination.EIdWalletPairingTimeoutScreen,
+    )
+
     private suspend fun refreshRequest() {
         pairWalletResponse.update { null }
         walletPairingStatusResponse.update { null }
         pairWalletResponse.update {
             pairWallet(caseId)
         }
+        pairWalletResponse.value?.onSuccess {
+            startPolling(it)
+        }
     }
 
     fun onBack() {
         stopPolling()
         navManager.popBackStackOrToRoot()
+    }
+
+    private companion object {
+        const val POLLING_DELAY = 5000L
     }
 }

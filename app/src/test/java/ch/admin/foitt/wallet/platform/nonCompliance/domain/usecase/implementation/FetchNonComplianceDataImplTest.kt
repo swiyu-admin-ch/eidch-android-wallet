@@ -1,8 +1,8 @@
 package ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceData
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceError
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.repository.NonComplianceTrustRepository
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.mock.NonComplianceMocks.NON_REPORTED_ACTOR_DID
@@ -60,7 +60,7 @@ class FetchNonComplianceDataImplTest {
         val result = useCase(REPORTED_ACTOR_DID)
 
         val expected = NonComplianceData(
-            state = NonComplianceState.REPORTED,
+            state = ActorComplianceState.REPORTED,
             reasonDisplays = nonComplianceReasonDisplays,
         )
 
@@ -72,7 +72,7 @@ class FetchNonComplianceDataImplTest {
         val result = useCase(NON_REPORTED_ACTOR_DID)
 
         val expected = NonComplianceData(
-            state = NonComplianceState.NOT_REPORTED,
+            state = ActorComplianceState.NOT_REPORTED,
             reasonDisplays = null,
         )
 
@@ -88,7 +88,7 @@ class FetchNonComplianceDataImplTest {
         val result = useCase(REPORTED_ACTOR_DID)
 
         val expected = NonComplianceData(
-            state = NonComplianceState.UNKNOWN,
+            state = ActorComplianceState.UNKNOWN,
             reasonDisplays = null,
         )
 
@@ -104,7 +104,7 @@ class FetchNonComplianceDataImplTest {
         val result = useCase(REPORTED_ACTOR_DID)
 
         val expected = NonComplianceData(
-            state = NonComplianceState.UNKNOWN,
+            state = ActorComplianceState.UNKNOWN,
             reasonDisplays = null,
         )
 

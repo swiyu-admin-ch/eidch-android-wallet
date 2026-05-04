@@ -1,11 +1,15 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.platform.oca.domain.model.AttributeType
 import ch.admin.foitt.wallet.platform.oca.domain.model.CaptureBase1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
+import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaOverlayValidator
 import ch.admin.foitt.wallet.platform.oca.mock.OverlayMocks.ocaBundleWithEntryButWithoutEntryCodeOverlay
@@ -16,6 +20,7 @@ import ch.admin.foitt.wallet.platform.oca.mock.OverlayMocks.ocaBundleWithValidEn
 import ch.admin.foitt.wallet.platform.oca.mock.OverlayMocks.ocaBundleWithoutEntryButWithEntryCodeOverlay
 import ch.admin.foitt.wallet.platform.oca.mock.OverlayMocks.ocaBundleWithoutEntryButWithMultipleEntryCodeOverlays
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.elfaExample
+import ch.admin.foitt.wallet.platform.oca.util.createClaimsPathPointer
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -26,7 +31,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
@@ -117,10 +124,29 @@ class OcaOverlayValidatorImplTest {
             "$..*",
         ]
     )
-    fun `DataSourceOverlays containing invalid JsonPaths returns an error`(invalidJsonPath: String) = runTest {
-        val bundle = getOcaWithDataSourceOverlay(jsonPath = invalidJsonPath)
+    fun `DataSourceOverlays v1x0 containing invalid JsonPaths returns an error`(invalidJsonPath: String) = runTest {
+        val bundle = getOcaWithDataSourceV1x0Overlay(jsonPath = invalidJsonPath)
 
         ocaOverlayValidator(bundle).assertErrorType(OcaError.InvalidDataSourceOverlay::class)
+    }
+
+    @TestFactory
+    fun `DataSourceOverlays v2x0 containing invalid ClaimsPathPointers returns an error`(): List<DynamicTest> {
+        val inputs = listOf(
+            listOf(),
+            listOf(ClaimsPathPointerComponent.String("")),
+            createClaimsPathPointer("a", -1),
+        )
+
+        return inputs.map { claimsPathPointer ->
+            DynamicTest.dynamicTest("Claims path pointer ${claimsPathPointer.toPointerString()} should return success") {
+                runTest {
+                    val bundle = getOcaWithDataSourceV2x0Overlay(claimsPathPointer = claimsPathPointer)
+
+                    ocaOverlayValidator(bundle).assertErrorType(OcaError.InvalidDataSourceOverlay::class)
+                }
+            }
+        }
     }
 
     @ParameterizedTest
@@ -142,10 +168,32 @@ class OcaOverlayValidatorImplTest {
             """$["a"].avb["v123"]"""
         ]
     )
-    fun `DataSourceOverlays containing valid JsonPaths returns success`(validJsonPath: String): Unit = runTest {
-        val bundle = getOcaWithDataSourceOverlay(jsonPath = validJsonPath)
+    fun `DataSourceOverlays v1x0 containing valid JsonPaths returns success`(validJsonPath: String): Unit = runTest {
+        val bundle = getOcaWithDataSourceV1x0Overlay(jsonPath = validJsonPath)
 
         ocaOverlayValidator(bundle).assertOk()
+    }
+
+    @TestFactory
+    fun `DataSourceOverlays v2x0 containing valid ClaimsPathPointers returns success`(): List<DynamicTest> {
+        val inputs = listOf(
+            createClaimsPathPointer("a"),
+            createClaimsPathPointer("a", "b"),
+            createClaimsPathPointer("a", null),
+            createClaimsPathPointer("a", 1),
+            createClaimsPathPointer("a", null, "b"),
+            createClaimsPathPointer("a", 1, "b"),
+        )
+
+        return inputs.map { claimsPathPointer ->
+            DynamicTest.dynamicTest("Claims path pointer ${claimsPathPointer.toPointerString()} should return success") {
+                runTest {
+                    val bundle = getOcaWithDataSourceV2x0Overlay(claimsPathPointer = claimsPathPointer)
+
+                    ocaOverlayValidator(bundle).assertOk()
+                }
+            }
+        }
     }
 
     @ParameterizedTest
@@ -194,7 +242,7 @@ class OcaOverlayValidatorImplTest {
         )
     )
 
-    private fun getOcaWithDataSourceOverlay(jsonPath: String) = OcaBundle(
+    private fun getOcaWithDataSourceV1x0Overlay(jsonPath: String) = OcaBundle(
         captureBases = listOf(
             CaptureBase1x0(
                 digest = "validDigest",
@@ -208,6 +256,24 @@ class OcaOverlayValidatorImplTest {
                 captureBaseDigest = "validDigest",
                 format = "format",
                 attributeSources = mapOf("key" to jsonPath)
+            )
+        )
+    )
+
+    private fun getOcaWithDataSourceV2x0Overlay(claimsPathPointer: ClaimsPathPointer) = OcaBundle(
+        captureBases = listOf(
+            CaptureBase1x0(
+                digest = "validDigest",
+                attributes = mapOf(
+                    "attributeKey" to AttributeType.Text,
+                )
+            ),
+        ),
+        overlays = listOf(
+            DataSourceOverlay2x0(
+                captureBaseDigest = "validDigest",
+                format = "format",
+                attributeSources = mapOf("key" to claimsPathPointer)
             )
         )
     )

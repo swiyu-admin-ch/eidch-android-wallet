@@ -9,7 +9,7 @@ sealed interface HomeScreenState {
     data class CredentialList(
         val eIdRequests: List<SIdRequestDisplayData>,
         val credentials: List<CredentialCardState>,
-        val onCredentialClick: (Long, VerifiableProgressionState) -> Unit,
+        val onCredentialClick: (Long, VerifiableProgressionState, isDeferred: Boolean) -> Unit,
     ) : HomeScreenState
     data class NoCredential(
         val eIdRequests: List<SIdRequestDisplayData>,

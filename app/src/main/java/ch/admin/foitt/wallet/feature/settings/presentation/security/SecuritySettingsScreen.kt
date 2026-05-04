@@ -48,6 +48,7 @@ fun SecuritySettingsScreen(
         onChangeBiometrics = viewModel::onChangeBiometrics,
         onDataProtection = viewModel::onDataProtection,
         onShareAnalysisChange = viewModel::onShareAnalysisChange,
+        onActivityList = viewModel::onActivityList,
         onDataAnalysis = viewModel::onDataAnalysis,
     )
 }
@@ -63,6 +64,7 @@ private fun SecuritySettingsScreenContent(
     onChangeBiometrics: () -> Unit,
     onDataProtection: () -> Unit,
     onShareAnalysisChange: (Boolean) -> Unit,
+    onActivityList: () -> Unit,
     onDataAnalysis: () -> Unit,
 ) = Box(
     modifier = Modifier
@@ -92,6 +94,7 @@ private fun SecuritySettingsScreenContent(
             shareAnalysisEnabled = shareAnalysisEnabled,
             onDataProtection = onDataProtection,
             onShareAnalysisChange = onShareAnalysisChange,
+            onActivityList = onActivityList,
             onDataAnalysis = onDataAnalysis,
         )
     }
@@ -132,6 +135,7 @@ fun AnalysisSection(
     shareAnalysisEnabled: Boolean,
     onShareAnalysisChange: (Boolean) -> Unit,
     onDataAnalysis: () -> Unit,
+    onActivityList: () -> Unit,
     onDataProtection: () -> Unit,
 ) = SettingsSection(
     title = stringResource(R.string.tk_settings_securityPrivacy_dataProtection_sectionTitle)
@@ -146,6 +150,12 @@ fun AnalysisSection(
     WalletListItems.ClickableTextSettingsItem(
         title = stringResource(id = R.string.tk_settings_securityPrivacy_dataProtection_diagnosticData),
         onClick = onDataAnalysis,
+    )
+    WalletListItems.Divider()
+    WalletListItems.ClickableTextSettingsItem(
+        title = stringResource(id = R.string.tk_settings_securityPrivacy_dataProtection_activityHistory),
+        leadingIcon = R.drawable.wallet_ic_history,
+        onClick = onActivityList,
     )
     WalletListItems.Divider()
     WalletListItems.LinkSettingsItem(
@@ -189,6 +199,7 @@ private fun SecuritySettingsScreenPreview(
             onChangePin = {},
             onDataProtection = {},
             onShareAnalysisChange = {},
+            onActivityList = {},
             onDataAnalysis = {},
             showPassphraseDeletionMessage = false,
         )

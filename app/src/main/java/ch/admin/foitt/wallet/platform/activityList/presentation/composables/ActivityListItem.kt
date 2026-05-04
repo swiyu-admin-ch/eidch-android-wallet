@@ -13,10 +13,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
-import ch.admin.foitt.wallet.platform.activityList.presentation.model.ActivityUiState
 import ch.admin.foitt.wallet.platform.composables.presentation.clusterLazyListItem
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
@@ -25,8 +27,12 @@ import ch.admin.foitt.wallet.theme.WalletListItems
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
 
+@Suppress("LongParameterList")
 fun LazyListScope.activityListItem(
-    activity: ActivityUiState,
+    activityType: ActivityType,
+    activityId: Long,
+    activityActorName: String,
+    activityDate: String,
     showActorName: Boolean = true,
     isFirstItem: Boolean,
     isLastItem: Boolean,
@@ -37,30 +43,30 @@ fun LazyListScope.activityListItem(
     isLastItem = isLastItem,
     paddingValues = paddingValues,
 ) {
-    when (activity.activityType) {
+    when (activityType) {
         ActivityType.ISSUANCE -> {
             CredentialAcceptedActivityListItem(
-                id = activity.id,
-                issuer = if (showActorName) activity.localizedActorName else null,
-                date = activity.date,
+                id = activityId,
+                issuer = if (showActorName) activityActorName else null,
+                date = activityDate,
                 onClick = onClick,
             )
         }
 
         ActivityType.PRESENTATION_ACCEPTED -> {
             PresentationAcceptedActivityListItem(
-                id = activity.id,
-                verifier = if (showActorName) activity.localizedActorName else null,
-                date = activity.date,
+                id = activityId,
+                verifier = if (showActorName) activityActorName else null,
+                date = activityDate,
                 onClick = onClick,
             )
         }
 
         ActivityType.PRESENTATION_DECLINED -> {
             PresentationDeclinedActivityListItem(
-                id = activity.id,
-                verifier = if (showActorName) activity.localizedActorName else null,
-                date = activity.date,
+                id = activityId,
+                verifier = if (showActorName) activityActorName else null,
+                date = activityDate,
                 onClick = onClick,
             )
         }
@@ -172,11 +178,74 @@ private fun EntireHistoryButton(
 ) = ListItem(
     modifier = Modifier
         .clickable(onClick = onClick)
-        .spaceBarKeyClickable(onClick),
+        .spaceBarKeyClickable(onClick)
+        .semantics {
+            role = Role.Button
+        },
     colors = ListItemDefaults.colors(containerColor = WalletTheme.colorScheme.listItemBackground),
     headlineContent = {
         WalletTexts.BodyLarge(
             text = stringResource(R.string.tk_activity_latestActivities_entireHistory),
+            color = WalletTheme.colorScheme.onSurface,
+        )
+    },
+    leadingContent = { Spacer(modifier = Modifier.width(Sizes.s06)) },
+    trailingContent = {
+        Icon(
+            painter = painterResource(R.drawable.wallet_ic_chevron_right),
+            contentDescription = null,
+            tint = WalletTheme.colorScheme.onSurface,
+        )
+    }
+)
+
+fun LazyListScope.disabledHistoryActivityListItem(
+    paddingValues: PaddingValues = PaddingValues(0.dp),
+) = clusterLazyListItem(
+    isFirstItem = true,
+    isLastItem = false,
+    paddingValues = paddingValues,
+) {
+    DisabledHistoryActivityListItem()
+}
+
+@Composable
+fun DisabledHistoryActivityListItem() = ActivityListItem(
+    title = stringResource(R.string.tk_activity_latestActivities_noHistory_title),
+    supportingText = stringResource(R.string.tk_activity_latestActivities_disabledHistory_body),
+    leadingContent = {
+        Icon(
+            painter = painterResource(R.drawable.wallet_ic_no_history),
+            contentDescription = null,
+            tint = WalletTheme.colorScheme.onSurfaceVariant,
+        )
+    },
+)
+
+fun LazyListScope.goToHistorySettingsButton(
+    paddingValues: PaddingValues,
+    onClick: () -> Unit
+) = clusterLazyListItem(
+    isFirstItem = false,
+    isLastItem = true,
+    paddingValues = paddingValues,
+) {
+    GoToHistorySettingsButton(
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun GoToHistorySettingsButton(
+    onClick: () -> Unit,
+) = ListItem(
+    modifier = Modifier
+        .clickable(onClick = onClick)
+        .spaceBarKeyClickable(onClick),
+    colors = ListItemDefaults.colors(containerColor = WalletTheme.colorScheme.listItemBackground),
+    headlineContent = {
+        WalletTexts.BodyLarge(
+            text = stringResource(R.string.tk_activity_latestActivities_goToSettings),
             color = WalletTheme.colorScheme.onSurface,
         )
     },
@@ -273,6 +342,12 @@ private fun ActivityListItemPreview() {
             EmptyHistoryActivityListItem()
             WalletListItems.Divider()
             EntireHistoryButton(
+                onClick = {},
+            )
+            WalletListItems.Divider()
+            DisabledHistoryActivityListItem()
+            WalletListItems.Divider()
+            GoToHistorySettingsButton(
                 onClick = {},
             )
         }

@@ -5,8 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class ClientAttestationRequest(
-    @SerialName("integrity_token")
-    val integrityToken: String,
     @SerialName("cnf")
     val cnf: Confirmation,
 )

@@ -37,7 +37,7 @@ internal class CacheIssuerDisplayDataImpl @Inject constructor(
             vcSchemaTrustStatus = trustCheckResult.vcSchemaTrustStatus,
             preferredLanguage = null,
             actorType = ActorType.ISSUER,
-            nonComplianceState = nonComplianceData.state,
+            actorComplianceState = nonComplianceData.state,
             nonComplianceReason = reasonDisplay
         )
 

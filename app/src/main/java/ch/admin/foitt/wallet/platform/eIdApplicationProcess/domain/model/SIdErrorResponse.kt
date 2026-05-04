@@ -35,5 +35,6 @@ internal data class SIdError(
         const val INVALID_CLIENT_ATTESTATION = "InvalidClientAttestation"
         const val INVALID_KEY_ATTESTATION = "InvalidKeyAttestation"
         const val INSUFFICIENT_KEY_STORAGE_RESISTANCE = "InsufficientKeyStorageResistance"
+        const val REQUEST_IN_WRONG_STATE = "AntragInWrongStateException"
     }
 }

@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.actorMetadata
 
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientMetaData
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientName
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.Field
@@ -7,7 +8,6 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptor
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.LogoUri
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationDefinition
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequest
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
@@ -16,9 +16,9 @@ import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheVerifierDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.InitializeActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.FetchAndCacheVerifierDisplayDataImpl
+import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.actorComplianceState
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceData
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceReasons
-import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceState
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1TrustStatement
@@ -63,7 +63,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     private lateinit var mockInitializeActorForScope: InitializeActorForScope
 
     @MockK
-    private lateinit var mockPresentationRequest: PresentationRequest
+    private lateinit var mockAuthorizationRequest: AuthorizationRequest
 
     @MockK
     private lateinit var mockIdentityTrustStatement: IdentityV1TrustStatement
@@ -104,8 +104,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     @Test
     fun `Fetching and caching the verifier display data is following specific steps`(): Unit = runTest {
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val expectedActorDisplayData = ActorDisplayData(
@@ -115,7 +114,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
             vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
             preferredLanguage = null,
             actorType = ActorType.VERIFIER,
-            nonComplianceState = nonComplianceState,
+            actorComplianceState = actorComplianceState,
             nonComplianceReason = nonComplianceReasons,
         )
 
@@ -129,8 +128,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     @Test
     fun `A valid trust statement from our prod ecosystem will display as trusted`(): Unit = runTest {
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -149,8 +147,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.BETA
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -169,8 +166,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         coEvery { mockProcessIdentityV1TrustStatement(clientId) } returns trustRegistryError
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -190,8 +186,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         coEvery { mockProcessIdentityV1TrustStatement(clientId) } returns trustRegistryError
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -210,8 +205,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.EXTERNAL
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -231,8 +225,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         coEvery { mockProcessIdentityV1TrustStatement(clientId) } returns trustRegistryError
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -253,8 +246,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         } returns Ok(VcSchemaTrustStatus.NOT_TRUSTED)
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -275,8 +267,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         } returns Ok(VcSchemaTrustStatus.UNPROTECTED)
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -295,8 +286,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         every { mockField.path } returns listOf("other path")
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -315,23 +305,9 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     }
 
     @Test
-    fun `The trust statement is not fetched if the parameter is set to false`(): Unit = runTest {
-        useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = false,
-        )
-
-        coVerify(exactly = 0) {
-            mockProcessIdentityV1TrustStatement(any())
-            mockFetchVcSchemaTrustStatus(any(), any(), any())
-        }
-    }
-
-    @Test
     fun `Valid trust statement data is shown first`(): Unit = runTest {
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -348,8 +324,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     fun `In case of invalid trust statement, falls back to the presentation request metadata`(): Unit = runTest {
         coEvery { mockProcessIdentityV1TrustStatement.invoke(did = any()) } returns trustRegistryError
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -375,8 +350,7 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         } returns Ok(VcSchemaTrustStatus.TRUSTED)
 
         useCase(
-            presentationRequest = mockPresentationRequest,
-            shouldFetchTrustStatement = true,
+            authorizationRequest = mockAuthorizationRequest,
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -389,9 +363,9 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     }
 
     private fun setupDefaultMocks() {
-        every { mockPresentationRequest.clientId } returns clientId
-        every { mockPresentationRequest.clientMetaData } returns mockClientMetadata
-        every { mockPresentationRequest.presentationDefinition } returns mockPresentationDefinition
+        every { mockAuthorizationRequest.clientId } returns clientId
+        every { mockAuthorizationRequest.clientMetaData } returns mockClientMetadata
+        every { mockAuthorizationRequest.presentationDefinition } returns mockPresentationDefinition
 
         every { mockPresentationDefinition.inputDescriptors } returns listOf(mockInputDescriptor)
 

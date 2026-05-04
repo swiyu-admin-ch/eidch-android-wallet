@@ -7,9 +7,9 @@ import ch.admin.foitt.openid4vc.domain.model.VerifiableCredentialParams
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredentialResult
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedBatchCredential
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedCredential
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchCredentialError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchVcSdJwtCredentialError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchVerifiableCredentialError
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toFetchCredentialError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toFetchVcSdJwtCredentialError
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.BindingKeyPair
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyVcSdJwtSignatureError
@@ -29,12 +29,12 @@ internal class FetchVcSdJwtCredentialImpl @Inject constructor(
         verifiableCredentialParams: VerifiableCredentialParams,
         bindingKeyPairs: List<BindingKeyPair>?,
         payloadEncryptionType: PayloadEncryptionType,
-    ): Result<AnyCredentialResult, FetchCredentialError> = coroutineBinding {
+    ): Result<AnyCredentialResult, FetchVcSdJwtCredentialError> = coroutineBinding {
         val fetchVerifiableCredentialResult = fetchVerifiableCredential(
             verifiableCredentialParams = verifiableCredentialParams,
             bindingKeyPairs = bindingKeyPairs,
             payloadEncryptionType = payloadEncryptionType,
-        ).mapError(FetchVerifiableCredentialError::toFetchCredentialError)
+        ).mapError(FetchVerifiableCredentialError::toFetchVcSdJwtCredentialError)
             .bind()
 
         when (fetchVerifiableCredentialResult) {
@@ -43,7 +43,7 @@ internal class FetchVcSdJwtCredentialImpl @Inject constructor(
                     verifyVcSdJwtSignature(
                         keyBinding = fetchVerifiableCredentialResult.keyBinding,
                         payload = fetchVerifiableCredentialResult.credential
-                    ).mapError(VerifyVcSdJwtSignatureError::toFetchCredentialError).bind()
+                    ).mapError(VerifyVcSdJwtSignatureError::toFetchVcSdJwtCredentialError).bind()
                 )
             }
 
@@ -54,7 +54,7 @@ internal class FetchVcSdJwtCredentialImpl @Inject constructor(
                         verifyVcSdJwtSignature(
                             keyBinding = it.keyBinding,
                             payload = it.credential
-                        ).mapError(VerifyVcSdJwtSignatureError::toFetchCredentialError).bind()
+                        ).mapError(VerifyVcSdJwtSignatureError::toFetchVcSdJwtCredentialError).bind()
                     }
                 )
             }

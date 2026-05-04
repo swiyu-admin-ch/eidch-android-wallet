@@ -14,7 +14,7 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 fun ClaimClusterCard(
     content: @Composable () -> Unit,
 ) = ClusterCard(
-    modifier = Modifier.padding(start = Sizes.s04, top = Sizes.s04, end = Sizes.s04),
+    modifier = Modifier.padding(start = Sizes.s04, end = Sizes.s04),
     colors = CardDefaults.cardColors().copy(containerColor = WalletTheme.colorScheme.listItemBackground),
 ) {
     content()

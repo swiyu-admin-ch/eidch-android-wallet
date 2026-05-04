@@ -1,10 +1,12 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.di
 
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdDocumentScannerErrorScreen
-import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdDocumentScannerErrorViewModel
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentRecordingInfoScreen
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentRecordingInfoViewModel
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentRecordingScreen
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentRecordingViewModel
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentScanSummaryScreen
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentScanSummaryViewModel
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentScannerInfoScreen
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentScannerInfoViewModel
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdDocumentScannerScreen
@@ -60,6 +62,18 @@ object EntryProviderInstallerModule {
                 )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 EIdDocumentScannerScreen(viewModel = viewModel)
+            }
+        }
+
+        entry<Destination.EIdDocumentScanSummaryScreen> { navKey ->
+            val viewModel =
+                hiltViewModel<EIdDocumentScanSummaryViewModel, EIdDocumentScanSummaryViewModel.Factory>(
+                    creationCallback = { factory ->
+                        factory.create(caseId = navKey.caseId)
+                    }
+                )
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                EIdDocumentScanSummaryScreen(viewModel = viewModel)
             }
         }
 
@@ -148,17 +162,6 @@ object EntryProviderInstallerModule {
             }
         }
 
-        entry<Destination.EIdDocumentScannerErrorScreen> { navKey ->
-            val viewModel = hiltViewModel<EIdDocumentScannerErrorViewModel, EIdDocumentScannerErrorViewModel.Factory>(
-                creationCallback = { factory ->
-                    factory.create(type = navKey.type)
-                }
-            )
-            SyncedScaffoldScreen(viewModel = viewModel) {
-                EIdDocumentScannerErrorScreen(viewModel = viewModel)
-            }
-        }
-
         entry<Destination.EIdDocumentScannerInfoScreen> { navKey ->
             val viewModel = hiltViewModel<EIdDocumentScannerInfoViewModel, EIdDocumentScannerInfoViewModel.Factory>(
                 creationCallback = { factory ->
@@ -167,6 +170,17 @@ object EntryProviderInstallerModule {
             )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 EIdDocumentScannerInfoScreen(viewModel = viewModel)
+            }
+        }
+
+        entry<Destination.EIdDocumentRecordingInfoScreen> { navKey ->
+            val viewModel = hiltViewModel<EIdDocumentRecordingInfoViewModel, EIdDocumentRecordingInfoViewModel.Factory>(
+                creationCallback = { factory ->
+                    factory.create(caseId = navKey.caseId)
+                }
+            )
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                EIdDocumentRecordingInfoScreen(viewModel = viewModel)
             }
         }
     }

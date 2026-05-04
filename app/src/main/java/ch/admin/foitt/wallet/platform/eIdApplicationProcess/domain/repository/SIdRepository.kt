@@ -8,6 +8,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AutoVer
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.CaseResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdStartAutoVerificationType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.GuardianVerificationResponse
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdChallengeResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRepositoryError
@@ -44,7 +45,7 @@ interface SIdRepository {
         caseId: String,
         clientAttestation: ClientAttestation,
         clientAttestationPoP: ClientAttestationPoP
-    ): Result<PairWalletResponse, SIdRepositoryError>
+    ): Result<PairWalletResponse, PairWalletError>
     suspend fun startAutoVerification(
         caseId: String,
         autoVerificationType: EIdStartAutoVerificationType,

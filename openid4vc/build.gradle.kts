@@ -13,7 +13,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
 
     // Dagger/Hilt
@@ -40,6 +39,9 @@ dependencies {
 
     // Logging
     implementation(libs.timber)
+
+    // Dcql
+    implementation(libs.dcql)
 
     // Testing
     testImplementation(libs.kotlinx.coroutines.test)

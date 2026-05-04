@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.model.sdjwt
 
+import ch.admin.foitt.openid4vc.domain.model.DigestAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.utils.createDigest
 import kotlinx.serialization.json.Json
@@ -7,36 +8,45 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 import java.util.Base64
 
 /**
- * https://www.ietf.org/archive/id/draft-ietf-oauth-selective-disclosure-jwt-12.html
+ * https://www.rfc-editor.org/rfc/rfc9901.html
  */
 
-private typealias RawDisclosures = String
-private typealias Disclosure = String
 private typealias Digest = String
-private typealias ClaimName = String
 
 open class SdJwt(
     rawSdJwt: String,
-    private val reservedClaimNames: Set<String> = emptySet(),
+    private val nonSelectivelyDisclosableClaims: Set<String> = emptySet(),
 ) : Jwt(rawJwt = rawSdJwt.split(SD_JWT_SEPARATOR).first()) {
 
-    private val digestAlgorithm: String by lazy {
-        val algorithm = payloadJson[ALGORITHM_KEY]
-        algorithm?.jsonPrimitive?.content ?: DEFAULT_DIGEST_ALGORITHM
+    private val digestAlgorithm = run {
+        val rawAlgorithm = payloadJson[ALGORITHM_KEY]?.jsonPrimitive?.content ?: DEFAULT_DIGEST_ALGORITHM
+        DigestAlgorithm.from(rawAlgorithm) ?: error("Unsupported digest algorithm $rawAlgorithm")
     }
 
-    private val claims: Map<String, SdJwtClaim> = getDisclosures(rawSdJwt)?.let { disclosures ->
-        parseDisclosedClaims(disclosures, digestAlgorithm)
-    } ?: emptyMap()
+    private val disclosureMap: Map<Digest, Disclosure> = run {
+        getDisclosures(rawSdJwt)?.let { disclosures ->
+            parseDisclosures(disclosures, digestAlgorithm)
+        } ?: emptyMap()
+    }
 
-    val sdJwtJson: JsonElement = replaceDigestsWithClaims(payloadJson, claims)
+    val processedJson: JsonObject = run {
+        val disclosures = disclosureMap.toMutableMap()
+        val jsonObject = JsonObject(payloadJson.toMutableMap() - ALGORITHM_KEY)
+        val json =
+            resolveDigestsWithDisclosures(jsonElement = jsonObject, unresolvedDisclosureMap = disclosures, seenDigests = mutableSetOf())
+        check(disclosures.isEmpty()) {
+            "Disclosures that have no matching digest in the payload: ${disclosures.values.joinToString(", ") { it.disclosure }}"
+        }
+        json.jsonObject
+    }
 
-    private fun getDisclosures(rawSdJwt: String): RawDisclosures? {
+    private fun getDisclosures(rawSdJwt: String): String? {
         val matchResult = Regex(SD_JWT_PATTERN).matchEntire(rawSdJwt)
         val matchGroups = matchResult?.groups?.let { groupCollection ->
             groupCollection as MatchNamedGroupCollection
@@ -44,111 +54,176 @@ open class SdJwt(
         return matchGroups[DISCLOSURES]?.value
     }
 
-    private fun parseDisclosedClaims(
-        rawDisclosures: RawDisclosures,
-        digestAlgorithm: String
-    ): Map<Digest, SdJwtClaim> {
-        val seenDigests = mutableSetOf<String>()
-        val seenDisclosableKeys = mutableSetOf<String>()
-        val disclosures: List<Disclosure> = rawDisclosures.trim(SD_JWT_SEPARATOR).split(SD_JWT_SEPARATOR)
-        val disclosedClaims = disclosures.toSet().associate { disclosure ->
-            val digest: Digest = disclosure.createDigest(digestAlgorithm)
-            if (!seenDigests.add(digest)) {
-                Timber.d("Error: Found disclosures with duplicate digest")
-                error("digest value is encountered more than once in the Issuer-signed JWT payload")
-            }
-
-            val (claimName, value) = parseDisclosure(disclosure)
-            if (!seenDisclosableKeys.add(claimName)) {
-                Timber.d("Error: Found disclosures with duplicate claim names")
-                error("Duplicate disclosable key found")
-            }
-
-            val claim = SdJwtClaim(
-                key = claimName,
-                value = value,
-                disclosure = disclosure,
-            )
-            digest to claim
+    private fun parseDisclosures(
+        rawDisclosures: String,
+        digestAlgorithm: DigestAlgorithm,
+    ): Map<Digest, Disclosure> {
+        val disclosures = rawDisclosures.trim(SD_JWT_SEPARATOR).split(SD_JWT_SEPARATOR)
+        val disclosureByDigest = disclosures.associate { disclosure ->
+            val digest = disclosure.createDigest(digestAlgorithm)
+            digest to parseDisclosure(disclosure)
         }
-
-        return disclosedClaims
+        check(disclosureByDigest.size == disclosures.size) {
+            "Multiple disclosures with same digest detected"
+        }
+        return disclosureByDigest
     }
 
-    private fun parseDisclosure(disclosure: Disclosure): Pair<ClaimName, JsonElement> {
+    private fun parseDisclosure(disclosure: String): Disclosure {
         val decoded = base64UrlEncodedStringToByteArray(disclosure)
-        val jsonString = String(decoded)
-        val array = Json.parseToJsonElement(jsonString).jsonArray
-        if (array.size != 3) {
-            error("Invalid disclosure: $disclosure")
+        val jsonElement = Json.parseToJsonElement(String(decoded))
+        check(jsonElement is JsonArray)
+        val array = jsonElement.jsonArray
+        return when (array.size) {
+            3 -> parseDisclosureWithKey(array, disclosure)
+            2 -> Disclosure.ArrayElement(value = array[1], disclosure = disclosure)
+            else -> error("Invalid disclosure: $disclosure")
         }
+    }
 
+    private fun parseDisclosureWithKey(
+        array: JsonArray,
+        disclosure: String
+    ): Disclosure.KeyedElement {
         val claimName = array[1].jsonPrimitive.content
-        if (claimName in reservedClaimNames) {
-            Timber.d("Error: Disclosure contains reserved claim name $claimName")
-            error("Invalid disclosure: $disclosure")
+        check(claimName !in listOf(DIGESTS_KEY, ARRAY_DIGEST_KEY, ALGORITHM_KEY) + nonSelectivelyDisclosableClaims) {
+            "Disclosure with invalid claim name: $disclosure"
         }
-        return claimName to array[2]
+        return Disclosure.KeyedElement(key = claimName, value = array[2], disclosure = disclosure)
     }
 
     private fun base64UrlEncodedStringToByteArray(string: String): ByteArray =
         Base64.getUrlDecoder().decode(string)
 
-    private fun replaceDigestsWithClaims(
-        jsonObject: JsonObject,
-        claims: Map<Digest, SdJwtClaim>
-    ): JsonElement {
-        val digestsJsonElement = jsonObject.firstNotNullOfOrNull { element ->
-            if (element.key == DIGESTS_KEY) element else null
-        }?.let { entry ->
-            val digests = parseDigestArray(entry.value)
-            replaceDigestsAndFindClaims(digests, claims)
-        }.orEmpty()
-
-        val otherElements = jsonObject.toMutableMap() - DIGESTS_KEY
-        val otherElementsWithClaims = otherElements.mapValues { element ->
-            replaceDigestsWithClaims(element.key, element.value, claims)
-        }
-
-        return JsonObject(otherElementsWithClaims + digestsJsonElement)
-    }
-
-    private fun parseDigestArray(digests: JsonElement): List<String> =
-        if (digests is JsonArray) {
-            digests.jsonArray.map { digest -> digest.jsonPrimitive.content }
-        } else {
-            error("Invalid digests: $digests")
-        }
-
-    private fun replaceDigestsAndFindClaims(
-        digests: List<Digest>,
-        claims: Map<ClaimName, SdJwtClaim>
-    ): JsonObject {
-        val elementsWithClaims = digests.mapNotNull { digest -> claims[digest] }
-            .associate { claim ->
-                claim.key to replaceDigestsWithClaims(claim.key, claim.value, claims)
-            }
-        return JsonObject(elementsWithClaims)
-    }
-
-    private fun replaceDigestsWithClaims(
-        key: String,
+    private fun resolveDigestsWithDisclosures(
         jsonElement: JsonElement,
-        claims: Map<String, SdJwtClaim>
+        unresolvedDisclosureMap: MutableMap<Digest, Disclosure>,
+        seenDigests: MutableSet<Digest>,
     ): JsonElement = when (jsonElement) {
-        is JsonObject -> replaceDigestsWithClaims(jsonElement, claims)
-        is JsonArray -> JsonArray(
-            jsonElement.map { element ->
-                replaceDigestsWithClaims(key, element, claims)
-            }
+        is JsonObject -> resolveDigestsWithDisclosures(
+            jsonObject = jsonElement,
+            unresolvedDisclosureMap = unresolvedDisclosureMap,
+            seenDigests = seenDigests,
+        )
+
+        is JsonArray -> resolveArrayElementsWithDisclosures(
+            jsonArray = jsonElement,
+            unresolvedDisclosureMap = unresolvedDisclosureMap,
+            seenDigests = seenDigests,
         )
 
         else -> jsonElement
     }
 
+    private fun resolveDigestsWithDisclosures(
+        jsonObject: JsonObject,
+        unresolvedDisclosureMap: MutableMap<Digest, Disclosure>,
+        seenDigests: MutableSet<Digest>,
+    ): JsonObject {
+        check(jsonObject[ARRAY_DIGEST_KEY] == null && jsonObject[ALGORITHM_KEY] == null) {
+            "Reserved key ('$ARRAY_DIGEST_KEY', '$ALGORITHM_KEY') detected in JSON payload: $jsonObject"
+        }
+        val digestsJsonElement = jsonObject[DIGESTS_KEY]?.let { element ->
+            resolveDigestArrayWithDisclosures(
+                element = element,
+                unresolvedDisclosureMap = unresolvedDisclosureMap,
+                seenDigests = seenDigests
+            )
+        }.orEmpty()
+
+        val otherElements = jsonObject.toMutableMap() - DIGESTS_KEY
+        val otherElementsWithClaims = otherElements.mapValues { element ->
+            resolveDigestsWithDisclosures(
+                jsonElement = element.value,
+                unresolvedDisclosureMap = unresolvedDisclosureMap,
+                seenDigests = seenDigests,
+            )
+        }
+        val duplicatedKeys = otherElementsWithClaims.keys.intersect(digestsJsonElement.keys)
+        check(duplicatedKeys.isEmpty()) {
+            "Claims with same key name detected: $duplicatedKeys"
+        }
+        return JsonObject(otherElementsWithClaims + digestsJsonElement)
+    }
+
+    private fun resolveDigestArrayWithDisclosures(
+        element: JsonElement,
+        unresolvedDisclosureMap: MutableMap<Digest, Disclosure>,
+        seenDigests: MutableSet<Digest>
+    ): JsonObject {
+        val digests = parseDigestArray(element, seenDigests)
+        val disclosures = digests.mapNotNull { unresolvedDisclosureMap[it] } // ignores decoy digests
+        unresolvedDisclosureMap -= digests.toSet()
+        val json = disclosures.associate { disclosure ->
+            check(disclosure is Disclosure.KeyedElement) {
+                "Digest does not reference keyed element disclosure: $disclosure"
+            }
+            val resolvedElement = resolveDigestsWithDisclosures(
+                jsonElement = disclosure.value,
+                unresolvedDisclosureMap = unresolvedDisclosureMap,
+                seenDigests = seenDigests,
+            )
+            disclosure.key to resolvedElement
+        }
+        check(disclosures.size == json.size) {
+            val duplicatedKeys = disclosures.map { (it as Disclosure.KeyedElement).key } - json.keys
+            "Claims with same key name detected: $duplicatedKeys"
+        }
+        return JsonObject(json)
+    }
+
+    private fun parseDigestArray(element: JsonElement, seenDigests: MutableSet<Digest>): List<String> =
+        if (element is JsonArray) {
+            val digests = element.jsonArray.map { it.jsonPrimitive.content }
+            val duplicatedDigests = (digests - digests.toSet()) + digests.intersect(seenDigests)
+            check(duplicatedDigests.isEmpty()) { "Duplicated digests found: $duplicatedDigests" }
+            seenDigests += digests
+            digests
+        } else {
+            error("Invalid digests: $element")
+        }
+
+    private fun resolveArrayElementsWithDisclosures(
+        jsonArray: JsonArray,
+        unresolvedDisclosureMap: MutableMap<Digest, Disclosure>,
+        seenDigests: MutableSet<Digest>
+    ): JsonArray {
+        val jsonElements = jsonArray.mapNotNull { element ->
+            if (element is JsonObject && element.keys == setOf(ARRAY_DIGEST_KEY)) {
+                val digest = element[ARRAY_DIGEST_KEY]!!.jsonPrimitive.content
+                check(digest !in seenDigests) {
+                    "Duplicate digest found: $digest"
+                }
+                seenDigests += digest
+                val disclosure = unresolvedDisclosureMap[digest] ?: return@mapNotNull null // ignore decoy digests
+                unresolvedDisclosureMap -= digest
+                check(disclosure is Disclosure.ArrayElement) {
+                    "Digest does not reference array element disclosure: $disclosure"
+                }
+                resolveDigestsWithDisclosures(
+                    jsonElement = disclosure.value,
+                    unresolvedDisclosureMap = unresolvedDisclosureMap,
+                    seenDigests = seenDigests,
+                )
+            } else {
+                resolveDigestsWithDisclosures(
+                    jsonElement = element,
+                    unresolvedDisclosureMap = unresolvedDisclosureMap,
+                    seenDigests = seenDigests
+                )
+            }
+        }
+        return JsonArray(jsonElements)
+    }
+
     fun createSelectiveDisclosure(requestedFieldKeys: List<String>): String {
-        val disclosures = claims.values
-            .filter { it.key in requestedFieldKeys }
+        val disclosures = disclosureMap.values
+            .filter {
+                when (it) {
+                    is Disclosure.KeyedElement -> it.key in requestedFieldKeys
+                    is Disclosure.ArrayElement -> false
+                }
+            }
             .map { it.disclosure }
         return StringBuilder(signedJwt.parsedString).apply {
             append(SD_JWT_SEPARATOR)
@@ -171,12 +246,13 @@ open class SdJwt(
         const val SD_JWT_SEPARATOR = '~'
         const val SD_JWT_PATTERN = "^" +
             "(?<$JWT>(?<header>[A-Za-z0-9-_]+)\\.(?<body>[A-Za-z0-9-_]+)\\.(?<signature>[A-Za-z0-9-_]+))" + // 1 issuer-signed JWT
-            "($SD_JWT_SEPARATOR?" + // 0..1 separators
+            "($SD_JWT_SEPARATOR" +
             "(?<$DISCLOSURES>(([A-Za-z0-9-_]+)$SD_JWT_SEPARATOR)+)?" + // 0..* Disclosures + "~"
             "(?<$KEYBINDING_JWT>([A-Za-z0-9-_]+)\\.([A-Za-z0-9-_]+)\\.([A-Za-z0-9-_]+))?" + // 0..1 Key Binding JWT
             ")$"
 
         const val DIGESTS_KEY = "_sd"
-        const val DEFAULT_DIGEST_ALGORITHM = "SHA-256"
+        const val ARRAY_DIGEST_KEY = "..."
+        val DEFAULT_DIGEST_ALGORITHM = DigestAlgorithm.SHA256.stdName
     }
 }

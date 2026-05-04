@@ -21,8 +21,8 @@ object CredentialTestData {
     private const val ISSUER_URL = "https://issuer.example.com"
     const val VALUE = "VALUE"
     private const val VALUE2 = "VALUE2"
-    const val KEY = "KEY"
-    private const val KEY2 = "KEY2"
+    const val PATH = "[\"path\"]"
+    private const val PATH2 = "[\"path2\"]"
     const val NAME1 = "NAME1"
     const val CORRECT = "CORRECT"
     const val FALLBACK = "FALLBACK"
@@ -69,6 +69,7 @@ object CredentialTestData {
         issuer = "issuer",
         validFrom = 0,
         validUntil = 17768026519L,
+        nextPresentableBundleItemId = 1,
     )
 
     val deferredCredential1 = DeferredCredentialEntity(
@@ -76,10 +77,11 @@ object CredentialTestData {
         progressionState = DeferredProgressionState.IN_PROGRESS,
         transactionId = "1",
         accessToken = "token",
+        refreshToken = "refreshToken",
         endpoint = "endpoint",
         pollInterval = 1000,
         createdAt = 1,
-        polledAt = 1
+        polledAt = 1,
     )
 
     val credential2 = Credential(
@@ -96,6 +98,7 @@ object CredentialTestData {
         issuer = "issuer",
         validFrom = 0,
         validUntil = 17768026519L,
+        nextPresentableBundleItemId = 1,
     )
     val credentialWithPayload = Credential(
         id = 3,
@@ -111,6 +114,7 @@ object CredentialTestData {
         issuer = "issuer",
         validFrom = 0,
         validUntil = 17768026519L,
+        nextPresentableBundleItemId = 1,
     )
 
     val cluster1 = CredentialClaimClusterEntity(id = 1, verifiableCredentialId = 1, parentClusterId = null, order = -1)
@@ -120,8 +124,8 @@ object CredentialTestData {
     val clusterDisplay1 = CredentialClaimClusterDisplayEntity(id = 1, clusterId = 1, name = "name", locale = "locale")
     val clusterDisplay2 = CredentialClaimClusterDisplayEntity(id = 2, clusterId = 2, name = "name", locale = "locale")
 
-    val credentialClaim1 = CredentialClaim(id = 1, clusterId = 1, key = KEY, value = VALUE, valueType = null)
-    val credentialClaim2 = CredentialClaim(id = 2, clusterId = 2, key = KEY2, value = VALUE2, valueType = null)
+    val credentialClaim1 = CredentialClaim(id = 1, clusterId = 1, path = PATH, value = VALUE, valueType = null)
+    val credentialClaim2 = CredentialClaim(id = 2, clusterId = 2, path = PATH2, value = VALUE2, valueType = null)
 
     val credentialClaimDisplay1 = CredentialClaimDisplay(
         id = 1,

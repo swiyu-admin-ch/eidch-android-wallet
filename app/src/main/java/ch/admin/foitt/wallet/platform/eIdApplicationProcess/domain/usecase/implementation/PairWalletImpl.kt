@@ -40,6 +40,6 @@ class PairWalletImpl @Inject constructor(
             caseId = caseId,
             clientAttestation = clientAttestation,
             clientAttestationPoP = clientAttestationProofOfPossession,
-        ).mapError(SIdRepositoryError::toPairWalletError).bind()
+        ).bind()
     }
 }

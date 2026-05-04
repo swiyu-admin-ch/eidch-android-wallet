@@ -17,6 +17,10 @@ import ch.admin.foitt.wallet.feature.settings.presentation.language.LanguageScre
 import ch.admin.foitt.wallet.feature.settings.presentation.language.LanguageViewModel
 import ch.admin.foitt.wallet.feature.settings.presentation.licences.LicencesScreen
 import ch.admin.foitt.wallet.feature.settings.presentation.licences.LicencesViewModel
+import ch.admin.foitt.wallet.feature.settings.presentation.lottieViewer.LottieViewerScreen
+import ch.admin.foitt.wallet.feature.settings.presentation.lottieViewer.LottieViewerViewModel
+import ch.admin.foitt.wallet.feature.settings.presentation.security.ActivityListSettingsScreen
+import ch.admin.foitt.wallet.feature.settings.presentation.security.ActivityListSettingsViewModel
 import ch.admin.foitt.wallet.feature.settings.presentation.security.DataAnalysisScreen
 import ch.admin.foitt.wallet.feature.settings.presentation.security.DataAnalysisViewModel
 import ch.admin.foitt.wallet.feature.settings.presentation.security.SecuritySettingsScreen
@@ -89,6 +93,13 @@ object EntryProviderInstallerModule {
             }
         }
 
+        entry<Destination.LottieViewerScreen> {
+            val viewModel = hiltViewModel<LottieViewerViewModel>()
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                LottieViewerScreen(viewModel = viewModel)
+            }
+        }
+
         entry<Destination.LanguageScreen> {
             val viewModel = hiltViewModel<LanguageViewModel>()
             SyncedScaffoldScreen(viewModel = viewModel) {
@@ -107,6 +118,13 @@ object EntryProviderInstallerModule {
             val viewModel = hiltViewModel<DataAnalysisViewModel>()
             SyncedScaffoldScreen(viewModel = viewModel) {
                 DataAnalysisScreen()
+            }
+        }
+
+        entry<Destination.ActivityListSettingsScreen> {
+            val viewModel = hiltViewModel<ActivityListSettingsViewModel>()
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                ActivityListSettingsScreen(viewModel = viewModel)
             }
         }
 

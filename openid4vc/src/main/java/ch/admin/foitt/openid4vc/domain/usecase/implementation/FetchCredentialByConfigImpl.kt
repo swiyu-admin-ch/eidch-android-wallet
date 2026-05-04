@@ -4,7 +4,7 @@ import ch.admin.foitt.openid4vc.domain.model.VerifiableCredentialParams
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredentialResult
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchCredentialByConfigError
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchCredentialError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchVcSdJwtCredentialError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.UnknownCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.VcSdJwtCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toFetchCredentialByConfigError
@@ -31,7 +31,7 @@ internal class FetchCredentialByConfigImpl @Inject constructor(
                     verifiableCredentialParams = verifiableCredentialParams,
                     bindingKeyPairs = bindingKeyPairs,
                     payloadEncryptionType = payloadEncryptionType,
-                ).mapError(FetchCredentialError::toFetchCredentialByConfigError)
+                ).mapError(FetchVcSdJwtCredentialError::toFetchCredentialByConfigError)
             }
             is UnknownCredentialConfiguration -> Err(CredentialOfferError.UnsupportedCredentialFormat)
         }

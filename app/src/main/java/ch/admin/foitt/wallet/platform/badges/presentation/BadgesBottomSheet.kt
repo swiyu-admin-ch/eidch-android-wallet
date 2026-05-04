@@ -17,10 +17,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import ch.admin.foitt.wallet.R
@@ -28,6 +27,8 @@ import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.composables.presentation.ClusterListItem
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
+import ch.admin.foitt.wallet.platform.utils.TraversalIndex
+import ch.admin.foitt.wallet.platform.utils.setIsTraversalGroup
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
@@ -40,10 +41,7 @@ fun BadgeBottomSheet(
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
-        modifier = Modifier.semantics {
-            isTraversalGroup = true
-            traversalIndex = -5f
-        },
+        modifier = Modifier.setIsTraversalGroup(index = TraversalIndex.HIGH1),
         sheetState = sheetState,
         containerColor = WalletTheme.colorScheme.surfaceContainerLow,
         onDismissRequest = onDismiss,
@@ -181,6 +179,7 @@ private fun BottomSheetContent(
     WalletTexts.BodyLargeEmphasized(
         text = title,
         color = WalletTheme.colorScheme.onSurface,
+        modifier = Modifier.semantics { heading() },
     )
     Spacer(modifier = Modifier.height(Sizes.s02))
     body?.let {

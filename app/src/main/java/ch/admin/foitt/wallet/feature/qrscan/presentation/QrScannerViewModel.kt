@@ -3,12 +3,12 @@ package ch.admin.foitt.wallet.feature.qrscan.presentation
 import android.content.Context
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.viewModelScope
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestErrorBody
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseErrorBody
 import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
 import ch.admin.foitt.wallet.feature.qrscan.infra.QrScanner
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationError
-import ch.admin.foitt.wallet.platform.invitation.domain.model.toErrorDisplay
+import ch.admin.foitt.wallet.platform.invitation.domain.model.toErrorDestination
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.HandleInvitationProcessingSuccess
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ProcessInvitation
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -98,8 +98,21 @@ class QrScannerViewModel @AssistedInject constructor(
         when (failureResult) {
             is InvitationError.InvalidPresentation -> declinePresentationRequest(failureResult.responseUri)
             is InvitationError.EmptyWallet -> navigateToInvitationFailureError(failureResult, failureResult.responseUri)
-            is InvitationError.NoCompatibleCredential ->
-                navigateToInvitationFailureError(failureResult, failureResult.responseUri)
+            is InvitationError.NoCompatibleCredential -> navigateToInvitationFailureError(failureResult, failureResult.responseUri)
+            InvitationError.CredentialRequestDenied,
+            InvitationError.InsufficientScope,
+            InvitationError.InvalidClient,
+            InvitationError.InvalidCredentialRequest,
+            InvitationError.InvalidEncryptionParameters,
+            InvitationError.InvalidNonce,
+            InvitationError.InvalidProof,
+            InvitationError.InvalidRequest,
+            InvitationError.InvalidRequestBearerToken,
+            InvitationError.InvalidToken,
+            InvitationError.UnauthorizedClient,
+            InvitationError.UnauthorizedGrantType,
+            InvitationError.UnknownCredentialIdentifier,
+            InvitationError.UnknownCredentialConfiguration -> navigateToInvitationFailureError(failureResult, null)
             else -> {}
         }
 
@@ -110,9 +123,8 @@ class QrScannerViewModel @AssistedInject constructor(
     }
 
     private fun navigateToInvitationFailureError(failureResult: ProcessInvitationError, uri: String?) {
-        navManager.replaceCurrentWith(
-            destination = Destination.InvitationFailureScreen(invitationError = failureResult.toErrorDisplay(), uri = uri)
-        )
+        val destination = failureResult.toErrorDestination(uri)
+        navManager.replaceCurrentWith(destination)
     }
 
     private fun tryInitAnalyser() {
@@ -161,10 +173,25 @@ class QrScannerViewModel @AssistedInject constructor(
         InvitationError.UnknownVerifier -> QrInfoState.UnknownVerifier
         InvitationError.UnsupportedKeyStorageSecurityLevel -> QrInfoState.UnsupportedKeyStorageSecurityLevel
         InvitationError.IncompatibleDeviceKeyStorage -> QrInfoState.IncompatibleDeviceKeyStorage
+
+        InvitationError.CredentialRequestDenied,
+        InvitationError.InsufficientScope,
+        InvitationError.InvalidClient,
+        InvitationError.InvalidCredentialRequest,
+        InvitationError.InvalidEncryptionParameters,
+        InvitationError.InvalidNonce,
+        InvitationError.InvalidProof,
+        InvitationError.InvalidRequest,
+        InvitationError.InvalidRequestBearerToken,
+        InvitationError.InvalidToken,
+        InvitationError.UnauthorizedClient,
+        InvitationError.UnauthorizedGrantType,
+        InvitationError.UnknownCredentialConfiguration,
+        InvitationError.UnknownCredentialIdentifier -> QrInfoState.Empty
     }
 
     private fun declinePresentationRequest(uri: String) = viewModelScope.launch {
-        declinePresentation(url = uri, reason = PresentationRequestErrorBody.ErrorType.INVALID_REQUEST)
+        declinePresentation(url = uri, reason = AuthorizationResponseErrorBody.ErrorType.INVALID_REQUEST)
     }
 
     init {

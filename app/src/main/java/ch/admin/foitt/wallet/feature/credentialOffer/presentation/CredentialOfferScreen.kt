@@ -30,14 +30,21 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,8 +57,6 @@ import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.ConfirmationBottomSheet
-import ch.admin.foitt.wallet.platform.composables.HiddenScrollToButton
-import ch.admin.foitt.wallet.platform.composables.HiddenScrollToTopButton
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
@@ -64,7 +69,7 @@ import ch.admin.foitt.wallet.platform.credential.presentation.MediumCredentialCa
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
 import ch.admin.foitt.wallet.platform.preview.AllLargeScreensPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
@@ -73,6 +78,7 @@ import ch.admin.foitt.wallet.platform.utils.TestTags
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +87,14 @@ fun CredentialOfferScreen(
 ) {
     BackHandler {
         viewModel.onDeclineClicked()
+    }
+
+    val message = stringResource(R.string.tk_credential_invitation_success_alt)
+    var announcementAxMessage by rememberSaveable { mutableStateOf<String?>(message) }
+
+    LaunchedEffect(Unit) {
+        delay(3000)
+        announcementAxMessage = null
     }
 
     val uiMode = LocalConfiguration.current.uiMode
@@ -116,6 +130,7 @@ fun CredentialOfferScreen(
     CredentialOfferScreenContent(
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         credentialOfferUiState = viewModel.credentialOfferUiState.stateFlow.collectAsStateWithLifecycle().value,
+        announcementAxMessage = announcementAxMessage,
         onBadge = viewModel::onBadge,
         onAccept = viewModel::onAcceptClicked,
         onDecline = viewModel::onDeclineClicked,
@@ -127,14 +142,27 @@ fun CredentialOfferScreen(
 private fun CredentialOfferScreenContent(
     isLoading: Boolean,
     credentialOfferUiState: CredentialOfferUiState,
+    announcementAxMessage: String?,
     onBadge: (BadgeType) -> Unit,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
     onWrongData: () -> Unit,
 ) = Box(
-    modifier = Modifier
+    modifier =
+    Modifier
         .fillMaxSize()
         .background(WalletTheme.colorScheme.surfaceContainerLow)
+        .then(
+            if (announcementAxMessage != null) {
+                Modifier
+                    .semantics {
+                        liveRegion = LiveRegionMode.Assertive
+                        contentDescription = announcementAxMessage
+                    }
+            } else {
+                Modifier
+            }
+        )
 ) {
     when (currentWindowAdaptiveInfo().windowWidthClass()) {
         WindowWidthClass.COMPACT -> CompactContent(
@@ -165,15 +193,6 @@ private fun CompactContent(
     onWrongData: () -> Unit,
 ) {
     val lazyListState = rememberLazyListState()
-    HiddenScrollToButton(
-        text = stringResource(id = R.string.tk_receive_credentialOffer_hiddenGoToDetails),
-        lazyListState = lazyListState,
-        index = 3,
-    )
-    HiddenScrollToTopButton(
-        text = stringResource(id = R.string.tk_global_hiddenGoToTop),
-        lazyListState = lazyListState,
-    )
     WalletLayouts.LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         state = lazyListState,
@@ -349,10 +368,6 @@ private fun DetailsWithHeader(
             onDecline,
             onAccept
         )
-        HiddenScrollToTopButton(
-            text = stringResource(id = R.string.tk_global_hiddenGoToTop),
-            lazyListState = lazyListState,
-        )
     }
 }
 
@@ -445,12 +460,13 @@ private fun CredentialOfferScreenPreview() {
                     trustStatus = TrustStatus.TRUSTED,
                     vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
                     actorType = ActorType.ISSUER,
-                    nonComplianceState = NonComplianceState.REPORTED,
+                    actorComplianceState = ActorComplianceState.REPORTED,
                     nonComplianceReason = "report reason",
                 ),
                 credential = CredentialMocks.cardState01,
                 claims = CredentialMocks.clusterList,
             ),
+            announcementAxMessage = null,
             onBadge = {},
             onAccept = {},
             onDecline = {},
@@ -471,7 +487,7 @@ private fun CredentialOfferLargeContentPreview() {
                     trustStatus = TrustStatus.TRUSTED,
                     vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
                     actorType = ActorType.ISSUER,
-                    nonComplianceState = NonComplianceState.REPORTED,
+                    actorComplianceState = ActorComplianceState.REPORTED,
                     nonComplianceReason = "report reason",
                 ),
                 credential = CredentialMocks.cardState01,

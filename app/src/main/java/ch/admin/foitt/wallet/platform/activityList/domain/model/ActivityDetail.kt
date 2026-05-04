@@ -4,7 +4,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayD
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
 
 data class ActivityDetail(
-    val activity: ActivityDisplayData,
+    val activity: ActivityDetailDisplayData,
     val credential: CredentialDisplayData,
     val claims: List<CredentialClaimCluster>,
 )

@@ -47,7 +47,7 @@ class MapToActivityActorDisplayDataImplTest {
         val result = useCase(activityId = 1, listOf(actorDisplay1, actorDisplay2))
 
         val expected = ActivityActorDisplayData(
-            id = activityActorDisplay1.activityId,
+            activityId = activityActorDisplay1.activityId,
             localizedActorName = activityActorDisplay1.name,
             actorImageData = imageData1
         )
