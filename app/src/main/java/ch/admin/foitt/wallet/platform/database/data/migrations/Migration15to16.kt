@@ -49,9 +49,12 @@ internal class Migration15To16 : Migration(15, 16) {
                             val rawOIDMetadata = compressedRawOIDMetadata.decompress().decodeToString()
                             json.decodeFromString<IssuerCredentialInfo>(rawOIDMetadata)
                         }
-                        // skip this credential if error during metadata parsing
+
+                        // if migration of the metadata fails, we skip the migration of this Credential and also delete the corresponding
+                        // RawCredentialData
                         if (metadataResult.isErr) {
                             Timber.e(t = metadataResult.error, message = "Credential could not be migrated due to invalid metadata")
+                            db.execSQL("DELETE FROM `RawCredentialData` WHERE `credentialId` = $credentialId")
                             continue
                         }
                         val issuerUrl = metadataResult.value.credentialIssuer

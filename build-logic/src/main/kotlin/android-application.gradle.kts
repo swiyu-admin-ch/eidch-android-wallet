@@ -31,6 +31,10 @@ android {
         }
     }
 
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
+
     kotlin {
         jvmToolchain(21)
         compilerOptions {

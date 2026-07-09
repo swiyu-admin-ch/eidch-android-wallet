@@ -59,10 +59,9 @@ internal class VcSdJwtJsonSchemaValidatorImpl @Inject constructor() : JsonSchema
     companion object {
         private val vcSdJwtMetaSchemaString = """
             {
+              "type": "object",
+              "required": ["properties", "required"],
               "properties": {
-                "additionalItems": true,
-                "type": "object",
-                "required": ["properties", "required"],
                 "required": {
                   "type": "array",
                   "allOf": [

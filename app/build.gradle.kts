@@ -143,6 +143,8 @@ aboutLibraries {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     implementation(project(":theme"))
     implementation(project(":openid4vc"))
 

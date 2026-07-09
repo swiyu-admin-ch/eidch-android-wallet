@@ -21,11 +21,30 @@ class SandboxEnvironmentSetupRepositoryImpl @Inject constructor() : EnvironmentS
     )
 
     @Suppress("MaximumLineLength")
-    val intTrustRegistryDid =
+    private val trustV1IntTrustRegistryDid =
         "did:tdw:QmWrXWFEDenvoYWFXxSQGFCa6Pi22Cdsg2r6weGhY2ChiQ:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:2e246676-209a-4c21-aceb-721f8a90b212"
 
-    override val trustRegistryTrustedDids: Map<String, List<String>> = mapOf(
-        intTrustRegistryUrl to listOf(intTrustRegistryDid),
+    override val trustV1TrustRegistryTrustedDids: Map<String, List<String>> = mapOf(
+        intTrustRegistryUrl to listOf(trustV1IntTrustRegistryDid),
+    )
+
+    @Suppress("MaximumLineLength")
+    private val intTrustStatementIssuer =
+        "did:webvh:QmdVPcfEJgvQAJKEjaTWAhskT1kc59KZQiXNenqHBB7iH5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:4c131dc4-ced1-454b-bbd4-9401c7512e37"
+
+    @Suppress("MaximumLineLength")
+    private val intPublicTransparencyStatementIssuer =
+        "did:webvh:QmNTHuhETA3u2ypoujoaEMaZGKf5HpPwkV6ktfgzu7JzMp:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:5e5de412-0e7d-4982-a0ed-bd55a0f25a04"
+
+    override val trustRegistryTrustedDids: Map<String, Map<String, List<String>>> = mapOf(
+        intTrustRegistryUrl to mapOf(
+            "swiyu-verification-query-public-statement+jwt" to listOf(intPublicTransparencyStatementIssuer),
+            "swiyu-identity-trust-statement+jwt" to listOf(intTrustStatementIssuer),
+            "swiyu-protected-issuance-trust-list-statement+jwt" to listOf(intTrustStatementIssuer),
+            "swiyu-protected-issuance-authorization-trust-statement+jwt" to listOf(intTrustStatementIssuer),
+            "swiyu-non-compliance-trust-list-statement+jwt" to listOf(intTrustStatementIssuer),
+            "swiyu-protected-verification-authorization-trust-statement+jwt" to listOf(intTrustStatementIssuer),
+        )
     )
 
     override val trustEnvironmentDidRegex: String = "^did:(?:tdw|webvh):[^:]+:identifier-reg\\.trust-infra\\.swiyu\\.admin\\.ch:.*"
@@ -67,11 +86,11 @@ class SandboxEnvironmentSetupRepositoryImpl @Inject constructor() : EnvironmentS
 
     override val devsSettingsEnabled: Boolean = false
 
-    override val isImageValidationEnabled: Boolean = false
-
     override val isProximityEngagementEnabled: Boolean = false
 
     override val verifyRequestObjectSignature: Boolean = true
 
     override val isVersionEnforcementEnabled: Boolean = false
+
+    override val isDPopEnabled: Boolean = false
 }
