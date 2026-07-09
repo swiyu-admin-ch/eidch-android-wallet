@@ -8,6 +8,7 @@ import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.contains
+import ch.admin.foitt.wallet.platform.scanning.di.AvBeamSdkEntryPoint
 import dagger.hilt.EntryPoints
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -55,12 +56,20 @@ internal class DestinationScopedComponentManagerImpl @Inject constructor(
         }
     }
 
-    private fun updateComponents(backStack: List<Destination>) {
+    private suspend fun updateComponents(backStack: List<Destination>) {
         Timber.d("Components update triggered")
-        scopedComponents.keys.retainAll { componentScope ->
+        val iterator = scopedComponents.iterator()
+        while (iterator.hasNext()) {
+            val (scope, component) = iterator.next()
             // Only keep component if their scope is in the backstack
-            backStack.any { destination ->
-                componentScope.contains(destination)
+            if (backStack.none { scope.contains(it) }) {
+                if (scope == ComponentScope.AvBeamSdkSession) {
+                    EntryPoints.get(component, AvBeamSdkEntryPoint::class.java)
+                        .avBeamRepository()
+                        .release()
+                }
+
+                iterator.remove()
             }
         }
         Timber.d(

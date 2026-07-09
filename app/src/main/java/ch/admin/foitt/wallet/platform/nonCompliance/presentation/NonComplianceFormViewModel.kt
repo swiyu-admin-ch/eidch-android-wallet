@@ -145,7 +145,7 @@ class NonComplianceFormViewModel @AssistedInject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.generic()))
     }
 
     fun validateDescriptionInput(description: String) {

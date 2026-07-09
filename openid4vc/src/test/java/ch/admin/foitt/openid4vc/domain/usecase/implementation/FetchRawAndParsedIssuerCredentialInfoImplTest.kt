@@ -79,6 +79,9 @@ class FetchRawAndParsedIssuerCredentialInfoImplTest {
         coEvery {
             mockRawAndParsedIssuerCredentialInfo.rawIssuerCredentialInfo
         } returns TEST_JWT.rawJwt
+        coEvery {
+            mockRawAndParsedIssuerCredentialInfo.copy(rawIssuerCredentialInfo = TEST_JWT.payloadString)
+        } returns mockRawAndParsedIssuerCredentialInfo
 
         val result = useCase(
             issuerEndpoint = CREDENTIAL_ISSUER,

@@ -2,12 +2,16 @@
 
 package ch.admin.foitt.wallet.platform.credential.domain.model
 
+import ch.admin.foitt.openid4vc.domain.model.GenerateDPoPKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CreateCredentialRequestError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CreateDPoPProofJwtError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchAccessTokenError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchCredentialByConfigError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchDeferredCredentialError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerConfigurationError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerCredentialInfoError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchNonceError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetVerifiableCredentialParamsError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyVcSdJwtSignatureError
@@ -55,7 +59,11 @@ sealed interface CredentialError {
     data object UnsupportedGrantType : FetchCredentialError
     data object UnsupportedCredentialIdentifier : FetchCredentialError
     data object UnsupportedProofType : FetchCredentialError
-    data object UnsupportedCryptographicSuite : FetchCredentialError
+    data object UnsupportedCryptographicSuite :
+        FetchCredentialError,
+        UpdateDeferredCredentialError,
+        FetchAndUpdateDeferredCredentialError
+
     data object InvalidCredentialOffer :
         FetchCredentialError,
         UpdateDeferredCredentialError,
@@ -65,10 +73,12 @@ sealed interface CredentialError {
     data object UnsupportedCredentialFormat :
         FetchCredentialError,
         SaveCredentialFromDeferredError
+
     data object CredentialParsingError : FetchCredentialError
     data object IntegrityCheckFailed :
         FetchCredentialError,
         SaveCredentialFromDeferredError
+
     data object InvalidGenerateMetadataClaims :
         FetchCredentialError,
         GenerateCredentialDisplaysError,
@@ -168,6 +178,11 @@ sealed interface FetchAndUpdateDeferredCredentialError
 
 sealed interface FetchExistingIssuerCredentialInfoError
 
+fun FetchNonceError.toUpdateDeferredCredentialError(): UpdateDeferredCredentialError = when (this) {
+    CredentialOfferError.NetworkInfoError -> NetworkError
+    is CredentialOfferError.Unexpected -> Unexpected(cause)
+}
+
 fun FetchIssuerCredentialInfoError.toFetchCredentialError(): FetchCredentialError = when (this) {
     is OpenIdCredentialOfferError.InvalidSignedMetadata -> InvalidSignedMetadata(message)
     OpenIdCredentialOfferError.NetworkInfoError -> NetworkError
@@ -192,6 +207,7 @@ fun FetchCredentialByConfigError.toFetchCredentialError(): FetchCredentialError 
     OpenIdCredentialOfferError.CredentialRequestDenied -> CredentialError.CredentialRequestDenied
     OpenIdCredentialOfferError.InsufficientScope -> CredentialError.InsufficientScope
     OpenIdCredentialOfferError.InvalidClient -> CredentialError.InvalidClient
+    OpenIdCredentialOfferError.InvalidDPoPProof -> CredentialError.InvalidProof
     OpenIdCredentialOfferError.InvalidCredentialRequest -> CredentialError.InvalidCredentialRequest
     OpenIdCredentialOfferError.InvalidEncryptionParameters -> CredentialError.InvalidEncryptionParameters
     OpenIdCredentialOfferError.InvalidNonce -> CredentialError.InvalidNonce
@@ -199,6 +215,7 @@ fun FetchCredentialByConfigError.toFetchCredentialError(): FetchCredentialError 
     OpenIdCredentialOfferError.InvalidRequest -> CredentialError.InvalidRequest
     OpenIdCredentialOfferError.InvalidRequestBearerToken -> CredentialError.InvalidRequestBearerToken
     OpenIdCredentialOfferError.InvalidToken -> CredentialError.InvalidToken
+    is OpenIdCredentialOfferError.UseDPoPNonce -> CredentialError.InvalidCredentialOffer
     OpenIdCredentialOfferError.UnauthorizedClient -> CredentialError.UnauthorizedClient
     OpenIdCredentialOfferError.UnauthorizedGrantType -> CredentialError.UnauthorizedGrantType
     OpenIdCredentialOfferError.UnknownCredentialConfiguration -> CredentialError.UnknownCredentialConfiguration
@@ -291,6 +308,7 @@ fun KeyBindingError.toAnyCredentialError(): AnyCredentialError = when (this) {
 }
 
 fun VerifyVcSdJwtSignatureError.toSaveCredentialFromDeferredError(): SaveCredentialFromDeferredError = when (this) {
+    VcSdJwtError.InvalidDid,
     VcSdJwtError.DidDocumentDeactivated,
     VcSdJwtError.InvalidJwt,
     is VcSdJwtError.InvalidVcSdJwt -> IntegrityCheckFailed
@@ -300,7 +318,25 @@ fun VerifyVcSdJwtSignatureError.toSaveCredentialFromDeferredError(): SaveCredent
     is VcSdJwtError.Unexpected -> Unexpected(cause)
 }
 
-fun FetchExistingIssuerCredentialInfoError.toUpdateDeferredCredentialError(): FetchAndUpdateDeferredCredentialError = when (this) {
+fun GetBindingKeyPairError.toUpdateDeferredCredentialError(): UpdateDeferredCredentialError = when (this) {
+    GetBindingKeyPairError.HardwareKeyNotFound,
+    GetBindingKeyPairError.MissingSoftwareKeyMaterial -> InvalidCredentialOffer
+
+    is GetBindingKeyPairError.Unexpected -> Unexpected(throwable)
+}
+
+fun CreateDPoPProofJwtError.toUpdateDeferredCredentialError(): UpdateDeferredCredentialError = when (this) {
+    is OpenIdCredentialOfferError.Unexpected -> Unexpected(cause)
+    OpenIdCredentialOfferError.UnsupportedCryptographicSuite -> UnsupportedCryptographicSuite
+}
+
+fun FetchExistingIssuerCredentialInfoError.toFetchAndUpdateDeferredCredentialError(): FetchAndUpdateDeferredCredentialError = when (this) {
+    is NetworkError -> this
+    is Unexpected -> this
+    is InvalidSignedMetadata -> this
+}
+
+fun FetchExistingIssuerCredentialInfoError.toUpdateDeferredCredentialError(): UpdateDeferredCredentialError = when (this) {
     is NetworkError -> this
     is Unexpected -> this
     is InvalidSignedMetadata -> this
@@ -339,6 +375,7 @@ fun DeferredCredentialRepositoryError.toRefreshDeferredCredentialsError(): Refre
 fun DeferredCredentialRepositoryError.toUpdateDeferredCredentialError(): UpdateDeferredCredentialError = when (this) {
     is SsiError.Unexpected -> Unexpected(cause)
 }
+
 fun CredentialOfferRepositoryError.toSaveCredentialFromDeferredError(): SaveCredentialFromDeferredError = when (this) {
     is SsiError.Unexpected -> Unexpected(cause)
 }
@@ -353,8 +390,22 @@ fun FetchIssuerCredentialInfoError.toFetchExistingIssuerCredentialInfoError(): F
     is OpenIdCredentialOfferError.InvalidSignedMetadata -> InvalidSignedMetadata(message)
 }
 
-fun CreateCredentialRequestError.toUpdateDeferredCredentialError(): FetchAndUpdateDeferredCredentialError = when (this) {
+fun CreateCredentialRequestError.toFetchAndUpdateDeferredCredentialError(): FetchAndUpdateDeferredCredentialError = when (this) {
     is OpenIdCredentialOfferError.Unexpected -> Unexpected(cause)
+}
+
+fun GetBindingKeyPairError.toFetchCredentialError(): FetchCredentialError = when (this) {
+    GetBindingKeyPairError.HardwareKeyNotFound,
+    GetBindingKeyPairError.MissingSoftwareKeyMaterial -> InvalidCredentialOffer
+
+    is GetBindingKeyPairError.Unexpected -> Unexpected(throwable)
+}
+
+fun GenerateDPoPKeyPairError.toFetchCredentialError(): FetchCredentialError = when (this) {
+    GenerateDPoPKeyPairError.IncompatibleDeviceProofKeyStorage -> IncompatibleDeviceKeyStorage
+    GenerateDPoPKeyPairError.NetworkError -> NetworkError
+    GenerateDPoPKeyPairError.UnsupportedKeyStorageSecurityLevel -> UnsupportedKeyStorageSecurityLevel
+    is GenerateDPoPKeyPairError.Unexpected -> Unexpected(throwable)
 }
 
 fun GetPayloadEncryptionTypeError.toFetchCredentialError(): FetchCredentialError = when (this) {
@@ -363,7 +414,7 @@ fun GetPayloadEncryptionTypeError.toFetchCredentialError(): FetchCredentialError
     is PayloadEncryptionError.Unexpected -> Unexpected(throwable)
 }
 
-fun GetPayloadEncryptionTypeError.toUpdateDeferredCredentialError(): FetchAndUpdateDeferredCredentialError = when (this) {
+fun GetPayloadEncryptionTypeError.toFetchAndUpdateDeferredCredentialError(): FetchAndUpdateDeferredCredentialError = when (this) {
     is PayloadEncryptionError.IncompatibleDeviceProofKeyStorage -> IncompatibleDeviceKeyStorage
     is PayloadEncryptionError.UnsupportedProofKeyStorageSecurityLevel -> UnsupportedKeyStorageSecurityLevel
     is PayloadEncryptionError.Unexpected -> Unexpected(throwable)
@@ -377,15 +428,19 @@ fun UpdateDeferredCredentialError.toFetchAndUpdateDeferredCredentialError(): Fet
     is NetworkError -> this
     is Unexpected -> this
     is UnsupportedImageFormat -> this
+    is UnsupportedCryptographicSuite -> this
 }
 
 fun FetchAccessTokenError.toUpdateDeferredCredentialError(): UpdateDeferredCredentialError = when (this) {
     OpenIdCredentialOfferError.InvalidClient,
+    OpenIdCredentialOfferError.InvalidDPoPProof,
     OpenIdCredentialOfferError.InvalidCredentialOffer,
     OpenIdCredentialOfferError.InvalidGrant,
     OpenIdCredentialOfferError.InvalidRequest,
+    is OpenIdCredentialOfferError.UseDPoPNonce,
     OpenIdCredentialOfferError.UnauthorizedClient,
     OpenIdCredentialOfferError.UnauthorizedGrantType -> InvalidCredentialOffer
+
     OpenIdCredentialOfferError.NetworkInfoError -> NetworkError
     is OpenIdCredentialOfferError.Unexpected -> Unexpected(cause)
 }
@@ -399,21 +454,25 @@ fun FetchIssuerConfigurationError.toUpdateDeferredCredentialError(): UpdateDefer
 fun FetchDeferredCredentialError.toUpdateDeferredCredentialError(): UpdateDeferredCredentialError = when (this) {
     OpenIdCredentialOfferError.InsufficientScope,
     OpenIdCredentialOfferError.InvalidClient,
+    OpenIdCredentialOfferError.InvalidDPoPProof,
     OpenIdCredentialOfferError.InvalidEncryptionParameters,
     OpenIdCredentialOfferError.InvalidGrant,
     OpenIdCredentialOfferError.InvalidNonce,
     OpenIdCredentialOfferError.InvalidProof,
     OpenIdCredentialOfferError.InvalidRequest,
+    is OpenIdCredentialOfferError.UseDPoPNonce,
     OpenIdCredentialOfferError.UnknownCredentialConfiguration,
     OpenIdCredentialOfferError.UnknownCredentialIdentifier,
     OpenIdCredentialOfferError.UnauthorizedClient,
     OpenIdCredentialOfferError.UnauthorizedGrantType,
     OpenIdCredentialOfferError.InvalidCredentialRequest -> Unexpected(null)
+
     OpenIdCredentialOfferError.InvalidTransactionId,
     OpenIdCredentialOfferError.CredentialRequestDenied,
     OpenIdCredentialOfferError.InvalidCredentialOffer,
     OpenIdCredentialOfferError.InvalidRequestBearerToken,
     OpenIdCredentialOfferError.InvalidToken -> InvalidCredentialOffer
+
     OpenIdCredentialOfferError.NetworkInfoError -> NetworkError
     is OpenIdCredentialOfferError.Unexpected -> Unexpected(cause)
 }

@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credential.presentation
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -54,6 +55,7 @@ internal fun DeferredCredentialStatusBadge(
                 }
                 .background(
                     color = when (deferredCredentialStatus) {
+                        DeferredProgressionState.FAILED,
                         DeferredProgressionState.INVALID -> WalletTheme.colorScheme.lightOrange
                         DeferredProgressionState.IN_PROGRESS -> WalletTheme.colorScheme.lightPrimary
                     },
@@ -62,6 +64,7 @@ internal fun DeferredCredentialStatusBadge(
                 .border(
                     Sizes.line01,
                     color = when (deferredCredentialStatus) {
+                        DeferredProgressionState.FAILED,
                         DeferredProgressionState.INVALID,
                         DeferredProgressionState.IN_PROGRESS -> Color.Transparent
                     },
@@ -81,7 +84,8 @@ private fun DeferredCredentialStatusLabel(
 ) {
     val color = when (status) {
         DeferredProgressionState.IN_PROGRESS -> WalletTheme.colorScheme.onLightPrimary
-        DeferredProgressionState.INVALID -> WalletTheme.colorScheme.onLightError
+        DeferredProgressionState.INVALID,
+        DeferredProgressionState.FAILED -> WalletTheme.colorScheme.onLightError
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -101,16 +105,32 @@ private fun DeferredCredentialStatusLabel(
     }
 }
 
+@DrawableRes
+internal fun DeferredProgressionState.getIcon(): Int = when (this) {
+    DeferredProgressionState.IN_PROGRESS -> R.drawable.wallet_ic_alarm
+    DeferredProgressionState.INVALID,
+    DeferredProgressionState.FAILED -> R.drawable.wallet_ic_cross
+}
+
+@Composable
+internal fun DeferredProgressionState.getText(): String = when (this) {
+    DeferredProgressionState.IN_PROGRESS -> stringResource(R.string.tk_deferred_credential_status_inProgress)
+    DeferredProgressionState.INVALID -> stringResource(R.string.tk_deferred_credential_status_invalid)
+    DeferredProgressionState.FAILED -> stringResource(R.string.tk_deferred_credential_status_failed)
+}
+
 @Composable
 internal fun DeferredProgressionState.getAltText(): String = when (this) {
     DeferredProgressionState.IN_PROGRESS -> stringResource(R.string.tk_deferred_credential_status_inProgress)
     DeferredProgressionState.INVALID -> stringResource(R.string.tk_deferred_credential_status_invalid)
+    DeferredProgressionState.FAILED -> stringResource(R.string.tk_deferred_credential_status_failed)
 }
 
 private class DeferredCredentialStatusProvider : PreviewParameterProvider<DeferredProgressionState> {
     override val values: Sequence<DeferredProgressionState> = sequenceOf(
         DeferredProgressionState.IN_PROGRESS,
-        DeferredProgressionState.INVALID
+        DeferredProgressionState.INVALID,
+        DeferredProgressionState.FAILED,
     )
 }
 

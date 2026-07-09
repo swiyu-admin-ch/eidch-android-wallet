@@ -4,8 +4,12 @@ import ch.admin.foitt.wallet.platform.versionEnforcement.data.repository.Version
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.repository.VersionEnforcementRepository
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.FetchAppVersionInfo
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetAppVersion
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetDeviceModel
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetOSVersion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.implementation.FetchAppVersionInfoImpl
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.implementation.GetAppVersionImpl
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.implementation.GetDeviceModelImpl
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.implementation.GetOSVersionImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -28,6 +32,16 @@ internal interface VersionEnforcementBindings {
     fun bindGetAppVersion(
         useCase: GetAppVersionImpl
     ): GetAppVersion
+
+    @Binds
+    fun bindGetDeviceModel(
+        useCase: GetDeviceModelImpl
+    ): GetDeviceModel
+
+    @Binds
+    fun bindGetOSVersion(
+        useCase: GetOSVersionImpl
+    ): GetOSVersion
 
     @Binds
     @ActivityRetainedScoped

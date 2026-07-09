@@ -86,10 +86,10 @@ class NavigationManagerImplTest {
     @Test
     fun `popBackStackTo with destination not in backStack does not navigate`() = runTest {
         listOf(Destination.HomeScreen, Destination.OnboardingIntroScreen).addToBackstack()
-        navManager.popBackStackTo(Destination.OnboardingErrorScreen::class, true)
+        navManager.popBackStackTo(Destination.OnboardingFatalErrorScreen::class, true)
         navManager.assertBackstack(Destination.StartScreen, Destination.HomeScreen, Destination.OnboardingIntroScreen)
 
-        navManager.popBackStackTo(Destination.OnboardingErrorScreen::class, false)
+        navManager.popBackStackTo(Destination.OnboardingFatalErrorScreen::class, false)
         navManager.assertBackstack(Destination.StartScreen, Destination.HomeScreen, Destination.OnboardingIntroScreen)
     }
 
@@ -136,7 +136,7 @@ class NavigationManagerImplTest {
     @Test
     fun `navigateToAndPopUpTo just navigates when popUpTo not found`() = runTest {
         navManager.popUpToAndNavigate(
-            popToInclusive = Destination.OnboardingErrorScreen::class,
+            popToInclusive = Destination.OnboardingFatalErrorScreen::class,
             destination = Destination.HomeScreen
         )
 

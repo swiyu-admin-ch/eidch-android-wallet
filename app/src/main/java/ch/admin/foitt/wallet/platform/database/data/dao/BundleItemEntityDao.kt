@@ -31,4 +31,16 @@ interface BundleItemEntityDao {
 
     @Query("UPDATE BundleItemEntity SET status = :status WHERE credentialId = :id")
     fun updateStatusByCredentialId(id: Long, status: CredentialStatus): Int
+
+    @Query("UPDATE BundleItemEntity SET presented = 1 WHERE id = :bundleItemId")
+    fun onPresented(bundleItemId: Long): Int
+
+    @Transaction
+    fun getNextBundleItemIdToPresent(credentialId: Long) = getUnpresentedBundleItemId(credentialId) ?: getRandomBundleItemId(credentialId)
+
+    @Query("SELECT id FROM BundleItemEntity WHERE credentialId = :credentialId AND presented = 0 LIMIT 1")
+    fun getUnpresentedBundleItemId(credentialId: Long): Long?
+
+    @Query("SELECT id FROM BundleItemEntity WHERE credentialId = :credentialId ORDER BY random() LIMIT 1")
+    fun getRandomBundleItemId(credentialId: Long): Long
 }

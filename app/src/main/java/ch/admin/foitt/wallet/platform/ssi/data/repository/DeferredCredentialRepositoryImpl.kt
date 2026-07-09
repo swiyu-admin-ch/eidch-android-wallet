@@ -1,8 +1,9 @@
 package ch.admin.foitt.wallet.platform.ssi.data.repository
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.TokenResponse
+import ch.admin.foitt.wallet.platform.database.data.dao.CredentialAuthenticationDao
 import ch.admin.foitt.wallet.platform.database.data.dao.DaoProvider
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
 import ch.admin.foitt.wallet.platform.ssi.domain.model.DeferredCredentialRepositoryError
@@ -22,7 +23,8 @@ class DeferredCredentialRepositoryImpl @Inject constructor(
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : DeferredCredentialRepository {
 
-    override suspend fun getAll(): Result<List<DeferredCredentialWithKeyBinding>, DeferredCredentialRepositoryError> = runSuspendCatching {
+    override suspend fun getAll():
+        Result<List<DeferredCredentialWithAuthenticationAndKeyBinding>, DeferredCredentialRepositoryError> = runSuspendCatching {
         withContext(ioDispatcher) {
             dao().getAll()
         }
@@ -52,7 +54,7 @@ class DeferredCredentialRepositoryImpl @Inject constructor(
 
     override suspend fun getById(
         credentialId: Long
-    ): Result<DeferredCredentialWithKeyBinding, DeferredCredentialRepositoryError> = runSuspendCatching {
+    ): Result<DeferredCredentialWithAuthenticationAndKeyBinding, DeferredCredentialRepositoryError> = runSuspendCatching {
         withContext(ioDispatcher) {
             dao().getById(credentialId)
         }
@@ -66,9 +68,10 @@ class DeferredCredentialRepositoryImpl @Inject constructor(
         tokenResponse: TokenResponse,
     ): Result<Int, DeferredCredentialRepositoryError> = runSuspendCatching {
         withContext(ioDispatcher) {
-            dao().updateTokensByCredentialId(
+            credentialAuthenticationDao().updateTokensByCredentialId(
                 credentialId = credentialId,
                 accessToken = tokenResponse.accessToken,
+                tokenType = tokenResponse.tokenType,
                 refreshToken = tokenResponse.refreshToken,
             )
         }
@@ -78,5 +81,9 @@ class DeferredCredentialRepositoryImpl @Inject constructor(
     }
 
     private suspend fun dao() = suspendUntilNonNull { daoFlow.value }
+    private suspend fun credentialAuthenticationDao(): CredentialAuthenticationDao = suspendUntilNonNull {
+        credentialAuthenticationDaoFlow.value
+    }
     private val daoFlow = daoProvider.deferredCredentialDao
+    private val credentialAuthenticationDaoFlow = daoProvider.credentialAuthenticationDaoFlow
 }

@@ -247,7 +247,7 @@ private fun LazyListScope.textInput(
 ) = clusterLazyListItem(
     isFirstItem = isFirstItem,
     isLastItem = isLastItem,
-    showDivider = false,
+    divider = null,
 ) {
     Column(
         modifier = Modifier

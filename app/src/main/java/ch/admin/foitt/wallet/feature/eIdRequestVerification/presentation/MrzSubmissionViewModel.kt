@@ -16,8 +16,6 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.ApplyRe
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.ApplyRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.CaseResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.LegalRepresentant
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toLegalRepresentativeConsent
@@ -136,17 +134,10 @@ internal class MrzSubmissionViewModel @AssistedInject constructor(
                     }
                 } ?: Timber.d("No document scan result found")
 
-                if (isLegalCaseNeeded(stateResponse.legalRepresentant)) {
-                    navigateToNextScreen(Destination.EIdGuardianSelectionScreen(caseId = caseResponse.caseId))
-                } else if (stateResponse.state == EIdRequestQueueState.READY_FOR_ONLINE_SESSION) {
-                    navigateToNextScreen(Destination.EIdWalletPairingScreen(caseId = caseResponse.caseId))
-                } else {
-                    navigateToNextScreen(
-                        Destination.EIdQueueScreen(
-                            rawDeadline = stateResponse.queueInformation?.expectedOnlineSessionStart,
-                        )
-                    )
-                }
+                navManager.popUpToAndNavigate(
+                    popToInclusive = Destination.EIdGuardianshipScreen::class,
+                    destination = Destination.EIdPushNotificationScreen(caseResponse.caseId)
+                )
             }
     }
 
@@ -180,16 +171,6 @@ internal class MrzSubmissionViewModel @AssistedInject constructor(
         saveCaseResult.value = saveEIdRequestCase(eIdRequestCase)
         saveStateResult.value = saveEIdRequestState(eIdRequestState)
     }
-
-    private fun isLegalCaseNeeded(legalRepresentant: LegalRepresentant?): Boolean = when {
-        legalRepresentant != null && legalRepresentant.verified.not() -> true
-        else -> false
-    }
-
-    private fun navigateToNextScreen(direction: Destination) = navManager.popUpToAndNavigate(
-        popToInclusive = Destination.EIdGuardianshipScreen::class,
-        destination = direction
-    )
 
     init {
         onRefreshState()

@@ -21,13 +21,15 @@ fun OnboardingScreenContent(
     Spacer(modifier = Modifier.height(Sizes.s06))
     WalletTexts.BodyLarge(
         text = subtitle,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
     )
     details?.let {
         Spacer(modifier = Modifier.height(Sizes.s06))
         WalletTexts.Body(
             text = details,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
         )
     }
 }

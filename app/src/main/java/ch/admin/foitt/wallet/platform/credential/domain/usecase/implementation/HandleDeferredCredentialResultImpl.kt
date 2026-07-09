@@ -49,7 +49,7 @@ class HandleDeferredCredentialResultImpl @Inject constructor(
             anyCredential = null,
             issuerInfo = rawAndParsedCredentialInfo.issuerCredentialInfo,
             trustStatement = null,
-            metadata = credentialConfig,
+            credentialConfiguration = credentialConfig,
             ocaBundle = ocaBundle,
         ).mapError(GenerateCredentialDisplaysError::toFetchCredentialError).bind()
 
@@ -59,14 +59,15 @@ class HandleDeferredCredentialResultImpl @Inject constructor(
             rawOIDMetadata = rawAndParsedCredentialInfo.rawIssuerCredentialInfo.toByteArray().compress()
         )
 
-        // fixme: save expires and refreshToken
         credentialOfferRepository.saveDeferredCredentialOffer(
             transactionId = deferredCredential.transactionId,
             accessToken = deferredCredential.accessToken,
+            tokenType = deferredCredential.tokenType,
             refreshToken = deferredCredential.refreshToken,
             endpoint = deferredCredential.endpoint,
             pollInterval = deferredCredential.pollInterval,
             keyBindings = deferredCredential.keyBindings,
+            dpopKeyBinding = deferredCredential.dpopKeyBinding,
             format = deferredCredential.format,
             issuerDisplays = displays.issuerDisplays,
             credentialDisplays = displays.credentialDisplays,

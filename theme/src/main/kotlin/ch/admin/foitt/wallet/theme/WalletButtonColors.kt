@@ -115,9 +115,9 @@ object WalletButtonColors {
 
     @Composable
     fun brandRed(): ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        containerColor = WalletTheme.colorScheme.surfaceTransparentFixed,
         contentColor = WalletTheme.colorScheme.errorFixed,
-        disabledContainerColor = WalletTheme.colorScheme.surfaceContainerLow,
+        disabledContainerColor = WalletTheme.colorScheme.surfaceTransparentFixed,
         disabledContentColor = WalletTheme.colorScheme.onLightPrimary,
     )
 

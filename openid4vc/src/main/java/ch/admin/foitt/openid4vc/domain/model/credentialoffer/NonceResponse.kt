@@ -8,3 +8,8 @@ data class NonceResponse(
     @SerialName("c_nonce")
     val cNonce: String,
 )
+
+data class IssuerNonce(
+    val cNonce: String,
+    val dpopNonce: String?,
+)

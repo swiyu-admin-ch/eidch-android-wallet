@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.implementation
 
+import ch.admin.foitt.didResolver.domain.DidResolverHelper
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwk.hasSameCurveAs
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
@@ -13,6 +14,8 @@ import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.Environ
 import ch.admin.foitt.wallet.platform.utils.JsonError
 import ch.admin.foitt.wallet.platform.utils.SafeJson
 import ch.admin.foitt.wallet.platform.utils.toBase64StringUrlEncodedWithoutPadding
+import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.getOrThrow
 import com.github.michaelbull.result.mapError
@@ -24,6 +27,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 class ValidateClientAttestationImpl @Inject constructor(
+    private val didResolverHelper: DidResolverHelper,
     private val environmentSetupRepo: EnvironmentSetupRepository,
     private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
     private val safeJson: SafeJson,
@@ -32,83 +36,75 @@ class ValidateClientAttestationImpl @Inject constructor(
         keyStoreAlias: String,
         originalJwk: Jwk,
         clientAttestationResponse: ClientAttestationResponse,
-    ) = runSuspendCatching {
-        val attestation = Jwt(clientAttestationResponse.clientAttestation)
+    ): Result<ClientAttestation, AttestationError.ValidationError> = coroutineBinding {
+        runSuspendCatching {
+            val attestation = Jwt(clientAttestationResponse.clientAttestation)
+            val keyId = checkNotNull(attestation.keyId) { "kid is missing" }
 
-        val issuer = checkNotNull(attestation.iss) {
-            "issuer did is not from the trusted attestations service"
-        }
-        check(issuer in environmentSetupRepo.attestationsServiceTrustedDids)
+            val did = didResolverHelper.getDidStringFromAbsoluteKeyId(keyId)
+                .mapError { throwable ->
+                    Timber.w(t = throwable, message = "Client attestation validation failed")
+                    AttestationError.ValidationError(throwable.message)
+                }.bind()
 
-        val keyId = checkNotNull(attestation.keyId) {
-            "kid is missing"
-        }
-        checkKidDid(keyId)
+            check(did in environmentSetupRepo.attestationsServiceTrustedDids)
 
-        check(attestation.type == SUPPORTED_ATTESTATION_TYPE) {
-            "type is unsupported"
-        }
-
-        val attestationSignatureAlgorithm = AttestationAlgorithm.fromJwt(attestation)
-        checkNotNull(attestationSignatureAlgorithm) {
-            "algorithm is unsupported"
-        }
-
-        val verificationResult = verifyJwtSignatureFromDid(
-            did = issuer,
-            kid = keyId,
-            jwt = attestation,
-        )
-        check(verificationResult.isOk) {
-            "signature verification failed"
-        }
-
-        val expiredAt = checkNotNull(attestation.expInstant) { "exp is missing" }
-        check(Instant.now().isBefore(expiredAt)) {
-            "attestation is expired"
-        }
-
-        checkNotNull(attestation.nbfInstant) {
-            "attestation nbf is missing"
-        }
-
-        check(attestation.payloadJson[KEY_WALLET_NAME]?.jsonPrimitive?.content == environmentSetupRepo.appId) {
-            "wallet name is not ${environmentSetupRepo.appId}"
-        }
-
-        val attestedJwkValue = checkNotNull(attestation.payloadJson[KEY_CONFIRMATION]?.jsonObject?.get(KEY_JWK)) {
-            "$KEY_CONFIRMATION $KEY_JWK is missing"
-        }
-        val attestedJwk = safeJson.safeDecodeElementTo<Jwk>(attestedJwkValue).getOrThrow {
-            when (it) {
-                is JsonError.Unexpected -> it.throwable
+            check(attestation.type == SUPPORTED_ATTESTATION_TYPE) {
+                "type is unsupported"
             }
-        }
 
-        val attestedDidJwk = "did:jwk:" + JsonCanonicalizer(attestedJwkValue.toString())
-            .encodedUTF8
-            .toBase64StringUrlEncodedWithoutPadding()
+            val attestationSignatureAlgorithm = AttestationAlgorithm.fromJwt(attestation)
+            checkNotNull(attestationSignatureAlgorithm) {
+                "algorithm is unsupported"
+            }
 
-        check(attestedDidJwk == attestation.subject) {
-            "subject jwk is not the same as the cnf jwk"
-        }
+            val verificationResult = verifyJwtSignatureFromDid(
+                kid = keyId,
+                jwt = attestation,
+            )
+            check(verificationResult.isOk) {
+                "signature verification failed"
+            }
 
-        check(attestedJwk.hasSameCurveAs(originalJwk)) {
-            "attested key is not the same as the original"
-        }
+            val expiredAt = checkNotNull(attestation.expInstant) { "exp is missing" }
+            check(Instant.now().isBefore(expiredAt)) {
+                "attestation is expired"
+            }
 
-        ClientAttestation(keyStoreAlias, attestation)
-    }.mapError { throwable ->
-        Timber.w(t = throwable, message = "Client attestation validation failed")
-        AttestationError.ValidationError(throwable.message)
-    }
+            checkNotNull(attestation.nbfInstant) {
+                "attestation nbf is missing"
+            }
 
-    private fun checkKidDid(kid: String) {
-        val did = kid.split("#").first()
+            check(attestation.payloadJson[KEY_WALLET_NAME]?.jsonPrimitive?.content == environmentSetupRepo.appId) {
+                "wallet name is not ${environmentSetupRepo.appId}"
+            }
 
-        check(did in environmentSetupRepo.attestationsServiceTrustedDids) {
-            "kid did is not from the trusted attestations service"
-        }
+            val attestedJwkValue = checkNotNull(attestation.payloadJson[KEY_CONFIRMATION]?.jsonObject?.get(KEY_JWK)) {
+                "$KEY_CONFIRMATION $KEY_JWK is missing"
+            }
+            val attestedJwk = safeJson.safeDecodeElementTo<Jwk>(attestedJwkValue).getOrThrow {
+                when (it) {
+                    is JsonError.Unexpected -> it.throwable
+                }
+            }
+
+            val attestedDidJwk = "did:jwk:" + JsonCanonicalizer(attestedJwkValue.toString())
+                .encodedUTF8
+                .toBase64StringUrlEncodedWithoutPadding()
+
+            check(attestedDidJwk == attestation.subject) {
+                "subject jwk is not the same as the cnf jwk"
+            }
+
+            check(attestedJwk.hasSameCurveAs(originalJwk)) {
+                "attested key is not the same as the original"
+            }
+
+            ClientAttestation(keyStoreAlias, attestation)
+        }.mapError { throwable ->
+            Timber.w(t = throwable, message = "Client attestation validation failed")
+            AttestationError.ValidationError(throwable.message)
+        }.bind()
     }
 
     companion object {

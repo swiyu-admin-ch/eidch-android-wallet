@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
@@ -30,6 +29,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.QrBoxUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -74,19 +74,26 @@ private fun EIdGuardianConsentScreenContent(
                 onRefresh = onRefresh,
             )
         },
-        stickyBottomBackgroundColor = Color.Transparent,
         stickyBottomContent = {
-            Buttons.TonalSecondary(
-                text = stringResource(R.string.tk_getEid_guardianConsent_button_share),
-                onClick = onShareRequest,
-                enabled = !isRequestStatusLoading && !isRequestLoading && qrBoxState is QrBoxUiState.Success,
-            )
-            Buttons.FilledPrimary(
-                text = stringResource(R.string.tk_getEid_guardianConsent_button_finish),
-                onClick = onContinue,
-                enabled = !isRequestStatusLoading && !isRequestLoading,
-                isActive = isRequestStatusLoading,
-                activeText = stringResource(R.string.tk_getEid_guardianConsent_button_finish),
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(R.string.tk_getEid_guardianConsent_button_finish),
+                            onClick = onContinue,
+                            enabled = !isRequestStatusLoading && !isRequestLoading,
+                            isActive = isRequestStatusLoading,
+                            activeText = stringResource(R.string.tk_getEid_guardianConsent_button_finish),
+                        )
+                    },
+                    {
+                        Buttons.TonalSecondary(
+                            text = stringResource(R.string.tk_getEid_guardianConsent_button_share),
+                            onClick = onShareRequest,
+                            enabled = !isRequestStatusLoading && !isRequestLoading && qrBoxState is QrBoxUiState.Success,
+                        )
+                    },
+                ),
             )
         },
     ) {

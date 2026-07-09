@@ -8,7 +8,6 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.OcaOverlayValidationError
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay
-import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryCodeOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryCodeOverlay1x0
@@ -72,9 +71,6 @@ class OcaOverlayValidatorImpl @Inject constructor() : OcaOverlayValidator {
                 is DataSourceOverlay2x0 -> dataSourceOverlay.attributeSources.values.any {
                     validClaimsPathPointerRegex.matches(it.toPointerString()).not()
                 }
-                is DataSourceOverlay1x0 -> dataSourceOverlay.attributeSources.values.any {
-                    validJsonPathRegex.matches(it).not()
-                }
             }
         }
     }
@@ -123,21 +119,6 @@ class OcaOverlayValidatorImpl @Inject constructor() : OcaOverlayValidator {
 
     private companion object {
         val languageRegex = Regex("^[a-z]{2}(-[A-Z]{2})?$")
-
-        // Matches a root identifier `$` followed by one or more children in dot or bracket notation, e.g. e.g. `$.a`, `$["a"]`, `$['a']`
-        // Arrays with a non-negative integer index or wildcards are accepted, e.g. `$.x[0]` or `$.x[*]`
-        // See https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/rfcs/oca/spec.md#jsonpath-consideration for
-        // specification and tests for examples of valid and invalid json paths
-        val validJsonPathRegex = Regex(
-            """(?x) # allow whitespace in regex
-            ^\$( # start with $ followed by one or more of dot notations, bracket notations or arrays
-                (?<dot>\.([a-zA-Z_]\w*|\*)) | # dot notation: a dot and a name or an asterisk, e.g. .foo or .*
-                (?<bracket>\[(\*|(?<quote>["'])([a-zA-Z_]\w*)\k<quote>)]) | # bracket notation: a name in either single or double quotes or an asterisk in brackets, e.g. ["foo"] or [*]
-                (?<array>\[\d+]) # array: positive number in brackets, e.g [1] or [1234567]
-              )+$
-            """.trimMargin(),
-            RegexOption.COMMENTS
-        )
 
         // Matches claims path pointers
         // start with: [, end with: ]

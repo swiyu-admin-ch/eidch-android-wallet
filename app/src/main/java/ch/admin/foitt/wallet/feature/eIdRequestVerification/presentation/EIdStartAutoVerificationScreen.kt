@@ -5,13 +5,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.StartAutoVerificationUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.LoadingIndicator
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
@@ -66,12 +66,16 @@ private fun Info(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_getEid_startDocumentRecording_button_start),
-            onClick = onStart,
-            modifier = Modifier.fillMaxWidth(),
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_getEid_startDocumentRecording_button_start),
+                        onClick = onStart,
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -96,8 +100,6 @@ private fun LoadingContent() = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
         LoadingIndicator()
     },
-    stickyBottomBackgroundColor = Color.Transparent,
-    stickyBottomContent = null,
 ) {
     Spacer(modifier = Modifier.height(Sizes.s06))
     WalletTexts.TitleScreen(
@@ -116,19 +118,22 @@ private fun UnexpectedErrorContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_retry),
-            onClick = onRetry,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Buttons.FilledSecondary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_close),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_retry),
+                        onClick = onRetry,
+                    )
+                },
+                {
+                    Buttons.FilledSecondary(
+                        text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_close),
+                        onClick = onClose,
+                    )
+                },
+            ),
         )
     },
 ) {

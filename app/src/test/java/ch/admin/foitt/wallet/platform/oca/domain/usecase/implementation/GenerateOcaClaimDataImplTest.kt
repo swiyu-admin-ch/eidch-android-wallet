@@ -29,7 +29,6 @@ import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.LANGUAGE_EN
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.UNKNOWN_ENCODING
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSensitiveEntry
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleDataSourceMultiVersion
-import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleDataSourceV1
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleDataSourceV2
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleEncoding
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.OcaMocks.ocaSimpleEncodingNoDefault
@@ -95,7 +94,6 @@ class GenerateOcaClaimDataImplTest {
     @TestFactory
     fun `Generator correctly generates all attributes data sources overlay`(): List<DynamicTest> {
         val input = listOf(
-            ocaSimpleDataSourceV1,
             ocaSimpleDataSourceV2,
             ocaSimpleDataSourceMultiVersion,
         )

@@ -16,6 +16,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.VcSdJwtCre
 import ch.admin.foitt.openid4vc.domain.model.jwe.JWEError
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwks
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.EncryptionAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionKeyPair
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import ch.admin.foitt.openid4vc.domain.usecase.CreateCredentialRequest
@@ -336,7 +337,7 @@ class CreateCredentialRequestImplTest {
         const val CURVE = "curve"
         const val KEY_TYPE = "key type"
         const val KEY_ID = "key id"
-        const val ENCRYPTION_VALUE = "A128GCM"
+        val ENCRYPTION_VALUE = EncryptionAlgorithm.A256GCM.name
         const val ZIP_VALUE = "DEF"
         const val ALG_VALUE = "alg value"
         const val WALLET_PUBLIC_KEY_ID = "wallet public key id"

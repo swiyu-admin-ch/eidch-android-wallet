@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.junit5)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.room)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -19,6 +20,7 @@ android {
     val schemePresentationRequest = "https"
     val schemePresentationRequestOID = "openid4vp"
     val schemePresentationRequestSwiyu = "swiyu-verify"
+    val schemePresentationRequestProximity = "mdoc"
 
     defaultConfig {
         applicationId = "ch.admin.foitt.swiyu"
@@ -31,6 +33,7 @@ android {
         manifestPlaceholders["deepLinkPresentationRequestScheme"] = schemePresentationRequest
         manifestPlaceholders["deepLinkPresentationRequestSchemeOID"] = schemePresentationRequestOID
         manifestPlaceholders["deepLinkPresentationRequestSchemeSwiyu"] = schemePresentationRequestSwiyu
+        manifestPlaceholders["deepLinkPresentationRequestSchemeProximity"] = schemePresentationRequestProximity
 
         // keeps only resources in these languages
         // if libs f. e. include resources in spanish they are not shipped with the app
@@ -62,8 +65,11 @@ android {
             name = "SCHEME_PRESENTATION_REQUEST_SWIYU",
             value = "\"$schemePresentationRequestSwiyu\""
         )
-
-        testInstrumentationRunner = "ch.admin.foitt.wallet.CustomTestRunner"
+        buildConfigField(
+            type = "String",
+            name = "SCHEME_PRESENTATION_REQUEST_PROXIMITY",
+            value = "\"$schemePresentationRequestProximity\""
+        )
     }
 
     signingConfigs {
@@ -102,10 +108,10 @@ android {
             manifestPlaceholders["appLabel"] = "(ABN) swiyu"
         }
 
-        create("abnstore") {
+        create("sandbox") {
             dimension = "environment"
-            applicationIdSuffix = ".abnstore"
-            manifestPlaceholders["appLabel"] = "(ABNSTORE) swiyu"
+            applicationIdSuffix = ".sandbox"
+            manifestPlaceholders["appLabel"] = "swiyu Sandbox Wallet"
         }
 
         create("prod") {
@@ -126,11 +132,6 @@ android {
     sourceSets {
         // Adds exported schema location as test app assets.
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
-
-        getByName("abnstore") {
-            java.srcDirs("src/abn/java")
-            res.srcDirs("src/abn/res/xml")
-        }
     }
 }
 
@@ -173,6 +174,9 @@ dependencies {
     implementation(libs.zxing.cpp)
     implementation(libs.qrcode.kotlin)
 
+    // permissions
+    implementation(libs.accompanist.permissions)
+
     // security
     implementation(libs.androidx.security.crypto)
 
@@ -198,7 +202,6 @@ dependencies {
 
     // JSON / JWT
     implementation(libs.nimbus.jose.jwt)
-    implementation(libs.json.path)
 
     // OCA
     implementation(libs.java.json.canonicalization)
@@ -209,6 +212,11 @@ dependencies {
     // Error handling
     implementation(libs.kotlin.result)
     implementation(libs.kotlin.result.coroutines)
+
+    // Firebase
+    val firebaseBom = platform(libs.firebase.bom)
+    implementation(firebaseBom)
+    implementation(libs.firebase.messaging)
 
     // Images
     implementation(libs.coil)
@@ -248,11 +256,7 @@ dependencies {
     androidTestImplementation(libs.junit.jupiter.api)
     androidTestImplementation(libs.junit.vintage.engine)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-    androidTestImplementation(libs.androidx.compose.ui.test.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.hilt.android.testing)
-    androidTestImplementation(libs.androidx.ui.automator)
-    androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.mockk.android)
     kspAndroidTest(libs.hilt.android.compiler)
@@ -263,6 +267,9 @@ dependencies {
 
     // Dcql
     implementation(libs.dcql)
+
+    // Proximity
+    implementation(libs.proximity)
 
     // Nav3
     implementation(libs.androidx.navigation3.ui)

@@ -5,6 +5,7 @@ import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import timber.log.Timber
 
 interface JwtError {
+    data object InvalidDid : VerifyJwtSignatureFromDidError
     data object InvalidJwt : VerifyJwtSignatureError, VerifyJwtSignatureFromDidError
     data object DidDocumentDeactivated : VerifyJwtSignatureFromDidError
     data object IssuerValidationFailed : VerifyJwtSignatureFromDidError
@@ -21,6 +22,7 @@ internal fun Throwable.toVerifyJwtSignatureError(message: String): VerifyJwtSign
 }
 
 internal fun ResolvePublicKeyError.toVerifyJwtSignatureFromDidError(): VerifyJwtSignatureFromDidError = when (this) {
+    is VcSdJwtError.InvalidDid -> JwtError.InvalidDid
     is VcSdJwtError.InvalidJwt -> JwtError.InvalidJwt
     is VcSdJwtError.NetworkError -> JwtError.NetworkError
     is VcSdJwtError.DidDocumentDeactivated -> JwtError.DidDocumentDeactivated

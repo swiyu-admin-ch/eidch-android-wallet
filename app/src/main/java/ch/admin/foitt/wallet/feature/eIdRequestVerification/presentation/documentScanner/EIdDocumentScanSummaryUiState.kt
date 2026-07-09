@@ -1,13 +1,13 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentScanner
 
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
 
 sealed interface EIdDocumentScanSummaryUiState {
     object Initial : EIdDocumentScanSummaryUiState
 
     @Suppress("ArrayInDataClass")
     data class Ready(
-        val documentType: EIdDocumentType,
+        val documentType: EIdUiDocumentType,
         val frontsideImage: ByteArray,
         val backsideImage: ByteArray,
     ) : EIdDocumentScanSummaryUiState

@@ -11,6 +11,5 @@ interface CreateJwk {
     suspend operator fun invoke(
         keyPair: KeyPair,
         algorithm: SigningAlgorithm,
-        asDid: Boolean = true,
     ): Result<String, CreateJwkError>
 }

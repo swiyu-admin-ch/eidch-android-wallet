@@ -79,6 +79,7 @@ fun VerifyJwtSignatureFromDidError.toValidateTokenStatusListError(): ValidateTok
     JwtError.DidDocumentDeactivated -> DidDocumentDeactivated
     JwtError.NetworkError -> NetworkError
     is JwtError.InvalidJwt,
+    JwtError.InvalidDid,
     JwtError.IssuerValidationFailed -> Unexpected(null)
     is JwtError.Unexpected -> Unexpected(throwable)
 }

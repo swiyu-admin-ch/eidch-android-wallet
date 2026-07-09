@@ -6,6 +6,8 @@ import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.Che
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.ShouldAutoTriggerPermissionPrompt
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.implementation.CheckCameraPermissionImpl
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.implementation.ShouldAutoTriggerPermissionPromptImpl
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.infra.PermissionStateHandler
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.infra.implementation.CameraPermissionStateHandlerImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -25,6 +27,11 @@ internal interface CameraPermissionHandlerModule {
     fun bindShouldTriggerPermissionPrompt(
         useCase: ShouldAutoTriggerPermissionPromptImpl
     ): ShouldAutoTriggerPermissionPrompt
+
+    @Binds
+    fun bindPermissionStateHandler(
+        handler: CameraPermissionStateHandlerImpl
+    ): PermissionStateHandler
 
     @Binds
     @ActivityRetainedScoped

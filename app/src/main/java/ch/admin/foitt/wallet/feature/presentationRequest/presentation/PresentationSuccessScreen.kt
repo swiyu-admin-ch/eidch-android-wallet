@@ -32,7 +32,6 @@ fun PresentationSuccessScreen(viewModel: PresentationSuccessViewModel) {
 
     PresentationSuccessContent(
         verifierUiState = viewModel.verifierUiState.collectAsStateWithLifecycle().value,
-        fields = viewModel.sentFields,
         onClose = viewModel::onClose,
         onBadge = viewModel::onBadge
     )
@@ -41,18 +40,17 @@ fun PresentationSuccessScreen(viewModel: PresentationSuccessViewModel) {
 @Composable
 private fun PresentationSuccessContent(
     verifierUiState: ActorUiState,
-    fields: List<String>,
     onClose: () -> Unit,
     onBadge: (BadgeType) -> Unit,
 ) {
     CredentialActionFeedbackCardSuccess(
         issuer = verifierUiState,
-        contentTextFirstParagraphText = R.string.tk_present_result_success_primary,
+        contentTextFirstParagraphText = R.string.tk_present_result_data_transmitted_title,
+        contentTextSecondParagraphText = R.string.tk_present_result_data_transmitted_body,
         iconAlwaysVisible = true,
-        contentIcon = R.drawable.wallet_ic_check_circle_complete_thin,
+        contentIcon = R.drawable.wallet_ic_transmit,
         primaryButtonText = R.string.tk_global_close,
         onPrimaryButton = onClose,
-        content = { SubmittedDataBox(fields = fields) },
         onBadge = onBadge,
     )
 }
@@ -71,7 +69,6 @@ private fun PresentationSuccessPreview() {
                 actorComplianceState = ActorComplianceState.REPORTED,
                 nonComplianceReason = "report reason",
             ),
-            fields = listOf("name", "firstname", "country", "age", "employment"),
             onClose = {},
             onBadge = {},
         )

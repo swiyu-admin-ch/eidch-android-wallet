@@ -9,7 +9,6 @@ import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseVal
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.usecase.ValidatePassphrase
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,8 +21,11 @@ class OnboardingSetupPassphraseViewModel @Inject constructor(
     private val navManager: NavigationManager,
     private val validatePassphrase: ValidatePassphrase,
     setTopBarState: SetTopBarState,
-) : ScreenViewModel(setTopBarState, systemBarsFixedLightColor = true) {
-    override val topBarState = TopBarState.OnGradient(titleId = R.string.tk_onboarding_password_title, onUp = navManager::popBackStack)
+) : OnboardingViewModel(setTopBarState, systemBarsFixedLightColor = true) {
+    override val topBarState =
+        TopBarState.OnGradient(titleId = R.string.tk_onboarding_password_title, onUp = navManager::popBackStack, onAXDown = {
+            tryEmitFocusEvents()
+        })
 
     private val _textFieldValue = MutableStateFlow(TextFieldValue(""))
     val textFieldValue = _textFieldValue.asStateFlow()

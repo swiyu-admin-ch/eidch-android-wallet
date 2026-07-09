@@ -1,6 +1,8 @@
 package ch.admin.foitt.wallet.platform.holderBinding.di
 
+import ch.admin.foitt.openid4vc.domain.usecase.GenerateDPoPKeyPair
 import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.GenerateProofKeyPairs
+import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.implementation.GenerateDPoPKeyPairImpl
 import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.implementation.GenerateProofKeyPairsImpl
 import dagger.Binds
 import dagger.Module
@@ -18,4 +20,9 @@ internal interface HolderBindingBindingsModule {
     fun bindGenerateKeyPair(
         useCase: GenerateProofKeyPairsImpl
     ): GenerateProofKeyPairs
+
+    @Binds
+    fun bindGenerateDPoPKeyPair(
+        useCase: GenerateDPoPKeyPairImpl
+    ): GenerateDPoPKeyPair
 }

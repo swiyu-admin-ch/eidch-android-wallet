@@ -14,7 +14,7 @@ interface GenerateAnyDisplays {
         anyCredential: AnyCredential?,
         issuerInfo: IssuerCredentialInfo,
         trustStatement: TrustStatement? = null,
-        metadata: AnyCredentialConfiguration,
+        credentialConfiguration: AnyCredentialConfiguration,
         ocaBundle: OcaBundle?,
     ): Result<AnyDisplays, GenerateCredentialDisplaysError>
 }

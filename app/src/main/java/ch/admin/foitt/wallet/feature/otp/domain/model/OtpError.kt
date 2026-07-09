@@ -45,13 +45,15 @@ private fun ClientRequestException.toRequestOtpError(): RequestOtpError {
 }
 
 internal fun RequestClientAttestationError.toRequestOtpError(): RequestOtpError = when (this) {
-    is AttestationError.NetworkError -> OtpError.NetworkError
-    is AttestationError.Unexpected -> OtpError.Unexpected(throwable)
     is AttestationError.ValidationError -> OtpError.InvalidClientAttestation
+    is AttestationError.NetworkError -> OtpError.NetworkError
+    AttestationError.SocketTimeoutError -> OtpError.Unexpected(null)
+    is AttestationError.Unexpected -> OtpError.Unexpected(throwable)
 }
 
 internal fun AppAttestationRepositoryError.toRequestOtpError(): RequestOtpError = when (this) {
-    AttestationError.NetworkError -> OtpError.NetworkError
+    is AttestationError.NetworkError -> OtpError.NetworkError
+    AttestationError.SocketTimeoutError -> OtpError.Unexpected(null)
     is AttestationError.Unexpected -> OtpError.Unexpected(throwable)
 }
 

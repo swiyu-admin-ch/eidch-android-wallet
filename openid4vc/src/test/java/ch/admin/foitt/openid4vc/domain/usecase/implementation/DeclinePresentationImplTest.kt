@@ -58,7 +58,7 @@ class DeclinePresentationImplTest {
 
     private companion object {
         const val URL = "url"
-        val errorType = AuthorizationResponseErrorBody.ErrorType.CLIENT_REJECTED
+        val errorType = AuthorizationResponseErrorBody.ErrorType.ACCESS_DENIED
         val authorizationResponseErrorBody = AuthorizationResponseErrorBody(errorType)
     }
 }

@@ -1,13 +1,18 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -17,6 +22,7 @@ import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPadding
 import ch.admin.foitt.wallet.platform.utils.setIsTraversalGroup
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletListItems
+import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
 
 @Composable
@@ -51,7 +57,7 @@ private fun MrzChooserScreenContent(
             )
         ) {
             itemsIndexed(screenData) { index, state ->
-                WalletListItems.SimpleListItem(
+                SimpleListItem(
                     leadingIcon = R.drawable.wallet_ic_account,
                     title = "${index + 1} ${state.displayName}",
                     onItemClick = { onMrzItemClick(index) },
@@ -67,6 +73,45 @@ private fun MrzChooserScreenContent(
             }
         }
     }
+}
+
+@Composable
+fun SimpleListItem(
+    @DrawableRes leadingIcon: Int? = null,
+    title: String,
+    onItemClick: () -> Unit,
+    @DrawableRes trailingIcon: Int,
+    showDivider: Boolean = true,
+) {
+    ListItem(
+        modifier = Modifier.clickable {
+            onItemClick()
+        },
+        leadingContent = leadingIcon?.let {
+            {
+                ListItemIcon(icon = leadingIcon)
+            }
+        },
+        headlineContent = {
+            WalletTexts.Body(
+                text = title,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+            )
+        },
+        trailingContent = { ListItemIcon(icon = trailingIcon) },
+    )
+    if (showDivider) {
+        WalletListItems.Divider()
+    }
+}
+
+@Composable
+private fun ListItemIcon(icon: Int) {
+    Icon(
+        painterResource(id = icon),
+        contentDescription = null,
+        tint = WalletTheme.colorScheme.primary
+    )
 }
 
 @WalletAllScreenPreview

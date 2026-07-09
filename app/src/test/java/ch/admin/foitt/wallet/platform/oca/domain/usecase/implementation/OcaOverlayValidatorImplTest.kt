@@ -8,7 +8,6 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.CaptureBase1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1x1
-import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaOverlayValidator
@@ -93,43 +92,6 @@ class OcaOverlayValidatorImplTest {
         ocaOverlayValidator(bundle).assertErrorType(OcaError.InvalidOverlayLanguageCode::class)
     }
 
-    @ParameterizedTest
-    @ValueSource(
-        strings = [
-            // regular expression function
-            "$..book[?(@.price <= $['expensive'])]",
-            // function extension
-            "$..book.length()",
-            "$..book.length() ",
-            "$..book.length()\t",
-            "$..book.length()\n",
-            "$.book.concat(foobar)",
-            // negative array index
-            "$.book[1].foo[-1].bar",
-            "$.book[-1]",
-            "$.book[-]",
-            "$.book[-12345678 ]",
-            "$.book[ -1 ]",
-            "$.book[ - 1 ]",
-            "$[-1]",
-            "$.a[-99999999999999999999999999999999]",
-            // name cannot start with a digit
-            "$.123a",
-            """$.x["123a"]""",
-            "$['1x']",
-            """$["1x"]""",
-            // other errors
-            """$["x']""",
-            "$..y",
-            "$..*",
-        ]
-    )
-    fun `DataSourceOverlays v1x0 containing invalid JsonPaths returns an error`(invalidJsonPath: String) = runTest {
-        val bundle = getOcaWithDataSourceV1x0Overlay(jsonPath = invalidJsonPath)
-
-        ocaOverlayValidator(bundle).assertErrorType(OcaError.InvalidDataSourceOverlay::class)
-    }
-
     @TestFactory
     fun `DataSourceOverlays v2x0 containing invalid ClaimsPathPointers returns an error`(): List<DynamicTest> {
         val inputs = listOf(
@@ -147,31 +109,6 @@ class OcaOverlayValidatorImplTest {
                 }
             }
         }
-    }
-
-    @ParameterizedTest
-    @ValueSource(
-        strings = [
-            "$.x.y",
-            "$['x']['y']",
-            """$["x"]['y']""",
-            "$.x[0]",
-            "$.a[99999999999999999999999999999999]",
-            "$['x'][0]",
-            """$["x"][0]""",
-            "$.x[*]",
-            "$['x'][*]",
-            """$["x"][*]""",
-            """$.xyz["x1"]""",
-            "$.x['x1']",
-            """$.x["x1"]""",
-            """$["a"].avb["v123"]"""
-        ]
-    )
-    fun `DataSourceOverlays v1x0 containing valid JsonPaths returns success`(validJsonPath: String): Unit = runTest {
-        val bundle = getOcaWithDataSourceV1x0Overlay(jsonPath = validJsonPath)
-
-        ocaOverlayValidator(bundle).assertOk()
     }
 
     @TestFactory
@@ -238,24 +175,6 @@ class OcaOverlayValidatorImplTest {
                 attributeLabels = mapOf(
                     "attributeKey" to "label"
                 )
-            )
-        )
-    )
-
-    private fun getOcaWithDataSourceV1x0Overlay(jsonPath: String) = OcaBundle(
-        captureBases = listOf(
-            CaptureBase1x0(
-                digest = "validDigest",
-                attributes = mapOf(
-                    "attributeKey" to AttributeType.Text,
-                )
-            ),
-        ),
-        overlays = listOf(
-            DataSourceOverlay1x0(
-                captureBaseDigest = "validDigest",
-                format = "format",
-                attributeSources = mapOf("key" to jsonPath)
             )
         )
     )

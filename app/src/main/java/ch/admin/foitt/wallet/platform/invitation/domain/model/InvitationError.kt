@@ -17,6 +17,7 @@ import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.Em
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.IncompatibleDeviceKeyStorage
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InsufficientScope
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidClient
+import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidClientPresentation
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidCredentialOffer
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidCredentialRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidEncryptionParameters
@@ -28,6 +29,7 @@ import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.In
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidRequestBearerToken
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidToken
+import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidTransactionData
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.InvalidUri
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.MetadataMisconfiguration
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.NetworkError
@@ -44,6 +46,7 @@ import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.Un
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.UnsupportedGrantType
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError.UnsupportedKeyStorageSecurityLevel
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination.GenericErrorScreen
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination.InvitationFailureScreen
 import ch.admin.foitt.wallet.platform.utils.JsonError
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
@@ -58,11 +61,21 @@ interface InvitationError {
     data class UnsupportedGrantType(val message: String) : GetCredentialOfferError, ValidateInvitationError
     data class CredentialOfferDeserializationFailed(val throwable: Throwable) : GetCredentialOfferError, ValidateInvitationError
     data object NetworkError : ProcessInvitationError, GetPresentationRequestError, ValidateInvitationError
-    data class EmptyWallet(val responseUri: String? = null) : ProcessInvitationError
-    data class NoCompatibleCredential(val responseUri: String? = null) : ProcessInvitationError
+    data class EmptyWallet(val responseUri: String?) : ProcessInvitationError
+    data class NoCompatibleCredential(val responseUri: String?) : ProcessInvitationError
     data object InvalidInput : ProcessInvitationError
     data object InvalidPresentationRequest : GetPresentationRequestError, ValidateInvitationError, ProcessInvitationError
-    data class InvalidPresentation(val responseUri: String) : ProcessInvitationError, GetPresentationRequestError, ValidateInvitationError
+    data class InvalidPresentation(val responseUri: String?) : ProcessInvitationError, GetPresentationRequestError, ValidateInvitationError
+    data class InvalidClientPresentation(val responseUri: String?) :
+        ProcessInvitationError,
+        GetPresentationRequestError,
+        ValidateInvitationError
+
+    data class InvalidTransactionData(val responseUri: String?) :
+        ProcessInvitationError,
+        GetPresentationRequestError,
+        ValidateInvitationError
+
     data object CredentialOfferExpired : ProcessInvitationError
     data object UnknownIssuer : ProcessInvitationError
     data object UnknownVerifier : ProcessInvitationError, GetPresentationRequestError, ValidateInvitationError
@@ -85,12 +98,17 @@ interface InvitationError {
     data object UnknownCredentialConfiguration : ProcessInvitationError
     data object UnknownCredentialIdentifier : ProcessInvitationError
 
-    data object Unexpected : ProcessInvitationError, GetPresentationRequestError, ValidateInvitationError
+    data object Unexpected :
+        ProcessInvitationError,
+        GetPresentationRequestError,
+        GetProximityPresentationRequestError,
+        ValidateInvitationError
 }
 
 sealed interface ProcessInvitationError : InvitationError
 sealed interface GetCredentialOfferError : InvitationError
 sealed interface GetPresentationRequestError : InvitationError
+sealed interface GetProximityPresentationRequestError : InvitationError
 sealed interface ValidateInvitationError : InvitationError
 
 //region Error to Error mappings
@@ -105,7 +123,13 @@ internal fun GetPresentationRequestError.toValidateInvitationError(): ValidateIn
     is InvalidPresentationRequest -> this
     is Unexpected -> this
     is InvalidPresentation -> this
+    is InvalidClientPresentation -> this
     is UnknownVerifier -> this
+    is InvalidTransactionData -> this
+}
+
+internal fun GetProximityPresentationRequestError.toValidateInvitationError(): ValidateInvitationError = when (this) {
+    is Unexpected -> this
 }
 
 internal fun GetCredentialOfferError.toValidateInvitationError(): ValidateInvitationError = when (this) {
@@ -130,9 +154,11 @@ internal fun FetchCredentialError.toProcessInvitationError(): ProcessInvitationE
     CredentialError.InvalidIssuerCredentialInfo,
     CredentialError.UnsupportedImageFormat,
     CredentialError.InvalidGenerateMetadataClaims -> InvalidCredentialOffer
+
     CredentialError.NetworkError -> NetworkError
     CredentialError.DatabaseError,
     is CredentialError.Unexpected -> Unexpected
+
     CredentialError.UnknownIssuer -> UnknownIssuer
     CredentialError.UnsupportedKeyStorageSecurityLevel -> UnsupportedKeyStorageSecurityLevel
     CredentialError.IncompatibleDeviceKeyStorage -> IncompatibleDeviceKeyStorage
@@ -156,14 +182,18 @@ internal fun FetchCredentialError.toProcessInvitationError(): ProcessInvitationE
 internal fun ValidateInvitationError.toProcessInvitationError(): ProcessInvitationError = when (this) {
     is InvalidUri,
     is UnknownSchema -> InvalidInput
+
     is InvalidPresentationRequest -> this
     is NetworkError -> this
     is UnsupportedGrantType,
     is CredentialOfferDeserializationFailed,
     is NoCredentialsFound -> InvalidCredentialOffer
+
     is Unexpected -> this
     is InvalidPresentation -> this
+    is InvalidClientPresentation -> this
     is UnknownVerifier -> this
+    is InvalidTransactionData -> this
 }
 
 internal fun Throwable.toGetCredentialOfferError(message: String): GetCredentialOfferError {
@@ -178,10 +208,12 @@ internal fun JsonParsingError.toGetCredentialOfferError(): GetCredentialOfferErr
 internal fun ProcessPresentationRequestError.toProcessInvitationError(): ProcessInvitationError = when (this) {
     is CredentialPresentationError.EmptyWallet -> EmptyWallet(responseUri)
     is CredentialPresentationError.NoCompatibleCredential -> NoCompatibleCredential(responseUri)
-    is CredentialPresentationError.InvalidPresentation -> InvalidPresentation(responseUri)
+    is CredentialPresentationError.InvalidRequest -> InvalidPresentation(responseUri)
     is CredentialPresentationError.Unexpected -> Unexpected
     is CredentialPresentationError.UnknownVerifier -> UnknownVerifier
     CredentialPresentationError.NetworkError -> NetworkError
+    is CredentialPresentationError.InvalidClient -> InvalidClientPresentation(responseUri)
+    is CredentialPresentationError.InvalidTransactionData -> InvalidTransactionData(responseUri)
 }
 
 @Suppress("CyclomaticComplexMethod")
@@ -191,44 +223,53 @@ internal fun ProcessInvitationError.toErrorDestination(uri: String?): Destinatio
     InvalidInput,
     is MetadataMisconfiguration,
     CredentialOfferExpired -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.INVALID_CREDENTIAL, uri = uri)
-    InvalidPresentationRequest,
-    is InvalidPresentation -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.INVALID_PRESENTATION, uri = uri)
-    is EmptyWallet -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.EMPTY_WALLET, uri = uri)
-    is NoCompatibleCredential -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL, uri = uri)
+
     UnknownVerifier,
     Unexpected -> {
         Timber.w("Unexpected state on processing deeplink")
         InvitationFailureScreen(invitationError = InvitationErrorScreenState.UNEXPECTED, uri = uri)
     }
+
     UnknownIssuer -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.UNKNOWN_ISSUER, uri = uri)
     UnsupportedKeyStorageSecurityLevel -> InvitationFailureScreen(
         invitationError = InvitationErrorScreenState.UNSUPPORTED_KEY_STORAGE,
         uri = uri
     )
+
     IncompatibleDeviceKeyStorage -> InvitationFailureScreen(
         invitationError = InvitationErrorScreenState.UNSUPPORTED_KEY_STORAGE_CAPABILITIES,
         uri = uri
     )
-    CredentialRequestDenied -> Destination.GenericErrorScreen(error = GenericErrorScreenState.CREDENTIAL_REQUEST_DENIED)
-    InsufficientScope -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INSUFFICIENT_SCOPE)
-    InvalidClient -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INVALID_CLIENT)
-    InvalidCredentialRequest -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INVALID_CREDENTIAL_REQUEST)
-    InvalidEncryptionParameters -> Destination.GenericErrorScreen(
-        error = GenericErrorScreenState.INVALID_ENCRYPTION_PARAMETERS
+
+    CredentialRequestDenied -> GenericErrorScreen(GenericErrorScreenState.Offer.credentialRequestDenied())
+    InsufficientScope -> GenericErrorScreen(error = GenericErrorScreenState.Offer.insufficientScope())
+    InvalidClient -> GenericErrorScreen(error = GenericErrorScreenState.Offer.invalidClient())
+    InvalidCredentialRequest -> GenericErrorScreen(error = GenericErrorScreenState.Offer.invalidCredentialRequest())
+    InvalidEncryptionParameters -> GenericErrorScreen(
+        error = GenericErrorScreenState.Offer.invalidEncryptionParameters()
     )
-    InvalidNonce -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INVALID_NONCE)
-    InvalidProof -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INVALID_PROOF)
-    InvalidRequest -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INVALID_REQUEST)
-    InvalidRequestBearerToken -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INVALID_REQUEST_BEARER_TOKEN)
-    InvalidToken -> Destination.GenericErrorScreen(error = GenericErrorScreenState.INVALID_TOKEN)
-    UnauthorizedClient -> Destination.GenericErrorScreen(error = GenericErrorScreenState.UNAUTHORIZED_CLIENT)
-    UnauthorizedGrantType -> Destination.GenericErrorScreen(error = GenericErrorScreenState.UNAUTHORIZED_GRANT_TYPE)
-    UnknownCredentialConfiguration -> Destination.GenericErrorScreen(
-        error = GenericErrorScreenState.UNKNOWN_CREDENTIAL_CONFIGURATION
+
+    InvalidNonce -> GenericErrorScreen(error = GenericErrorScreenState.Offer.invalidNonce())
+    InvalidProof -> GenericErrorScreen(error = GenericErrorScreenState.Offer.invalidProof())
+    InvalidRequest -> GenericErrorScreen(error = GenericErrorScreenState.Offer.invalidRequest())
+    InvalidRequestBearerToken -> GenericErrorScreen(error = GenericErrorScreenState.Offer.invalidRequestBearerToken())
+    InvalidToken -> GenericErrorScreen(error = GenericErrorScreenState.Offer.invalidToken())
+    UnauthorizedClient -> GenericErrorScreen(error = GenericErrorScreenState.Offer.unauthorizedClient())
+    UnauthorizedGrantType -> GenericErrorScreen(error = GenericErrorScreenState.Offer.unauthorizedGrantType())
+    UnknownCredentialConfiguration -> GenericErrorScreen(
+        error = GenericErrorScreenState.Offer.unknownCredentialConfiguration()
     )
-    UnknownCredentialIdentifier -> Destination.GenericErrorScreen(
-        error = GenericErrorScreenState.UNKNOWN_CREDENTIAL_IDENTIFIER
+
+    UnknownCredentialIdentifier -> GenericErrorScreen(
+        error = GenericErrorScreenState.Offer.unknownCredentialIdentifier()
     )
+
+    InvalidPresentationRequest -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.INVALID_PRESENTATION, uri = uri)
+    is EmptyWallet -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.EMPTY_WALLET, uri = uri)
+    is NoCompatibleCredential -> InvitationFailureScreen(invitationError = InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL, uri = uri)
+    is InvalidPresentation -> GenericErrorScreen(error = GenericErrorScreenState.Presentation.invalidRequest())
+    is InvalidClientPresentation -> GenericErrorScreen(error = GenericErrorScreenState.Presentation.invalidClient())
+    is InvalidTransactionData -> GenericErrorScreen(error = GenericErrorScreenState.Presentation.invalidTransactionData())
 }
 
 internal fun Throwable.toGetPresentationRequestError(uri: URI): GetPresentationRequestError {
@@ -238,7 +279,9 @@ internal fun Throwable.toGetPresentationRequestError(uri: URI): GetPresentationR
 }
 
 internal fun ValidatePresentationRequestError.toGetPresentationRequestError(): GetPresentationRequestError = when (this) {
-    is CredentialPresentationError.InvalidPresentation -> InvalidPresentation(responseUri)
+    is CredentialPresentationError.InvalidRequest -> InvalidPresentation(responseUri)
+    is CredentialPresentationError.InvalidClient -> InvalidClientPresentation(responseUri)
+    is CredentialPresentationError.InvalidTransactionData -> InvalidTransactionData(responseUri)
     is CredentialPresentationError.UnknownVerifier -> UnknownVerifier
     is CredentialPresentationError.NetworkError -> NetworkError
     is CredentialPresentationError.Unexpected -> Unexpected

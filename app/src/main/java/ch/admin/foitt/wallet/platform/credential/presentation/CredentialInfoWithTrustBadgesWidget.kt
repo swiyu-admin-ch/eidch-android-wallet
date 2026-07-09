@@ -23,6 +23,7 @@ fun LazyListScope.credentialInfoWithTrustBadgesWidget(
     credentialCardListItem(
         credentialCardState = credentialCardState,
         paddingValues = paddingValues,
+        showStatus = false,
     )
     footerText?.let {
         clusterFooter(

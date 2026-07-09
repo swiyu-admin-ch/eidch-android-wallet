@@ -6,7 +6,6 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,15 +37,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentScanner.DocumentScannerErrorContent
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentScanner.EIdDocumentScanSummaryUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
-import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.clusterLazyListItem
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.DocumentScannerErrorType
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.theme.Sizes
@@ -66,9 +65,12 @@ fun EIdDocumentScanSummaryScreen(viewModel: EIdDocumentScanSummaryViewModel) {
 
         is EIdDocumentScanSummaryUiState.Error -> {
             DocumentScannerErrorContent(
-                type = DocumentScannerErrorType.GENERIC,
-                onRetry = viewModel::onRetry,
+                type = DocumentScannerErrorType.Generic,
+                onButton = viewModel::onRetry,
                 onHelp = viewModel::onHelp,
+                title = R.string.tk_error_generic_primary,
+                content = R.string.tk_error_generic_secondary,
+                buttonText = R.string.tk_error_generic_button_primary
             )
         }
 
@@ -96,7 +98,7 @@ fun EIdDocumentScanSummaryScreen(viewModel: EIdDocumentScanSummaryViewModel) {
 
 @Composable
 private fun EIdDocumentScanSummaryScreenContent(
-    documentType: EIdDocumentType,
+    documentType: EIdUiDocumentType,
     frontsidePainter: Painter,
     backsidePainter: Painter,
     onContinue: () -> Unit,
@@ -139,7 +141,9 @@ private fun EIdDocumentScanSummaryScreenContent(
                     scaffoldPaddings = LocalScaffoldPaddings.current,
                 )
             }
-
+            item {
+                Spacer(modifier = Modifier.height(Sizes.s03))
+            }
             documentImage(
                 headerText = R.string.tk_eidRequest_scanDocumentSubmit_firstScanImageTitle,
                 contentDescription = firstScanAltText,
@@ -165,28 +169,22 @@ private fun EIdDocumentScanSummaryScreenContent(
                 reportedBlockHeight = height
             },
         ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = Sizes.maxClusterWidth)
-                    .fillMaxWidth()
-                    .bottomSafeDrawing()
-                    .padding(
-                        start = WalletLayouts.paddingStickyMedium,
-                        end = WalletLayouts.paddingStickyMedium,
-                        bottom = WalletLayouts.paddingStickyMedium
-                    )
-            ) {
-                Buttons.FilledPrimary(
-                    text = stringResource(R.string.tk_global_continue),
-                    onClick = onContinue,
-                    modifier = Modifier.fillMaxWidth(),
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(R.string.tk_global_continue),
+                            onClick = onContinue,
+                        )
+                    },
+                    {
+                        Buttons.TonalSecondary(
+                            text = stringResource(R.string.tk_eidRequest_scanDocumentSubmit_secondaryButton),
+                            onClick = onRetry,
+                        )
+                    }
                 )
-                Buttons.TonalSecondary(
-                    text = stringResource(R.string.tk_eidRequest_scanDocumentSubmit_secondaryButton),
-                    onClick = onRetry,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            )
         }
     }
 }
@@ -220,12 +218,10 @@ private fun LazyListScope.documentImage(
 }
 
 @StringRes
-private fun EIdDocumentType.stringRes(): Int {
-    return when (this) {
-        EIdDocumentType.IDENTITY_CARD -> R.string.tk_eidRequest_documentSelection_idCard
-        EIdDocumentType.PASSPORT -> R.string.tk_eidRequest_documentSelection_passport
-        EIdDocumentType.RESIDENT_PERMIT -> R.string.tk_eidRequest_documentSelection_residentPermit
-    }
+private fun EIdUiDocumentType.stringRes(): Int = when (this) {
+    EIdUiDocumentType.IDENTITY_CARD -> R.string.tk_eidRequest_documentSelection_idCard
+    EIdUiDocumentType.PASSPORT -> R.string.tk_eidRequest_documentSelection_passport
+    EIdUiDocumentType.RESIDENT_PERMIT -> R.string.tk_eidRequest_documentSelection_residentPermit
 }
 
 @WalletAllScreenPreview
@@ -233,7 +229,7 @@ private fun EIdDocumentType.stringRes(): Int {
 private fun EIdDocumentScanSummaryScreenContentPreview() {
     WalletTheme {
         EIdDocumentScanSummaryScreenContent(
-            documentType = EIdDocumentType.IDENTITY_CARD,
+            documentType = EIdUiDocumentType.IDENTITY_CARD,
             frontsidePainter = ColorPainter(Color.Cyan),
             backsidePainter = ColorPainter(Color.Cyan),
             onContinue = {},

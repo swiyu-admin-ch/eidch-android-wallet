@@ -7,6 +7,7 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainCoroutineDispatcher
 import kotlinx.coroutines.SupervisorJob
 import javax.inject.Qualifier
 import javax.inject.Singleton
@@ -46,7 +47,7 @@ object CoroutinesModule {
     @Singleton
     @Provides
     fun providesCoroutineScopeWithMainDispatcher(
-        @MainDispatcher mainDispatcher: CoroutineDispatcher
+        @MainDispatcher mainDispatcher: MainCoroutineDispatcher
     ): CoroutineScope {
         return CoroutineScope(SupervisorJob() + mainDispatcher)
     }

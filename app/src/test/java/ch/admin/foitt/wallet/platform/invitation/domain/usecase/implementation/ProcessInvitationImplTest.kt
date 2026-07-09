@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.invitation.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
+import ch.admin.foitt.openid4vc.domain.model.proximity.ProximityPresentationRequest
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
@@ -8,11 +9,14 @@ import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.Compat
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProcessPresentationRequestResult
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ProximityEngagementError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ProcessPresentationRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationResult
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ProcessInvitation
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ValidateInvitation
+import ch.admin.foitt.wallet.platform.proximity.domain.model.ProximityEngagementEvent
+import ch.admin.foitt.wallet.platform.proximity.domain.usecase.ProximityEngagement
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import ch.admin.foitt.wallet.util.assertSuccessType
@@ -25,6 +29,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -41,6 +46,9 @@ class ProcessInvitationImplTest {
 
     @MockK
     private lateinit var mockProcessPresentationRequest: ProcessPresentationRequest
+
+    @MockK
+    private lateinit var mockProximityEngagement: ProximityEngagement
 
     @MockK
     private lateinit var mockPresentationRequestWithRaw: PresentationRequestWithRaw
@@ -60,6 +68,7 @@ class ProcessInvitationImplTest {
             validateInvitation = mockValidateInvitation,
             fetchAndSaveCredential = mockFetchAndSaveCredential,
             processPresentationRequest = mockProcessPresentationRequest,
+            proximityEngagement = mockProximityEngagement,
         )
     }
 
@@ -168,6 +177,48 @@ class ProcessInvitationImplTest {
         }
     }
 
+    @Test
+    fun `Processing a valid proximity invitation with one credential returns the credential and request`() = runTest {
+        val invitation = ProximityPresentationRequest(PROXIMITY_QR)
+        val request = mockk<PresentationRequestWithRaw>()
+        val credential = mockk<CompatibleCredential>()
+        val event = ProximityEngagementEvent.Request(ProcessPresentationRequestResult.Credential(credential, request))
+        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(invitation)
+        coEvery { mockProximityEngagement(PROXIMITY_QR) } returns flowOf(Ok(event))
+
+        val result = useCase(INVITATION_URI)
+
+        val processInvitationResult = result.assertSuccessType(ProcessInvitationResult.PresentationRequest::class)
+        assertEquals(ProcessInvitationResult.PresentationRequest(credential, request), processInvitationResult)
+        coVerify(exactly = 1) { mockProximityEngagement(PROXIMITY_QR) }
+    }
+
+    @Test
+    fun `Processing a proximity invitation with qr code event returns an error`() = runTest {
+        val invitation = ProximityPresentationRequest(PROXIMITY_QR)
+        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(invitation)
+        coEvery {
+            mockProximityEngagement(PROXIMITY_QR)
+        } returns flowOf(Ok(ProximityEngagementEvent.QrCode(PROXIMITY_QR)))
+
+        val result = useCase(INVITATION_URI)
+
+        result.assertErrorType(InvitationError.Unexpected::class)
+    }
+
+    @Test
+    fun `Processing a proximity invitation maps errors from proximity engagement`() = runTest {
+        val invitation = ProximityPresentationRequest(PROXIMITY_QR)
+        coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(invitation)
+        coEvery {
+            mockProximityEngagement(PROXIMITY_QR)
+        } returns flowOf(Err(ProximityEngagementError.Disconnected))
+
+        val result = useCase(INVITATION_URI)
+
+        result.assertErrorType(InvitationError.NetworkError::class)
+    }
+
     private fun setupDefaultMocks() {
         coEvery { mockValidateInvitation(INVITATION_URI) } returns Ok(mockCredentialOffer)
         coEvery { mockFetchAndSaveCredential(mockCredentialOffer) } returns Ok(FetchCredentialResult.Credential(CREDENTIAL_ID))
@@ -176,5 +227,6 @@ class ProcessInvitationImplTest {
     private companion object {
         const val INVITATION_URI = "invitationUri"
         const val CREDENTIAL_ID = 1L
+        const val PROXIMITY_QR = "proximityQrData"
     }
 }

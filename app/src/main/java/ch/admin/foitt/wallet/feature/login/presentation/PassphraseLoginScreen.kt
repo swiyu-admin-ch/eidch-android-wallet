@@ -5,7 +5,6 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,10 +25,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveButtonContainer
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.PassphraseValidationErrorToastFixed
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
+import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.centerHorizontallyOnFullscreen
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
@@ -120,23 +121,34 @@ private fun PassphraseLoginScreenContent(
                 )
             },
             stickyBottomContent = {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Sizes.s04, Alignment.End),
-                    verticalArrangement = Arrangement.spacedBy(Sizes.s02)
-                ) {
-                    if (showBiometricsLoginButton) {
-                        Buttons.FilledSecondaryFixed(
-                            text = stringResource(R.string.tk_global_loginbiometric_primarybutton),
-                            startIcon = painterResource(R.drawable.ic_fingerprint),
-                            onClick = onLoginWithBiometrics
+                AdaptiveButtonContainer(
+                    buttons = buildList {
+                        add(
+                            {
+                                Buttons.FilledPrimaryFixed(
+                                    text = stringResource(R.string.tk_global_login_primarybutton),
+                                    onClick = onLoginWithPassphrase
+                                )
+                            }
                         )
-                    }
-                    Buttons.FilledPrimaryFixed(
-                        text = stringResource(R.string.tk_global_login_primarybutton),
-                        onClick = onLoginWithPassphrase
-                    )
-                }
+
+                        if (showBiometricsLoginButton) {
+                            add(
+                                {
+                                    Buttons.FilledSecondaryFixed(
+                                        text = stringResource(R.string.tk_global_loginbiometric_primarybutton),
+                                        startIcon = painterResource(R.drawable.ic_fingerprint),
+                                        onClick = onLoginWithBiometrics
+                                    )
+                                }
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bottomSafeDrawing()
+                        .padding(Sizes.s04)
+                )
             },
         )
 

@@ -1,7 +1,6 @@
-
 package ch.admin.foitt.wallet.platform.nonCompliance.data.repository
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_GZIP_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_GZIP_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceRepositoryError
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceResponse
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.toNonComplianceRepositoryError

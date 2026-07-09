@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -29,19 +29,22 @@ fun InvalidClientContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_attestation_clientNotSupported_button_playstore_text),
-            onClick = onPlaystore,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_attestation_clientNotSupported_button_close),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_attestation_clientNotSupported_button_playstore_text),
+                        onClick = onPlaystore,
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_eidRequest_attestation_clientNotSupported_button_close),
+                        onClick = onClose,
+                    )
+                },
+            ),
         )
     },
 ) {

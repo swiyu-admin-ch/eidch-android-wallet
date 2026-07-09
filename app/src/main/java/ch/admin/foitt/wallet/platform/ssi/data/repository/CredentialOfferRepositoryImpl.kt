@@ -1,12 +1,14 @@
 package ch.admin.foitt.wallet.platform.ssi.data.repository
 
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyIssuerDisplay
 import ch.admin.foitt.wallet.platform.database.data.dao.BundleItemEntityDao
+import ch.admin.foitt.wallet.platform.database.data.dao.CredentialAuthenticationDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialClaimClusterDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialClaimClusterEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialClaimDao
@@ -17,12 +19,14 @@ import ch.admin.foitt.wallet.platform.database.data.dao.CredentialIssuerDisplayD
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialKeyBindingEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.DaoProvider
 import ch.admin.foitt.wallet.platform.database.data.dao.DeferredCredentialDao
+import ch.admin.foitt.wallet.platform.database.data.dao.DpopBindingDao
 import ch.admin.foitt.wallet.platform.database.data.dao.RawCredentialDataDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
 import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
 import ch.admin.foitt.wallet.platform.database.domain.model.ClusterDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
@@ -31,6 +35,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
+import ch.admin.foitt.wallet.platform.database.domain.model.DpopBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.toCredentialClaimClusterDisplayEntity
@@ -127,10 +132,12 @@ class CredentialOfferRepositoryImpl @Inject constructor(
     override suspend fun saveDeferredCredentialOffer(
         transactionId: String,
         accessToken: String,
+        tokenType: TokenType,
         refreshToken: String?,
         endpoint: URL,
         pollInterval: Int,
         keyBindings: List<KeyBinding>?,
+        dpopKeyBinding: KeyBinding?,
         format: CredentialFormat,
         issuerUrl: URL,
         selectedConfigurationId: String,
@@ -154,12 +161,30 @@ class CredentialOfferRepositoryImpl @Inject constructor(
             DeferredCredentialEntity(
                 credentialId = credentialId,
                 transactionId = transactionId,
-                accessToken = accessToken,
-                refreshToken = refreshToken,
                 endpoint = endpoint.toExternalForm(),
                 pollInterval = pollInterval,
             )
         )
+        val credentialAuthenticationId = credentialAuthenticationDao().insert(
+            CredentialAuthenticationEntity(
+                credentialId = credentialId,
+                tokenType = tokenType,
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+            )
+        )
+        dpopKeyBinding?.let { keyBinding ->
+            dpopBindingDao().insert(
+                DpopBindingEntity(
+                    id = keyBinding.identifier,
+                    credentialAuthenticationId = credentialAuthenticationId,
+                    algorithm = keyBinding.algorithm.name,
+                    bindingType = keyBinding.bindingType,
+                    publicKey = keyBinding.publicKey,
+                    privateKey = keyBinding.privateKey,
+                )
+            )
+        }
     }.mapError { throwable ->
         throwable.toCredentialOfferRepositoryError("saveDeferredCredentialOffer error")
     }
@@ -409,9 +434,7 @@ class CredentialOfferRepositoryImpl @Inject constructor(
     }
 
     private val credentialDaoFlow = daoProvider.credentialDaoFlow
-    private suspend fun credentialDao(): CredentialDao = suspendUntilNonNull {
-        credentialDaoFlow.value
-    }
+    private suspend fun credentialDao(): CredentialDao = suspendUntilNonNull { credentialDaoFlow.value }
 
     private val verifiableCredentialDaoFlow = daoProvider.verifiableCredentialDaoFlow
     private suspend fun verifiableCredentialDao(): VerifiableCredentialDao = suspendUntilNonNull {
@@ -423,10 +446,18 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         deferredCredentialDaoFlow.value
     }
 
-    private val bundleItemEntityDaoFlow = daoProvider.bundleItemEntityDaoFlow
-    private suspend fun bundleItemEntityDao(): BundleItemEntityDao = suspendUntilNonNull {
-        bundleItemEntityDaoFlow.value
+    private val credentialAuthenticationDaoFlow = daoProvider.credentialAuthenticationDaoFlow
+    private suspend fun credentialAuthenticationDao(): CredentialAuthenticationDao = suspendUntilNonNull {
+        credentialAuthenticationDaoFlow.value
     }
+
+    private val dpopBindingDaoFlow = daoProvider.dpopBindingDaoFlow
+    private suspend fun dpopBindingDao(): DpopBindingDao = suspendUntilNonNull {
+        dpopBindingDaoFlow.value
+    }
+
+    private val bundleItemEntityDaoFlow = daoProvider.bundleItemEntityDaoFlow
+    private suspend fun bundleItemEntityDao(): BundleItemEntityDao = suspendUntilNonNull { bundleItemEntityDaoFlow.value }
 
     private val credentialKeyBindingEntityDaoFlow = daoProvider.credentialKeyBindingEntityDaoFlow
     private suspend fun credentialKeyBindingDao(): CredentialKeyBindingEntityDao = suspendUntilNonNull {

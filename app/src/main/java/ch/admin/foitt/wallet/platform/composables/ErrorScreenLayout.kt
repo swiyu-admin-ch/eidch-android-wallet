@@ -7,13 +7,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
+import ch.admin.foitt.wallet.platform.composables.presentation.nonFocusableAccessibilityAnchor
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 
@@ -36,27 +36,33 @@ fun WalletLayouts.StandardErrorScreen(
             iconRes = mainImage,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        if (primaryActionText != null && primaryAction != null) {
-            Buttons.FilledPrimary(
-                text = stringResource(primaryActionText),
-                onClick = primaryAction,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        if (secondaryActionText != null && secondaryAction != null) {
-            Buttons.TonalSecondary(
-                text = stringResource(secondaryActionText),
-                onClick = secondaryAction,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+        AdaptiveBottomButtonBar(
+            buttons = buildList {
+                if (primaryActionText != null && primaryAction != null) {
+                    add {
+                        Buttons.FilledPrimary(
+                            text = stringResource(primaryActionText),
+                            onClick = primaryAction,
+                        )
+                    }
+                }
+                if (secondaryActionText != null && secondaryAction != null) {
+                    add {
+                        Buttons.TonalSecondary(
+                            text = stringResource(secondaryActionText),
+                            onClick = secondaryAction,
+                        )
+                    }
+                }
+            }
+        )
     },
 ) {
     Spacer(modifier = Modifier.height(Sizes.s06))
     WalletTexts.TitleScreen(
         text = stringResource(id = primaryText),
+        modifier = Modifier.nonFocusableAccessibilityAnchor(),
     )
     secondaryText?.let {
         Spacer(modifier = Modifier.height(Sizes.s06))

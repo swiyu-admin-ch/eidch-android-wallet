@@ -32,7 +32,8 @@ class GetCredentialOfferFlowImpl @Inject constructor(
                         val credentialDisplayData = mapToCredentialDisplayData(
                             verifiableCredential = credentialWithDisplaysAndClusters.verifiableCredential,
                             credentialDisplays = credentialWithDisplaysAndClusters.credentialDisplays,
-                            claims = credentialWithDisplaysAndClusters.clusters.flatMap { it.claimsWithDisplays }
+                            claims = credentialWithDisplaysAndClusters.clusters.flatMap { it.claimsWithDisplays },
+                            credentialFormat = credentialWithDisplaysAndClusters.credential.format
                         ).mapError(MapToCredentialDisplayDataError::toGetCredentialOfferFlowError)
                             .bind()
 

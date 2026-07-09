@@ -7,14 +7,21 @@ import ch.admin.foitt.avwrapper.AVBeamStatus
 import ch.admin.foitt.avwrapper.AvBeamNotification
 import ch.admin.foitt.avwrapper.AvBeamScanDocumentNotification
 import ch.admin.foitt.avwrapper.DocumentScanPackageResult
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.TextKeyType
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.AreEIdDocumentsEqual
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AutoVerificationResponse
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.CreateSDKErrorTextKeys
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdRequestCase
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.PermissionState
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.infra.PermissionStateHandler
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetDocumentType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetDocumentScanResult
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManager
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
+import ch.admin.foitt.wallet.platform.scanning.di.AvBeamSdkEntryPoint
+import ch.admin.foitt.wallet.platform.scanning.domain.repository.AvBeamRepository
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -24,10 +31,10 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -64,18 +71,36 @@ class EIdDocumentScannerViewModelTest {
     lateinit var activity: AppCompatActivity
 
     @MockK(relaxed = true)
-    lateinit var autoVerificationResponse: AutoVerificationResponse
-
-    @MockK(relaxed = true)
     lateinit var areEIdDocumentsEqual: AreEIdDocumentsEqual
 
     @MockK(relaxed = true)
+    lateinit var permissionStateHandler: PermissionStateHandler
+
+    @MockK(relaxed = true)
+    lateinit var createSDKErrorTextKeys: CreateSDKErrorTextKeys
+
+    val mockPermissionState: StateFlow<PermissionState> = MutableStateFlow(PermissionState.Granted)
+
+    @MockK(relaxed = true)
     lateinit var getDocumentType: GetDocumentType
+
+    @MockK(relaxed = true)
+    lateinit var getEIdRequestCase: GetEIdRequestCase
+
+    @MockK
+    private lateinit var mockDestinationScopedComponentManager: DestinationScopedComponentManager
+
+    @MockK
+    private lateinit var mockAvBeamSdkEntryPoint: AvBeamSdkEntryPoint
+
+    @MockK(relaxed = true)
+    private lateinit var mockAvBeamRepository: AvBeamRepository
+
     private lateinit var scanDocumentFlow: MutableStateFlow<AvBeamScanDocumentNotification>
     private lateinit var statusFlow: MutableStateFlow<AVBeamStatus>
     private lateinit var errorFlow: MutableStateFlow<AVBeamError>
     private lateinit var viewModel: EIdDocumentScannerViewModel
-    private lateinit var documentTypeFlow: MutableStateFlow<EIdDocumentType>
+    private lateinit var documentTypeFlow: MutableStateFlow<EIdUiDocumentType>
 
     @BeforeEach
     fun setup() {
@@ -85,9 +110,9 @@ class EIdDocumentScannerViewModelTest {
         scanDocumentFlow = MutableStateFlow(AvBeamNotification.Empty)
         statusFlow = MutableStateFlow(AVBeamStatus.Init)
         errorFlow = MutableStateFlow(AVBeamError.None)
-        documentTypeFlow = MutableStateFlow(EIdDocumentType.IDENTITY_CARD)
+        documentTypeFlow = MutableStateFlow(EIdUiDocumentType.IDENTITY_CARD)
 
-        coEvery { avBeam.initializedFlow } returns MutableStateFlow(true)
+        every { avBeam.initializedFlow } returns MutableStateFlow(true)
         every { avBeam.getGLView(any(), any()) } returns mockk {
             every { width } returns 100
             every { height } returns 200
@@ -95,20 +120,39 @@ class EIdDocumentScannerViewModelTest {
         every { avBeam.scanDocumentFlow } returns scanDocumentFlow
         every { avBeam.statusFlow } returns statusFlow
         every { avBeam.errorFlow } returns errorFlow
+
+        every {
+            mockDestinationScopedComponentManager.getEntryPoint(
+                AvBeamSdkEntryPoint::class.java,
+                componentScope = any()
+            )
+        } returns mockAvBeamSdkEntryPoint
+
+        every {
+            mockAvBeamSdkEntryPoint.avBeamRepository()
+        } returns mockAvBeamRepository
+
+        every {
+            mockAvBeamRepository.getBeam()
+        } returns avBeam
+
         coEvery { areEIdDocumentsEqual(any(), any()) } returns Ok(true)
         every { getDocumentType() } returns documentTypeFlow
+        coEvery { permissionStateHandler.permissionState } returns mockPermissionState
+        coEvery { createSDKErrorTextKeys(AVBeamError.MrzNotDetected, TextKeyType.TITLE) } returns 1
 
         viewModel = EIdDocumentScannerViewModel(
             navManager = navManager,
-            avBeam = avBeam,
-            ioDispatcherScope = CoroutineScope(testDispatcher),
             setDocumentScanResult = setDocumentScanResult,
-            environmentSetupRepository = environmentSetupRepository,
             setTopBarState = setTopBarState,
             areEIdDocumentsEqual = areEIdDocumentsEqual,
             caseId = "",
             getDocumentType = getDocumentType,
-            appContext = mockk()
+            getEIdRequestCase = getEIdRequestCase,
+            destinationScopedComponentManager = mockDestinationScopedComponentManager,
+            permissionStateHandler = permissionStateHandler,
+            appContext = mockk(),
+            createSDKErrorTextKeys = createSDKErrorTextKeys
         )
     }
 
@@ -119,7 +163,7 @@ class EIdDocumentScannerViewModelTest {
     }
 
     @Test
-    fun `calls avBeam_shutDown and stopCamera when DocumentScanCompleted is emitted`() = runTest(testDispatcher) {
+    fun `calls stopCamera and setDocumentScanResult when DocumentScanCompleted is emitted`() = runTest(testDispatcher) {
         // Given
         val fakePackageData = mockk<DocumentScanPackageResult>(relaxed = true)
         val startedCamera = AVBeamStatus.StreamingStarted
@@ -127,7 +171,7 @@ class EIdDocumentScannerViewModelTest {
 
         // When
         viewModel.initScannerSdk(activity = activity)
-        viewModel.onResume()
+        viewModel.onResumeScan()
         viewModel.onAfterViewLayout(100, 100)
         statusFlow.update { startedCamera }
         scanDocumentFlow.update { notification }
@@ -136,7 +180,6 @@ class EIdDocumentScannerViewModelTest {
         // Then
         coVerify {
             avBeam.stopCamera()
-            avBeam.shutDown()
             setDocumentScanResult.invoke(fakePackageData)
         }
     }

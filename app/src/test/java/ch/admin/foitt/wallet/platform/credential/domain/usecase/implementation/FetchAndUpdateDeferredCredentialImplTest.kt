@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.CredentialRequestType
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchDeferredCredentialError
@@ -13,15 +14,19 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCred
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.RawAndParsedIssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import ch.admin.foitt.openid4vc.domain.usecase.CreateCredentialRequest
+import ch.admin.foitt.openid4vc.domain.usecase.CreateDPoPProofJwt
 import ch.admin.foitt.openid4vc.domain.usecase.FetchIssuerConfiguration
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndUpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchExistingIssuerCredentialInfo
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetBindingKeyPair
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveCredentialFromDeferred
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.UpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationWithDpopBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.payloadEncryption.domain.model.PayloadEncryptionError
@@ -35,6 +40,7 @@ import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -67,6 +73,12 @@ class FetchAndUpdateDeferredCredentialImplTest {
 
     @MockK
     private lateinit var mockCreateCredentialRequest: CreateCredentialRequest
+
+    @MockK
+    private lateinit var mockCreateDPoPProofJwt: CreateDPoPProofJwt
+
+    @MockK
+    private lateinit var mockGetBindingKeyPair: GetBindingKeyPair
 
     @MockK
     private lateinit var mockOidCredentialOfferRepository: OidCredentialOfferRepository
@@ -112,6 +124,8 @@ class FetchAndUpdateDeferredCredentialImplTest {
             environmentSetupRepository = mockEnvironmentSetupRepository,
             getPayloadEncryptionType = mockGetPayloadEncryptionType,
             createCredentialRequest = mockCreateCredentialRequest,
+            createDPoPProofJwt = mockCreateDPoPProofJwt,
+            getBindingKeyPair = mockGetBindingKeyPair,
             oidCredentialOfferRepository = mockOidCredentialOfferRepository,
             saveCredentialFromDeferred = mockSaveCredentialFromDeferred,
             updateDeferredCredential = mockUpdateDeferredCredential,
@@ -134,6 +148,7 @@ class FetchAndUpdateDeferredCredentialImplTest {
         } returns Ok(mockRawAndParsedIssuerCredentialInfo)
 
         coEvery { mockRawAndParsedIssuerCredentialInfo.issuerCredentialInfo } returns mockIssuerCredentialInfo
+        every { mockIssuerCredentialInfo.nonceEndpoint } returns null
         coEvery { mockIssuerCredentialInfo.credentialRequestEncryption } returns mockCredentialRequestEncryption
         coEvery { mockIssuerCredentialInfo.credentialResponseEncryption } returns mockCredentialResponseEncryption
 
@@ -146,7 +161,11 @@ class FetchAndUpdateDeferredCredentialImplTest {
         } returns Ok(mockCredentialRequestType)
 
         coEvery {
-            mockOidCredentialOfferRepository.fetchDeferredCredential(any(), any(), any(), any())
+            mockGetBindingKeyPair(any())
+        } returns Ok(null)
+
+        coEvery {
+            mockOidCredentialOfferRepository.fetchDeferredCredential(any(), any(), any(), any(), any(), any())
         } returns Ok(deferredCredentialResponse01)
 
         coEvery {
@@ -170,7 +189,7 @@ class FetchAndUpdateDeferredCredentialImplTest {
         } returns Ok(1)
 
         coEvery {
-            mockOidCredentialOfferRepository.fetchAccessTokenByRefreshToken(any(), any())
+            mockOidCredentialOfferRepository.fetchAccessTokenByRefreshToken(any(), any(), any())
         } returns Ok(tokenResponse)
     }
 
@@ -219,6 +238,8 @@ class FetchAndUpdateDeferredCredentialImplTest {
                 any(),
                 any(),
                 any(),
+                any(),
+                any(),
             )
         } returns Err(error)
 
@@ -239,6 +260,8 @@ class FetchAndUpdateDeferredCredentialImplTest {
     fun `Other deferred credential issuer backend errors do no invalidate the credential`(error: FetchDeferredCredentialError) = runTest {
         coEvery {
             mockOidCredentialOfferRepository.fetchDeferredCredential(
+                any(),
+                any(),
                 any(),
                 any(),
                 any(),
@@ -266,6 +289,8 @@ class FetchAndUpdateDeferredCredentialImplTest {
                 ACCESS_TOKEN_01,
                 any(),
                 any(),
+                any(),
+                any(),
             )
         } returns Err(CredentialOfferError.InvalidToken)
 
@@ -275,6 +300,8 @@ class FetchAndUpdateDeferredCredentialImplTest {
                 ACCESS_TOKEN_02,
                 any(),
                 any(),
+                any(),
+                any(),
             )
         } returns Ok(deferredCredentialResponse01)
 
@@ -282,6 +309,8 @@ class FetchAndUpdateDeferredCredentialImplTest {
 
         coVerify(exactly = 2) {
             mockOidCredentialOfferRepository.fetchDeferredCredential(
+                any(),
+                any(),
                 any(),
                 any(),
                 any(),
@@ -339,8 +368,6 @@ class FetchAndUpdateDeferredCredentialImplTest {
             credentialId = CREDENTIAL_ID_01,
             progressionState = DeferredProgressionState.IN_PROGRESS,
             transactionId = TRANSACTION_ID_01,
-            accessToken = ACCESS_TOKEN_01,
-            refreshToken = REFRESH_TOKEN_01,
             endpoint = ISSUER_URL,
             pollInterval = 10,
             createdAt = Instant.now().epochSecond,
@@ -355,10 +382,19 @@ class FetchAndUpdateDeferredCredentialImplTest {
             issuerUrl = URL(ISSUER_URL)
         )
 
-        private val deferredCredentialWithBinding01 = DeferredCredentialWithKeyBinding(
+        private val deferredCredentialWithBinding01 = DeferredCredentialWithAuthenticationAndKeyBinding(
             deferredCredential = deferredCredentialEntity01,
             credential = credentialEntity01,
             keyBindings = emptyList(),
+            authentication = CredentialAuthenticationWithDpopBinding(
+                credentialAuthentication = CredentialAuthenticationEntity(
+                    credentialId = credentialEntity01.id,
+                    tokenType = TokenType.BEARER,
+                    accessToken = ACCESS_TOKEN_01,
+                    refreshToken = REFRESH_TOKEN_01,
+                ),
+                dpopBinding = null,
+            )
         )
 
         private val deferredCredentialResponse01 = CredentialResponse.DeferredCredential(
@@ -369,7 +405,7 @@ class FetchAndUpdateDeferredCredentialImplTest {
         private val tokenResponse = TokenResponse(
             accessToken = ACCESS_TOKEN_02,
             refreshToken = REFRESH_TOKEN_01,
-            tokenType = "tokenType"
+            tokenType = TokenType.BEARER,
         )
     }
 }

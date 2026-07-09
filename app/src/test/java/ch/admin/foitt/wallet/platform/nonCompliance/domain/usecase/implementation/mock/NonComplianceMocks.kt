@@ -40,41 +40,7 @@ object NonComplianceMocks {
   "presentation_definition": {
     "id": "123",
     "name": "string",
-    "purpose": "string",
-    "input_descriptors": [
-      {
-        "id": "1234",
-        "name": "A name",
-        "format": {
-          "vc+sd-jwt": {
-            "sd-jwt_alg_values": [
-              "ES256"
-            ],
-            "kb-jwt_alg_values": [
-              "ES256"
-            ]
-          }
-        },
-        "constraints": {
-          "fields": [
-            {
-              "path": [
-                "path1"
-              ]
-            },
-            {
-              "path": [
-                "path2"
-              ],
-              "filter": {
-                "const": "constraint2",
-                "type": "type2"
-              }
-            }
-          ]
-        }
-      }
-    ]
+    "purpose": "string"
   },
   "nonce": "nonce",
   "client_id": "did:example:12345",

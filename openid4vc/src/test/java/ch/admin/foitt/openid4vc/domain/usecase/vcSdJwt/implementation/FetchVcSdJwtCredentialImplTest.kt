@@ -16,6 +16,7 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
@@ -56,6 +57,7 @@ class FetchVcSdJwtCredentialImplTest {
     @Test
     fun `Fetching a vc sd jwt credential with valid params returns a VcSdJwtCredential`() = runTest {
         val credential = useCase(
+            isDPopEnabled = true,
             verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
             bindingKeyPairs = null,
             payloadEncryptionType = mockPayloadEncryptionType,
@@ -68,10 +70,11 @@ class FetchVcSdJwtCredentialImplTest {
     @Test
     fun `Fetching a vc sd jwt credential where the jwt signature validation fails returns an error`() = runTest {
         coEvery {
-            mockVerifyVcSdJwtSignature(any(), any())
+            mockVerifyVcSdJwtSignature(any(), any(), any())
         } returns Err(VcSdJwtError.InvalidJwt)
 
         useCase(
+            isDPopEnabled = true,
             verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
             bindingKeyPairs = null,
             payloadEncryptionType = mockPayloadEncryptionType,
@@ -81,14 +84,16 @@ class FetchVcSdJwtCredentialImplTest {
     @Test
     fun `Fetching a deferred vc sd jwt credential returns a deferred credential`() = runTest {
         coEvery {
-            mockFetchVerifiableCredential(
-                MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
-                bindingKeyPairs = null,
-                mockPayloadEncryptionType
+            mockFetchVerifiableCredential.invoke(
+                isDPopEnabled = true,
+                verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
+                credentialBindingKeyPairs = null,
+                payloadEncryptionType = mockPayloadEncryptionType
             )
         } returns Ok(MockCredentialOffer.validDeferredCredential)
 
         val deferredCredential = useCase(
+            isDPopEnabled = true,
             verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
             bindingKeyPairs = null,
             payloadEncryptionType = mockPayloadEncryptionType
@@ -97,17 +102,38 @@ class FetchVcSdJwtCredentialImplTest {
         assertEquals(MockCredentialOffer.validDeferredCredential, deferredCredential)
     }
 
+    @Test
+    fun `With dpop disables pass false`() = runTest {
+        useCase(
+            isDPopEnabled = false,
+            verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
+            bindingKeyPairs = null,
+            payloadEncryptionType = mockPayloadEncryptionType,
+        ).assertOk() as AnyVerifiedCredential
+
+        coVerify {
+            mockFetchVerifiableCredential(
+                isDPopEnabled = false,
+                verifiableCredentialParams = any(),
+                credentialBindingKeyPairs = any(),
+                dpopKeyPair = any(),
+                payloadEncryptionType = any()
+            )
+        }
+    }
+
     private fun initDefaultMocks() {
         coEvery {
-            mockFetchVerifiableCredential(
-                MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
-                bindingKeyPairs = null,
-                mockPayloadEncryptionType
+            mockFetchVerifiableCredential.invoke(
+                isDPopEnabled = any(),
+                verifiableCredentialParams = MockCredentialOffer.verifiableCredentialParamsWithoutBinding,
+                credentialBindingKeyPairs = null,
+                payloadEncryptionType = mockPayloadEncryptionType
             )
         } returns Ok(createVerifiableCredential(VALID_JWT))
 
         coEvery {
-            mockVerifyVcSdJwtSignature(any(), any(),)
+            mockVerifyVcSdJwtSignature(any(), any(), any())
         } returns Ok(validSdJwt)
     }
 

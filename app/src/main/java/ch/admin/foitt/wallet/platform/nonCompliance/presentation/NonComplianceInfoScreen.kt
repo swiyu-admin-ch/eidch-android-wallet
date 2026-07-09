@@ -192,7 +192,7 @@ fun ExternalLinkListItem(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val linkAltText = stringResource(R.string.tk_global_externalLink_alt)
+                val linkAltText = stringResource(R.string.tk_global_externalLink_hint)
                 WalletTexts.BodyMedium(
                     modifier = Modifier.semantics {
                         contentDescription = "$title $linkAltText"

@@ -36,6 +36,7 @@ fun SettingsScreen(
         onSecurityAndPrivacy = viewModel::onSecurityAndPrivacy,
         onLanguage = viewModel::onLanguage,
         onHelp = viewModel::onHelp,
+        onAccessibility = viewModel::onAccessibility,
         onFeedback = viewModel::onFeedback,
         onLicences = viewModel::onLicenses,
         onImprint = viewModel::onImprint,
@@ -52,6 +53,7 @@ private fun SettingsScreenContent(
     onSecurityAndPrivacy: () -> Unit,
     onLanguage: () -> Unit,
     onHelp: () -> Unit,
+    onAccessibility: () -> Unit,
     onFeedback: () -> Unit,
     onLicences: () -> Unit,
     onImprint: () -> Unit,
@@ -82,6 +84,7 @@ private fun SettingsScreenContent(
         GeneralSection(
             onHelp = onHelp,
             onFeedback = onFeedback,
+            onAccessibility = onAccessibility,
             onLicenses = onLicences,
             onImprint = onImprint,
         )
@@ -144,6 +147,7 @@ private fun DevsSection(
 private fun GeneralSection(
     onHelp: () -> Unit,
     onFeedback: () -> Unit,
+    onAccessibility: () -> Unit,
     onLicenses: () -> Unit,
     onImprint: () -> Unit,
 ) = SettingsSection(
@@ -159,6 +163,12 @@ private fun GeneralSection(
         title = stringResource(R.string.tk_settings_general_feedback_link_text),
         leadingIcon = R.drawable.wallet_ic_feedback,
         onClick = onFeedback,
+    )
+    WalletListItems.Divider()
+    WalletListItems.ClickableTextSettingsItem(
+        title = stringResource(R.string.tk_settings_general_accessibility),
+        leadingIcon = R.drawable.wallet_ic_accessibility,
+        onClick = onAccessibility,
     )
     WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
@@ -192,6 +202,7 @@ fun SettingsScreenPreview(
             onLanguage = {},
             onHelp = {},
             onFeedback = {},
+            onAccessibility = {},
             onLicences = {},
             onImprint = {},
             onDevsSettings = true,

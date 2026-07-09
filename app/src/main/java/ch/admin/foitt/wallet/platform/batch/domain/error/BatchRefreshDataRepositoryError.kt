@@ -8,8 +8,4 @@ sealed interface BatchRefreshDataRepositoryError {
     fun toFetchCredentialError() = when (this) {
         is Unexpected -> CredentialError.Unexpected(cause)
     }
-
-    fun toRefreshBatchCredentialsError() = when (this) {
-        is Unexpected -> RefreshBatchCredentialsError.Unexpected(cause)
-    }
 }

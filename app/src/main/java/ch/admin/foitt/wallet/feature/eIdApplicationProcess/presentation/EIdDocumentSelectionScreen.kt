@@ -19,7 +19,7 @@ import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.presentation.addTopScaffoldPadding
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
@@ -39,7 +39,7 @@ fun EIdDocumentSelectionScreen(
 @Composable
 private fun EIdDocumentSelectionScreenContent(
     showEIdMockMrzButton: Boolean,
-    onDocumentSelected: (EIdDocumentType) -> Unit,
+    onDocumentSelected: (EIdUiDocumentType) -> Unit,
     onClickMock: () -> Unit
 ) {
     CompactDocumentList(
@@ -78,7 +78,7 @@ private fun CompactDocumentList(
     modifier: Modifier = Modifier,
     showEIdMockMrzButton: Boolean,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    onDocumentSelected: (EIdDocumentType) -> Unit,
+    onDocumentSelected: (EIdUiDocumentType) -> Unit,
     onClickMock: () -> Unit,
 ) {
     WalletLayouts.LazyColumn(
@@ -91,21 +91,21 @@ private fun CompactDocumentList(
         }
         item {
             EIdDocumentItem(
-                onClick = { onDocumentSelected(EIdDocumentType.IDENTITY_CARD) },
+                onClick = { onDocumentSelected(EIdUiDocumentType.IDENTITY_CARD) },
                 imageResource = R.drawable.wallet_id,
                 stringResource = R.string.tk_eidRequest_documentSelection_idCard,
             )
         }
         item {
             EIdDocumentItem(
-                onClick = { onDocumentSelected(EIdDocumentType.PASSPORT) },
+                onClick = { onDocumentSelected(EIdUiDocumentType.PASSPORT) },
                 imageResource = R.drawable.wallet_passport,
                 stringResource = R.string.tk_eidRequest_documentSelection_passport,
             )
         }
         item {
             EIdDocumentItem(
-                onClick = { onDocumentSelected(EIdDocumentType.RESIDENT_PERMIT) },
+                onClick = { onDocumentSelected(EIdUiDocumentType.RESIDENT_PERMIT) },
                 imageResource = R.drawable.wallet_resident_permit,
                 stringResource = R.string.tk_eidRequest_documentSelection_residentPermit,
             )

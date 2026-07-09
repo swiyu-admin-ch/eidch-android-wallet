@@ -3,10 +3,12 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.di
 import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.avwrapper.AVBeamImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.AreEIdDocumentsEqual
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.CreateSDKErrorTextKeys
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.FetchSIdCase
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetDocumentScanData
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdMrzValues
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdRequestCase
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.RegisterEIdPushNotification
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveEIdRequestCase
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveEIdRequestFiles
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveEIdRequestState
@@ -14,10 +16,12 @@ import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveM
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SubmitCaseId
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.UploadAllFiles
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.AreEIdDocumentsEqualImpl
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.CreateSDKErrorTextKeysImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.FetchSIdCaseImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.GetDocumentScanDataImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.GetEIdMrzValuesImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.GetEIdRequestCaseImpl
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.RegisterEIdPushNotificationImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.SaveEIdRequestCaseImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.SaveEIdRequestFilesImpl
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.implementation.SaveEIdRequestStateImpl
@@ -88,6 +92,16 @@ interface EIdRequestVerificationModule {
     fun bindGetIdRequestCase(
         useCase: GetEIdRequestCaseImpl
     ): GetEIdRequestCase
+
+    @Binds
+    fun bindCreateSDKErrorTextKeys(
+        useCase: CreateSDKErrorTextKeysImpl
+    ): CreateSDKErrorTextKeys
+
+    @Binds
+    fun bindRegisterEIdPushNotification(
+        useCase: RegisterEIdPushNotificationImpl
+    ): RegisterEIdPushNotification
 }
 
 @Module

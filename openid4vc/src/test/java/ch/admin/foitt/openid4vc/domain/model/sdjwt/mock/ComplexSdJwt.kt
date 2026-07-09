@@ -1,5 +1,9 @@
 package ch.admin.foitt.openid4vc.domain.model.sdjwt.mock
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.sdjwt.SdJwtDisclosure
+import ch.admin.foitt.openid4vc.domain.model.sdjwt.util.assertSelectiveDisclosure
+
 internal object ComplexSdJwt {
     /*
 {
@@ -105,7 +109,7 @@ internal object ComplexSdJwt {
 
     // ["salt_object_partly_disclosed_1_3", "key_object_partly_disclosed_1_3", [{"...":"lPIVfEM9o8ze5vXB4zoEXOabTAZyAWX_KcSp6GwjBN0"}, {"...":"decoyv1IB2MeMzj1vn6lUhSTTFWSLmp867EGner_Lu8"}, {"...":"QSzUsv1IB2MeMzj1vn6lUhSTTFWSLmp867EGner_Lu8"}]]
     // raXs5cEG0_2uWLK5PIW0N5I8rrzXk7H3tgKBBOMoXD8
-    private const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3 =
+    const val OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3 =
         "WyJzYWx0X29iamVjdF9wYXJ0bHlfZGlzY2xvc2VkXzFfMyIsICJrZXlfb2JqZWN0X3BhcnRseV9kaXNjbG9zZWRfMV8zIiwgW3siLi4uIjoibFBJVmZFTTlvOHplNXZYQjR6b0VYT2FiVEFaeUFXWF9LY1NwNkd3akJOMCJ9LCB7Ii4uLiI6ImRlY295djFJQjJNZU16ajF2bjZsVWhTVFRGV1NMbXA4NjdFR25lcl9MdTgifSwgeyIuLi4iOiJRU3pVc3YxSUIyTWVNemoxdm42bFVoU1RURldTTG1wODY3RUduZXJfTHU4In1dXQ"
 
     // ["salt_object_partly_disclosed_1_3_1", "value_object_partly_disclosed_1_3_1"]
@@ -188,4 +192,172 @@ internal object ComplexSdJwt {
         OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_1,
         OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_2,
     ).shuffled().toDisclosures()
+
+    val pathFlat = listOf(
+        ClaimsPathPointerComponent.String("key_flat")
+    )
+
+    val sdJwtDisclosureFlat = SdJwtDisclosure(
+        paths = listOf(pathFlat),
+        disclosure = FLAT_DISCLOSURE
+    )
+
+    val pathFlatArray = listOf(ClaimsPathPointerComponent.String("key_flat_array"))
+    val pathFlatArray1 = pathFlatArray + ClaimsPathPointerComponent.Index(0)
+    val pathFlatArray2 = pathFlatArray + ClaimsPathPointerComponent.Index(1)
+    val pathFlatArrayWhole = pathFlatArray + ClaimsPathPointerComponent.Null
+    val sdJwtDisclosureFlatArray = SdJwtDisclosure(
+        paths = listOf(pathFlatArray1, pathFlatArray2, pathFlatArrayWhole),
+        disclosure = FLAT_ARRAY_DISCLOSURE
+    )
+
+    val pathFlatObject = listOf(ClaimsPathPointerComponent.String("key_flat_object"))
+    val pathFlatObject1 = pathFlatObject + ClaimsPathPointerComponent.String("key_nested_object_1")
+    val pathFlatObject2 = pathFlatObject + ClaimsPathPointerComponent.String("key_nested_object_2")
+    val sdJwtDisclosureFlatObject = SdJwtDisclosure(
+        paths = listOf(pathFlatObject1, pathFlatObject2, pathFlatObject),
+        disclosure = FLAT_OBJECT_DISCLOSURE
+    )
+
+    val pathArrayPartly = listOf(ClaimsPathPointerComponent.String("key_array_partly_disclosed"),)
+    val pathArrayPartly1 = pathArrayPartly + ClaimsPathPointerComponent.Index(0)
+    val sdJwtDisclosureArrayPartly1 = SdJwtDisclosure(
+        paths = listOf(pathArrayPartly1),
+        disclosure = ARRAY_PARTLY_DISCLOSED_DISCLOSURE_1
+    )
+
+    val pathArrayPartly3 = pathArrayPartly + ClaimsPathPointerComponent.Index(2)
+    val sdJwtDisclosureArrayPartly3 = SdJwtDisclosure(
+        paths = listOf(pathArrayPartly3),
+        disclosure = ARRAY_PARTLY_DISCLOSED_DISCLOSURE_3
+    )
+
+    val pathObjectPartly = listOf(ClaimsPathPointerComponent.String("key_object_partly_disclosed"))
+    val pathObjectPartly_1_2 = pathObjectPartly + ClaimsPathPointerComponent.String("key_object_partly_disclosed_1_2")
+    val pathObjectPartly_1_2_2 = pathObjectPartly_1_2 + ClaimsPathPointerComponent.String("key_object_partly_disclosed_1_2_2")
+    val sdJwtDisclosureObject1_2 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_2_2, pathObjectPartly_1_2),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2
+    )
+
+    val pathObjectPartly_1_2_1 = pathObjectPartly_1_2 + ClaimsPathPointerComponent.String("key_object_partly_disclosed_1_2_1")
+    val sdJwtDisclosureObject1_2_1 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_2_1),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_1
+    )
+
+    val pathObjectPartly_1_2_3 = pathObjectPartly_1_2 + ClaimsPathPointerComponent.String("key_object_partly_disclosed_1_2_3")
+    val pathObjectPartly_1_2_3_array = pathObjectPartly_1_2_3 + ClaimsPathPointerComponent.Null
+    val sdJwtDisclosureObject1_2_3 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_2_3_array),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3
+    )
+
+    val pathObjectPartly_1_2_3_1 = pathObjectPartly_1_2_3 + ClaimsPathPointerComponent.Index(0)
+    val pathObjectPartly_1_2_3_1_1 = pathObjectPartly_1_2_3_1 + ClaimsPathPointerComponent.String("key_object_partly_disclosed_1_2_3_1")
+    val pathObjectPartly_1_2_3_1_1_1 = pathObjectPartly_1_2_3_1_1 + ClaimsPathPointerComponent.Index(0)
+    val pathObjectPartly_1_2_3_1_1_array = pathObjectPartly_1_2_3_1_1 + ClaimsPathPointerComponent.Null
+    val sdJwtDisclosureObject1_2_3_1 = SdJwtDisclosure(
+        paths = listOf(
+            pathObjectPartly_1_2_3_1_1_1,
+            pathObjectPartly_1_2_3_1_1_array,
+            pathObjectPartly_1_2_3_1
+        ),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_1
+    )
+
+    val pathObjectPartly_1_2_3_2 = pathObjectPartly_1_2_3 + ClaimsPathPointerComponent.Index(1)
+    val sdJwtDisclosureObject1_2_3_2 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_2_3_2),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2
+    )
+
+    val pathObjectPartly_1_2_3_2_1 = pathObjectPartly_1_2_3_2 + ClaimsPathPointerComponent.String("key_object_partly_disclosed_1_2_3_1")
+    val pathObjectPartly_1_2_3_2_1_array = pathObjectPartly_1_2_3_2_1 + ClaimsPathPointerComponent.Null
+    val sdJwtDisclosureObject1_2_3_2_1 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_2_3_2_1_array),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1
+    )
+
+    val pathObjectPartly_1_2_3_2_1_1 = pathObjectPartly_1_2_3_2_1 + ClaimsPathPointerComponent.Index(0)
+    val sdJwtDisclosureObject1_2_3_2_1_1 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_2_3_2_1_1),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1_1
+    )
+
+    val pathObjectPartly_1_3 = pathObjectPartly + ClaimsPathPointerComponent.String("key_object_partly_disclosed_1_3")
+    val pathObjectPartly_1_3_array = pathObjectPartly_1_3 + ClaimsPathPointerComponent.Null
+    val sdJwtDisclosureObject1_3 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_3_array),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3
+    )
+
+    val pathObjectPartly_1_3_1 = pathObjectPartly_1_3 + ClaimsPathPointerComponent.Index(0)
+    val sdJwtDisclosureObject1_3_1 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_3_1),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_1
+    )
+
+    val pathObjectPartly_1_3_2 = pathObjectPartly_1_3 + ClaimsPathPointerComponent.Index(1)
+    val sdJwtDisclosureObject1_3_2 = SdJwtDisclosure(
+        paths = listOf(pathObjectPartly_1_3_2),
+        disclosure = OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_2
+    )
+
+    val sdJwtDisclosures = setOf(
+        sdJwtDisclosureFlat,
+        sdJwtDisclosureFlatArray,
+        sdJwtDisclosureFlatObject,
+        sdJwtDisclosureArrayPartly1,
+        sdJwtDisclosureArrayPartly3,
+        sdJwtDisclosureObject1_2,
+        sdJwtDisclosureObject1_2_1,
+        sdJwtDisclosureObject1_2_3,
+        sdJwtDisclosureObject1_2_3_1,
+        sdJwtDisclosureObject1_2_3_2,
+        sdJwtDisclosureObject1_2_3_2_1,
+        sdJwtDisclosureObject1_2_3_2_1_1,
+        sdJwtDisclosureObject1_3,
+        sdJwtDisclosureObject1_3_1,
+        sdJwtDisclosureObject1_3_2,
+    )
+
+    val requestedPathWhole = listOf(pathObjectPartly)
+
+    val requestedPathPartial = listOf(pathObjectPartly_1_2_1, pathObjectPartly_1_2_3_1_1, pathObjectPartly_1_3)
+
+    fun assertWhole(selectiveDisclosure: String) {
+        assertSelectiveDisclosure(
+            selectiveDisclosure = selectiveDisclosure,
+            jwt = JWT,
+            disclosures = listOf(
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_2_1_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_2,
+            )
+        )
+    }
+
+    fun assertPartial(selectiveDisclosure: String) {
+        assertSelectiveDisclosure(
+            selectiveDisclosure = selectiveDisclosure,
+            jwt = JWT,
+            disclosures = listOf(
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_2_3_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_1,
+                OBJECT_PARTLY_DISCLOSED_DISCLOSURE_1_3_2,
+            )
+        )
+    }
 }

@@ -31,6 +31,7 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 fun ToastAnimated(
     modifier: Modifier = Modifier.fillMaxSize(),
     isVisible: Boolean,
+    useLiveRegion: Boolean = true,
     @DrawableRes iconEnd: Int? = null,
     isSnackBarDesign: Boolean,
     contentBottomPadding: Dp? = null,
@@ -69,7 +70,7 @@ fun ToastAnimated(
             ) {
                 Toast(
                     modifier = Modifier,
-                    shouldRequestFocus = true,
+                    useLiveRegion = useLiveRegion,
                     text = text,
                     backgroundColor = WalletTheme.colorScheme.inverseSurface,
                     textColor = WalletTheme.colorScheme.inverseOnSurface,

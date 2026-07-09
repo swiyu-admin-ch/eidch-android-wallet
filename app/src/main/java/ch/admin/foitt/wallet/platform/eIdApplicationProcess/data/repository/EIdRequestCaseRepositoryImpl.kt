@@ -54,6 +54,31 @@ class EIdRequestCaseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun setFilesSubmitted(
+        caseId: String,
+        filesSubmitted: Boolean,
+    ): Result<Unit, EIdRequestCaseRepositoryError> = withContext(ioDispatcher) {
+        runSuspendCatching {
+            eIdRequestCaseDao().setFilesSubmitted(
+                caseId = caseId,
+                filesSubmitted = filesSubmitted,
+            )
+            Unit
+        }.mapError { throwable ->
+            throwable.toEIdRequestCaseRepositoryError("EIdRequestCaseRepository setFilesSubmitted error")
+        }
+    }
+
+    override suspend fun setPushId(
+        caseId: String,
+        pushId: String?
+    ): Result<Unit, EIdRequestCaseRepositoryError> = withContext(ioDispatcher) {
+        runSuspendCatching {
+            eIdRequestCaseDao().setPushId(caseId, pushId)
+            Unit
+        }.mapError { it.toEIdRequestCaseRepositoryError("Failed to update push ID on EIdRequestCase") }
+    }
+
     override suspend fun getEIdRequestCase(
         caseId: String
     ): Result<EIdRequestCase, EIdRequestCaseRepositoryError> = withContext(ioDispatcher) {
@@ -62,6 +87,14 @@ class EIdRequestCaseRepositoryImpl @Inject constructor(
         }.mapError { throwable ->
             throwable.toEIdRequestCaseRepositoryError("EIdRequestCaseRepository getEIdRequestCase error")
         }
+    }
+
+    override suspend fun getEIdRequestCasesWithPushId(): Result<List<EIdRequestCase>, EIdRequestCaseRepositoryError> = withContext(
+        ioDispatcher
+    ) {
+        runSuspendCatching {
+            eIdRequestCaseDao().getEIdRequestCasesWithPushId()
+        }.mapError { it.toEIdRequestCaseRepositoryError("Failed to fetch cases with push ID") }
     }
 
     private val eIdRequestCaseDaoFlow = daoProvider.eIdRequestCaseDaoFlow

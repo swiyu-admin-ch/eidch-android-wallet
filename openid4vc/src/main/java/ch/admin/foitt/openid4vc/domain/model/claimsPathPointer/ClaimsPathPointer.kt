@@ -27,8 +27,10 @@ fun claimsPathPointerFrom(rawString: String): ClaimsPathPointer? =
         Json.decodeFromString<ClaimsPathPointer>(rawString)
     }.get()
 
-fun ClaimsPathPointer.pointsAtSetOf(otherPath: ClaimsPathPointer): Boolean {
-    if (size != otherPath.size) return false
+fun ClaimsPathPointer.pointsAtSetOf(otherPath: ClaimsPathPointer, enforceLength: Boolean = false): Boolean {
+    if (enforceLength && size != otherPath.size || size > otherPath.size) {
+        return false
+    }
     zip(otherPath) { component, otherComponent ->
         if (component != otherComponent) {
             if (component != ClaimsPathPointerComponent.Null || otherComponent !is ClaimsPathPointerComponent.Index) {
@@ -37,4 +39,25 @@ fun ClaimsPathPointer.pointsAtSetOf(otherPath: ClaimsPathPointer): Boolean {
         }
     }
     return true
+}
+
+val ClaimsPathPointer.allIndices: List<Int>
+    get() = mapNotNull {
+        val component = it as? ClaimsPathPointerComponent.Index
+        component?.index
+    }
+
+fun ClaimsPathPointer.resolveWildCards(indices: List<Int>): ClaimsPathPointer {
+    var indices = indices
+    return map { component ->
+        if (component is ClaimsPathPointerComponent.Null) {
+            val newComponent = indices.firstOrNull()?.let {
+                ClaimsPathPointerComponent.Index(it)
+            } ?: component
+            indices = indices.drop(1)
+            newComponent
+        } else {
+            component
+        }
+    }
 }

@@ -7,10 +7,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -21,17 +21,22 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 
 @Composable
 internal fun FaceScannerErrorContent(
-    onRetry: () -> Unit,
+    @StringRes title: Int,
+    @StringRes content: Int,
+    @StringRes buttonText: Int,
+    onButton: () -> Unit,
     onHelp: () -> Unit
-) = FaceScannerContent(
-    icon = R.drawable.wallet_ic_cross_circle_colored,
-    primaryText = R.string.tk_error_generic_primary,
-    secondaryText = R.string.tk_error_generic_secondary,
-    buttonText = R.string.tk_error_generic_button_primary,
-    buttonHelp = R.string.tk_error_generic_helpLink_label,
-    onRetry = onRetry,
-    onHelp = onHelp,
-)
+) {
+    FaceScannerContent(
+        icon = R.drawable.wallet_ic_cross_circle_colored,
+        primaryText = title,
+        secondaryText = content,
+        buttonText = buttonText,
+        buttonHelp = R.string.tk_error_generic_helpLink_label,
+        onRetry = onButton,
+        onHelp = onHelp,
+    )
+}
 
 @Composable
 private fun FaceScannerContent(
@@ -49,13 +54,17 @@ private fun FaceScannerContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
         buttonText?.let {
-            Buttons.FilledPrimary(
-                text = stringResource(buttonText),
-                onClick = onRetry,
-                modifier = Modifier.fillMaxWidth(),
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(buttonText),
+                            onClick = onRetry,
+                        )
+                    },
+                ),
             )
         }
     },

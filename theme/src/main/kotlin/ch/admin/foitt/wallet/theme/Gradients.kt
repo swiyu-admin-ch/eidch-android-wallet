@@ -34,4 +34,11 @@ object Gradients {
         center = Offset(x = 0.55f * size.width, y = 0.9f * size.height),
         radius = 0.3f * size.minDimension,
     )
+
+    fun linearProgressIndicatorBrush() = Brush.linearGradient(
+        listOf(
+            WalletColors.gradientGray,
+            WalletColors.gradientPink,
+        )
+    )
 }

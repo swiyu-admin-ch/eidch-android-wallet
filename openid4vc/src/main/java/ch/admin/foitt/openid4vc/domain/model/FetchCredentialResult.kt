@@ -11,14 +11,18 @@ data class DeferredCredential(
     override val format: CredentialFormat,
     override val transactionId: String,
     override val accessToken: String,
+    override val tokenType: TokenType,
     override val refreshToken: String?,
     override val endpoint: URL,
     override val pollInterval: Int,
     override val keyBindings: List<KeyBinding>?,
+    override val dpopKeyBinding: KeyBinding?,
 ) : FetchCredentialResult, AnyDeferredCredential
 
 data class BatchCredential(
+    val accessToken: String,
     val refreshToken: String?,
+    val dpopKeyBinding: KeyBinding?,
     val credentials: List<VerifiableCredential>,
 ) : FetchCredentialResult
 

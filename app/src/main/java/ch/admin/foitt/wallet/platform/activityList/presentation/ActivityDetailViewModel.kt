@@ -175,6 +175,6 @@ class ActivityDetailViewModel @AssistedInject constructor(
     private fun onMoreInformation(@StringRes uriResource: Int) = appContext.openLink(uriResource)
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.generic()))
     }
 }

@@ -7,8 +7,6 @@ import ch.admin.foitt.wallet.feature.presentationRequest.presentation.Presentati
 import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationDeclinedViewModel
 import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationFailureScreen
 import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationFailureViewModel
-import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationInvalidCredentialErrorScreen
-import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationInvalidCredentialErrorViewModel
 import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationRequestScreen
 import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationRequestViewModel
 import ch.admin.foitt.wallet.feature.presentationRequest.presentation.PresentationSuccessScreen
@@ -67,18 +65,6 @@ object EntryProviderInstallerModule {
                 )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 PresentationFailureScreen(viewModel = viewModel)
-            }
-        }
-
-        entry<Destination.PresentationInvalidCredentialErrorScreen> { navKey ->
-            val viewModel =
-                hiltViewModel<PresentationInvalidCredentialErrorViewModel, PresentationInvalidCredentialErrorViewModel.Factory>(
-                    creationCallback = { factory ->
-                        factory.create(sentFields = navKey.sentFields)
-                    }
-                )
-            SyncedScaffoldScreen(viewModel = viewModel) {
-                PresentationInvalidCredentialErrorScreen(viewModel = viewModel)
             }
         }
 

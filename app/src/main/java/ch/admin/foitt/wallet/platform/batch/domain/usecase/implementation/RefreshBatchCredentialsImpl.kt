@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.batch.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.GenerateDPoPKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedBatchCredential
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchCredentialByConfigError
@@ -9,6 +10,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.Grant
 import ch.admin.foitt.openid4vc.domain.model.threshold
 import ch.admin.foitt.openid4vc.domain.usecase.FetchCredentialByConfig
 import ch.admin.foitt.openid4vc.domain.usecase.FetchRawAndParsedIssuerCredentialInfo
+import ch.admin.foitt.openid4vc.domain.usecase.GenerateDPoPKeyPair
 import ch.admin.foitt.openid4vc.domain.usecase.GetVerifiableCredentialParams
 import ch.admin.foitt.wallet.platform.batch.domain.error.BatchRefreshDataRepositoryError
 import ch.admin.foitt.wallet.platform.batch.domain.error.DeleteBundleItemsByAmountError
@@ -17,24 +19,26 @@ import ch.admin.foitt.wallet.platform.batch.domain.model.BatchRefreshParams
 import ch.admin.foitt.wallet.platform.batch.domain.repository.BatchRefreshDataRepository
 import ch.admin.foitt.wallet.platform.batch.domain.usecase.DeleteBundleItemsByAmount
 import ch.admin.foitt.wallet.platform.batch.domain.usecase.RefreshBatchCredentials
-import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
+import ch.admin.foitt.wallet.platform.credential.domain.model.GetBindingKeyPairError
 import ch.admin.foitt.wallet.platform.credential.domain.model.toFetchCredentialError
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.EvaluateBatchSize
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetBindingKeyPair
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetCredentialConfig
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleBatchCredentialResult
+import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.holderBinding.domain.model.GenerateProofKeyPairError
 import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.GenerateProofKeyPairs
 import ch.admin.foitt.wallet.platform.payloadEncryption.domain.model.GetPayloadEncryptionTypeError
 import ch.admin.foitt.wallet.platform.payloadEncryption.domain.usecase.GetPayloadEncryptionType
 import ch.admin.foitt.wallet.platform.ssi.domain.model.BundleItemRepositoryError
-import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialRepositoryError
+import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialWithBatchDataAndAuthenticationRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.DeleteBundleItemError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.toRefreshBatchCredentialsError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.BundleItemRepository
-import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialRepo
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithBatchDataAndAuthenticationRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteBundleItems
-import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
@@ -43,44 +47,54 @@ import javax.inject.Inject
 class RefreshBatchCredentialsImpl @Inject constructor(
     private val bundleItemRepository: BundleItemRepository,
     private val batchRefreshDataRepository: BatchRefreshDataRepository,
-    private val credentialRepository: CredentialRepo,
+    private val verifiableCredentialWithBatchDataAndAuthenticationRepository: VerifiableCredentialWithBatchDataAndAuthenticationRepository,
     private val getCredentialConfig: GetCredentialConfig,
     private val getPayloadEncryptionType: GetPayloadEncryptionType,
     private val fetchRawAndParsedIssuerCredentialInfo: FetchRawAndParsedIssuerCredentialInfo,
     private val getVerifiableCredentialParams: GetVerifiableCredentialParams,
+    private val evaluateBatchSize: EvaluateBatchSize,
     private val deleteBundleItemsByAmount: DeleteBundleItemsByAmount,
     private val generateProofKeyPairs: GenerateProofKeyPairs,
+    private val environmentSetupRepository: EnvironmentSetupRepository,
     private val fetchCredentialByConfig: FetchCredentialByConfig,
+    private val getBindingKeyPair: GetBindingKeyPair,
     private val handleBatchCredentialResult: HandleBatchCredentialResult,
     private val deleteBundleItems: DeleteBundleItems,
+    private val generateDPoPKeyPair: GenerateDPoPKeyPair,
 ) : RefreshBatchCredentials {
     override suspend fun invoke(): Result<Unit, RefreshBatchCredentialsError> = coroutineBinding {
-        val batchRefreshDataList = batchRefreshDataRepository.getAll()
-            .mapError(BatchRefreshDataRepositoryError::toRefreshBatchCredentialsError)
+        val batchRefreshDataList = verifiableCredentialWithBatchDataAndAuthenticationRepository.getAll()
+            .mapError(CredentialWithBatchDataAndAuthenticationRepositoryError::toRefreshBatchCredentialsError)
             .bind()
 
         val countOfNeverPresentedBundleItems = bundleItemRepository.getCountOfNeverPresented()
             .mapError(BundleItemRepositoryError::toRefreshBatchCredentialsError)
             .bind()
 
-        batchRefreshDataList.forEach { batchRefreshData ->
+        batchRefreshDataList.forEach { verifiableCredentialWithBatchDataAndAuthentication ->
+            val batchData = verifiableCredentialWithBatchDataAndAuthentication.batchData
             val presentableBundleItemCount = countOfNeverPresentedBundleItems.find {
-                it.credentialId == batchRefreshData.credentialId
+                it.credentialId == batchData.credentialId
             }?.count
-            if (presentableBundleItemCount != null && presentableBundleItemCount <= batchRefreshData.batchSize.threshold) {
-                val credential = credentialRepository.getById(batchRefreshData.credentialId)
-                    .mapError(CredentialRepositoryError::toRefreshBatchCredentialsError)
-                    .bind()
+            val refreshToken = verifiableCredentialWithBatchDataAndAuthentication.authentication.refreshToken
+            if (refreshToken != null &&
+                presentableBundleItemCount != null &&
+                presentableBundleItemCount <= batchData.batchSize.threshold
+            ) {
+                val credential = verifiableCredentialWithBatchDataAndAuthentication.credential
                 refreshAndSaveCredential(
                     credentialOffer = CredentialOffer(
                         credentialIssuer = credential.issuerUrl,
                         credentialConfigurationIds = listOf(requireNotNull(credential.selectedConfigurationId)),
-                        grants = Grant(refreshToken = batchRefreshData.refreshToken)
+                        grants = Grant(
+                            refreshToken = refreshToken
+                        )
                     ),
                     batchRefreshParams = BatchRefreshParams(
-                        credentialId = batchRefreshData.credentialId,
+                        credentialId = batchData.credentialId,
                         presentableCredentialCount = presentableBundleItemCount,
-                        oldBatchSize = batchRefreshData.batchSize
+                        oldBatchSize = batchData.batchSize,
+                        authentication = verifiableCredentialWithBatchDataAndAuthentication.authentication,
                     )
                 )
             }
@@ -97,9 +111,7 @@ class RefreshBatchCredentialsImpl @Inject constructor(
             .bind()
 
         val issuerInfo = rawAndParsedCredentialInfo.issuerCredentialInfo
-        val batchCredentialIssuance = issuerInfo.batchCredentialIssuance
-        val batchSize = batchCredentialIssuance?.batchSize
-            ?: return@coroutineBinding Err(CredentialError.InvalidIssuerCredentialInfo).bind<FetchCredentialResult>()
+        val batchSize = evaluateBatchSize(issuerInfo).bind()
         val config = getCredentialConfig(
             credentials = credentialOffer.credentialConfigurationIds,
             credentialConfigurations = issuerInfo.credentialConfigurations
@@ -115,10 +127,9 @@ class RefreshBatchCredentialsImpl @Inject constructor(
         }
 
         if (onlyUpdateRefreshData) {
-            batchRefreshDataRepository.saveBatchRefreshData(
+            batchRefreshDataRepository.updateBatchSize(
                 credentialId = batchRefreshParams.credentialId,
                 batchSize = batchSize,
-                refreshToken = requireNotNull(credentialOffer.grants.refreshToken)
             ).mapError(BatchRefreshDataRepositoryError::toFetchCredentialError).bind()
             return@coroutineBinding FetchCredentialResult.Credential(batchRefreshParams.credentialId)
         }
@@ -142,10 +153,18 @@ class RefreshBatchCredentialsImpl @Inject constructor(
             responseEncryption = issuerInfo.credentialResponseEncryption,
         ).mapError(GetPayloadEncryptionTypeError::toFetchCredentialError).bind()
 
+        val dpopKeyPair = getBindingKeyPair(batchRefreshParams.authentication)
+            .mapError(GetBindingKeyPairError::toFetchCredentialError)
+            .bind() ?: generateDPoPKeyPair(verifiableCredentialParams)
+            .mapError(GenerateDPoPKeyPairError::toFetchCredentialError)
+            .bind()
+
         val anyCredentialResult = fetchCredentialByConfig(
+            isDPopEnabled = environmentSetupRepository.isDPopEnabled,
             verifiableCredentialParams = verifiableCredentialParams,
             bindingKeyPairs = proofKeyPairs,
-            payloadEncryptionType = payloadEncryptionType
+            payloadEncryptionType = payloadEncryptionType,
+            dpopKeyPair = dpopKeyPair,
         ).mapError(FetchCredentialByConfigError::toFetchCredentialError).bind()
 
         val oldBundleItems = bundleItemRepository.getAllByCredentialId(batchRefreshParams.credentialId)

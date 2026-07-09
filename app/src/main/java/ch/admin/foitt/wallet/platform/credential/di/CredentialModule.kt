@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credential.di
 
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.EvaluateBatchSize
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndUpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchExistingIssuerCredentialInfo
@@ -9,16 +10,19 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadata
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentialsByCredentialId
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetBindingKeyPair
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetCredentialConfig
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleBatchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleDeferredCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.ResolveClaimTemplate
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveCredentialFromDeferred
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveVcSdJwtCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.UpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.ValidateIssuerCredentialInfo
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.EvaluateBatchSizeImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.FetchAndSaveCredentialImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.FetchAndUpdateDeferredCredentialImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.FetchExistingIssuerCredentialInfoImpl
@@ -28,12 +32,14 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.G
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GenerateMetadataDisplaysImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GetAllAnyCredentialsByCredentialIdImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GetAllAnyCredentialsImpl
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GetBindingKeyPairImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.GetCredentialConfigImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.HandleBatchCredentialResultImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.HandleCredentialResultImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.HandleDeferredCredentialResultImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.MapToCredentialDisplayDataImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.RefreshDeferredCredentialsImpl
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.ResolveClaimTemplateImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.SaveCredentialFromDeferredImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.SaveVcSdJwtCredentialsImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.UpdateDeferredCredentialImpl
@@ -60,6 +66,11 @@ internal interface CredentialModule {
     ): FetchAndUpdateDeferredCredential
 
     @Binds
+    fun bindEvaluateBatchSize(
+        useCase: EvaluateBatchSizeImpl
+    ): EvaluateBatchSize
+
+    @Binds
     fun bindGetAnyCredential(
         useCase: GetAllAnyCredentialsByCredentialIdImpl
     ): GetAllAnyCredentialsByCredentialId
@@ -68,6 +79,11 @@ internal interface CredentialModule {
     fun bindGetAnyCredentials(
         useCase: GetAllAnyCredentialsImpl
     ): GetAllAnyCredentials
+
+    @Binds
+    fun bindGetBindingKeyPair(
+        useCase: GetBindingKeyPairImpl
+    ): GetBindingKeyPair
 
     @Binds
     fun bindGetCredentialConfig(
@@ -148,4 +164,9 @@ internal interface CredentialModule {
     fun bindUpdateDeferredCredential(
         useCase: UpdateDeferredCredentialImpl
     ): UpdateDeferredCredential
+
+    @Binds
+    fun bindResolveClaimTemplate(
+        useCase: ResolveClaimTemplateImpl
+    ): ResolveClaimTemplate
 }

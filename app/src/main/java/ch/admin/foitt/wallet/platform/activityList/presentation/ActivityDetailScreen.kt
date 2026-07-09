@@ -55,7 +55,7 @@ import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDra
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
-import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
+import ch.admin.foitt.wallet.platform.credential.presentation.credentialElements
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialInfoWithTrustBadgesWidget
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
@@ -199,8 +199,8 @@ fun ActivityDetailScreenContent(
         if (activityDetailScreenUiState.claims.isNotEmpty()) {
             item { Spacer(modifier = Modifier.height(Sizes.s04)) }
 
-            credentialClaimItems(
-                claimItems = activityDetailScreenUiState.claims,
+            credentialElements(
+                elements = activityDetailScreenUiState.claims,
             )
         }
 
@@ -252,7 +252,7 @@ private fun LazyListScope.actorCluster(
         isFirstItem = true,
         isLastItem = actorTrustStatus == TrustStatus.UNKNOWN && actorActorComplianceState == ActorComplianceState.UNKNOWN &&
             vcSchemaTrustStatus == VcSchemaTrustStatus.UNPROTECTED,
-        showDivider = false,
+        divider = null,
         paddingValues = paddingValues,
     ) {
         val issuerIcon =
@@ -302,7 +302,7 @@ private fun LazyListScope.actorTrustBadgeListItem(
 ) = clusterLazyListItem(
     isFirstItem = false,
     isLastItem = true,
-    showDivider = false,
+    divider = null,
     paddingValues = paddingValues,
 ) {
     ListItem(
@@ -439,6 +439,7 @@ private fun ActivityDetailScreenPreview() {
                         order = 1,
                         localizedLabel = "top level cluster",
                         parentId = null,
+                        path = emptyList(),
                         items = mutableListOf(
                             CredentialClaimText(
                                 id = 1,

@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class VcSdJwtCredentialConfiguration(
     override val identifier: String,
-    override val format: CredentialFormat = CredentialFormat.VC_SD_JWT,
+    override val format: CredentialFormat = CredentialFormat.DC_SD_JWT,
     override val scope: String? = null,
 
     @Serializable

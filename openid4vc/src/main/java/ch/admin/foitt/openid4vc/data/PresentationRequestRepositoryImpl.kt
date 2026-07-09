@@ -1,6 +1,6 @@
 package ch.admin.foitt.openid4vc.data
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.domain.model.HttpErrorBody
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseConfig
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseErrorBody
@@ -22,6 +22,8 @@ import com.github.michaelbull.result.mapBoth
 import com.github.michaelbull.result.mapError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
@@ -60,7 +62,6 @@ internal class PresentationRequestRepositoryImpl @Inject constructor(
                     Constants.SWIYU_API_VERSION_HEADER,
                     when (authorizationResponseConfig.type) {
                         AuthorizationResponseType.DCQL -> Constants.SWIYU_API_VERSION_2
-                        AuthorizationResponseType.DIF -> Constants.SWIYU_API_VERSION_1
                     }
                 )
             }
@@ -95,31 +96,17 @@ internal class PresentationRequestRepositoryImpl @Inject constructor(
         val errorBodyString = clientRequestException.response.bodyAsText()
         val errorBodyResult = safeJson.safeDecodeStringTo<HttpErrorBody>(errorBodyString)
         return errorBodyResult.mapBoth(
-            success = {
-                when {
-                    it.isValidationError() -> PresentationRequestError.ValidationError
-                    it.isVerificationError() -> PresentationRequestError.VerificationError
-                    it.isInvalidCredentialError() -> PresentationRequestError.InvalidCredentialError
-                    else -> PresentationRequestError.Unexpected(clientRequestException)
-                }
-            },
+            success = { handleSubmitPresentationErrorBody(it) },
             failure = JsonParsingError::toSubmitPresentationError
         )
     }
 
-    private fun HttpErrorBody.isValidationError() = this.error in ERRORS
-
-    private fun HttpErrorBody.isVerificationError() = this.error == "verification_process_closed"
-
-    private fun HttpErrorBody.isInvalidCredentialError() = this.error == "invalid_credential"
-
-    companion object {
-        private val ERRORS = listOf(
-            "authorization_request_object_not_found",
-            "authorization_request_missing_error_param",
-            "invalid_presentation_definition",
-            "invalid_request",
-        )
+    private fun handleSubmitPresentationErrorBody(
+        errorBody: HttpErrorBody,
+    ): SubmitAnyCredentialPresentationError = when (errorBody.error.lowercase()) {
+        "verification_process_closed" -> PresentationRequestError.VerificationError
+        "invalid_credential" -> PresentationRequestError.InvalidCredentialError
+        else -> PresentationRequestError.ValidationError(error = errorBody.error, description = errorBody.errorDescription)
     }
 }
 
@@ -130,6 +117,8 @@ private fun Throwable.toFetchPresentationRequestError(): FetchPresentationReques
 
 private fun Throwable.toSubmitAnyCredentialPresentationError(): SubmitAnyCredentialPresentationError =
     when (this) {
+        is ConnectTimeoutException -> PresentationRequestError.NetworkError
+        is SocketTimeoutException -> PresentationRequestError.SocketTimeoutError
         is IOException -> PresentationRequestError.NetworkError
         else -> PresentationRequestError.Unexpected(this)
     }

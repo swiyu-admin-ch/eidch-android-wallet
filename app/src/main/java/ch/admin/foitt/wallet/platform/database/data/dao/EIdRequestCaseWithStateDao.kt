@@ -11,4 +11,8 @@ interface EIdRequestCaseWithStateDao {
     @Transaction
     @Query("SELECT * FROM eidrequestcase")
     fun getEIdCasesWithStatesFlow(): Flow<List<EIdRequestCaseWithState>>
+
+    @Transaction
+    @Query("SELECT * FROM eidrequestcase")
+    fun getEIdCasesWithStates(): List<EIdRequestCaseWithState>
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -28,6 +29,7 @@ import ch.admin.foitt.wallet.platform.credential.presentation.CredentialCardVery
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayData
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayStatus
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
+import ch.admin.foitt.wallet.platform.utils.setIsTraversalGroup
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
@@ -54,6 +56,7 @@ fun EIdRequestCard(
     SIdRequestDisplayStatus.REFUSED -> CardRefused(eIdRequest, onMainButton, onClose)
     SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING -> CardInTargetWalletPairing(eIdRequest, onMainButton)
     SIdRequestDisplayStatus.IN_AUTO_VERIFICATION -> CardInAutoVerification(eIdRequest, onMainButton)
+    SIdRequestDisplayStatus.AV_FILES_SUBMITTED -> CardFilesSubmitted(eIdRequest)
     SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK -> CardFinalEntitlementCheck(eIdRequest)
     SIdRequestDisplayStatus.CANCELLED -> CardCancelled(eIdRequest, onClose)
     SIdRequestDisplayStatus.CLOSED -> CardClosed(eIdRequest, onClose)
@@ -159,6 +162,14 @@ private fun CardInAutoVerification(
 )
 
 @Composable
+private fun CardFilesSubmitted(
+    displayData: SIdRequestDisplayData,
+) = EIdRequestCardGeneric(
+    title = stringResource(R.string.tk_getEid_notification_autoVerification_filesSubmitted_primary, displayData.cardName),
+    body = stringResource(R.string.tk_getEid_notification_autoVerification_filesSubmitted_secondary),
+)
+
+@Composable
 private fun CardFinalEntitlementCheck(
     displayData: SIdRequestDisplayData,
 ) = EIdRequestCardGeneric(
@@ -219,7 +230,8 @@ private fun EIdRequestCardGeneric(
     onButtonClick: () -> Unit = {},
     onCloseClick: (() -> Unit)? = null,
 ) = Surface(
-    color = WalletTheme.colorScheme.surfaceContainerHighest,
+    modifier = Modifier.setIsTraversalGroup(true),
+    color = WalletTheme.colorScheme.listItemBackground,
     shape = RoundedCornerShape(Sizes.s05),
 ) {
     Row(
@@ -234,6 +246,7 @@ private fun EIdRequestCardGeneric(
         ) {
             WalletTexts.TitleSmall(
                 modifier = Modifier.semantics {
+                    heading()
                     traversalIndex = -4f
                 },
                 text = title
@@ -276,7 +289,7 @@ private fun EIdRequestCardGeneric(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.wallet_ic_cross),
-                    contentDescription = "close",
+                    contentDescription = stringResource(R.string.tk_getEid_notification_close_button_alt),
                     tint = WalletTheme.colorScheme.onSecondaryContainer,
                 )
             }
@@ -300,6 +313,7 @@ private fun SIdRequestDisplayStatus.toPreviewDisplayData() = SIdRequestDisplayDa
     onlineSessionStartOpenAt = "06.02.2025",
     onlineSessionStartTimeoutAt = "08.02.2025",
     caseId = "1",
+    createdAt = 1L,
 )
 
 @WalletComponentPreview

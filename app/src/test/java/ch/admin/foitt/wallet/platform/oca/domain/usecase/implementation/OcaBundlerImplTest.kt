@@ -12,7 +12,6 @@ import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaCaptureBaseValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaCesrHashValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaOverlayValidator
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.TransformOcaOverlays
-import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.betaIdExample
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.elfaCaptureBase
 import ch.admin.foitt.wallet.platform.oca.mock.ocaMocks.elfaExample
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
@@ -30,9 +29,7 @@ import kotlinx.serialization.json.JsonObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestFactory
 
 class OcaBundlerImplTest {
 
@@ -81,17 +78,6 @@ class OcaBundlerImplTest {
     @AfterEach
     fun tearDown() {
         unmockkAll()
-    }
-
-    @TestFactory
-    fun `Oca with valid structure is processed without error`(): List<DynamicTest> {
-        return mapOf("elfaJson" to elfaExample, "betaIdJson" to betaIdExample).map { (name, ocaJson) ->
-            DynamicTest.dynamicTest(name) {
-                runTest {
-                    ocaBundler(ocaJson).assertOk()
-                }
-            }
-        }
     }
 
     @Test
@@ -158,7 +144,7 @@ class OcaBundlerImplTest {
         coEvery { mockOcaCesrHashValidator(any()) } returns Ok(Unit)
         coEvery { mockOcaCaptureBaseValidator(any()) } returns Ok(captureBases)
         coEvery { mockOcaOverlayValidator(any()) } returns Ok(overlays)
-        coEvery { mockTransformOcaOverlays(any()) } returns overlays
+        coEvery { mockTransformOcaOverlays(any(), any()) } returns overlays
         coEvery { mockGetRootCaptureBase(any()) } returns Ok(captureBase)
         coEvery { mockGenerateOcaClaimData(any(), any()) } returns emptyList()
         coEvery { mockGenerateOcaCredentialData(any(), any()) } returns emptyList()

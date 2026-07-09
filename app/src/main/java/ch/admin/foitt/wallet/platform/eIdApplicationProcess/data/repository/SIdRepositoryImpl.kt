@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess.data.repository
 
 import android.content.Context
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationPoP
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestation
@@ -9,6 +9,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.ApplyRe
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AttestationsValidationRequest
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AutoVerificationResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.CaseResponse
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdPeerPushIdRequest
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdStartAutoVerificationType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.GuardianVerificationResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletResponse
@@ -173,6 +174,22 @@ class SIdRepositoryImpl @Inject constructor(
         }.mapError { throwable ->
             throwable.toSIdRepositoryError("getWalletPairingState error")
         }
+
+    override suspend fun setPeerPushId(
+        caseId: String,
+        clientAttestation: ClientAttestation,
+        clientAttestationPoP: ClientAttestationPoP,
+        request: EIdPeerPushIdRequest
+    ) = runSuspendCatching<Unit> {
+        httpClient.put(
+            environmentSetupRepo.sidBackendUrl + REST_API + "eid/$caseId/peer-push-id"
+        ) {
+            header(ClientAttestation.REQUEST_HEADER, clientAttestation.attestation.rawJwt)
+            header(ClientAttestationPoP.REQUEST_HEADER, clientAttestationPoP.value)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+    }.mapError { it.toSIdRepositoryError("Set peer pushId failed") }
 
     companion object {
         private const val REST_API = "api/rest/"

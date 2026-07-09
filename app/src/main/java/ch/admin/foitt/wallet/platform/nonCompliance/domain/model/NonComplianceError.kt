@@ -40,6 +40,7 @@ fun JsonParsingError.toSendNonComplianceReportError(): SendNonComplianceReportEr
 internal fun RequestClientAttestationError.toSendNonComplianceReportError(): SendNonComplianceReportError = when (this) {
     is AttestationError.ValidationError -> NonComplianceError.InvalidClientAttestation
     is AttestationError.NetworkError -> NonComplianceError.NetworkError
+    AttestationError.SocketTimeoutError -> NonComplianceError.Unexpected(null)
     is AttestationError.Unexpected -> NonComplianceError.Unexpected(throwable)
 }
 

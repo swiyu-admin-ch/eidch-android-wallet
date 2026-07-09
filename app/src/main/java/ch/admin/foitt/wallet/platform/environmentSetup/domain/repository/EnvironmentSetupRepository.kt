@@ -5,10 +5,12 @@ interface EnvironmentSetupRepository {
     val attestationsServiceUrl: String
     val attestationsServiceTrustedDids: List<String>
     val trustRegistryMapping: Map<String, String>
-    val trustRegistryTrustedDids: Map<String, List<String>>
+    val trustV1TrustRegistryTrustedDids: Map<String, List<String>>
+    val trustRegistryTrustedDids: Map<String, Map<String, List<String>>>
     val trustEnvironmentDidRegex: String
     val demoTrustEnvironmentDidRegex: String
     val baseTrustDomainRegex: Regex
+    val notificationBackendUrl: String
     val betaIdRequestEnabled: Boolean
     val eIdRequestEnabled: Boolean
     val eIdMockMrzEnabled: Boolean
@@ -24,5 +26,8 @@ interface EnvironmentSetupRepository {
     val allowBypassOtp: Boolean
     val isLottieViewerEnabled: Boolean
     val devsSettingsEnabled: Boolean
-    val isImageValidationEnabled: Boolean
+    val isProximityEngagementEnabled: Boolean
+    val verifyRequestObjectSignature: Boolean
+    val isVersionEnforcementEnabled: Boolean
+    val isDPopEnabled: Boolean
 }

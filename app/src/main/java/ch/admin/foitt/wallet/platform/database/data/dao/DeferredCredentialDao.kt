@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 
 @Dao
@@ -20,11 +20,11 @@ interface DeferredCredentialDao {
 
     @Transaction
     @Query("SELECT * FROM DeferredCredentialEntity WHERE credentialId = :id")
-    fun getById(id: Long): DeferredCredentialWithKeyBinding
+    fun getById(id: Long): DeferredCredentialWithAuthenticationAndKeyBinding
 
     @Transaction
     @Query("SELECT * FROM DeferredCredentialEntity")
-    fun getAll(): List<DeferredCredentialWithKeyBinding>
+    fun getAll(): List<DeferredCredentialWithAuthenticationAndKeyBinding>
 
     @Transaction
     @Query(
@@ -41,20 +41,5 @@ interface DeferredCredentialDao {
         progressionState: DeferredProgressionState,
         polledAt: Long,
         pollInterval: Int,
-    ): Int
-
-    @Transaction
-    @Query(
-        """
-            UPDATE DeferredCredentialEntity 
-            SET accessToken = :accessToken, 
-            refreshToken = COALESCE(:refreshToken, refreshToken)
-            WHERE credentialId = :credentialId 
-        """
-    )
-    fun updateTokensByCredentialId(
-        credentialId: Long,
-        accessToken: String,
-        refreshToken: String?,
     ): Int
 }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.presentation.LoadingIndicator
@@ -19,8 +18,6 @@ fun LoadingContent() = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
         LoadingIndicator()
     },
-    stickyBottomBackgroundColor = Color.Transparent,
-    stickyBottomContent = null,
 ) {
     Spacer(modifier = Modifier.height(Sizes.s06))
     WalletTexts.TitleScreen(

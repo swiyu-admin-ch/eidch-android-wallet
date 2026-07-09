@@ -7,4 +7,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface EIdRequestCaseWithStateRepository {
     fun getEIdRequestCasesWithStatesFlow(): Flow<Result<List<EIdRequestCaseWithState>, EIdRequestCaseWithStateRepositoryError>>
+    suspend fun getEIdRequestCasesWithStates(): Result<List<EIdRequestCaseWithState>, EIdRequestCaseWithStateRepositoryError>
 }

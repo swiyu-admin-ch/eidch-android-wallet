@@ -20,7 +20,7 @@ import com.nimbusds.jose.util.Base64URL
 import timber.log.Timber
 import javax.inject.Inject
 
-class CreateJWEImpl @Inject constructor() : CreateJWE {
+internal class CreateJWEImpl @Inject constructor() : CreateJWE {
     override fun invoke(
         algorithm: String,
         encryptionMethod: String,

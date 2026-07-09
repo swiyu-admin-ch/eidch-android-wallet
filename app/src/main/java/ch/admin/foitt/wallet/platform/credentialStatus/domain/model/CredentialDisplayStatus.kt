@@ -15,6 +15,7 @@ sealed interface CredentialDisplayStatus {
     data object Suspended : CredentialDisplayStatus
     data object Unsupported : CredentialDisplayStatus
     data object Unknown : CredentialDisplayStatus
+    data class BusinessExpired(val expiredAt: Instant?) : CredentialDisplayStatus
     data class Expired(val expiredAt: Instant) : CredentialDisplayStatus
     data class NotYetValid(val validFrom: Instant) : CredentialDisplayStatus
 }

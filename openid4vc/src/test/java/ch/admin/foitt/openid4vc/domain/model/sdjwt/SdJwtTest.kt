@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.model.sdjwt
 
+import ch.admin.foitt.openid4vc.domain.model.DigestAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.ComplexRFCSdJwt
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.ComplexSdJwt
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.mock.Disclosure1
@@ -28,6 +29,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -42,6 +44,7 @@ class SdJwtTest {
 
         assertEquals(UndisclosedJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(UndisclosedJwt.JSON, sdJwt.processedJson)
+        assertTrue(sdJwt.sdJwtDisclosures.isEmpty())
     }
 
     @Test
@@ -50,6 +53,7 @@ class SdJwtTest {
 
         assertEquals(TypedSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(TypedSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(TypedSdJwt.sdJwtDisclosures)
     }
 
     @Test
@@ -58,22 +62,7 @@ class SdJwtTest {
 
         assertEquals(FlatSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(FlatSdJwt.JSON, sdJwt.processedJson)
-    }
-
-    @Test
-    fun `parsing a valid flat SD-JWT with SHA-384 should return the JWT and the JSON with actual values`() = runTest {
-        val sdJwt = SdJwt(FlatSdJwt.JWT384 + FlatDisclosures)
-
-        assertEquals(FlatSdJwt.JWT384, sdJwt.signedJwt.parsedString)
-        assertJsonEquals(FlatSdJwt.JSON, sdJwt.processedJson)
-    }
-
-    @Test
-    fun `parsing a valid flat SD-JWT with SHA-512 should return the JWT and the JSON with actual values`() = runTest {
-        val sdJwt = SdJwt(FlatSdJwt.JWT512 + FlatDisclosures)
-
-        assertEquals(FlatSdJwt.JWT512, sdJwt.signedJwt.parsedString)
-        assertJsonEquals(FlatSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(FlatSdJwt.sdJwtDisclosures)
     }
 
     @Test
@@ -82,6 +71,7 @@ class SdJwtTest {
 
         assertEquals(FlatSimpleArraySdJwt.JWT_WITH_OTHER_CLAIMS, sdJwt.signedJwt.parsedString)
         assertJsonEquals(FlatSimpleArraySdJwt.JSON_WITH_OTHER_CLAIMS, sdJwt.processedJson)
+        sdJwt.assertDisclosures(FlatSimpleArraySdJwt.sdJwtDisclosuresArrayOther)
     }
 
     @Test
@@ -90,6 +80,7 @@ class SdJwtTest {
 
         assertEquals(FlatSimpleArraySdJwt.JWT_WITH_ARRAY_ONLY, sdJwt.signedJwt.parsedString)
         assertJsonEquals(FlatSimpleArraySdJwt.JSON_WITH_ARRAY_ONLY, sdJwt.processedJson)
+        sdJwt.assertDisclosures(FlatSimpleArraySdJwt.sdJwtDisclosuresArray)
     }
 
     @Test
@@ -98,6 +89,7 @@ class SdJwtTest {
 
         assertEquals(FlatObjectArraySdJwt.JWT_WITH_ONE_DISCLOSED_ELEMENT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(FlatObjectArraySdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(FlatObjectArraySdJwt.sdJwtDisclosures)
     }
 
     @Test
@@ -106,6 +98,7 @@ class SdJwtTest {
 
         assertEquals(FlatObjectArraySdJwt.JWT_WITH_DISCLOSED_ELEMENTS_ONLY, sdJwt.signedJwt.parsedString)
         assertJsonEquals(FlatObjectArraySdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(FlatObjectArraySdJwt.sdJwtDisclosuresObjectArray)
     }
 
     @Test
@@ -114,16 +107,17 @@ class SdJwtTest {
 
         assertEquals(StructuredSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(StructuredSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(StructuredSdJwt.sdJwtDisclosures)
     }
 
     @Test
-    fun `parsing a valid structured SD-JWT with KeyBindingJWT should return the JWT and the JSON with actual values`() =
-        runTest {
-            val sdJwt = SdJwt(StructuredSdJwt.JWT + StructuredDisclosures + KeyBindingJwt)
+    fun `parsing a valid structured SD-JWT with KeyBindingJWT should return the JWT and the JSON with actual values`() = runTest {
+        val sdJwt = SdJwt(StructuredSdJwt.JWT + StructuredDisclosures + KeyBindingJwt)
 
-            assertEquals(StructuredSdJwt.JWT, sdJwt.signedJwt.parsedString)
-            assertJsonEquals(StructuredSdJwt.JSON, sdJwt.processedJson)
-        }
+        assertEquals(StructuredSdJwt.JWT, sdJwt.signedJwt.parsedString)
+        assertJsonEquals(StructuredSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(StructuredSdJwt.sdJwtDisclosures)
+    }
 
     @Test
     fun `parsing a valid recursive SD-JWT should return the JWT and the JSON with actual values`() = runTest {
@@ -131,6 +125,7 @@ class SdJwtTest {
 
         assertEquals(RecursiveSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(RecursiveSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(RecursiveSdJwt.sdJwtDisclosures)
     }
 
     @Test
@@ -139,6 +134,7 @@ class SdJwtTest {
 
         assertEquals(FlatSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals("""{"$KEY_1":"test_value_1"}""", sdJwt.processedJson)
+        sdJwt.assertDisclosures(setOf(FlatSdJwt.sdJwtDisclosure1))
     }
 
     @Test
@@ -148,6 +144,7 @@ class SdJwtTest {
 
         assertEquals(FlatSimpleArraySdJwt.JWT_WITH_ARRAY_ONLY, sdJwt.signedJwt.parsedString)
         assertJsonEquals("""{"array_key":["test_array_value_1"]}""", sdJwt.processedJson)
+        sdJwt.assertDisclosures(setOf(FlatSimpleArraySdJwt.sdJwtArrayDisclosure1))
     }
 
     @Test
@@ -156,6 +153,7 @@ class SdJwtTest {
 
         assertEquals(ComplexSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(ComplexSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(ComplexSdJwt.sdJwtDisclosures)
     }
 
     @Test
@@ -164,6 +162,7 @@ class SdJwtTest {
 
         assertEquals(SimpleRFCSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(SimpleRFCSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(SimpleRFCSdJwt.sdJwtDisclosures)
     }
 
     @Test
@@ -180,6 +179,7 @@ class SdJwtTest {
 
         assertEquals(DuplicateNameSdJwt.JWT, sdJwt.signedJwt.parsedString)
         assertJsonEquals(DuplicateNameSdJwt.JSON, sdJwt.processedJson)
+        sdJwt.assertDisclosures(DuplicateNameSdJwt.sdJwtDisclosures)
     }
 
     @Test
@@ -406,6 +406,18 @@ class SdJwtTest {
         assert(throwable.message?.contains("sha-1") == true)
     }
 
+    @Test
+    fun `parsing a valid JWT with missing _sd_alg should use the default algorithm and returns the JWT and the JSON with actual values`() = runTest {
+        // FlatSdJwt.JWT but missing the _sd_alg claim
+        val jwt =
+            "eyJhbGciOiJFUzUxMiIsInR5cCI6ImZsYXQifQ.eyJfc2QiOlsiWVJMZjYwNmNsd3Q0LWhqeUd6ZTQ5eVNGaTZWQ213YjluNWh3YjRWVUpTWSIsIlFodXZJTVFkNUx5WDhnT1Izd2VWelNZMHlHWkdHSGRWWFkwRS1OaGhVZnciLCJxbDZ5Qk1iLTVRbDFnRzgzM0oxbzNwb0ZJRExWdDlDazc5YXN0UWVWWWIwIl19.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHlLKqBjNvWSXoMzfGUltEnHKnMc-UQXVlHFuv7mmwX1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACn6vsQg2-0lKwWcae5CIY0sYjIGsHizmcbr3eu9hlT4"
+        val sdJwt = SdJwt(jwt + FlatDisclosures)
+
+        assertEquals(DigestAlgorithm.SHA256, sdJwt.digestAlgorithm)
+        assertEquals(jwt, sdJwt.signedJwt.parsedString)
+        assertJsonEquals(FlatSdJwt.JSON, sdJwt.processedJson)
+    }
+
     private fun assertJsonEquals(expected: String, actualJson: JsonElement) {
         val expectedJson = Json.parseToJsonElement(expected)
         val filteredJson = actualJson.jsonObject.filterKeys { key ->
@@ -413,6 +425,10 @@ class SdJwtTest {
         }
         val jsonObject = JsonObject(filteredJson)
         assertEquals(expectedJson, jsonObject)
+    }
+
+    private fun SdJwt.assertDisclosures(expected: Set<SdJwtDisclosure> = setOf()) {
+        assertEquals(expected, sdJwtDisclosures)
     }
 
     companion object {

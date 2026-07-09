@@ -1,57 +1,57 @@
 package ch.admin.foitt.wallet.theme
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 
 object WalletListItems {
-
     @Composable
-    fun SimpleListItem(
-        @DrawableRes leadingIcon: Int? = null,
-        title: String,
-        onItemClick: () -> Unit,
-        @DrawableRes trailingIcon: Int,
-        showDivider: Boolean = true,
+    fun Cluster(
+        isFirstItem: Boolean,
+        isLastItem: Boolean,
+        divider: (@Composable () -> Unit)? = ::Divider,
+        paddingValues: PaddingValues = PaddingValues(),
+        backgroundColor: Color = WalletTheme.colorScheme.listItemBackground,
+        cornerSize: Dp = Sizes.s05,
+        content: @Composable () -> Unit,
+    ) = Box(
+        modifier = Modifier
+            .padding(paddingValues)
     ) {
-        ListItem(
-            modifier = Modifier.clickable {
-                onItemClick()
-            },
-            leadingContent = leadingIcon?.let {
-                {
-                    ListItemIcon(icon = leadingIcon)
-                }
-            },
-            headlineContent = {
-                WalletTexts.Body(
-                    text = title,
-                    color = MaterialTheme.colorScheme.primary
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (isFirstItem) {
+                        Modifier.clip(RoundedCornerShape(topStart = cornerSize, topEnd = cornerSize))
+                    } else {
+                        Modifier
+                    }
                 )
-            },
-            trailingContent = { ListItemIcon(icon = trailingIcon) },
-        )
-        if (showDivider) {
-            val startPadding = if (leadingIcon != null) Sizes.s15 else Sizes.s04
-            HorizontalDivider(modifier = Modifier.padding(start = startPadding, end = Sizes.s06))
+                .then(
+                    if (isLastItem) {
+                        Modifier.clip(RoundedCornerShape(bottomStart = cornerSize, bottomEnd = cornerSize))
+                    } else {
+                        Modifier
+                    }
+                )
+                .background(backgroundColor)
+        ) {
+            content()
+            if (!isLastItem && divider != null) {
+                divider()
+            }
         }
-    }
-
-    @Composable
-    private fun ListItemIcon(icon: Int) {
-        Icon(
-            painterResource(id = icon),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary
-        )
     }
 
     @Composable
@@ -61,5 +61,14 @@ object WalletListItems {
             .padding(start = Sizes.s04),
         thickness = Sizes.line01,
         color = WalletTheme.colorScheme.outlineVariant,
+    )
+
+    @Composable
+    fun CredentialDivider() = HorizontalDivider(
+        thickness = Sizes.line01,
+        color = WalletTheme.colorScheme.outlineVariant,
+        modifier = Modifier
+            .background(WalletTheme.colorScheme.listItemBackground)
+            .padding(start = Sizes.s04 + Sizes.credentialVerySmallWidth + Sizes.s04)
     )
 }

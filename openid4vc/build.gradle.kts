@@ -7,9 +7,6 @@ plugins {
 
 android {
     namespace = "ch.admin.foitt.openid4vc"
-    defaultConfig {
-        testInstrumentationRunner = "ch.admin.foitt.wallet.CustomTestRunner"
-    }
 }
 
 dependencies {

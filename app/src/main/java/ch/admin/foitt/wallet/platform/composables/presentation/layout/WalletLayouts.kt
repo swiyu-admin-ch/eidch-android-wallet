@@ -7,15 +7,12 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -53,18 +50,6 @@ object WalletLayouts {
     private val paddingStickySmall = Sizes.s02
     val paddingStickyMedium = Sizes.s04
     val paddingContentBottom = Sizes.s06
-
-    val stickyBottomPaddingValuesPortrait = PaddingValues(
-        top = Sizes.s03,
-        start = paddingStickyMedium,
-        end = paddingStickyMedium,
-        bottom = paddingStickyMedium,
-    )
-
-    private val stickyBottomPaddingValuesLandscape = PaddingValues(
-        vertical = paddingStickySmall,
-        horizontal = paddingStickyMedium,
-    )
 
     private val stickStartPaddingValuesLandscape = PaddingValues(
         start = paddingStickySmall,
@@ -119,20 +104,17 @@ object WalletLayouts {
         Spacer(modifier)
     }
 
-    @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun LargeContainer(
         modifier: Modifier = Modifier,
         cardScreenRatio: Float = getCardScreenRatio(),
         contentHeightDimension: Dimension = Dimension.fillToConstraints,
-        contentScrollState: ScrollState,
+        contentScrollState: ScrollState = rememberScrollState(),
         isStickyStartScrollable: Boolean = false,
+        isContentScrollable: Boolean = true,
         stickyStartPadding: PaddingValues = stickStartPaddingValuesLandscape,
         stickyStartContent: @Composable ColumnScope.() -> Unit,
-        stickyBottomPadding: PaddingValues = stickyBottomPaddingValuesLandscape,
-        stickyBottomHorizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(Sizes.s02, Alignment.End),
-        stickyBottomBackgroundColor: Color = Color.Transparent,
-        stickyBottomContent: @Composable (RowScope.() -> Unit)?,
+        stickyBottomContent: @Composable (BoxScope.() -> Unit)?,
         onBottomHeightMeasured: (Dp) -> Unit,
         contentPadding: PaddingValues = PaddingValues(),
         scaffoldPaddings: PaddingValues = LocalScaffoldPaddings.current,
@@ -196,7 +178,13 @@ object WalletLayouts {
                     height = contentHeightDimension
                     width = Dimension.fillToConstraints
                 }
-                .verticalScroll(contentScrollState)
+                .then(
+                    if (isContentScrollable) {
+                        Modifier.verticalScroll(contentScrollState)
+                    } else {
+                        Modifier
+                    }
+                )
                 .padding(contentPadding)
         ) {
             TopInsetSpacer(
@@ -226,37 +214,25 @@ object WalletLayouts {
                     Spacer(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(stickyBottomBackgroundColor)
                             .bottomSafeDrawing()
                     )
                 } else {
-                    FlowRow(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(stickyBottomBackgroundColor)
-                            .padding(stickyBottomPadding)
-                            .bottomSafeDrawing()
                             .focusGroup(),
-                        horizontalArrangement = stickyBottomHorizontalArrangement,
-                        verticalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.Top),
-                        maxItemsInEachRow = 2,
-                    ) {
-                        stickyBottomContent()
-                    }
+                        content = stickyBottomContent,
+                    )
                 }
             }
         }
     }
 
-    @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun CompactContainer(
         modifier: Modifier = Modifier,
         contentHeightDimension: Dimension = Dimension.fillToConstraints,
-        stickyBottomPadding: PaddingValues = stickyBottomPaddingValuesPortrait,
-        stickyBottomHorizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(Sizes.s02, Alignment.End),
-        stickyBottomBackgroundColor: Color = Color.Transparent,
-        stickyBottomContent: @Composable (RowScope.() -> Unit)?,
+        stickyBottomContent: @Composable (BoxScope.() -> Unit)?,
         scaffoldPaddings: PaddingValues = LocalScaffoldPaddings.current,
         shouldScrollUnderTopBar: Boolean = true,
         scrollState: ScrollState = rememberScrollState(),
@@ -315,19 +291,12 @@ object WalletLayouts {
                     onBottomHeightMeasured?.let { it(height) }
                 },
             ) {
-                FlowRow(
+                Box(
                     modifier = Modifier
-                        .background(stickyBottomBackgroundColor)
                         .fillMaxWidth()
-                        .padding(stickyBottomPadding)
-                        .bottomSafeDrawing()
                         .focusGroup(),
-                    horizontalArrangement = stickyBottomHorizontalArrangement,
-                    verticalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.Top),
-                    maxItemsInEachRow = 2,
-                ) {
-                    stickyBottomContent()
-                }
+                    content = stickyBottomContent,
+                )
             }
         }
     }
@@ -340,8 +309,7 @@ object WalletLayouts {
         modifier: Modifier = Modifier,
         verticalArrangement: Arrangement.Vertical = Arrangement.Center,
         auxiliaryContent: (@Composable () -> Unit)? = null,
-        stickyBottomHorizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
-        stickyBottomContent: @Composable ColumnScope.() -> Unit,
+        stickyBottomContent: @Composable BoxScope.() -> Unit,
         scaffoldPaddings: PaddingValues = LocalScaffoldPaddings.current,
         shouldScrollUnderTopBar: Boolean = true,
         content: @Composable ColumnScope.() -> Unit,
@@ -401,15 +369,12 @@ object WalletLayouts {
                 },
             onContentHeightMeasured = { height -> bottomBlockHeightDp = height },
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .bottomSafeDrawing()
-                    .padding(Sizes.s04),
-                horizontalAlignment = stickyBottomHorizontalAlignment,
-            ) {
-                stickyBottomContent()
-            }
+                    .focusGroup(),
+                content = stickyBottomContent,
+            )
         }
     }
 
@@ -421,8 +386,7 @@ object WalletLayouts {
         modifier: Modifier = Modifier,
         verticalArrangement: Arrangement.Vertical = Arrangement.Center,
         auxiliaryContent: (@Composable () -> Unit)? = null,
-        stickyBottomHorizontalArrangement: Arrangement.Horizontal = Arrangement.Center,
-        stickyBottomContent: (@Composable RowScope.() -> Unit)? = null,
+        stickyBottomContent: (@Composable () -> Unit)? = null,
         scaffoldPaddings: PaddingValues = LocalScaffoldPaddings.current,
         shouldScrollUnderTopBar: Boolean = true,
         content: @Composable ColumnScope.() -> Unit,
@@ -477,14 +441,7 @@ object WalletLayouts {
                     .background(Color.Transparent),
                 onContentHeightMeasured = { height -> bottomBlockHeightDp = height },
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(Sizes.s04),
-                    horizontalArrangement = stickyBottomHorizontalArrangement,
-                ) {
-                    stickyBottomContent()
-                }
+                stickyBottomContent()
             }
         }
 

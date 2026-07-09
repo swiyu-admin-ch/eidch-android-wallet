@@ -60,7 +60,7 @@ class SaveVcSdJwtCredentialsImpl @Inject constructor(
             anyCredential = vcSdJwtCredential,
             issuerInfo = rawAndParsedCredentialInfo.issuerCredentialInfo,
             trustStatement = trustCheckResult.actorTrustStatement,
-            metadata = credentialConfig,
+            credentialConfiguration = credentialConfig,
             ocaBundle = ocaBundle,
         ).mapError(GenerateCredentialDisplaysError::toFetchCredentialError).bind()
 

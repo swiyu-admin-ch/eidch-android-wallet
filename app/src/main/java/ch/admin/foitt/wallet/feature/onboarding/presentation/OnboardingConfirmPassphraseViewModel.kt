@@ -10,13 +10,13 @@ import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.BiometricsS
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.InitializePassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.InitializePassphrase
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseValidationState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.usecase.ValidatePassphrase
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import com.github.michaelbull.result.mapBoth
 import dagger.assisted.Assisted
@@ -39,13 +39,18 @@ class OnboardingConfirmPassphraseViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
     private val setTopBarState: SetTopBarState,
     @Assisted private val originalPassphrase: String,
-) : ScreenViewModel(setTopBarState, systemBarsFixedLightColor = true) {
+) : OnboardingViewModel(setTopBarState, systemBarsFixedLightColor = true) {
     @AssistedFactory
     interface Factory {
         fun create(originalPassphrase: String): OnboardingConfirmPassphraseViewModel
     }
 
-    override val topBarState = TopBarState.OnGradient(navManager::popBackStack, R.string.tk_onboarding_passwordConfirmation_title)
+    override val topBarState =
+        TopBarState.OnGradient(
+            navManager::popBackStack,
+            R.string.tk_onboarding_passwordConfirmation_title,
+            onAXDown = { tryEmitFocusEvents() }
+        )
 
     private val isBiometricAuthenticationAvailable: Boolean by lazy {
         biometricsStatus() != BiometricManagerResult.Unsupported
@@ -109,9 +114,19 @@ class OnboardingConfirmPassphraseViewModel @AssistedInject constructor(
             failure = { error ->
                 Timber.e(t = error.throwable, message = "Passphrase registration: Initialization error")
                 _passphraseInputFieldState.value = PassphraseInputFieldState.Error
+                val destination = when (error) {
+                    is InitializePassphraseError.DatabaseSetupFailed -> Destination.OnboardingFatalErrorScreen(
+                        primaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_primary,
+                        secondaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_secondary,
+                    )
+                    is InitializePassphraseError.Unexpected -> Destination.OnboardingFatalErrorScreen(
+                        primaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_primary,
+                        secondaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_secondary,
+                    )
+                }
                 navManager.popUpToAndNavigate(
                     popToInclusive = Destination.OnboardingIntroScreen::class,
-                    destination = Destination.OnboardingErrorScreen
+                    destination = destination,
                 )
             }
         )

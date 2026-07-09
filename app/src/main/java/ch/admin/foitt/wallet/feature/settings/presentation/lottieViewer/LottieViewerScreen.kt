@@ -10,11 +10,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
-import ch.admin.foitt.wallet.platform.composables.presentation.LottieIcon
+import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainAnimation
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
@@ -40,7 +42,7 @@ private fun LottieViewerScreenContent(
     onNextAnimation: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
-        LottieIcon(
+        ScreenMainAnimation(
             animationRes = animationRes,
             contentScale = animationScaling,
             modifier = Modifier
@@ -50,10 +52,16 @@ private fun LottieViewerScreenContent(
         )
     },
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.tk_global_continue_button),
-            onClick = onNextAnimation,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.tk_global_continue_button),
+                        onClick = onNextAnimation,
+                    )
+                }
+            )
         )
     },
 ) {
@@ -61,6 +69,10 @@ private fun LottieViewerScreenContent(
     WalletTexts.TitleScreen(
         text = stringResource(R.string.tk_getEid_startSelfieVideo_primary)
     )
+    val resources = LocalResources.current
+    Spacer(modifier = Modifier.height(Sizes.s06))
+    WalletTexts.BodyLargeEmphasized(resources.getResourceEntryName(animationRes))
+
     Spacer(modifier = Modifier.height(Sizes.s06))
     WalletTexts.BodyLarge(stringResource(R.string.tk_getEid_startSelfieVideo_secondary))
 }
@@ -70,7 +82,7 @@ private fun LottieViewerScreenContent(
 private fun LottieViewerPreview() {
     WalletTheme {
         LottieViewerScreenContent(
-            animationRes = R.raw.doc_scan,
+            animationRes = R.raw.doc_record,
             animationScaling = ContentScale.Crop,
             onNextAnimation = {},
         )

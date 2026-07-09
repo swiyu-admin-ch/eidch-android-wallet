@@ -19,7 +19,7 @@ internal class GetCredentialCardStateImpl @Inject constructor(
 ) : GetCredentialCardState {
 
     override suspend fun invoke(credentialDisplayData: CredentialDisplayData): CredentialCardState {
-        val backgroundColor: Color = getColor(credentialDisplayData.backgroundColor) ?: CredentialCardState.defaultCardColor
+        val backgroundColor: Color = getBackgroundColor(credentialDisplayData.backgroundColor)
 
         return CredentialCardState(
             credentialId = credentialDisplayData.credentialId,
@@ -36,7 +36,7 @@ internal class GetCredentialCardStateImpl @Inject constructor(
     }
 
     override suspend fun invoke(credentialDisplayData: DeferredCredentialDisplayData): CredentialCardState {
-        val backgroundColor: Color = getColor(credentialDisplayData.backgroundColor) ?: CredentialCardState.defaultCardColor
+        val backgroundColor: Color = getBackgroundColor(credentialDisplayData.backgroundColor)
 
         return CredentialCardState(
             credentialId = credentialDisplayData.credentialId,
@@ -50,5 +50,14 @@ internal class GetCredentialCardStateImpl @Inject constructor(
             isCredentialFromBetaIssuer = false,
             deferredStatus = credentialDisplayData.status,
         )
+    }
+
+    private fun getBackgroundColor(colorString: String?): Color {
+        // We do not support alpha channel on background color
+        if (colorString.isNullOrEmpty() || !colorString.startsWith("#") || colorString.length > 7) {
+            return CredentialCardState.defaultCardColor
+        }
+
+        return getColor(colorString) ?: CredentialCardState.defaultCardColor
     }
 }

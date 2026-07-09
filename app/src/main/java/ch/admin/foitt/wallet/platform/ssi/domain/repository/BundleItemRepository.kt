@@ -11,4 +11,8 @@ interface BundleItemRepository {
     suspend fun getAllByCredentialId(credentialId: Long): Result<List<BundleItemEntity>, BundleItemRepositoryError>
     suspend fun getCountOfNeverPresented(): Result<List<PresentableBatchItemCount>, BundleItemRepositoryError>
     suspend fun updateStatusByCredentialId(credentialId: Long, status: CredentialStatus): Result<Int, BundleItemRepositoryError>
+    suspend fun onPresented(
+        credentialId: Long,
+        bundleItemId: Long,
+    ): Result<Long, BundleItemRepositoryError>
 }

@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.data
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.FetchStatusFromTokenStatusListError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.repository.CredentialStatusRepository

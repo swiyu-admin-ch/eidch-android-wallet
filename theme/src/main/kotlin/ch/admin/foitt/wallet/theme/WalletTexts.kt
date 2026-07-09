@@ -195,6 +195,7 @@ object WalletTexts {
         modifier: Modifier = Modifier,
         text: String,
         color: Color = WalletTheme.colorScheme.onSurface,
+        maxLines: Int = Int.MAX_VALUE,
     ) = Text(
         text = text,
         color = color,
@@ -202,6 +203,7 @@ object WalletTexts {
         textAlign = TextAlign.Start,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier,
+        maxLines = maxLines,
     )
 
     @Composable

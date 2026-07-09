@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.implementation
 
+import ch.admin.foitt.didResolver.domain.DidResolverHelper
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwt
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.FetchVcSchemaTrustStatusError
@@ -29,6 +30,7 @@ class FetchVcSchemaTrustStatusImpl @Inject constructor(
     private val getTrustUrlFromDid: GetTrustUrlFromDid,
     private val trustStatementRepository: TrustStatementRepository,
     private val getTrustDomainFromDid: GetTrustDomainFromDid,
+    private val didResolverHelper: DidResolverHelper,
     private val environmentSetupRepo: EnvironmentSetupRepository,
     private val validateTrustStatement: ValidateTrustStatement,
     private val safeJson: SafeJson,
@@ -69,8 +71,9 @@ class FetchVcSchemaTrustStatusImpl @Inject constructor(
                 }
             }.filter { trustStatement ->
                 val trustDomain = getTrustDomainFromDid(actorDid).get() ?: return@filter false
-
-                environmentSetupRepo.trustRegistryTrustedDids[trustDomain]?.contains(trustStatement.vcIssuer) ?: false
+                val trustStatementDid = didResolverHelper.getDidStringFromAbsoluteKeyId(trustStatement.kid).get()
+                    ?: return@filter false
+                environmentSetupRepo.trustV1TrustRegistryTrustedDids[trustDomain]?.contains(trustStatementDid) ?: false
             }
 
         if (filteredStatements.isEmpty()) {

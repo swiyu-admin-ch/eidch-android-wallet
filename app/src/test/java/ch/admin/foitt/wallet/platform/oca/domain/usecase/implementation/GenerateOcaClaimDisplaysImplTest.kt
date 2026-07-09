@@ -1,5 +1,7 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
@@ -65,7 +67,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val labels = createLabels(listOf("en", "de"))
         val ocaClaimData = createOcaClaimData(AttributeType.Text, labels = labels)
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         val expectedDisplays = listOf(
             AnyClaimDisplay("en", "${LABEL}_en", null),
@@ -81,12 +83,12 @@ class GenerateOcaClaimDisplaysImplTest {
         val entryMappings = createEntryMappings(listOf("en", "de"))
         val ocaClaimData = createOcaClaimData(AttributeType.Text, entryMappings = entryMappings)
 
-        val result = useCase(CLAIM_KEY, ENTRY_CODE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, ENTRY_CODE, ocaClaimData, null).assertOk()
 
         val expectedDisplays = listOf(
             fallbackClaimDisplay,
-            AnyClaimDisplay("en", CLAIM_KEY, "${ENTRY_CODE}_en"),
-            AnyClaimDisplay("de", CLAIM_KEY, "${ENTRY_CODE}_de"),
+            AnyClaimDisplay("en", claimPath.toPointerString(), "${ENTRY_CODE}_en"),
+            AnyClaimDisplay("de", claimPath.toPointerString(), "${ENTRY_CODE}_de"),
         )
         assertClaim(result.first, value = ENTRY_CODE)
         assertEquals(expectedDisplays, result.second)
@@ -98,7 +100,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val entryMappings = createEntryMappings(listOf("en", "de"))
         val ocaClaimData = createOcaClaimData(AttributeType.Text, entryMappings = entryMappings, labels = labels)
 
-        val result = useCase(CLAIM_KEY, ENTRY_CODE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, ENTRY_CODE, ocaClaimData, null).assertOk()
 
         val expectedDisplays = listOf(
             AnyClaimDisplay("en", "${LABEL}_en", "${ENTRY_CODE}_en"),
@@ -115,13 +117,13 @@ class GenerateOcaClaimDisplaysImplTest {
         val entryMappings = createEntryMappings(listOf("de", "fr"))
         val ocaClaimData = createOcaClaimData(AttributeType.Text, entryMappings = entryMappings, labels = labels)
 
-        val result = useCase(CLAIM_KEY, ENTRY_CODE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, ENTRY_CODE, ocaClaimData, null).assertOk()
 
         val expectedDisplays = listOf(
             AnyClaimDisplay("en", "${LABEL}_en", null),
             AnyClaimDisplay("de", "${LABEL}_de", "${ENTRY_CODE}_de"),
             fallbackClaimDisplay,
-            AnyClaimDisplay("fr", CLAIM_KEY, "${ENTRY_CODE}_fr"),
+            AnyClaimDisplay("fr", claimPath.toPointerString(), "${ENTRY_CODE}_fr"),
         )
         assertClaim(result.first, value = ENTRY_CODE)
         assertEquals(expectedDisplays, result.second)
@@ -131,7 +133,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays without labels nor entries returns claims with fallback display only`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Text)
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         assertClaim(result.first)
         assertEquals(listOf(fallbackClaimDisplay), result.second)
@@ -142,7 +144,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val entryMappings = createEntryMappings(listOf("de"), "other")
         val ocaClaimData = createOcaClaimData(AttributeType.Text, entryMappings = entryMappings)
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         assertClaim(result.first)
         assertEquals(listOf(fallbackClaimDisplay), result.second)
@@ -150,11 +152,20 @@ class GenerateOcaClaimDisplaysImplTest {
 
     @Test
     fun `Generating Oca claim displays with order returns claim with order`() = runTest {
-        val ocaClaimData = createOcaClaimData(AttributeType.Text, order = 1)
+        val ocaClaimData = createOcaClaimData(AttributeType.Text, order = 2)
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, 1).assertOk()
 
         assertClaim(result.first, order = 1)
+    }
+
+    @Test
+    fun `Generating Oca claim displays with order on oca claim data returns claim with order`() = runTest {
+        val ocaClaimData = createOcaClaimData(AttributeType.Text, order = 2)
+
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
+
+        assertClaim(result.first, order = 2)
     }
 
     @ParameterizedTest
@@ -162,7 +173,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for data URL returns ImageType claim`(imageType: ImageType) = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Text, standard = Standard.DataUrl)
 
-        val result = useCase(CLAIM_KEY, "data:${imageType.mimeType};base64,$CLAIM_VALUE", ocaClaimData).assertOk()
+        val result = useCase(claimPath, "data:${imageType.mimeType};base64,$CLAIM_VALUE", ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = CLAIM_VALUE, valueType = imageType.mimeType)
     }
@@ -171,7 +182,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for null data URL returns string claim`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Text, standard = Standard.DataUrl)
 
-        val result = useCase(CLAIM_KEY, null, ocaClaimData).assertOk()
+        val result = useCase(claimPath, null, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = null, valueType = ValueType.STRING.value)
     }
@@ -182,7 +193,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimData =
             createOcaClaimData(AttributeType.Binary, characterEncoding = CharacterEncoding.Base64, format = imageType.mimeType)
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = CLAIM_VALUE, valueType = imageType.mimeType)
     }
@@ -193,7 +204,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimData =
             createOcaClaimData(AttributeType.Binary, characterEncoding = CharacterEncoding.Base64, format = imageType.mimeType)
 
-        val result = useCase(CLAIM_KEY, null, ocaClaimData).assertOk()
+        val result = useCase(claimPath, null, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = null, valueType = imageType.mimeType)
     }
@@ -203,7 +214,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Text, standard = Standard.DataUrl)
         val url = "data:unknown/unknown;base64,$CLAIM_VALUE"
 
-        val result = useCase(CLAIM_KEY, url, ocaClaimData).assertOk()
+        val result = useCase(claimPath, url, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = url, valueType = ValueType.STRING.value)
     }
@@ -213,7 +224,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimData =
             createOcaClaimData(AttributeType.Binary, characterEncoding = CharacterEncoding.Base64, format = "unknown/unknown")
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, valueType = ValueType.STRING.value)
     }
@@ -223,7 +234,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for binary image without encoding returns string claim`(imageType: ImageType) = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Text, characterEncoding = null, format = imageType.mimeType)
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, valueType = ValueType.STRING.value)
     }
@@ -233,7 +244,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays with image mimeType dataUrl trigger ValidateImage`(mimeType: String) {
         val ocaClaimData = createOcaClaimData(AttributeType.Text, standard = Standard.DataUrl)
 
-        useCase(CLAIM_KEY, "data:$mimeType;base64,$CLAIM_VALUE", ocaClaimData).assertOk()
+        useCase(claimPath, "data:$mimeType;base64,$CLAIM_VALUE", ocaClaimData, null).assertOk()
 
         coVerifyOrder {
             mockValidateImage(
@@ -248,7 +259,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Text, standard = Standard.DataUrl)
         val url = "data:text/plain;base64,$CLAIM_VALUE"
 
-        useCase(CLAIM_KEY, url, ocaClaimData).assertOk()
+        useCase(claimPath, url, ocaClaimData, null).assertOk()
 
         coVerify(exactly = 0) {
             mockValidateImage(
@@ -264,7 +275,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimData =
             createOcaClaimData(AttributeType.Binary, characterEncoding = CharacterEncoding.Base64, format = mimeType)
 
-        useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         coVerifyOrder {
             mockValidateImage(
@@ -281,7 +292,7 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimDataBinary =
             createOcaClaimData(AttributeType.Binary, characterEncoding = CharacterEncoding.Base64, format = ImageType.PNG.mimeType)
 
-        useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimDataBinary).assertErrorType(OcaError.UnsupportedImageFormat::class)
+        useCase(claimPath, CLAIM_VALUE, ocaClaimDataBinary, null).assertErrorType(OcaError.UnsupportedImageFormat::class)
     }
 
     @Test
@@ -291,9 +302,10 @@ class GenerateOcaClaimDisplaysImplTest {
         val ocaClaimDataUrl = createOcaClaimData(AttributeType.Text, standard = Standard.DataUrl)
 
         useCase(
-            CLAIM_KEY,
+            claimPath,
             "data:${ImageType.PNG.mimeType};base64,$CLAIM_VALUE",
-            ocaClaimDataUrl
+            ocaClaimDataUrl,
+            null,
         ).assertErrorType(OcaError.UnsupportedImageFormat::class)
     }
 
@@ -306,7 +318,7 @@ class GenerateOcaClaimDisplaysImplTest {
     ) = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.DateTime, standard = Standard.UnixTime)
 
-        val result = useCase(CLAIM_KEY, dateTime, ocaClaimData).assertOk()
+        val result = useCase(claimPath, dateTime, ocaClaimData, null).assertOk()
 
         assertClaim(
             result.first,
@@ -320,7 +332,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for unix time without standard returns unparsed date time claim`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.DateTime, standard = null)
 
-        val result = useCase(CLAIM_KEY, "1749167999", ocaClaimData).assertOk()
+        val result = useCase(claimPath, "1749167999", ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = "1749167999", valueType = ValueType.DATETIME.value)
     }
@@ -334,7 +346,7 @@ class GenerateOcaClaimDisplaysImplTest {
     ) = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.DateTime, standard = Standard.Iso8601)
 
-        val result = useCase(CLAIM_KEY, dateTime, ocaClaimData).assertOk()
+        val result = useCase(claimPath, dateTime, ocaClaimData, null).assertOk()
 
         assertClaim(
             result.first,
@@ -348,7 +360,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for ISO time without standard returns date time claim`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.DateTime, standard = null)
 
-        val result = useCase(CLAIM_KEY, "2025-06-05T23:59:59+00:00", ocaClaimData).assertOk()
+        val result = useCase(claimPath, "2025-06-05T23:59:59+00:00", ocaClaimData, null).assertOk()
 
         assertClaim(
             result.first,
@@ -362,7 +374,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for null time returns date time claim`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.DateTime, standard = Standard.Iso8601)
 
-        val result = useCase(CLAIM_KEY, null, ocaClaimData).assertOk()
+        val result = useCase(claimPath, null, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = null, valueType = ValueType.DATETIME.value)
     }
@@ -371,7 +383,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for array attribute returns string claim`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Array(AttributeType.Text))
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, valueType = ValueType.STRING.value)
     }
@@ -380,7 +392,7 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for reference attribute returns string claim`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Reference("digest"))
 
-        val result = useCase(CLAIM_KEY, CLAIM_VALUE, ocaClaimData).assertOk()
+        val result = useCase(claimPath, CLAIM_VALUE, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, valueType = ValueType.STRING.value)
     }
@@ -389,9 +401,17 @@ class GenerateOcaClaimDisplaysImplTest {
     fun `Generating Oca claim displays for null value returns string claim`() = runTest {
         val ocaClaimData = createOcaClaimData(AttributeType.Text)
 
-        val result = useCase(CLAIM_KEY, null, ocaClaimData).assertOk()
+        val result = useCase(claimPath, null, ocaClaimData, null).assertOk()
 
         assertClaim(result.first, value = null, valueType = ValueType.STRING.value)
+    }
+
+    @Test
+    fun `Generating Oca claim displays without oca claim data returns string claim`() = runTest {
+        val result = useCase(claimPath, CLAIM_VALUE, null, null).assertOk()
+
+        assertClaim(result.first, value = CLAIM_VALUE, valueType = ValueType.STRING.value)
+        assertEquals(listOf(fallbackClaimDisplay), result.second)
     }
 
     private fun createLabels(locales: List<Locale>): Map<Locale, String> = locales.associateWith { "${LABEL}_$it" }
@@ -406,7 +426,7 @@ class GenerateOcaClaimDisplaysImplTest {
         valueDisplayInfo: String? = null,
         order: Int = -1
     ) {
-        assertEquals(CLAIM_KEY, claim.path)
+        assertEquals(claimPath.toPointerString(), claim.path)
         assertEquals(value, claim.value)
         assertEquals(valueType, claim.valueType)
         assertEquals(valueDisplayInfo, claim.valueDisplayInfo)
@@ -436,11 +456,13 @@ class GenerateOcaClaimDisplaysImplTest {
 
     private companion object {
         const val CLAIM_KEY = "claim_key"
+        val claimPath = listOf(ClaimsPathPointerComponent.String(CLAIM_KEY))
         const val CLAIM_VALUE = "claim_value"
         const val LABEL = "label"
         const val ENTRY_CODE = "entryCode"
 
-        val fallbackClaimDisplay = AnyClaimDisplay(name = CLAIM_KEY, locale = DisplayLanguage.FALLBACK)
+        val fallbackClaimDisplay =
+            AnyClaimDisplay(name = claimPath.toPointerString(), locale = DisplayLanguage.FALLBACK)
 
         @JvmStatic
         fun generateImageMimeType(): Stream<Arguments> = Stream.of(

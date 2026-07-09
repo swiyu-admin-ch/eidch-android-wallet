@@ -2,6 +2,7 @@ package ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.jwe.JWEError
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.EncryptionAlgorithm
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.CreateJWE
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWE
 import ch.admin.foitt.openid4vc.util.assertErrorType
@@ -119,7 +120,7 @@ class CreateJWEImplTest {
 
     private companion object {
         const val ALG_VALUE = "ECDH-ES"
-        const val ENCRYPTION_VALUE = "A128GCM"
+        val ENCRYPTION_VALUE = EncryptionAlgorithm.A256GCM.name
         const val ZIP_VALUE = "DEF"
     }
 }

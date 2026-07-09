@@ -1,9 +1,12 @@
 package ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationWithDpopBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialRepo
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.DeferredCredentialRepository
@@ -53,16 +56,25 @@ class DeleteDeferredImplTest {
         every { mockCredential.id } returns CREDENTIAL_ID
         every { mockKeyBinding.id } returns PRIVATE_KEY_IDENTIFIER
 
-        val deferredCredentialWithKeyBinding = DeferredCredentialWithKeyBinding(
+        val deferredCredentialWithAuthenticationAndKeyBinding = DeferredCredentialWithAuthenticationAndKeyBinding(
             credential = mockCredential,
             keyBindings = listOf(mockKeyBinding),
-            deferredCredential = mockDeferredCredential
+            deferredCredential = mockDeferredCredential,
+            authentication = CredentialAuthenticationWithDpopBinding(
+                credentialAuthentication = CredentialAuthenticationEntity(
+                    credentialId = mockCredential.id,
+                    tokenType = TokenType.BEARER,
+                    accessToken = ACCESS_TOKEN,
+                    refreshToken = REFRESH_TOKEN,
+                ),
+                dpopBinding = null,
+            )
         )
         coEvery {
             mockDeferredCredentialRepository.getById(
                 CREDENTIAL_ID
             )
-        } returns Ok(deferredCredentialWithKeyBinding)
+        } returns Ok(deferredCredentialWithAuthenticationAndKeyBinding)
         coEvery { mockCredentialRepository.deleteById(CREDENTIAL_ID) } returns Ok(Unit)
 
         coEvery { deleteKeyStoreEntry(PRIVATE_KEY_IDENTIFIER) } returns Unit
@@ -107,6 +119,8 @@ class DeleteDeferredImplTest {
 
     private companion object {
         const val CREDENTIAL_ID = 1L
+        const val ACCESS_TOKEN = "access-token"
+        const val REFRESH_TOKEN = "refresh-token"
         const val PRIVATE_KEY_IDENTIFIER = "privateKeyIdentifier"
     }
 }

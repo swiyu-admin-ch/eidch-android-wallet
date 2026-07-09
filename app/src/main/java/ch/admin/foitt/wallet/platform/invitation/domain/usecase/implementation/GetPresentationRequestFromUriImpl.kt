@@ -6,6 +6,7 @@ import ch.admin.foitt.openid4vc.domain.usecase.FetchPresentationRequest
 import ch.admin.foitt.wallet.BuildConfig
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ValidatePresentationRequestError
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.VerificationProcessType
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ValidatePresentationRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.GetPresentationRequestError
 import ch.admin.foitt.wallet.platform.invitation.domain.model.toGetPresentationRequestError
@@ -23,6 +24,7 @@ internal class GetPresentationRequestFromUriImpl @Inject constructor(
     private val fetchPresentationRequest: FetchPresentationRequest,
     private val validatePresentationRequest: ValidatePresentationRequest,
 ) : GetPresentationRequestFromUri {
+
     override suspend fun invoke(uri: URI): Result<PresentationRequestWithRaw, GetPresentationRequestError> = coroutineBinding {
         val requestObject = runSuspendCatching {
             when (uri.scheme) {
@@ -33,6 +35,7 @@ internal class GetPresentationRequestFromUriImpl @Inject constructor(
 
                     RequestObject(presentationRequestJwt, null, null)
                 }
+
                 BuildConfig.SCHEME_PRESENTATION_REQUEST_OID,
                 BuildConfig.SCHEME_PRESENTATION_REQUEST_SWIYU -> {
                     val clientId = uri.getQueryParameter(QUERY_PARAM_CLIENT_ID)
@@ -57,14 +60,17 @@ internal class GetPresentationRequestFromUriImpl @Inject constructor(
 
                     RequestObject(presentationRequestJwt, clientId, redirectUri)
                 }
+
                 else -> error("invalid presentation schema")
             }
         }.mapError {
             it.toGetPresentationRequestError(uri)
         }.bind()
 
-        validatePresentationRequest(requestObject)
-            .mapError(ValidatePresentationRequestError::toGetPresentationRequestError)
+        validatePresentationRequest(
+            verificationProcessType = VerificationProcessType.NETWORK,
+            requestObject = requestObject
+        ).mapError(ValidatePresentationRequestError::toGetPresentationRequestError)
             .bind()
     }
 

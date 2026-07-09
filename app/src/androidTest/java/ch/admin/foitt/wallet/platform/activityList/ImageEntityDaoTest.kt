@@ -2,12 +2,10 @@ package ch.admin.foitt.wallet.platform.activityList
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.activityActorDisplay1
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.activityActorDisplay2
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.activityActorDisplay3
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.activityActorDisplay4
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.credential1
-import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.credentialActivity1
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.credentialActivity2
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.credentialActivity3
 import ch.admin.foitt.wallet.platform.activityList.mock.ActivityListMocks.image1

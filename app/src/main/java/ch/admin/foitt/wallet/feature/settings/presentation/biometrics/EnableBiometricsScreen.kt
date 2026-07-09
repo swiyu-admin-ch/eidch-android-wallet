@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.feature.settings.presentation.biometrics
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -11,6 +10,7 @@ import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.biometrics.presentation.BiometricsAvailableImage
 import ch.admin.foitt.wallet.platform.biometrics.presentation.BiometricsContent
 import ch.admin.foitt.wallet.platform.biometrics.presentation.BiometricsUnavailableImage
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -48,14 +48,19 @@ fun EnableBiometricsScreen(viewModel: EnableBiometricsViewModel) {
 private fun BiometricsAvailableContent(
     onTriggerPrompt: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyStartContent = {
         BiometricsAvailableImage()
     },
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(id = R.string.change_biometrics_activate_button),
-            onClick = onTriggerPrompt,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(id = R.string.change_biometrics_activate_button),
+                        onClick = onTriggerPrompt,
+                    )
+                },
+            ),
         )
     },
     content = {
@@ -71,15 +76,20 @@ private fun BiometricsAvailableContent(
 private fun BiometricsDisabledContent(
     onOpenSettings: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyStartContent = {
         BiometricsUnavailableImage()
     },
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(id = R.string.change_biometrics_goToSettings_button),
-            onClick = onOpenSettings,
-            endIcon = painterResource(id = R.drawable.wallet_ic_external_link),
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(id = R.string.change_biometrics_goToSettings_button),
+                        onClick = onOpenSettings,
+                        endIcon = painterResource(id = R.drawable.wallet_ic_external_link),
+                    )
+                },
+            ),
         )
     },
     content = {

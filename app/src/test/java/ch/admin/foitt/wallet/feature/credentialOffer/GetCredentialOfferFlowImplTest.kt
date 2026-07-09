@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.feature.credentialOffer
 
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.wallet.feature.credentialOffer.domain.model.CredentialOffer
 import ch.admin.foitt.wallet.feature.credentialOffer.domain.model.CredentialOfferError
 import ch.admin.foitt.wallet.feature.credentialOffer.domain.usecase.GetCredentialOfferFlow
@@ -130,7 +131,7 @@ class GetCredentialOfferFlowImplTest {
     fun `Getting the credential offer flow maps error from MapToCredentialDisplayData use case`() = runTest {
         val exception = IllegalStateException("map to credential claim display data error")
         coEvery {
-            mockMapToCredentialDisplayData(any(), any(), any())
+            mockMapToCredentialDisplayData(any(), any(), any(), any())
         } returns Err(CredentialError.Unexpected(exception))
 
         val result = useCase(CREDENTIAL_ID).firstOrNull()
@@ -146,6 +147,7 @@ class GetCredentialOfferFlowImplTest {
             mockCredentialWithDisplaysAndClusters.verifiableCredential
         } returns mockVerifiableCredential
         coEvery { mockCredentialWithDisplaysAndClusters.credentialDisplays } returns MockCredentialDetail.credentialDisplays
+        coEvery { mockCredentialWithDisplaysAndClusters.credential } returns MockCredentialDetail.credential
         coEvery { mockCredentialWithDisplaysAndClusters.clusters } returns listOf(
             ClusterWithDisplaysAndClaims(
                 clusterWithDisplays = mockClusterWithDisplays,
@@ -158,7 +160,12 @@ class GetCredentialOfferFlowImplTest {
             )
         } returns flowOf(Ok(mockCredentialWithDisplaysAndClusters))
         coEvery {
-            mockMapToCredentialDisplayData(mockVerifiableCredential, MockCredentialDetail.credentialDisplays, claims)
+            mockMapToCredentialDisplayData(
+                mockVerifiableCredential,
+                MockCredentialDetail.credentialDisplays,
+                claims,
+                CredentialFormat.VC_SD_JWT
+            )
         } returns Ok(MockCredentialDetail.credentialDisplayData)
         coEvery {
             mockMapToCredentialClaimCluster(any())

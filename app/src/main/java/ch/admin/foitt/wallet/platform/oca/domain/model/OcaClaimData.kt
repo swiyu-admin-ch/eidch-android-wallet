@@ -23,5 +23,5 @@ data class OcaClaimData(
     val labels: Map<Locale, String> = emptyMap(),
     val standard: Standard? = null,
     val order: Int? = null,
-    val isSensitive: Boolean
+    val isSensitive: Boolean = false,
 )

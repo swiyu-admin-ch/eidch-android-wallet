@@ -24,8 +24,6 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -64,7 +62,7 @@ class GenerateMetadataClaimDisplaysImplTest {
     fun `Generating metadata claim displays returns expected claim displays`() = runTest {
         val result = useCase(
             claimsPathPointer = claimPathPointer,
-            claimValueJson = claimValueJsonElement,
+            jsonPrimitive = jsonPrimitive,
             metadataClaim = metadataClaim01,
             order = -1,
         ).assertOk()
@@ -77,7 +75,7 @@ class GenerateMetadataClaimDisplaysImplTest {
     fun `Generating metadata claim displays adds fallback language if empty`() = runTest {
         val result = useCase(
             claimsPathPointer = claimPathPointer,
-            claimValueJson = claimValueJsonElement,
+            jsonPrimitive = jsonPrimitive,
             metadataClaim = metadataClaimNoDisplay,
             order = -1
         ).assertOk()
@@ -132,16 +130,6 @@ class GenerateMetadataClaimDisplaysImplTest {
                 "claim value text",
                 ValueType.STRING.value
             ),
-            Triple(
-                buildJsonArray { add(JsonPrimitive("arrayElement")) },
-                "[\"arrayElement\"]",
-                ValueType.STRING.value
-            ),
-            Triple(
-                buildJsonObject { put("key", JsonPrimitive("object")) },
-                "{\"key\":\"object\"}",
-                ValueType.STRING.value
-            ),
         )
 
         return input.map { (claimValue, expectedValue, expectedValueType) ->
@@ -149,7 +137,7 @@ class GenerateMetadataClaimDisplaysImplTest {
                 runTest {
                     val result = useCase(
                         claimsPathPointer = claimPathPointer,
-                        claimValueJson = claimValue,
+                        jsonPrimitive = claimValue,
                         metadataClaim = null,
                         order = -1,
                     ).assertOk()
@@ -174,7 +162,7 @@ class GenerateMetadataClaimDisplaysImplTest {
 
         useCase(
             claimsPathPointer = claimPathPointer,
-            claimValueJson = claimValueDataUriJson,
+            jsonPrimitive = jsonPrimitiveDataUri,
             metadataClaim = null,
             order = -1,
         ).assertErrorType(CredentialError.UnsupportedImageFormat::class)
@@ -184,9 +172,9 @@ class GenerateMetadataClaimDisplaysImplTest {
         val claimPathPointer = listOf(ClaimsPathPointerComponent.String("claim"))
         val claimPathPointerString = claimPathPointer.toPointerString()
         const val CLAIM_VALUE = "claim_value"
-        val claimValueJsonElement = JsonPrimitive(CLAIM_VALUE)
+        val jsonPrimitive = JsonPrimitive(CLAIM_VALUE)
         const val CLAIM_VALUE_DATA_URI = "data:image/png;base64,imageData"
-        val claimValueDataUriJson = JsonPrimitive(CLAIM_VALUE_DATA_URI)
+        val jsonPrimitiveDataUri = JsonPrimitive(CLAIM_VALUE_DATA_URI)
         val claimType = ValueType.STRING
         val claimTypeString = claimType.value
         const val LANGUAGE_EN = "en"

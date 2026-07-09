@@ -1,12 +1,15 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndUpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationWithDpopBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.DeferredCredentialRepository
@@ -99,10 +102,11 @@ class RefreshDeferredCredentialsImplTest {
     fun `Deferred credentials are not refreshed if they are not in progress`() = runTest {
         coEvery { mockDeferredCredentialRepository.getAll() } returns Ok(
             listOf(
-                DeferredCredentialWithKeyBinding(
+                DeferredCredentialWithAuthenticationAndKeyBinding(
                     deferredCredential = deferredCredentialEntity01.copy(progressionState = DeferredProgressionState.INVALID),
                     credential = credentialEntity01,
                     keyBindings = listOf(),
+                    authentication = credentialAuthenticationWithDpopBinding,
                 )
             )
         )
@@ -148,8 +152,6 @@ class RefreshDeferredCredentialsImplTest {
             credentialId = 1L,
             progressionState = DeferredProgressionState.IN_PROGRESS,
             transactionId = transactionId01,
-            accessToken = accessToken01,
-            refreshToken = refreshToken01,
             endpoint = issuerEndpoint01,
             pollInterval = pollInterval01,
             createdAt = Instant.ofEpochSecond(4L).epochSecond,
@@ -164,10 +166,21 @@ class RefreshDeferredCredentialsImplTest {
             issuerUrl = URL(ISSUER01_URL)
         )
 
-        private val deferredCredentialEntityWithBinding01 = DeferredCredentialWithKeyBinding(
+        private val credentialAuthenticationWithDpopBinding = CredentialAuthenticationWithDpopBinding(
+            credentialAuthentication = CredentialAuthenticationEntity(
+                credentialId = credentialEntity01.id,
+                tokenType = TokenType.BEARER,
+                accessToken = accessToken01,
+                refreshToken = refreshToken01,
+            ),
+            dpopBinding = null,
+        )
+
+        private val deferredCredentialEntityWithBinding01 = DeferredCredentialWithAuthenticationAndKeyBinding(
             deferredCredential = deferredCredentialEntity01,
             credential = credentialEntity01,
             keyBindings = listOf(),
+            authentication = credentialAuthenticationWithDpopBinding
         )
     }
 }

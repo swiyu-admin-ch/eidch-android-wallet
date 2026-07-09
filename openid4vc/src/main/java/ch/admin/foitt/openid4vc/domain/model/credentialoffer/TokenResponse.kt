@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.model.credentialoffer
 
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,5 +15,5 @@ data class TokenResponse(
     @SerialName("scope")
     val scope: String? = null,
     @SerialName("token_type")
-    val tokenType: String
+    val tokenType: TokenType,
 )

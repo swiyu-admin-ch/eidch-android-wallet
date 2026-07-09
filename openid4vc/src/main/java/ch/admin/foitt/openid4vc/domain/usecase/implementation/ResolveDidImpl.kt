@@ -13,7 +13,7 @@ import com.github.michaelbull.result.mapError
 import java.net.URL
 import javax.inject.Inject
 
-class ResolveDidImpl @Inject constructor(
+internal class ResolveDidImpl @Inject constructor(
     private val repo: FetchDidLogRepository
 ) : ResolveDid {
     override suspend fun invoke(didString: String): Result<DidDoc, ResolveDidError> = coroutineBinding {

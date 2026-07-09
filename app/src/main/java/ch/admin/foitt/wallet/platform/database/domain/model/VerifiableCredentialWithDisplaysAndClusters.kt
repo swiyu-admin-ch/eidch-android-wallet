@@ -7,6 +7,12 @@ data class VerifiableCredentialWithDisplaysAndClusters(
     @Embedded
     val verifiableCredential: VerifiableCredentialEntity,
     @Relation(
+        entity = Credential::class,
+        parentColumn = "credentialId",
+        entityColumn = "id",
+    )
+    val credential: Credential,
+    @Relation(
         entity = CredentialDisplay::class,
         parentColumn = "credentialId",
         entityColumn = "credentialId",

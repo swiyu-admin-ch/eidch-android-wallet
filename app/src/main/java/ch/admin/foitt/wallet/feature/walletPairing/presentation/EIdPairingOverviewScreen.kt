@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -33,14 +32,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.PairingMainWalletUiState
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.PairingOtherWalletUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.ToastAnimated
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.addTopScaffoldPadding
-import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.composables.presentation.verticalSafeDrawing
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
 import ch.admin.foitt.wallet.theme.Sizes
@@ -63,6 +61,7 @@ internal fun EIdPairingOverviewScreen(
         onContinueClick = viewModel::onContinue,
         deviceName = viewModel.deviceName,
         numberOfDevices = viewModel.numberOfDevices.collectAsStateWithLifecycle().value,
+        limitReachedWithoutMainDevice = viewModel.limitReachedWithoutMainDevice.collectAsStateWithLifecycle(false).value,
         isToastVisible = viewModel.isToastVisible.collectAsStateWithLifecycle(false).value,
         dateAddedText = viewModel.dateAdded.collectAsStateWithLifecycle(null).value,
     )
@@ -77,6 +76,7 @@ private fun EIdParingOverviewScreenContent(
     onContinueClick: () -> Unit = {},
     deviceName: String,
     numberOfDevices: Int = 0,
+    limitReachedWithoutMainDevice: Boolean = false,
     isToastVisible: Boolean,
     dateAddedText: String?
 ) {
@@ -96,6 +96,7 @@ private fun EIdParingOverviewScreenContent(
             onAdditionalDevicesClick = onAdditionalDevicesClick,
             deviceName = deviceName,
             numberOfDevices = numberOfDevices,
+            limitReachedWithoutMainDevice = limitReachedWithoutMainDevice,
             buttonHeight = buttonHeight,
             dateAddedText = dateAddedText
         )
@@ -103,15 +104,16 @@ private fun EIdParingOverviewScreenContent(
             modifier = Modifier.align(Alignment.BottomCenter),
             onContentHeightMeasured = { height -> buttonHeight = height },
         ) {
-            Buttons.FilledPrimary(
-                text = stringResource(id = R.string.tk_eidRequest_walletPairing_button_primary),
-                onClick = onContinueClick,
-                enabled = numberOfDevices > 0 || dateAddedText != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalSafeDrawing()
-                    .horizontalSafeDrawing()
-                    .padding(horizontal = Sizes.s04, vertical = Sizes.s04)
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(id = R.string.tk_eidRequest_walletPairing_button_primary),
+                            onClick = onContinueClick,
+                            enabled = numberOfDevices > 0 || dateAddedText != null,
+                        )
+                    }
+                )
             )
         }
     }
@@ -133,6 +135,7 @@ private fun OverviewList(
     onAdditionalDevicesClick: () -> Unit,
     deviceName: String,
     numberOfDevices: Int,
+    limitReachedWithoutMainDevice: Boolean,
     buttonHeight: Dp,
     dateAddedText: String?,
 ) {
@@ -144,17 +147,19 @@ private fun OverviewList(
         item {
             ListHeader()
         }
-        item {
-            Sections(text = R.string.tk_eidRequest_walletPairing_currentDevice_sectionTitle)
-        }
-        item {
-            EIdDeviceItem(
-                onClick = { onThisDeviceClick() },
-                title = stringResource(R.string.tk_eidRequest_walletPairing_currentDevice_button_primary),
-                subtitle = deviceName,
-                dateAddedText = dateAddedText,
-                mainWalletUiState = mainWalletUiState
-            )
+        if (!limitReachedWithoutMainDevice) {
+            item {
+                Sections(text = R.string.tk_eidRequest_walletPairing_currentDevice_sectionTitle)
+            }
+            item {
+                EIdDeviceItem(
+                    onClick = { onThisDeviceClick() },
+                    title = stringResource(R.string.tk_eidRequest_walletPairing_currentDevice_button_primary),
+                    subtitle = deviceName,
+                    dateAddedText = dateAddedText,
+                    mainWalletUiState = mainWalletUiState
+                )
+            }
         }
         item {
             Sections(text = R.string.tk_eidRequest_walletPairing_additionalDevice_sectionTitle)

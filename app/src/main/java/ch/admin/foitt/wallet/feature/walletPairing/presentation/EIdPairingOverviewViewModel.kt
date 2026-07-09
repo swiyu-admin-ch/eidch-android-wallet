@@ -10,11 +10,15 @@ import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetLocali
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestCase
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairCurrentWalletError
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.WalletPairingState
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.WalletPairingStateError
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.WalletPairingStateResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.FetchSIdStatus
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PairCurrentWallet
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.WalletPairingStatus
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.WalletPairingEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.WalletPairingEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -27,12 +31,15 @@ import ch.admin.foitt.wallet.platform.utils.epochSecondsToZonedDateTime
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.get
+import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.mapOr
 import com.github.michaelbull.result.onFailure
+import com.github.michaelbull.result.onSuccess
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +58,7 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
     private val pairCurrentWallet: PairCurrentWallet,
     private val getLocalizedDateTime: GetLocalizedDateTime,
     private val getEIdRequestCase: GetEIdRequestCase,
+    private val walletPairingStatus: WalletPairingStatus,
     setTopBarState: SetTopBarState,
     @Assisted private val caseId: String
 ) : ScreenViewModel(setTopBarState) {
@@ -75,9 +83,11 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
     private val _isToastVisible = MutableStateFlow(false)
     val isToastVisible = _isToastVisible.asStateFlow()
     private val isWaitingForDevicePairing = MutableStateFlow(false)
-    private val pairCurrentWalletResult = MutableStateFlow<Result<Unit, PairCurrentWalletError>?>(null)
     private val _dateAdded = MutableStateFlow<String?>(null)
     val dateAdded = _dateAdded.asStateFlow()
+    private var pollingJob: Job? = null
+    private val walletPairingStatusResponse =
+        MutableStateFlow<Result<WalletPairingStateResponse, WalletPairingStateError>?>(null)
 
     val mainWalletUiState: StateFlow<PairingMainWalletUiState> = combine(
         isWaitingForDevicePairing,
@@ -123,6 +133,17 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
         } ?: 0
     }.toStateFlow(0)
 
+    val limitReachedWithoutMainDevice: StateFlow<Boolean> = combine(
+        mainWalletUiState,
+        fetchSIdStatusResult
+    ) { mainWalletUiState, fetchSIdStatusResult ->
+        val status = fetchSIdStatusResult?.get()
+        val isLimitReached = status?.targetWallets?.limitReached ?: false
+        val isMainWalletMissing = mainWalletUiState != PairingMainWalletUiState.MainWalletAdded
+
+        isLimitReached && isMainWalletMissing
+    }.toStateFlow(false)
+
     init {
         viewModelScope.launch {
             walletPairingEventRepository.event.collect { event ->
@@ -146,7 +167,13 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
 
     fun onThisDeviceClick() {
         viewModelScope.launch {
-            val pairingResult = pairCurrentWallet(caseId = caseId)
+            pairCurrentWallet(caseId = caseId)
+                .onSuccess { pairWalletResponse ->
+                    stopPolling()
+                    pollingJob = launch {
+                        startPolling(pairWalletResponse)
+                    }
+                }
                 .onFailure { error ->
                     when (error) {
                         is EIdRequestError.InvalidClientAttestation,
@@ -158,9 +185,12 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
                         is EIdRequestError.RequestInWrongState -> handlePairingWindowTimeout()
                     }
                 }
-            pairCurrentWalletResult.update { pairingResult }
-            refreshRequestStatus()
-        }.trackCompletion(isWaitingForDevicePairing)
+        }.apply {
+            trackCompletion(isWaitingForDevicePairing)
+            invokeOnCompletion {
+                if (pollingJob == this) pollingJob = null
+            }
+        }
     }
 
     fun onAdditionalDevicesClick() {
@@ -184,4 +214,34 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
         destinationGroup = DestinationGroup.EIdRequestVerification::class,
         destination = Destination.EIdWalletPairingTimeoutScreen,
     )
+
+    @Suppress("LoopWithTooManyJumpStatements")
+    private suspend fun startPolling(walletResponse: PairWalletResponse) {
+        walletPairingStatusResponse.update { null }
+        while (true) {
+            val result = walletPairingStatus(caseId, walletResponse.walletPairingId)
+            walletPairingStatusResponse.update { result }
+
+            val state = result.get()?.state
+            if (state == WalletPairingState.ACCEPTED) {
+                refreshRequestStatus()
+                break
+            }
+
+            if (result.getError() != null || state != WalletPairingState.OPEN) {
+                break
+            }
+
+            delay(POLLING_DELAY)
+        }
+    }
+
+    private fun stopPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
+    }
+
+    private companion object {
+        const val POLLING_DELAY = 5000L
+    }
 }

@@ -26,8 +26,10 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetHa
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PairCurrentWallet
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PairWallet
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PollSIdRequestAfterFileSubmit
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetDocumentScanResult
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetDocumentType
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetEIdPeerPushId
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetHasLegalGuardian
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.StartAutoVerification
@@ -45,8 +47,10 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.imple
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.GetStartAutoVerificationResultImpl
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.PairCurrentWalletImpl
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.PairWalletImpl
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.PollSIdRequestAfterFileSubmitImpl
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.SetDocumentScanResultImpl
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.SetDocumentTypeImpl
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.SetEIdPeerPushIdImpl
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.SetHasLegalGuardianImpl
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.SetStartAutoVerificationResultImpl
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.StartAutoVerificationImpl
@@ -67,7 +71,7 @@ import dagger.hilt.android.scopes.ActivityRetainedScoped
 
 @Module
 @InstallIn(ActivityRetainedComponent::class)
-interface EIdApplicationProcessModule {
+internal interface EIdApplicationProcessModule {
 
     @Binds
     @ActivityRetainedScoped
@@ -181,6 +185,11 @@ interface EIdApplicationProcessModule {
     ): StartAutoVerification
 
     @Binds
+    fun bindSetEIdPeerPushId(
+        useCase: SetEIdPeerPushIdImpl
+    ): SetEIdPeerPushId
+
+    @Binds
     fun bindSetStartAutoVerificationResult(
         useCase: SetStartAutoVerificationResultImpl
     ): SetStartAutoVerificationResult
@@ -196,9 +205,14 @@ interface EIdApplicationProcessModule {
     ): UploadFileToCase
 
     @Binds
-    fun walletPairingStatus(
+    fun bindWalletPairingStatus(
         useCase: WalletPairingStatusImpl
     ): WalletPairingStatus
+
+    @Binds
+    fun bindPollSIdStatusByCaseId(
+        useCase: PollSIdRequestAfterFileSubmitImpl
+    ): PollSIdRequestAfterFileSubmit
 }
 
 @Module

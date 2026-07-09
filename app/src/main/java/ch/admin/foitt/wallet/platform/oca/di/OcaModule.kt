@@ -9,6 +9,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaClaimData
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaClaimDisplays
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaCredentialData
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaDisplays
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.GetClaimsPathPointers
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GetRootCaptureBase
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaBundler
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaCaptureBaseValidator
@@ -23,6 +24,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.Generate
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.GenerateOcaClaimDisplaysImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.GenerateOcaCredentialDataImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.GenerateOcaDisplaysImpl
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.GetClaimsPathPointersImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.GetRootCaptureBaseImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.OcaBundlerImpl
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation.OcaCaptureBaseValidatorImpl
@@ -79,6 +81,11 @@ internal interface OcaModule {
     fun bindOcaOverlayValidator(
         useCase: OcaOverlayValidatorImpl
     ): OcaOverlayValidator
+
+    @Binds
+    fun bindGetClaimsPathPointers(
+        useCase: GetClaimsPathPointersImpl
+    ): GetClaimsPathPointers
 
     @Binds
     fun bindGenerateOcaDisplays(

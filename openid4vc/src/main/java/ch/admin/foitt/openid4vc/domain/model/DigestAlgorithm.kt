@@ -4,9 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class DigestAlgorithm(val stdName: String) {
-    SHA256("SHA-256"),
-    SHA384("SHA-384"),
-    SHA512("SHA-512");
+    SHA256("SHA-256");
 
     companion object {
         fun from(value: String): DigestAlgorithm? {

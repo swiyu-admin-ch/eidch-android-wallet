@@ -6,7 +6,7 @@ data class CredentialClaimImage(
     override val order: Int,
     override val isSensitive: Boolean,
     val imageData: ByteArray,
-) : CredentialClaimItem {
+) : CredentialElement {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

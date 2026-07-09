@@ -3,6 +3,8 @@ package ch.admin.foitt.wallet.feature.settings.di
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import ch.admin.foitt.wallet.feature.settings.presentation.SettingsScreen
 import ch.admin.foitt.wallet.feature.settings.presentation.SettingsViewModel
+import ch.admin.foitt.wallet.feature.settings.presentation.accessibility.AccessibilityScreen
+import ch.admin.foitt.wallet.feature.settings.presentation.accessibility.AccessibilityViewModel
 import ch.admin.foitt.wallet.feature.settings.presentation.biometrics.AuthWithPassphraseScreen
 import ch.admin.foitt.wallet.feature.settings.presentation.biometrics.AuthWithPassphraseViewModel
 import ch.admin.foitt.wallet.feature.settings.presentation.biometrics.EnableBiometricsErrorScreen
@@ -104,6 +106,13 @@ object EntryProviderInstallerModule {
             val viewModel = hiltViewModel<LanguageViewModel>()
             SyncedScaffoldScreen(viewModel = viewModel) {
                 LanguageScreen(viewModel = viewModel)
+            }
+        }
+
+        entry<Destination.AccessibilityScreen> {
+            val viewModel = hiltViewModel<AccessibilityViewModel>()
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                AccessibilityScreen(viewModel = viewModel)
             }
         }
 

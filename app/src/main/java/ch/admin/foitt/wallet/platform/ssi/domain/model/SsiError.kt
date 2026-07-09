@@ -24,6 +24,7 @@ interface SsiError {
         GetCredentialDetailFlowError,
         GetCredentialsWithDetailsFlowError,
         CredentialWithKeyBindingRepositoryError,
+        CredentialWithBatchDataAndAuthenticationRepositoryError,
         BundleItemWithKeyBindingRepositoryError,
         DeferredCredentialRepositoryError,
         DeleteDeferredCredentialError,
@@ -44,6 +45,7 @@ sealed interface MapToCredentialClaimDataError
 sealed interface GetCredentialDetailFlowError
 sealed interface GetCredentialsWithDetailsFlowError
 sealed interface CredentialWithKeyBindingRepositoryError
+sealed interface CredentialWithBatchDataAndAuthenticationRepositoryError
 sealed interface BundleItemWithKeyBindingRepositoryError
 sealed interface DeferredCredentialRepositoryError
 sealed interface DeleteDeferredCredentialError
@@ -51,10 +53,6 @@ sealed interface RawCredentialDataRepositoryError
 
 internal fun BundleItemRepositoryError.toRefreshBatchCredentialsError(): RefreshBatchCredentialsError = when (this) {
     is SsiError.Unexpected -> RefreshBatchCredentialsError.Unexpected(cause)
-}
-
-internal fun BundleItemRepositoryError.toMapToCredentialDisplayDataError(): MapToCredentialDisplayDataError = when (this) {
-    is SsiError.Unexpected -> CredentialError.Unexpected(cause)
 }
 
 internal fun CredentialRepositoryError.toRefreshBatchCredentialsError(): RefreshBatchCredentialsError = when (this) {
@@ -65,6 +63,15 @@ internal fun BundleItemRepositoryError.toDeleteBundleItemError() = when (this) {
     is SsiError.Unexpected -> SsiError.Unexpected(cause)
 }
 
+internal fun CredentialWithBatchDataAndAuthenticationRepositoryError.toRefreshBatchCredentialsError():
+    RefreshBatchCredentialsError = when (this) {
+    is SsiError.Unexpected -> RefreshBatchCredentialsError.Unexpected(cause)
+}
+
+internal fun CredentialWithKeyBindingRepositoryError.toMapToCredentialDisplayDataError() = when (this) {
+    is SsiError.Unexpected -> CredentialError.Unexpected(cause)
+}
+
 internal fun BundleItemWithKeyBindingRepositoryError.toDeleteBundleItemError() = when (this) {
     is SsiError.Unexpected -> SsiError.Unexpected(cause)
 }
@@ -72,6 +79,7 @@ internal fun BundleItemWithKeyBindingRepositoryError.toDeleteBundleItemError() =
 internal fun CredentialRepositoryError.toDeleteCredentialError() = when (this) {
     is SsiError.Unexpected -> SsiError.Unexpected(cause)
 }
+
 internal fun CredentialWithKeyBindingRepositoryError.toDeleteCredentialError() = when (this) {
     is SsiError.Unexpected -> SsiError.Unexpected(cause)
 }

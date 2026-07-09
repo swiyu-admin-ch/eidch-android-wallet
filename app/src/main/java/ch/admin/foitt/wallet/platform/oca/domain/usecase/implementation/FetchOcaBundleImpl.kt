@@ -27,7 +27,7 @@ class FetchOcaBundleImpl @Inject constructor(
         integrity: String?,
     ): Result<RawOcaBundle, FetchOcaBundleError> = coroutineBinding {
         val rawOcaBundleString = when {
-            uri.startsWith(URL_PATTERN) && integrity != null -> fetchOcaBundleFromUrl(uri, integrity).bind()
+            uri.startsWith(URL_PATTERN) -> fetchOcaBundleFromUrl(uri, integrity).bind()
             uri.startsWith(DATA_URI_PATTERN) -> fetchOcaBundleFromDataUri(uri, integrity).bind()
             else -> Err(OcaError.InvalidOca).bind<String>()
         }
@@ -37,7 +37,7 @@ class FetchOcaBundleImpl @Inject constructor(
 
     private suspend fun fetchOcaBundleFromUrl(
         uri: String,
-        integrity: String,
+        integrity: String?,
     ): Result<String, FetchOcaBundleError> = coroutineBinding {
         val url = safeGetUrl(uri)
             .mapError(SafeGetUrlError::toFetchOcaBundleError)
@@ -46,8 +46,9 @@ class FetchOcaBundleImpl @Inject constructor(
             .mapError(OcaRepositoryError::toFetchOcaBundleError)
             .bind()
 
-        // uri#integrity is mandatory for url
-        validateSubresource(rawOcaBundleString, integrity).bind()
+        integrity?.let {
+            validateSubresource(rawOcaBundleString, integrity).bind()
+        }
 
         rawOcaBundleString
     }
@@ -58,7 +59,6 @@ class FetchOcaBundleImpl @Inject constructor(
     ): Result<String, FetchOcaBundleError> = coroutineBinding {
         val rawOcaBundleString = uri.substringAfter(DATA_URI_PATTERN).base64ToDecodedString()
 
-        // uri#integrity is optional for data uri
         integrity?.let {
             validateSubresource(uri, integrity).bind()
         }

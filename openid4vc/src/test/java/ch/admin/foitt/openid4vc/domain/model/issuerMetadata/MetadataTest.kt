@@ -94,8 +94,7 @@ class MetadataTest {
                   "elfa-sdjwt":{
                      "format":"vc+sd-jwt",
                      "cryptographic_binding_methods_supported":[
-                        "jwk",
-                        "did:jwk"
+                        "jwk"
                      ],
                      "credential_signing_alg_values_supported":[
                         "Ed25519VerificationKey2020"

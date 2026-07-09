@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation.mock
 
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityActorDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDetailDisplayData
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
@@ -11,6 +12,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.ActivityClaimEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityWithActorDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.ActivityWithDetails
 import ch.admin.foitt.wallet.platform.database.domain.model.ClusterWithDisplaysAndClaims
+import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialActivityEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
@@ -28,6 +30,7 @@ import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import io.mockk.mockk
+import java.net.URL
 
 object ActivityListMocks {
     const val CREDENTIAL_ID = 1L
@@ -197,6 +200,11 @@ object ActivityListMocks {
 
     val verifiableCredentialWithDisplaysAndClusters = VerifiableCredentialWithDisplaysAndClusters(
         verifiableCredential = mockVerifiableCredential,
+        credential = Credential(
+            id = 1,
+            format = CredentialFormat.VC_SD_JWT,
+            issuerUrl = URL("https://someexample.com")
+        ),
         credentialDisplays = mockCredentialDisplays,
         clusters = clusters,
     )

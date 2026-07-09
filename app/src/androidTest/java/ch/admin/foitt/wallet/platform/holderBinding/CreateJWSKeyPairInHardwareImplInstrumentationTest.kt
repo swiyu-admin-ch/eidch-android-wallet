@@ -10,6 +10,8 @@ import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.KeyPairError
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateJWSKeyPairInHardwareImpl
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateKeyGenSpecImpl
+import ch.admin.foitt.wallet.util.SkipTestOnEmulator
+import ch.admin.foitt.wallet.util.RealDeviceTest
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -32,7 +34,7 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.util.UUID
 
-class CreateJWSKeyPairInHardwareImplInstrumentationTest {
+class CreateJWSKeyPairInHardwareImplInstrumentationTest : RealDeviceTest() {
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -64,6 +66,7 @@ class CreateJWSKeyPairInHardwareImplInstrumentationTest {
     }
 
     @Test
+    @SkipTestOnEmulator
     fun validInputReturnsSuccess() = runTest(testDispatcher) {
         useCase(
             keyAlias = UUID.randomUUID().toString(),
@@ -75,6 +78,7 @@ class CreateJWSKeyPairInHardwareImplInstrumentationTest {
     }
 
     @Test
+    @SkipTestOnEmulator
     fun inputWithoutKeyAliasCreatesKeyIdReturnsSuccess() = runTest(testDispatcher) {
         mockkStatic(UUID::class)
         every { UUID.randomUUID().toString() } returns "UUID"
@@ -93,6 +97,7 @@ class CreateJWSKeyPairInHardwareImplInstrumentationTest {
     }
 
     @Test
+    @SkipTestOnEmulator
     fun onKeyCollisionRetryReturnsSuccess() = runTest(testDispatcher) {
         mockkStatic(UUID::class)
 
@@ -139,6 +144,7 @@ class CreateJWSKeyPairInHardwareImplInstrumentationTest {
     }
 
     @Test
+    @SkipTestOnEmulator
     fun keyGenSpecHasTheCorrectStrongBoxFlag() = runTest(testDispatcher) {
         coEvery {
             mockAppContext.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)

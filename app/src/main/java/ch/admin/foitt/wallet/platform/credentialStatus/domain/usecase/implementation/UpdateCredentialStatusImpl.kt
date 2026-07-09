@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
-import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
 import ch.admin.foitt.wallet.platform.credential.domain.model.GetAllAnyCredentialsByCredentialIdError
@@ -44,12 +43,7 @@ class UpdateCredentialStatusImpl @Inject constructor(
                 .mapError(GetAllAnyCredentialsByCredentialIdError::toUpdateCredentialStatusError)
                 .bind()
             anyCredentials.forEach { anyCredential ->
-                if (anyCredential.validity == Validity.Valid) {
-                    checkStatusList(credentialId, anyCredential).bind()
-                } else {
-                    // No point in getting the status, local validity has precedence for now.
-                    Timber.d("Try to update status of invalid credential with id: ${anyCredential.id}")
-                }
+                checkStatusList(credentialId, anyCredential).bind()
             }
         }
     }
@@ -91,7 +85,7 @@ class UpdateCredentialStatusImpl @Inject constructor(
     }
 
     private fun AnyCredential.parseStatusProperties() = when (this.format) {
-        CredentialFormat.VC_SD_JWT -> {
+        CredentialFormat.DC_SD_JWT, CredentialFormat.VC_SD_JWT -> {
             (this as VcSdJwtCredential).status?.let {
                 safeJson.safeDecodeElementTo<CredentialStatusProperties>(it).get()
             }

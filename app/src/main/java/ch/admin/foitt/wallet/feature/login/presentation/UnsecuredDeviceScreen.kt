@@ -3,7 +3,9 @@ package ch.admin.foitt.wallet.feature.login.presentation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -12,7 +14,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveButtonContainer
 import ch.admin.foitt.wallet.platform.composables.Buttons
+import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.centerHorizontallyOnFullscreen
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithFullscreenGradient
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -41,9 +45,19 @@ fun UnsecuredDeviceScreen(viewModel: UnsecuredDeviceViewModel) {
 private fun UnsecuredDeviceScreenContent(onSettings: () -> Unit) {
     WalletLayouts.ScrollableColumnWithFullscreenGradient(
         stickyBottomContent = {
-            Buttons.FilledPrimaryFixed(
-                text = stringResource(R.string.tk_unsecuredDevice_button_settings),
-                onClick = onSettings,
+            AdaptiveButtonContainer(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimaryFixed(
+                            text = stringResource(R.string.tk_unsecuredDevice_button_settings),
+                            onClick = onSettings,
+                        )
+                    }
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .bottomSafeDrawing()
+                    .padding(Sizes.s04),
             )
         },
         scrollableContent = {

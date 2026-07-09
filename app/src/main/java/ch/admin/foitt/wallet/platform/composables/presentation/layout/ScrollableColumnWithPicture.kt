@@ -1,10 +1,9 @@
 package ch.admin.foitt.wallet.platform.composables.presentation.layout
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -13,15 +12,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import ch.admin.foitt.wallet.platform.composables.ScalableContentLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.theme.Sizes
-import ch.admin.foitt.wallet.theme.WalletTheme
 
 /**
  * Standard Wallet Layout that wraps content in a scrollable [Column].
@@ -32,10 +28,9 @@ import ch.admin.foitt.wallet.theme.WalletTheme
  */
 @Composable
 fun WalletLayouts.ScrollableColumnWithPicture(
-    modifier: Modifier = Modifier,
-    stickyBottomBackgroundColor: Color = WalletTheme.colorScheme.surface.copy(alpha = 0.85f),
-    stickyBottomContent: @Composable (RowScope.() -> Unit)?,
     stickyStartContent: @Composable ColumnScope.() -> Unit,
+    modifier: Modifier = Modifier,
+    stickyBottomContent: @Composable (BoxScope.() -> Unit)? = null,
     scaffoldPaddings: PaddingValues = LocalScaffoldPaddings.current,
     contentPadding: PaddingValues = PaddingValues(
         start = Sizes.s04,
@@ -48,14 +43,11 @@ fun WalletLayouts.ScrollableColumnWithPicture(
         mutableStateOf(Sizes.s00)
     }
 
-    val stickyBottomHorizontalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.End)
     val contentScrollState = rememberScrollState()
 
     when (currentWindowAdaptiveInfo().windowWidthClass()) {
         WindowWidthClass.COMPACT -> CompactContainer(
             modifier = modifier,
-            stickyBottomHorizontalArrangement = stickyBottomHorizontalArrangement,
-            stickyBottomBackgroundColor = stickyBottomBackgroundColor,
             stickyBottomContent = stickyBottomContent,
             onBottomHeightMeasured = { height -> bottomBlockHeightDp = height },
             scrollState = contentScrollState,
@@ -84,8 +76,6 @@ fun WalletLayouts.ScrollableColumnWithPicture(
             modifier = modifier,
             onBottomHeightMeasured = { height -> bottomBlockHeightDp = height },
             isStickyStartScrollable = false,
-            stickyBottomHorizontalArrangement = stickyBottomHorizontalArrangement,
-            stickyBottomBackgroundColor = stickyBottomBackgroundColor,
             stickyBottomContent = stickyBottomContent,
             stickyStartContent = stickyStartContent,
             contentScrollState = contentScrollState,

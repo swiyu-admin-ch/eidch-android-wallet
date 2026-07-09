@@ -10,6 +10,11 @@ configure<com.dynatrace.tools.android.dsl.DynatraceExtension> {
             enabled(false)
         }
 
+        create("sandbox") {
+            variantFilter("sandbox")
+            enabled(false)
+        }
+
         create("pipeline") {
             autoStart {
                 applicationId(properties.getOrDefault("DYNATRACE_APP_ID", "0") as String)

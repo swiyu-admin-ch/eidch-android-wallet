@@ -5,16 +5,6 @@ import kotlinx.serialization.Serializable
 
 sealed interface AuthorizationResponse {
     @Serializable
-    data class Dif(
-        @SerialName("vp_token")
-        val vpToken: String,
-        @SerialName("presentation_submission")
-        val presentationSubmission: PresentationSubmission,
-        @SerialName("state")
-        val state: String? = null,
-    ) : AuthorizationResponse
-
-    @Serializable
     data class Dcql(
         @SerialName("vp_token")
         val vpToken: Map<String, List<String>>,
@@ -33,27 +23,8 @@ data class AuthorizationResponseErrorBody(
     val state: String? = null,
 ) {
     enum class ErrorType(val key: String) {
-        CLIENT_REJECTED("client_rejected"),
-        INVALID_REQUEST("invalid_request")
+        ACCESS_DENIED("access_denied"),
+        INVALID_REQUEST("invalid_request"),
+        INVALID_CLIENT("invalid_client")
     }
 }
-
-@Serializable
-data class PresentationSubmission(
-    @SerialName("definition_id")
-    val definitionId: String,
-    @SerialName("descriptor_map")
-    val descriptorMap: List<DescriptorMap>,
-    @SerialName("id")
-    val id: String
-)
-
-@Serializable
-data class DescriptorMap(
-    @SerialName("format")
-    val format: String,
-    @SerialName("id")
-    val id: String,
-    @SerialName("path")
-    val path: String,
-)

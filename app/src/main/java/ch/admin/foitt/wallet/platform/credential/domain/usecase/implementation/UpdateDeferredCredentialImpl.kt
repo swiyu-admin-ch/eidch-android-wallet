@@ -8,7 +8,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.UpdateDeferredCred
 import ch.admin.foitt.wallet.platform.credential.domain.model.toUpdateDeferredCredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.UpdateDeferredCredential
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialOfferRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.DeferredCredentialRepositoryError
@@ -29,7 +29,7 @@ class UpdateDeferredCredentialImpl @Inject constructor(
     private val credentialOfferRepository: CredentialOfferRepository,
 ) : UpdateDeferredCredential {
     override suspend fun invoke(
-        deferredCredentialEntity: DeferredCredentialWithKeyBinding,
+        deferredCredentialEntity: DeferredCredentialWithAuthenticationAndKeyBinding,
         credentialResponse: CredentialResponse.DeferredCredential,
         rawAndParsedIssuerCredentialInfo: RawAndParsedIssuerCredentialInfo,
     ): Result<Unit, UpdateDeferredCredentialError> = coroutineBinding {
@@ -54,7 +54,7 @@ class UpdateDeferredCredentialImpl @Inject constructor(
             anyCredential = null,
             issuerInfo = rawAndParsedIssuerCredentialInfo.issuerCredentialInfo,
             trustStatement = null,
-            metadata = credentialConfig,
+            credentialConfiguration = credentialConfig,
             ocaBundle = null,
         ).mapError(GenerateCredentialDisplaysError::toUpdateDeferredCredentialError)
             .bind()

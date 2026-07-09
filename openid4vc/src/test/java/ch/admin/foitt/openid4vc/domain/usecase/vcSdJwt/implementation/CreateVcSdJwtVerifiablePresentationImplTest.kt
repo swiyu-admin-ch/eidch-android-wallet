@@ -1,22 +1,21 @@
 package ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation
 
-import ch.admin.foitt.openid4vc.domain.model.KeyPairError
+import ch.admin.foitt.openid4vc.domain.model.DigestAlgorithm
+import ch.admin.foitt.openid4vc.domain.model.GetKeyPairForKeyBindingError
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
-import ch.admin.foitt.openid4vc.domain.usecase.GetHardwareKeyPair
-import ch.admin.foitt.openid4vc.domain.usecase.GetSoftwareKeyPair
+import ch.admin.foitt.openid4vc.domain.usecase.GetKeyPairForKeyBinding
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.mock.MockKeyPairs.VALID_KEY_PAIR_HARDWARE
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.CreateVcSdJwtVerifiablePresentation
-import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.implementation.CreateVcSdJwtVerifiablePresentationImpl.Companion.HASH_ALGORITHM
 import ch.admin.foitt.openid4vc.util.SafeJsonTestInstance
 import ch.admin.foitt.openid4vc.util.SafeJsonTestInstance.safeJson
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
-import ch.admin.foitt.openid4vc.utils.Constants.ANDROID_KEY_STORE
 import ch.admin.foitt.openid4vc.utils.createDigest
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -41,10 +40,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
     private val testDispatcher = StandardTestDispatcher()
 
     @MockK
-    private lateinit var mockGetHardwareKeyPair: GetHardwareKeyPair
-
-    @MockK
-    private lateinit var mockGetSoftwareKeyPair: GetSoftwareKeyPair
+    private lateinit var mockGetKeyPairForKeyBinding: GetKeyPairForKeyBinding
 
     @MockK
     private lateinit var mockCredential: VcSdJwtCredential
@@ -63,9 +59,8 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
 
         useCase = CreateVcSdJwtVerifiablePresentationImpl(
             safeJson = safeJson,
-            getHardwareKeyPair = mockGetHardwareKeyPair,
-            getSoftwareKeyPair = mockGetSoftwareKeyPair,
-            defaultDispatcher = testDispatcher
+            getKeyPairForKeyBinding = mockGetKeyPairForKeyBinding,
+            defaultDispatcher = testDispatcher,
         )
 
         setupDefaultMocks()
@@ -79,12 +74,12 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
     @Test
     fun `Creating VcSdJwtVerifiablePresentation without holder binding returns the presentation Jwt without key binding`() =
         runTest(testDispatcher) {
-            every { mockCredential.createVerifiableCredential(mockRequestedFields) } returns SD_JWT_WITH_DISCLOSURES
+            every { mockCredential.createVerifiableCredential(mockPresentationPaths) } returns SD_JWT_WITH_DISCLOSURES
 
             val result = useCase(
                 credential = mockCredential,
                 keyBinding = null,
-                requestedFields = mockRequestedFields,
+                presentationPaths = mockPresentationPaths,
                 authorizationRequest = mockAuthorizationRequest,
             ).assertOk()
 
@@ -98,7 +93,7 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
         val result = useCase(
             credential = mockCredential,
             keyBinding = mockKeyBinding,
-            requestedFields = mockRequestedFields,
+            presentationPaths = mockPresentationPaths,
             authorizationRequest = mockAuthorizationRequest,
         ).assertOk()
 
@@ -122,12 +117,12 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
     @Test
     fun `Creating VcSdJwtVerifiablePresentation maps errors from getting verifiable credential`() = runTest(testDispatcher) {
         val exception = Exception()
-        every { mockCredential.createVerifiableCredential(mockRequestedFields) } throws exception
+        every { mockCredential.createVerifiableCredential(mockPresentationPaths) } throws exception
 
         useCase(
             credential = mockCredential,
             keyBinding = mockKeyBinding,
-            requestedFields = mockRequestedFields,
+            presentationPaths = mockPresentationPaths,
             authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
@@ -135,12 +130,12 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
     @Test
     fun `Creating VcSdJwtVerifiablePresentation maps errors from hashing`() = runTest(testDispatcher) {
         val exception = NoSuchAlgorithmException()
-        every { any<String>().createDigest(HASH_ALGORITHM) } throws exception
+        every { any<String>().createDigest(hashAlgorithm) } throws exception
 
         useCase(
             credential = mockCredential,
             keyBinding = mockKeyBinding,
-            requestedFields = mockRequestedFields,
+            presentationPaths = mockPresentationPaths,
             authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
@@ -148,13 +143,13 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
     @Test
     fun `Creating VcSdJwtVerifiablePresentation maps errors from getting hardware key pair`() = runTest(testDispatcher) {
         val exception = Exception()
-        coEvery { mockGetHardwareKeyPair(any(), any()) } returns Err(KeyPairError.Unexpected(exception))
+        coEvery { mockGetKeyPairForKeyBinding(any()) } returns Err(GetKeyPairForKeyBindingError.Unexpected(exception))
         every { mockKeyBinding.bindingType } returns KeyBindingType.HARDWARE
 
         useCase(
             credential = mockCredential,
             keyBinding = mockKeyBinding,
-            requestedFields = mockRequestedFields,
+            presentationPaths = mockPresentationPaths,
             authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
@@ -162,18 +157,21 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
     @Test
     fun `Creating VcSdJwtVerifiablePresentation maps errors from getting software key pair`() = runTest(testDispatcher) {
         val exception = Exception()
-        coEvery { mockGetSoftwareKeyPair(any(), any()) } returns Err(KeyPairError.Unexpected(exception))
+        coEvery { mockGetKeyPairForKeyBinding(any()) } returns Err(GetKeyPairForKeyBindingError.Unexpected(exception))
 
         useCase(
             credential = mockCredential,
             keyBinding = mockKeyBinding,
-            requestedFields = mockRequestedFields,
+            presentationPaths = mockPresentationPaths,
             authorizationRequest = mockAuthorizationRequest,
         ).assertErrorType(PresentationRequestError.Unexpected::class)
     }
 
     private fun setupDefaultMocks() {
-        every { mockCredential.createVerifiableCredential(mockRequestedFields) } returns HOLDER_BINDING_SD_JWT_WITH_DISCLOSURES
+        every { mockCredential.digestAlgorithm } returns DigestAlgorithm.SHA256
+        every {
+            mockCredential.createVerifiableCredential(mockPresentationPaths)
+        } returns HOLDER_BINDING_SD_JWT_WITH_DISCLOSURES
 
         every { mockKeyBinding.identifier } returns SIGNING_KEY_ID
         every { mockKeyBinding.algorithm } returns SIGNING_ALGORITHM
@@ -184,22 +182,22 @@ class CreateVcSdJwtVerifiablePresentationImplTest {
         every { mockAuthorizationRequest.clientId } returns CLIENT_ID
 
         mockkStatic(String::createDigest)
-        every { any<String>().createDigest(HASH_ALGORITHM) } returns BASE64_URL_ENCODED_HASH
+        every { any<String>().createDigest(hashAlgorithm) } returns BASE64_URL_ENCODED_HASH
 
         mockkStatic(Instant::class)
         every { Instant.now().epochSecond } returns ISSUED_AT
 
-        coEvery { mockGetHardwareKeyPair(SIGNING_KEY_ID, ANDROID_KEY_STORE) } returns Ok(VALID_KEY_PAIR_HARDWARE.keyPair)
-        coEvery { mockGetSoftwareKeyPair(any(), any()) } returns Ok(VALID_KEY_PAIR_HARDWARE.keyPair)
+        coEvery { mockGetKeyPairForKeyBinding(mockKeyBinding) } returns Ok(VALID_KEY_PAIR_HARDWARE.keyPair)
 
         every { mockAuthorizationRequest.nonce } returns NONCE
     }
 
     private companion object {
+        val hashAlgorithm = DigestAlgorithm.SHA256
         const val ISSUED_AT = 1L
         const val SIGNING_KEY_ID = "signingKeyId"
         val SIGNING_ALGORITHM = SigningAlgorithm.ES256
-        val mockRequestedFields = mockk<List<String>>()
+        val mockPresentationPaths = mockk<List<ClaimsPathPointer>>()
         const val NONCE = "nonce"
         const val CLIENT_ID = "clientId"
 

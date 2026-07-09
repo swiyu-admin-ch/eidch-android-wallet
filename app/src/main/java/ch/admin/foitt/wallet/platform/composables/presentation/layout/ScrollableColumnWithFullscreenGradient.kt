@@ -14,7 +14,7 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 fun WalletLayouts.ScrollableColumnWithFullscreenGradient(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
-    stickyBottomContent: (@Composable () -> Unit)?,
+    stickyBottomContent: (@Composable (isLarge: Boolean) -> Unit)?,
     scrollableContent: @Composable ColumnScope.() -> Unit,
 ) {
     FullscreenGradient()
@@ -26,7 +26,7 @@ fun WalletLayouts.ScrollableColumnWithFullscreenGradient(
             },
             stickyBottomContent = {
                 stickyBottomContent?.let {
-                    stickyBottomContent()
+                    stickyBottomContent(false)
                 }
             }
         )
@@ -37,7 +37,7 @@ fun WalletLayouts.ScrollableColumnWithFullscreenGradient(
             },
             stickyBottomContent = {
                 stickyBottomContent?.let {
-                    stickyBottomContent()
+                    stickyBottomContent(true)
                 }
             }
         )

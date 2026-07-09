@@ -223,7 +223,7 @@ object Buttons {
         endIcon: Painter? = null,
     ) {
         val color = WalletTheme.colorScheme.error
-        val linkAltText = stringResource(R.string.tk_global_externalLink_alt)
+        val linkAltText = stringResource(R.string.tk_global_externalLink_hint)
         Row(
             modifier = modifier
                 .clickable(onClick = onClick)

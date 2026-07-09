@@ -76,8 +76,6 @@ object CredentialTestData {
         credentialId = 1,
         progressionState = DeferredProgressionState.IN_PROGRESS,
         transactionId = "1",
-        accessToken = "token",
-        refreshToken = "refreshToken",
         endpoint = "endpoint",
         pollInterval = 1000,
         createdAt = 1,

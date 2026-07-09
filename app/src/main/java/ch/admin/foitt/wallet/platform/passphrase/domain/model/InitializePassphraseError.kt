@@ -6,7 +6,8 @@ import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
 
 sealed interface InitializePassphraseError {
     val throwable: Throwable?
-    class Unexpected(override val throwable: Throwable?) : InitializePassphraseError
+    data class Unexpected(override val throwable: Throwable?) : InitializePassphraseError
+    data class DatabaseSetupFailed(override val throwable: Throwable?) : InitializePassphraseError
 }
 
 //region Error to Error mappings
@@ -19,7 +20,7 @@ fun HashDataError.toInitializePassphraseError(): InitializePassphraseError = whe
 }
 
 fun CreateDatabaseError.toInitializePassphraseError(): InitializePassphraseError = when (this) {
-    is DatabaseError.SetupFailed -> InitializePassphraseError.Unexpected(this.throwable)
+    is DatabaseError.SetupFailed -> InitializePassphraseError.DatabaseSetupFailed(this.throwable)
     DatabaseError.AlreadyOpen -> InitializePassphraseError.Unexpected(null)
 }
 //endregion

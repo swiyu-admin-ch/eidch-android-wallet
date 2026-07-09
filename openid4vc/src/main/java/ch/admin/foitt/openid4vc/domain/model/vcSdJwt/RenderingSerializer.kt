@@ -1,48 +1,42 @@
 package ch.admin.foitt.openid4vc.domain.model.vcSdJwt
 
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.Rendering.Companion.RENDERING_METHOD_IDENTIFIER
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.Rendering.Simple.Companion.RENDERING_METHOD_SIMPLE_KEY
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.Rendering.SvgTemplates.Companion.RENDERING_METHOD_SVG_TEMPLATE_KEY
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.Rendering.VcSdJwtOcaRendering.Companion.RENDERING_METHOD_OCA_KEY
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonTransformingSerializer
-import kotlinx.serialization.json.addJsonObject
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.put
 
-internal object RenderingSerializer :
-    JsonTransformingSerializer<List<Rendering>>(tSerializer = ListSerializer(Rendering.serializer())) {
-    override fun transformDeserialize(element: JsonElement): JsonElement {
-        val renderings = buildJsonArray {
-            element.jsonObject.forEach { rendering ->
-                when (rendering.key) {
-                    RENDERING_METHOD_SIMPLE_KEY,
-                    RENDERING_METHOD_OCA_KEY -> {
-                        addJsonObject {
-                            put(RENDERING_METHOD_IDENTIFIER, rendering.key)
-                            rendering.value.jsonObject.forEach {
-                                put(it.key, it.value)
-                            }
-                        }
-                    }
-                    RENDERING_METHOD_SVG_TEMPLATE_KEY -> {
-                        rendering.value.jsonArray.forEach { svgTemplate ->
-                            addJsonObject {
-                                put(RENDERING_METHOD_IDENTIFIER, rendering.key)
-                                svgTemplate.jsonObject.forEach {
-                                    put(it.key, it.value)
-                                }
-                            }
-                        }
-                    }
-                    else -> error("illegal rendering")
-                }
-            }
+internal object RenderingSerializer : KSerializer<VcSdJwtOcaRendering?> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Rendering")
+
+    override fun deserialize(decoder: Decoder): VcSdJwtOcaRendering? {
+        val jsonDecoder = decoder as JsonDecoder
+        val element = jsonDecoder.decodeJsonElement()
+
+        val ocaElement = element.jsonObject[VcSdJwtOcaRendering.RENDERING_METHOD_OCA_KEY] ?: return null
+
+        return jsonDecoder.json.decodeFromJsonElement(
+            deserializer = VcSdJwtOcaRendering.serializer(),
+            element = ocaElement,
+        )
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun serialize(
+        encoder: Encoder,
+        value: VcSdJwtOcaRendering?,
+    ) {
+        if (value == null) {
+            encoder.encodeNull()
+            return
         }
-        return JsonArray(renderings)
+
+        encoder.encodeSerializableValue(
+            serializer = VcSdJwtOcaRendering.serializer(),
+            value = value,
+        )
     }
 }

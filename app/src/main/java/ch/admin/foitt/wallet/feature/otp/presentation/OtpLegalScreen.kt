@@ -2,14 +2,13 @@ package ch.admin.foitt.wallet.feature.otp.presentation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -25,14 +24,18 @@ internal fun OtpLegalScreen(
 ) {
     OtpLegalScreenContent(
         onContinue = viewModel::onContinue,
-        onTerms = viewModel::onTerms
+        onClose = viewModel::onClose,
+        onTerms = viewModel::onTerms,
+        onPrivacy = viewModel::onPrivacy,
     )
 }
 
 @Composable
 private fun OtpLegalScreenContent(
     onContinue: () -> Unit,
-    onTerms: () -> Unit
+    onClose: () -> Unit,
+    onTerms: () -> Unit,
+    onPrivacy: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
         ScreenMainImage(
@@ -42,12 +45,22 @@ private fun OtpLegalScreenContent(
             paddingValues = PaddingValues(vertical = Sizes.s04)
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.tk_eidRequest_otp_legal_primaryButton),
-            onClick = onContinue,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_otp_legal_primaryButton),
+                        onClick = onContinue,
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_eidRequest_otp_legal_secondaryButton),
+                        onClick = onClose,
+                    )
+                }
+            ),
         )
     }
 ) {
@@ -60,8 +73,14 @@ private fun OtpLegalScreenContent(
 
     Spacer(modifier = Modifier.height(Sizes.s06))
     Buttons.TextLink(
-        text = stringResource(id = R.string.tk_eidRequest_otp_legal_linkText),
+        text = stringResource(id = R.string.tk_eidRequest_otp_legal_terms_linkText),
         onClick = onTerms,
+        endIcon = painterResource(id = R.drawable.wallet_ic_external_link),
+    )
+    Spacer(modifier = Modifier.height(Sizes.s06))
+    Buttons.TextLink(
+        text = stringResource(id = R.string.tk_eidRequest_otp_legal_privacy_linkText),
+        onClick = onPrivacy,
         endIcon = painterResource(id = R.drawable.wallet_ic_external_link),
     )
 }
@@ -72,7 +91,9 @@ private fun OtpLegalScreenPreview() {
     WalletTheme {
         OtpLegalScreenContent(
             onContinue = {},
-            onTerms = {}
+            onClose = {},
+            onTerms = {},
+            onPrivacy = {},
         )
     }
 }

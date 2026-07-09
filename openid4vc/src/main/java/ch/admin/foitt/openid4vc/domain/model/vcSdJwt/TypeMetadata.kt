@@ -20,10 +20,6 @@ data class TypeMetadata(
     val extends: String?,
     @SerialName("display")
     val displays: List<TypeMetadataDisplay>?,
-    @SerialName("claims")
-    val claims: List<ClaimMetadata>?,
-    @SerialName("schema")
-    val schema: String?, // not supported by swiss profile
     @SerialName("schema_uri")
     val schemaUri: String?,
     @SerialName("schema_uri#integrity")
@@ -40,139 +36,19 @@ data class TypeMetadataDisplay(
     val description: String?,
     @Serializable(with = RenderingSerializer::class)
     @SerialName("rendering")
-    val renderings: List<Rendering>?,
+    val rendering: VcSdJwtOcaRendering?,
 )
 
-@Serializable(RenderingItemSerializer::class)
-sealed class Rendering {
-    @SerialName(RENDERING_METHOD_IDENTIFIER)
-    abstract val name: String
-
-    @Serializable
-    data class VcSdJwtOcaRendering(
-        override val name: String = RENDERING_METHOD_OCA_KEY,
-        @SerialName("uri")
-        val uri: String,
-        @SerialName("uri#integrity")
-        val uriIntegrity: String?,
-    ) : Rendering() {
-        companion object {
-            const val RENDERING_METHOD_OCA_KEY = "oca"
-        }
-    }
-
-    @Serializable
-    data class Simple(
-        override val name: String = RENDERING_METHOD_SIMPLE_KEY,
-        @SerialName("logo")
-        val logo: LogoMetadata?,
-        @SerialName("background_color")
-        val backgroundColor: String?,
-        @SerialName("text_color")
-        val textColor: String?,
-    ) : Rendering() {
-        companion object {
-            const val RENDERING_METHOD_SIMPLE_KEY = "simple"
-        }
-    }
-
-    @Serializable
-    data class SvgTemplates(
-        override val name: String = RENDERING_METHOD_SVG_TEMPLATE_KEY,
-        @SerialName("uri")
-        val uri: String,
-        @SerialName("uri#integrity")
-        val uriIntegrity: String?,
-        @SerialName("properties")
-        val properties: SvgTemplateProperties,
-    ) : Rendering() {
-        companion object {
-            const val RENDERING_METHOD_SVG_TEMPLATE_KEY = "svg_templates"
-        }
-    }
-
-    companion object {
-        const val RENDERING_METHOD_IDENTIFIER = "identifier"
-    }
-}
+fun List<TypeMetadataDisplay>?.getFirstRendering() = this?.firstNotNullOfOrNull { it.rendering }
 
 @Serializable
-data class LogoMetadata(
+data class VcSdJwtOcaRendering(
     @SerialName("uri")
     val uri: String,
     @SerialName("uri#integrity")
     val uriIntegrity: String?,
-    @SerialName("alt_text")
-    val altText: String?,
-)
-
-@Serializable
-data class SvgTemplateProperties(
-    @SerialName("orientation")
-    val orientation: SvgLogoOrientation?,
-    @SerialName("color_scheme")
-    val colorScheme: SvgLogoColorScheme?,
-    @SerialName("contrast")
-    val contrast: SvgLogoContrast?,
-)
-
-@Serializable
-enum class SvgLogoOrientation {
-    @SerialName("portrait")
-    PORTRAIT,
-
-    @SerialName("landscape")
-    LANDSCAPE
-}
-
-@Serializable
-enum class SvgLogoColorScheme {
-    @SerialName("light")
-    LIGHT,
-
-    @SerialName("dark")
-    DARK
-}
-
-@Serializable
-enum class SvgLogoContrast {
-    @SerialName("high")
-    HIGH,
-
-    @SerialName("low")
-    LOW
-}
-
-@Serializable
-data class ClaimMetadata(
-    @SerialName("path")
-    val paths: List<String?>, // must be a claim name (=string), non-negative integer or null
-    @SerialName("display")
-    val display: List<ClaimDisplayMetadata>?,
-    @SerialName("sd")
-    val sd: ClaimSelectiveDisclosureMetadata? = ClaimSelectiveDisclosureMetadata.ALLOWED,
-    @SerialName("svg_id")
-    val svgId: String?,
-)
-
-@Serializable
-data class ClaimDisplayMetadata(
-    @SerialName("lang")
-    val lang: String,
-    @SerialName("label")
-    val label: String,
-    @SerialName("description")
-    val description: String?,
-)
-
-@Serializable
-enum class ClaimSelectiveDisclosureMetadata {
-    @SerialName("always")
-    ALWAYS,
-
-    @SerialName("allowed")
-    ALLOWED,
-
-    @SerialName("never")
-    NEVER,
+) {
+    companion object {
+        const val RENDERING_METHOD_OCA_KEY = "oca"
+    }
 }

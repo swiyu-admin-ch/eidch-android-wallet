@@ -87,6 +87,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
 
         val expected = VerifiableCredentialWithDisplaysAndClusters(
             verifiableCredential = verifiableCredential1,
+            credential = credential1,
             credentialDisplays = listOf(credentialDisplay1),
             clusters = listOf(
                 ClusterWithDisplaysAndClaims(
@@ -135,6 +136,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
 
         val expected = VerifiableCredentialWithDisplaysAndClusters(
             verifiableCredential = verifiableCredential1,
+            credential = credential1,
             credentialDisplays = listOf(credentialDisplay1),
             clusters = listOf(
                 ClusterWithDisplaysAndClaims(
@@ -179,6 +181,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
 
         val expected1 = VerifiableCredentialWithDisplaysAndClusters(
             verifiableCredential = verifiableCredential1,
+            credential = credential1,
             credentialDisplays = listOf(credentialDisplay1),
             clusters = listOf(
                 ClusterWithDisplaysAndClaims(
@@ -198,6 +201,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
 
         val expected2 = VerifiableCredentialWithDisplaysAndClusters(
             verifiableCredential = verifiableCredential2,
+            credential = credential2,
             credentialDisplays = listOf(credentialDisplay2),
             clusters = listOf(
                 ClusterWithDisplaysAndClaims(

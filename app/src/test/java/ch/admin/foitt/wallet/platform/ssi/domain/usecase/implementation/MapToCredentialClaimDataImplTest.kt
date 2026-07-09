@@ -37,14 +37,13 @@ import org.junit.jupiter.params.provider.ValueSource
 import java.util.Locale
 
 class MapToCredentialClaimDataImplTest {
-
-    private lateinit var mapToCredentialClaimData: MapToCredentialClaimData
-
     @MockK
     private lateinit var mockGetLocalizedDisplay: GetLocalizedDisplay
 
     @MockK
     private lateinit var mockGetCurrentAppLocale: GetCurrentAppLocale
+
+    private lateinit var useCase: MapToCredentialClaimData
 
     @BeforeEach
     fun setUp() {
@@ -55,13 +54,13 @@ class MapToCredentialClaimDataImplTest {
 
         mockkStatic("android.text.format.DateFormat")
 
-        mapToCredentialClaimData = MapToCredentialClaimDataImpl(
+        useCase = MapToCredentialClaimDataImpl(
             getLocalizedDisplay = mockGetLocalizedDisplay,
-            getCurrentAppLocale = mockGetCurrentAppLocale
+            getCurrentAppLocale = mockGetCurrentAppLocale,
         )
 
-        coEvery { mockGetLocalizedDisplay(displays = credentialClaimDisplays) } returns credentialClaimDisplay
         coEvery { mockGetCurrentAppLocale() } returns Locale.ENGLISH
+        coEvery { mockGetLocalizedDisplay(displays = credentialClaimDisplays) } returns credentialClaimDisplay
     }
 
     @AfterEach
@@ -80,10 +79,10 @@ class MapToCredentialClaimDataImplTest {
     fun `Claim with supported string type should return CredentialClaimText`(valueTypeString: String) = runTest {
         val claimWithDisplays = buildClaimWithDisplays(valueTypeString)
 
-        val data = mapToCredentialClaimData(claimWithDisplays).assertOk()
-        assertTrue(data is CredentialClaimText, "string valueType should return ${CredentialClaimText::class.simpleName}")
-        assertEquals(credentialClaimDisplay.name, data.localizedLabel)
-        assertEquals(claimWithDisplays.claim.value, (data as CredentialClaimText).value)
+        val item = useCase(claimWithDisplays).assertOk()
+        assertTrue(item is CredentialClaimText, "string valueType should return ${CredentialClaimText::class.simpleName}")
+        assertEquals(credentialClaimDisplay.name, item.localizedLabel)
+        assertEquals(claimWithDisplays.claim.value, (item as CredentialClaimText).value)
     }
 
     @ParameterizedTest
@@ -100,10 +99,9 @@ class MapToCredentialClaimDataImplTest {
     fun `Claim with null value should return CredentialClaimText`(valueTypeString: String) = runTest {
         val claimWithDisplays = buildClaimWithDisplays(value = null, valueType = valueTypeString)
 
-        val data = mapToCredentialClaimData(claimWithDisplays).assertOk()
-
-        assertTrue(data is CredentialClaimText)
-        val credentialClaimText = data as CredentialClaimText
+        val item = useCase(claimWithDisplays).assertOk()
+        assertTrue(item is CredentialClaimText)
+        val credentialClaimText = item as CredentialClaimText
         assertEquals(credentialClaimDisplay.name, credentialClaimText.localizedLabel)
         assertEquals(null, credentialClaimText.value)
     }
@@ -126,13 +124,11 @@ class MapToCredentialClaimDataImplTest {
         )
         val displays = listOf(display)
         val claimWithDisplays = buildClaimWithDisplays(valueType = claimValueType, displays = displays)
-
         coEvery { mockGetLocalizedDisplay(displays = displays) } returns display
 
-        val data = mapToCredentialClaimData(claimWithDisplays).assertOk()
-
-        assertTrue(data is CredentialClaimText, "$claimValueType valueType should return ${CredentialClaimText::class.simpleName}")
-        assertEquals(displayValue, (data as CredentialClaimText).value)
+        val item = useCase(claimWithDisplays).assertOk()
+        assertTrue(item is CredentialClaimText, "$claimValueType valueType should return ${CredentialClaimText::class.simpleName}")
+        assertEquals(displayValue, (item as CredentialClaimText).value)
     }
 
     @ParameterizedTest
@@ -163,12 +159,11 @@ class MapToCredentialClaimDataImplTest {
             ),
             displays = displays,
         )
-
         coEvery { mockGetLocalizedDisplay(displays = displays) } returns display
 
-        val data = mapToCredentialClaimData(claimWithDisplays).assertOk()
-        assertTrue(data is CredentialClaimText)
-        assertEquals(input.third, (data as CredentialClaimText).value)
+        val item = useCase(claimWithDisplays).assertOk()
+        assertTrue(item is CredentialClaimText)
+        assertEquals(input.third, (item as CredentialClaimText).value)
     }
 
     @ParameterizedTest
@@ -181,10 +176,10 @@ class MapToCredentialClaimDataImplTest {
     fun `Claim with supported image mime type should return correct data`(imageMimeType: String) = runTest {
         val claimWithDisplays = buildClaimWithDisplays(imageMimeType)
 
-        val data = mapToCredentialClaimData(claimWithDisplays).assertOk()
-        assertTrue(data is CredentialClaimImage, "$imageMimeType mime type should return ${CredentialClaimImage::class.simpleName}")
-        assertEquals(credentialClaimDisplay.name, data.localizedLabel)
-        assertEquals(base64NonUrlStringToByteArray(claimWithDisplays.claim.value!!), (data as CredentialClaimImage).imageData)
+        val item = useCase(claimWithDisplays).assertOk()
+        assertTrue(item is CredentialClaimImage, "$imageMimeType mime type should return ${CredentialClaimImage::class.simpleName}")
+        assertEquals(credentialClaimDisplay.name, item.localizedLabel)
+        assertEquals(base64NonUrlStringToByteArray(claimWithDisplays.claim.value!!), (item as CredentialClaimImage).imageData)
     }
 
     @ParameterizedTest
@@ -199,19 +194,19 @@ class MapToCredentialClaimDataImplTest {
         ]
     )
     fun `Claim with invalid valueType should return an error`(valueTypeString: String) = runTest {
-        mapToCredentialClaimData(buildClaimWithDisplays(valueTypeString))
+        useCase(buildClaimWithDisplays(valueTypeString))
             .assertErrorType(MapToCredentialClaimDataError::class)
     }
 
     @Test
     fun `Claim with null valueType should return an error`() = runTest {
-        mapToCredentialClaimData(buildClaimWithDisplays("null"))
+        useCase(buildClaimWithDisplays("null"))
             .assertErrorType(MapToCredentialClaimDataError::class)
     }
 
     @Test
     fun `Claim with empty valueType should return an error`() = runTest {
-        mapToCredentialClaimData(buildClaimWithDisplays(""))
+        useCase(buildClaimWithDisplays(""))
             .assertErrorType(MapToCredentialClaimDataError::class)
     }
 
@@ -220,7 +215,7 @@ class MapToCredentialClaimDataImplTest {
         coEvery { mockGetLocalizedDisplay(displays = any<List<CredentialClaimDisplay>>()) } returns null
         val claimWithDisplays = buildClaimWithDisplays("string", displays = emptyList())
 
-        mapToCredentialClaimData(claimWithDisplays)
+        useCase(claimWithDisplays)
             .assertErrorType(MapToCredentialClaimDataError::class)
     }
 
@@ -229,10 +224,10 @@ class MapToCredentialClaimDataImplTest {
         val claimWithDisplays =
             buildClaimWithDisplays(valueType = "string", value = MockCredentialClaim.LONG_CLAIM_VALUE)
 
-        val data = mapToCredentialClaimData(claimWithDisplays).assertOk()
+        val item = useCase(claimWithDisplays).assertOk()
         val expected = MockCredentialClaim.LONG_CLAIM_VALUE.substring(0, 1800) + "…"
-        assertTrue(data is CredentialClaimText)
-        assertEquals(expected, (data as CredentialClaimText).value)
+        assertTrue(item is CredentialClaimText)
+        assertEquals(expected, (item as CredentialClaimText).value)
     }
 
     companion object {

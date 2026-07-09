@@ -138,6 +138,7 @@ internal class EIdGuardianConsentViewModel @AssistedInject constructor(
                     )
 
                     SIdRequestDisplayStatus.IN_AUTO_VERIFICATION,
+                    SIdRequestDisplayStatus.AV_FILES_SUBMITTED,
                     SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING,
                     SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK,
                     SIdRequestDisplayStatus.IN_ISSUANCE,

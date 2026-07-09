@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess
 
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.di.EidApplicationProcessEntryPoint
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.repository.EidApplicationProcessRepository
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.SetDocumentTypeImpl
 import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManager
@@ -51,7 +51,7 @@ class SetDocumentTypeTest {
         } returns mockEidApplicationProcessRepository
 
         coEvery {
-            mockEidApplicationProcessRepository.setDocumentType(eIdDocumentType = any())
+            mockEidApplicationProcessRepository.setDocumentType(eIdUiDocumentType = any())
         } just Runs
     }
 
@@ -61,8 +61,8 @@ class SetDocumentTypeTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = EIdDocumentType::class)
-    fun `SetDocumentType sets the proper value in the scoped repository`(documentType: EIdDocumentType): Unit =
+    @EnumSource(value = EIdUiDocumentType::class)
+    fun `SetDocumentType sets the proper value in the scoped repository`(documentType: EIdUiDocumentType): Unit =
         runTest {
             useCase(eIdDocumentType = documentType)
 
@@ -72,7 +72,7 @@ class SetDocumentTypeTest {
                     any()
                 )
                 mockEidApplicationProcessEntryPoint.eidApplicationProcessRepository()
-                mockEidApplicationProcessRepository.setDocumentType(eIdDocumentType = documentType)
+                mockEidApplicationProcessRepository.setDocumentType(eIdUiDocumentType = documentType)
             }
         }
 }

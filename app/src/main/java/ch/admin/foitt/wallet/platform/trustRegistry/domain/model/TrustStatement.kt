@@ -7,9 +7,6 @@ sealed interface TrustStatement {
     @SerialName("vct")
     val vct: String
 
-    @SerialName("iss")
-    val iss: String
-
     @SerialName("sub")
     val sub: String
 

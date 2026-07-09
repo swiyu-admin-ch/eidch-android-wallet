@@ -20,6 +20,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.BundleItemEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.BundleItemWithKeyBindingDao
 import ch.admin.foitt.wallet.platform.database.data.dao.ClientAttestationDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialActivityEntityDao
+import ch.admin.foitt.wallet.platform.database.data.dao.CredentialAuthenticationDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialClaimClusterDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialClaimClusterEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialClaimDao
@@ -30,6 +31,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.CredentialIssuerDisplayD
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialKeyBindingEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.DeferredCredentialDao
 import ch.admin.foitt.wallet.platform.database.data.dao.DeferredCredentialWithDisplaysDao
+import ch.admin.foitt.wallet.platform.database.data.dao.DpopBindingDao
 import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestCaseDao
 import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestCaseWithStateDao
 import ch.admin.foitt.wallet.platform.database.data.dao.EIdRequestFileDao
@@ -38,6 +40,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.ImageEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.NonComplianceReasonDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.RawCredentialDataDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
+import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWithBatchDataAndAuthenticationDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWithBundleItemsWithKeyBindingDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWithDisplaysAndClustersDao
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration17to18
@@ -48,6 +51,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialActivityEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
@@ -57,6 +61,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisp
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.DpopBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestCase
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFile
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestState
@@ -75,6 +80,7 @@ import timber.log.Timber
         Credential::class,
         VerifiableCredentialEntity::class,
         DeferredCredentialEntity::class,
+        CredentialAuthenticationEntity::class,
         CredentialDisplay::class,
         CredentialClaim::class,
         CredentialClaimDisplay::class,
@@ -94,6 +100,7 @@ import timber.log.Timber
         ClientAttestation::class,
         BatchRefreshDataEntity::class,
         BundleItemEntity::class,
+        DpopBindingEntity::class,
     ],
     version = DATABASE_VERSION,
     autoMigrations = [
@@ -118,6 +125,11 @@ import timber.log.Timber
         // Migration19to20 -> Schema 6.4 to 6.5
         AutoMigration(from = 20, to = 21), // Schema 6.5 to 6.7
         // Migration21to22 -> Schema 6.7 to 6.6
+        AutoMigration(from = 22, to = 23), // Schema 6.6 to 6.9
+        AutoMigration(from = 23, to = 24), // Schema 6.9 to 6.10
+        AutoMigration(from = 24, to = 25), // Schema 6.10 to 6.11
+        AutoMigration(from = 25, to = 26), // Schema 6.11 to 6.12
+        // Migration27to28 -> No Schema change
     ], // see also migrations in SqlCipherDatabaseInitializer
     exportSchema = true,
 )
@@ -127,10 +139,13 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun credentialDao(): CredentialDao
     abstract fun verifiableCredentialDao(): VerifiableCredentialDao
     abstract fun verifiableCredentialWithDisplaysAndClustersDao(): VerifiableCredentialWithDisplaysAndClustersDao
+    abstract fun verifiableCredentialWithBatchDataAndAuthenticationDao(): VerifiableCredentialWithBatchDataAndAuthenticationDao
     abstract fun credentialWithKeyBindingDao(): VerifiableCredentialWithBundleItemsWithKeyBindingDao
     abstract fun bundleItemEntityDao(): BundleItemEntityDao
     abstract fun bundleItemWithKeyBindingDao(): BundleItemWithKeyBindingDao
     abstract fun deferredCredentialDao(): DeferredCredentialDao
+    abstract fun credentialAuthenticationDao(): CredentialAuthenticationDao
+    abstract fun dpopBindingDao(): DpopBindingDao
     abstract fun deferredCredentialWithDisplaysDao(): DeferredCredentialWithDisplaysDao
     abstract fun credentialClaimDao(): CredentialClaimDao
     abstract fun credentialClaimDisplayDao(): CredentialClaimDisplayDao
@@ -189,6 +204,6 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     companion object {
-        internal const val DATABASE_VERSION = 22 // db scheme v6.7
+        internal const val DATABASE_VERSION = 28 // db scheme v6.13
     }
 }

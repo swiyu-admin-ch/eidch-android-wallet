@@ -73,7 +73,7 @@ class ActivityListViewModel @AssistedInject constructor(
                     ActivityEvent.NONE -> _isSnackbarVisible.value = false
                     ActivityEvent.DELETED -> {
                         _isSnackbarVisible.value = true
-                        delay(4000L)
+                        delay(5000L)
                         activityEventRepository.resetEvent()
                     }
                     ActivityEvent.DELETED_ALL -> {} // not used on this screen
@@ -98,6 +98,6 @@ class ActivityListViewModel @AssistedInject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.generic()))
     }
 }

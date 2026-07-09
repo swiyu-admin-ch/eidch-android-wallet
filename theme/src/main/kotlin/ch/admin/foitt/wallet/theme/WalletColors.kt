@@ -8,6 +8,7 @@ internal object WalletColors {
     val blue20 = Color(0xFF17324C)
     val blue30 = Color(0xFF2F4963)
     val blue40 = Color(0xFF47607C)
+    val blue45 = Color(0xFF586C7D)
     val blue50 = Color(0xFF607996)
     val blue70 = Color(0xFF91ABCA)
     val blue80 = Color(0xFFAFC9E9)
@@ -62,14 +63,19 @@ internal object WalletColors {
     val orange80 = Color(0xFFFFB59C)
     val orange95 = Color(0xFFFFEDE8)
 
+    val accentPurple = Color(0xFF500A5A)
+    val accentBlueDark = Color(0xFFAABEDC)
+
+    val gradientGray = Color(0xFF9AA9B6)
+    val gradientPink = Color(0xFFF01ADB)
+
     val white = Color(0xFFFFFFFF)
     val black = Color(0xFF000000)
 
     val transparentWhite01 = Color(0x66FFFFFF)
-    val transparentWhite02 = Color(0x26FFFFFF)
     val transparentWhite03 = white.copy(alpha = 0.6f)
     val transparentBlack01 = Color(0x66000000)
-    val transparentBlack02 = Color(0x26121315)
+    val transparentBlack02 = Color(0x40000000)
     val tansparentBlack03 = grey10.copy(alpha = 0.6f)
 }
 

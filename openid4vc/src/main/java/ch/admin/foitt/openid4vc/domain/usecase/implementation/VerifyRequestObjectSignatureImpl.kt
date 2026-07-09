@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
+import ch.admin.foitt.didResolver.domain.DidResolverHelper
 import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
@@ -7,6 +8,7 @@ import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureError
 import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureFromDidError
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientIdentifier
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.RequestObject
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.RequestObjectVerificationOutcome
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyRequestObjectSignatureError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.toVerifyRequestObjectSignatureError
@@ -25,6 +27,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 internal class VerifyRequestObjectSignatureImpl @Inject constructor(
+    private val didResolverHelper: DidResolverHelper,
     private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
     private val verifyJwtSignature: VerifyJwtSignature,
     private val safeJson: SafeJson,
@@ -33,7 +36,7 @@ internal class VerifyRequestObjectSignatureImpl @Inject constructor(
     override suspend fun invoke(
         requestObject: RequestObject,
         trustedAttestationDids: List<String>,
-    ): Result<Unit, VerifyRequestObjectSignatureError> = coroutineBinding {
+    ): Result<RequestObjectVerificationOutcome, VerifyRequestObjectSignatureError> = coroutineBinding {
         val clientIdentifier = ClientIdentifier.fromRequestObject(requestObject)
             .mapError { throwable ->
                 VcSdJwtError.Unexpected(throwable)
@@ -46,6 +49,7 @@ internal class VerifyRequestObjectSignatureImpl @Inject constructor(
                     jwt = jwt,
                     clientIdentifier = clientIdentifier
                 ).bind()
+                RequestObjectVerificationOutcome.DID_PATH
             }
 
             ClientIdentifier.ClientIdPrefix.VerifierAttestationJwt -> {
@@ -63,17 +67,19 @@ internal class VerifyRequestObjectSignatureImpl @Inject constructor(
         jwt: Jwt,
         clientIdentifier: ClientIdentifier,
     ): Result<Unit, VerifyRequestObjectSignatureError> = coroutineBinding {
-        val kid = runSuspendCatching {
-            checkNotNull(jwt.keyId)
-        }.mapError { throwable -> VcSdJwtError.Unexpected(throwable) }
-            .bind()
         val did = clientIdentifier.clientId
         if (!did.matches(DID_REGEX)) return@coroutineBinding Err(VcSdJwtError.InvalidRequestObject).bind<Unit>()
 
-        val kidWithoutFragment = kid.substringBefore("#")
-        if (kidWithoutFragment != did) return@coroutineBinding Err(VcSdJwtError.InvalidRequestObject).bind<Unit>()
+        val jwtKid = runSuspendCatching {
+            checkNotNull(jwt.keyId)
+        }.mapError { throwable -> VcSdJwtError.Unexpected(throwable) }
+            .bind()
+        val jwtDid = didResolverHelper.getDidStringFromAbsoluteKeyId(jwtKid)
+            .mapError { throwable -> VcSdJwtError.Unexpected(throwable) }
+            .bind()
+        if (jwtDid != did) return@coroutineBinding Err(VcSdJwtError.InvalidRequestObject).bind<Unit>()
 
-        verifyJwtSignatureFromDid(did = did, kid = kid, jwt = jwt)
+        verifyJwtSignatureFromDid(kid = jwtKid, jwt = jwt)
             .mapError(VerifyJwtSignatureFromDidError::toVerifyRequestObjectSignatureError)
             .bind()
     }
@@ -83,7 +89,7 @@ internal class VerifyRequestObjectSignatureImpl @Inject constructor(
         clientIdentifier: ClientIdentifier,
         redirectUri: String?,
         trustedAttestationDids: List<String>,
-    ): Result<Unit, VerifyRequestObjectSignatureError> = coroutineBinding {
+    ): Result<RequestObjectVerificationOutcome, VerifyRequestObjectSignatureError> = coroutineBinding {
         val attestationJwtRawString = jwt.signedJwt.header.getCustomParam("jwt") as? String
             ?: Err(VcSdJwtError.InvalidJwt).bind()
 
@@ -105,21 +111,20 @@ internal class VerifyRequestObjectSignatureImpl @Inject constructor(
             VcSdJwtError.Unexpected(throwable)
         }.bind()
 
-        val (iss, kid) = runSuspendCatching {
-            val issuer = checkNotNull(attestationJwt.iss)
-            check(issuer in trustedAttestationDids) { "issuer did is not from the trusted attestations service" }
-
-            val keyId = checkNotNull(attestationJwt.keyId) {
+        val (attestationSignatureDid, kid) = runSuspendCatching {
+            val keyId = checkNotNull(attestationJwt.signedJwt.header.keyID) {
                 "kid is missing"
             }
+            val did = didResolverHelper.getDidStringFromAbsoluteKeyId(keyId)
+                .mapError { throwable -> VcSdJwtError.Unexpected(throwable) }
+                .bind()
 
-            issuer to keyId
+            did to keyId
         }.mapError { throwable -> VcSdJwtError.Unexpected(throwable) }
             .bind()
 
         // validate signature of attestation jwt
         verifyJwtSignatureFromDid(
-            did = iss,
             kid = kid,
             jwt = attestationJwt,
         ).mapError(VerifyJwtSignatureFromDidError::toVerifyRequestObjectSignatureError)
@@ -128,9 +133,15 @@ internal class VerifyRequestObjectSignatureImpl @Inject constructor(
         val requestObjectPublicKey = resolvePublicKeyFromAttestation(attestationJwt = attestationJwt).bind()
 
         // validate signature of request object jwt with the cnf of the attestation jwt
-        verifyJwtSignature(jwt = attestationJwt, publicKey = requestObjectPublicKey)
+        verifyJwtSignature(jwt = jwt, publicKey = requestObjectPublicKey)
             .mapError(VerifyJwtSignatureError::toVerifyRequestObjectSignatureError)
             .bind()
+
+        if (attestationSignatureDid in trustedAttestationDids) {
+            RequestObjectVerificationOutcome.ATTESTATION_TRUSTED
+        } else {
+            RequestObjectVerificationOutcome.ATTESTATION_UNTRUSTED
+        }
     }
 
     private suspend fun resolvePublicKeyFromAttestation(

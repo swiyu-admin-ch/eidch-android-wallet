@@ -49,7 +49,6 @@ class RequestKeyAttestationImpl @Inject constructor(
         val keyJwkString = createJwk(
             keyPair = keyPair.keyPair,
             algorithm = keyPair.algorithm,
-            asDid = false,
         ).mapError(CreateJwkError::toRequestKeyAttestationError).bind()
 
         val certificateChainBase64 = keyPair.getBase64CertificateChain()

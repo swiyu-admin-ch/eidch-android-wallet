@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.feature.otp.data.repository
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.feature.otp.domain.model.OtpRequest
 import ch.admin.foitt.wallet.feature.otp.domain.model.OtpVerify
 import ch.admin.foitt.wallet.feature.otp.domain.model.RequestOtpError

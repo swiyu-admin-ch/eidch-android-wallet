@@ -2,26 +2,17 @@ package ch.admin.foitt.wallet.feature.credentialOffer.presentation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,7 +20,6 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +45,7 @@ import ch.admin.foitt.wallet.platform.actorMetadata.presentation.InvitationHeade
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.ConfirmationBottomSheet
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
@@ -66,7 +57,7 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayo
 import ch.admin.foitt.wallet.platform.composables.presentation.verticalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.MediumCredentialCard
-import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
+import ch.admin.foitt.wallet.platform.credential.presentation.credentialElements
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
@@ -148,8 +139,7 @@ private fun CredentialOfferScreenContent(
     onDecline: () -> Unit,
     onWrongData: () -> Unit,
 ) = Box(
-    modifier =
-    Modifier
+    modifier = Modifier
         .fillMaxSize()
         .background(WalletTheme.colorScheme.surfaceContainerLow)
         .then(
@@ -192,78 +182,77 @@ private fun CompactContent(
     onDecline: () -> Unit,
     onWrongData: () -> Unit,
 ) {
-    val lazyListState = rememberLazyListState()
-    WalletLayouts.LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        state = lazyListState,
-        useTopInsets = false,
-        contentPadding = PaddingValues(bottom = Sizes.s06),
+    var buttonsHeight by remember {
+        mutableStateOf(0.dp)
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        item {
-            InvitationHeader(
-                actorUiState = credentialOffer.issuer,
-                onBadge = onBadge,
-            )
-        }
-        item {
-            WalletTexts.BodyLarge(
-                modifier = Modifier.padding(horizontal = Sizes.s06, vertical = Sizes.s03),
-                text = stringResource(R.string.tk_receive_credentialOffer_headerSection_secondary),
+        WalletLayouts.LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            state = rememberLazyListState(),
+            useTopInsets = false,
+            useBottomInsets = false,
+            contentPadding = PaddingValues(bottom = Sizes.s04 + buttonsHeight),
+        ) {
+            item {
+                InvitationHeader(
+                    actorUiState = credentialOffer.issuer,
+                    onBadge = onBadge,
+                )
+            }
+            item {
+                WalletTexts.BodyLarge(
+                    modifier = Modifier.padding(horizontal = Sizes.s06, vertical = Sizes.s03),
+                    text = stringResource(R.string.tk_receive_credentialOffer_headerSection_secondary),
+                )
+            }
+
+            item {
+                CredentialBoxCompact(
+                    credential = credentialOffer.credential,
+                    modifier = Modifier.padding(horizontal = Sizes.s04)
+                )
+                Spacer(modifier = Modifier.height(Sizes.s04))
+            }
+
+            credentialElements(
+                elements = credentialOffer.claims,
+                onWrongData = onWrongData,
             )
         }
 
-        item {
-            CredentialBoxCompact(
-                credential = credentialOffer.credential,
-                onAccept = onAccept,
-                onDecline = onDecline,
-            )
-            Spacer(modifier = Modifier.height(Sizes.s04))
-        }
-
-        credentialClaimItems(
-            claimItems = credentialOffer.claims,
-            onWrongData = onWrongData,
+        StickyButtons(
+            onAccept = onAccept,
+            onDecline = onDecline,
+            onHeightMeasured = { buttonsHeight = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
         )
-
-        item {
-            CredentialOfferButtons(
-                modifier = Modifier
-                    .padding(horizontal = Sizes.s04)
-                    .padding(top = Sizes.s10),
-                onAccept = onAccept,
-                onDecline = onDecline,
-            )
-        }
     }
 }
 
 @Composable
 private fun CredentialBoxCompact(
     credential: CredentialCardState,
-    onAccept: () -> Unit,
-    onDecline: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = Modifier
+    Box(
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 color = WalletTheme.colorScheme.background,
                 shape = RoundedCornerShape(Sizes.credentialCardCorner),
             )
             .padding(vertical = Sizes.s10, horizontal = Sizes.s04),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         MediumCredentialCard(
             modifier = Modifier
                 .padding(horizontal = Sizes.s10)
                 .testTag(TestTags.OFFER_CREDENTIAL.name),
             credentialCardState = credential,
-        )
-        Spacer(modifier = Modifier.height(Sizes.s06))
-        CredentialOfferButtons(
-            onAccept = onAccept,
-            onDecline = onDecline,
         )
     }
 }
@@ -329,14 +318,15 @@ private fun DetailsWithHeader(
     onDecline: () -> Unit,
     onWrongData: () -> Unit,
 ) {
-    val lazyListState = rememberLazyListState()
-    val stickyBottomHeight = remember { mutableStateOf(0.dp) }
+    var buttonsHeight by remember { mutableStateOf(0.dp) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         WalletLayouts.LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            state = lazyListState,
+            state = rememberLazyListState(),
             useTopInsets = false,
-            contentPadding = PaddingValues(bottom = Sizes.s02 + stickyBottomHeight.value),
+            useBottomInsets = false,
+            contentPadding = PaddingValues(bottom = Sizes.s04 + buttonsHeight),
         ) {
             item {
                 InvitationHeader(
@@ -353,20 +343,19 @@ private fun DetailsWithHeader(
                 Spacer(modifier = Modifier.height(Sizes.s04))
             }
 
-            credentialClaimItems(
-                claimItems = credentialOffer.claims,
+            credentialElements(
+                elements = credentialOffer.claims,
                 onWrongData = onWrongData,
             )
-
-            item {
-                Spacer(modifier = Modifier.height(Sizes.s06))
-            }
         }
+
         StickyButtons(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            stickyBottomHeight,
-            onDecline,
-            onAccept
+            onAccept = onAccept,
+            onDecline = onDecline,
+            onHeightMeasured = { buttonsHeight = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
         )
     }
 }
@@ -374,75 +363,37 @@ private fun DetailsWithHeader(
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun StickyButtons(
-    modifier: Modifier = Modifier,
-    stickyBottomHeight: MutableState<Dp>,
+    onAccept: () -> Unit,
     onDecline: () -> Unit,
-    onAccept: () -> Unit
+    onHeightMeasured: (Dp) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     HeightReportingLayout(
         modifier = modifier,
-        onContentHeightMeasured = { height -> stickyBottomHeight.value = height },
+        onContentHeightMeasured = onHeightMeasured,
     ) {
-        FlowRow(
-            modifier = Modifier
-                .background(WalletTheme.colorScheme.surface.copy(alpha = 0.85f))
-                .fillMaxWidth()
-                .padding(top = Sizes.s04, end = Sizes.s04, bottom = Sizes.s02)
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-                .focusGroup(),
-            horizontalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.End),
-            verticalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.Top),
-            maxItemsInEachRow = 2,
-        ) {
-            Buttons.FilledPrimary(
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag(TestTags.STICKY_DECLINE_BUTTON.name),
-                text = stringResource(id = R.string.tk_receive_credentialOffer_button_decline),
-                startIcon = painterResource(id = R.drawable.wallet_ic_cross),
-                onClick = onDecline,
-            )
-            Buttons.FilledTertiary(
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag(TestTags.STICKY_ACCEPT_BUTTON.name),
-                text = stringResource(id = R.string.tk_receive_credentialOffer_button_accept),
-                startIcon = painterResource(id = R.drawable.wallet_ic_checkmark),
-                onClick = onAccept,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun CredentialOfferButtons(
-    modifier: Modifier = Modifier,
-    onAccept: () -> Unit,
-    onDecline: () -> Unit,
-) {
-    FlowRow(
-        modifier = modifier
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.Top),
-        maxItemsInEachRow = 2,
-    ) {
-        Buttons.FilledPrimary(
-            modifier = Modifier
-                .weight(1f)
-                .testTag(TestTags.DECLINE_BUTTON.name),
-            text = stringResource(id = R.string.tk_receive_credentialOffer_button_decline),
-            startIcon = painterResource(id = R.drawable.wallet_ic_cross),
-            onClick = onDecline,
-        )
-        Buttons.FilledTertiary(
-            modifier = Modifier
-                .weight(1f)
-                .testTag(TestTags.ACCEPT_BUTTON.name),
-            text = stringResource(id = R.string.tk_receive_credentialOffer_button_accept),
-            startIcon = painterResource(id = R.drawable.wallet_ic_checkmark),
-            onClick = onAccept,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledTertiary(
+                        modifier = Modifier
+                            .testTag(TestTags.ACCEPT_BUTTON.name),
+                        text = stringResource(id = R.string.tk_receive_credentialOffer_button_accept),
+                        startIcon = painterResource(id = R.drawable.wallet_ic_checkmark),
+                        onClick = onAccept,
+                    )
+                },
+                {
+                    Buttons.FilledPrimary(
+                        modifier = Modifier
+                            .testTag(TestTags.DECLINE_BUTTON.name),
+                        text = stringResource(id = R.string.tk_receive_credentialOffer_button_decline),
+                        startIcon = painterResource(id = R.drawable.wallet_ic_cross),
+                        onClick = onDecline,
+                    )
+                }
+            ),
+            stacked = false,
         )
     }
 }

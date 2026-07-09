@@ -7,6 +7,7 @@ import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.Presen
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetCredentialOfferFromUri
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetPresentationRequestFromUri
+import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetProximityPresentationRequestFromUri
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ValidateInvitation
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.implementation.ValidateInvitationImpl
 import ch.admin.foitt.wallet.util.assertSuccessType
@@ -35,6 +36,9 @@ class ValidateInvitationImplTest {
     @MockK
     private lateinit var mockGetPresentationRequestFromUri: GetPresentationRequestFromUri
 
+    @MockK
+    private lateinit var mockGetProximityPresentationRequestFromUri: GetProximityPresentationRequestFromUri
+
     private val mockCredentialOffer = CredentialOffer(
         credentialIssuer = CREDENTIAL_ISSUER,
         credentialConfigurationIds = listOf(),
@@ -53,6 +57,7 @@ class ValidateInvitationImplTest {
         validateInvitationUseCase = ValidateInvitationImpl(
             getCredentialOfferFromUri = mockGetCredentialOfferFromUri,
             getPresentationRequestFromUri = mockGetPresentationRequestFromUri,
+            getProximityPresentationRequestFromUri = mockGetProximityPresentationRequestFromUri,
         )
 
         coEvery { mockGetCredentialOfferFromUri.invoke(uri = any()) } returns Ok(mockCredentialOffer)

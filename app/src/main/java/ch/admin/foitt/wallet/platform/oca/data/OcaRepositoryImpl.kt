@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.platform.oca.data
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.utils.acceptLanguageHeader
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaRepositoryError
 import ch.admin.foitt.wallet.platform.oca.domain.model.toOcaRepositoryError

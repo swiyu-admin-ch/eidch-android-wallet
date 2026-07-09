@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.WalletPairingUiState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairCurrentWalletError
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StartOnlineSessionError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PairCurrentWallet
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.StartOnlineSession
@@ -53,7 +54,7 @@ internal class EIdWalletPairingViewModel @AssistedInject constructor(
     )
 
     private val startOnlineSessionResult = MutableStateFlow<Result<Unit, StartOnlineSessionError>?>(null)
-    private val pairCurrentWalletResult = MutableStateFlow<Result<Unit, PairCurrentWalletError>?>(null)
+    private val pairCurrentWalletResult = MutableStateFlow<Result<PairWalletResponse, PairCurrentWalletError>?>(null)
 
     @OptIn(UnsafeResultErrorAccess::class)
     val uiState: StateFlow<WalletPairingUiState> = combine(

@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -47,21 +47,24 @@ private fun EIdIntroScreenContent(
                 backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
             )
         },
-        stickyBottomBackgroundColor = Color.Transparent,
         stickyBottomContent = {
-            Buttons.FilledPrimary(
-                text = stringResource(R.string.tk_getEid_intro_primaryButton),
-                onClick = onRequestEId,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TestTags.ACCEPT_BUTTON.name),
-            )
-            Buttons.TonalSecondary(
-                text = stringResource(R.string.tk_getEid_intro_secondaryButton),
-                onClick = onSkip,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TestTags.DECLINE_BUTTON.name),
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(R.string.tk_getEid_intro_primaryButton),
+                            onClick = onRequestEId,
+                            modifier = Modifier.testTag(TestTags.ACCEPT_BUTTON.name),
+                        )
+                    },
+                    {
+                        Buttons.TonalSecondary(
+                            text = stringResource(R.string.tk_getEid_intro_secondaryButton),
+                            onClick = onSkip,
+                            modifier = Modifier.testTag(TestTags.DECLINE_BUTTON.name),
+                        )
+                    },
+                ),
             )
         }
     ) {

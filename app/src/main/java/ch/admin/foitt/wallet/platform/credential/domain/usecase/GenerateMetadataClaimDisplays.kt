@@ -6,12 +6,12 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.GenerateMetadataDisplaysError
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import com.github.michaelbull.result.Result
-import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 fun interface GenerateMetadataClaimDisplays {
     suspend operator fun invoke(
         claimsPathPointer: ClaimsPathPointer,
-        claimValueJson: JsonElement,
+        jsonPrimitive: JsonPrimitive,
         metadataClaim: Claim?,
         order: Int,
     ): Result<Pair<CredentialClaim, List<AnyClaimDisplay>>, GenerateMetadataDisplaysError>

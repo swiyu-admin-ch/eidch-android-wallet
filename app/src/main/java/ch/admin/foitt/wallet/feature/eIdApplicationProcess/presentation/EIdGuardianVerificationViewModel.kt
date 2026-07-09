@@ -195,7 +195,9 @@ internal class EIdGuardianVerificationViewModel @AssistedInject constructor(
         InvitationError.UnauthorizedGrantType,
         InvitationError.UnknownCredentialConfiguration,
         InvitationError.UnknownCredentialIdentifier,
-        InvitationError.UnsupportedKeyStorageSecurityLevel -> uiStateUnexpectedError
+        InvitationError.UnsupportedKeyStorageSecurityLevel,
+        is InvitationError.InvalidTransactionData,
+        is InvitationError.InvalidClientPresentation -> uiStateUnexpectedError
     }
 
     private fun handleVerificationDone(sIdStatus: StateResponse): GuardianVerificationUiState {
@@ -231,6 +233,7 @@ internal class EIdGuardianVerificationViewModel @AssistedInject constructor(
 
             SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING,
             SIdRequestDisplayStatus.IN_AUTO_VERIFICATION,
+            SIdRequestDisplayStatus.AV_FILES_SUBMITTED,
             SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK,
             SIdRequestDisplayStatus.IN_ISSUANCE,
             SIdRequestDisplayStatus.IN_AGENT_REVIEW,

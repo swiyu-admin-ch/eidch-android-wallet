@@ -10,7 +10,7 @@ import javax.inject.Inject
 internal class GetColorImpl @Inject constructor() : GetColor {
     override fun invoke(colorString: String?): Color? = runSuspendCatching {
         colorString?.let {
-            Color((colorString.toColorInt()))
+            Color(colorString.toColorInt())
         }
     }.getOrElse { null }
 }

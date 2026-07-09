@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementati
 
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientMetaData
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
@@ -11,7 +10,9 @@ import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheVerifierDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.InitializeActorForScope
 import ch.admin.foitt.wallet.platform.credential.domain.util.entityNames
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.VerificationProcessType
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReasonDisplay
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustCheckResult
@@ -23,6 +24,7 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ProcessIdenti
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getOrElse
 import timber.log.Timber
+import uniffi.heidi_dcql_rust.Meta
 import javax.inject.Inject
 
 internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
@@ -34,9 +36,20 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
 ) : FetchAndCacheVerifierDisplayData {
     override suspend fun invoke(
         authorizationRequest: AuthorizationRequest,
+        verificationProcessType: VerificationProcessType,
+        verifierAttestationTrusted: Boolean?,
     ) {
         val verifierNameDisplay = authorizationRequest.clientMetaData?.toVerifierName()
         val verifierLogoDisplay = authorizationRequest.clientMetaData?.toVerifierLogo()
+
+        if (verificationProcessType == VerificationProcessType.PROXIMITY) {
+            cacheProximityVerifierFromMetadata(
+                verifierNameDisplay = verifierNameDisplay,
+                verifierLogoDisplay = verifierLogoDisplay,
+                verifierAttestationTrusted = verifierAttestationTrusted,
+            )
+            return
+        }
 
         val trustCheckResult = fetchTrustForVerification(authorizationRequest)
 
@@ -71,6 +84,38 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
 
         initializeActorForScope(
             actorDisplayData = presentationVerifierDisplay,
+            componentScope = ComponentScope.Verifier,
+        )
+    }
+
+    private suspend fun cacheProximityVerifierFromMetadata(
+        verifierNameDisplay: List<ActorField<String>>?,
+        verifierLogoDisplay: List<ActorField<String>>?,
+        verifierAttestationTrusted: Boolean?,
+    ) {
+        val trustStatus = if (verifierAttestationTrusted == true) {
+            TrustStatus.TRUSTED_PROXIMITY_VERIFIER
+        } else {
+            TrustStatus.NOT_TRUSTED_PROXIMITY_VERIFIER
+        }
+
+        val vcSchemaTrustStatus = if (verifierAttestationTrusted == true) {
+            VcSchemaTrustStatus.TRUSTED
+        } else {
+            VcSchemaTrustStatus.NOT_TRUSTED
+        }
+
+        initializeActorForScope(
+            actorDisplayData = ActorDisplayData(
+                name = verifierNameDisplay,
+                image = verifierLogoDisplay,
+                trustStatus = trustStatus,
+                vcSchemaTrustStatus = vcSchemaTrustStatus,
+                preferredLanguage = null,
+                actorType = ActorType.VERIFIER,
+                actorComplianceState = ActorComplianceState.UNKNOWN,
+                nonComplianceReason = null,
+            ),
             componentScope = ComponentScope.Verifier,
         )
     }
@@ -120,15 +165,8 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
 
     private fun getVcSchemaId(
         authorizationRequest: AuthorizationRequest
-    ) = authorizationRequest.presentationDefinition?.inputDescriptors?.firstNotNullOfOrNull { inputDescriptor ->
-        val filteredFormats =
-            inputDescriptor.formats.filter { inputDescriptorFormat -> inputDescriptorFormat is InputDescriptorFormat.VcSdJwt }
-        if (filteredFormats.isNotEmpty()) {
-            val vctField = inputDescriptor.constraints.fields.firstOrNull { field -> field.path.contains("$.vct") }
-            vctField?.filter?.const
-        } else {
-            null
-        }
+    ) = authorizationRequest.dcqlQuery?.credentials?.firstNotNullOfOrNull { credentialQuery ->
+        (credentialQuery.meta as? Meta.SdjwtVc)?.vctValues?.firstOrNull()
     }
 
     private fun getTrustStatus(trustCheckResult: TrustCheckResult?) = when (trustCheckResult?.actorEnvironment) {

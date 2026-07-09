@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 class EIdStartAutoVerificationRepositoryImpl @Inject constructor() : EIdStartAutoVerificationRepository {
-    private val _packageResult = MutableStateFlow<AutoVerificationResponse?>(null)
-    override val packageResult = _packageResult.asStateFlow()
-    override fun setPackageResult(packageResult: AutoVerificationResponse) {
-        _packageResult.value = packageResult
+    private val _autoVerificationResponse = MutableStateFlow<AutoVerificationResponse?>(null)
+    override val autoVerificationResponse = _autoVerificationResponse.asStateFlow()
+    override fun setAutoVerificationResponse(response: AutoVerificationResponse) {
+        _autoVerificationResponse.value = response
     }
 }

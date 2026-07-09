@@ -29,11 +29,13 @@ data class EIdRequestCase(
     val credentialId: Long? = null, // Foreign key
     val rawMrz: String,
     val documentNumber: String,
-    @ColumnInfo(
-        defaultValue = "SWISS_IDK"
-    )
+    @ColumnInfo(defaultValue = "SWISS_IDK")
     val selectedDocumentType: IdentityType,
     val firstName: String,
     val lastName: String,
+    @ColumnInfo(defaultValue = "false")
+    val filesSubmitted: Boolean = false,
     val createdAt: Long = Instant.now().epochSecond,
+    @ColumnInfo(defaultValue = "NULL")
+    val pushId: String? = null,
 )

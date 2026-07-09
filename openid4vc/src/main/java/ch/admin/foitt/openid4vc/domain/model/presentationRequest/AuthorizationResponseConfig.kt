@@ -6,13 +6,11 @@ data class AuthorizationResponseConfig(
 )
 
 enum class AuthorizationResponseType {
-    DCQL,
-    DIF
+    DCQL
 }
 
 enum class AuthorizationResponseParam(val jsonName: String) {
     VP_TOKEN("vp_token"),
-    PRESENTATION_SUBMISSION("presentation_submission"),
     RESPONSE("response"),
     STATE("state"),
 }

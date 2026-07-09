@@ -17,12 +17,12 @@ import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdNfcS
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdNfcScannerViewModel
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdNfcSummaryScreen
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdNfcSummaryViewModel
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdPushNotificationScreen
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdPushNotificationViewModel
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdStartAutoVerificationScreen
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.EIdStartAutoVerificationViewModel
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.MrzChooserScreen
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.MrzChooserViewModel
-import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.MrzScanPermissionScreen
-import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.MrzScanPermissionViewModel
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.MrzSubmissionScreen
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.MrzSubmissionViewModel
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
@@ -139,17 +139,6 @@ object EntryProviderInstallerModule {
             }
         }
 
-        entry<Destination.MrzScanPermissionScreen> { navKey ->
-            val viewModel = hiltViewModel<MrzScanPermissionViewModel, MrzScanPermissionViewModel.Factory>(
-                creationCallback = { factory ->
-                    factory.create(caseId = navKey.caseId)
-                }
-            )
-            SyncedScaffoldScreen(viewModel = viewModel) {
-                MrzScanPermissionScreen(viewModel = viewModel)
-            }
-        }
-
         entry<Destination.MrzSubmissionScreen> { navKey ->
             val viewModel =
                 hiltViewModel<MrzSubmissionViewModel, MrzSubmissionViewModel.Factory>(
@@ -181,6 +170,17 @@ object EntryProviderInstallerModule {
             )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 EIdDocumentRecordingInfoScreen(viewModel = viewModel)
+            }
+        }
+
+        entry<Destination.EIdPushNotificationScreen> { navKey ->
+            val viewModel = hiltViewModel<EIdPushNotificationViewModel, EIdPushNotificationViewModel.Factory>(
+                creationCallback = { factory ->
+                    factory.create(caseId = navKey.caseId)
+                }
+            )
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                EIdPushNotificationScreen(viewModel = viewModel)
             }
         }
     }

@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.CreateVcSdJwtVerifiablePresentationError
@@ -10,7 +11,7 @@ internal fun interface CreateVcSdJwtVerifiablePresentation {
     suspend operator fun invoke(
         credential: VcSdJwtCredential,
         keyBinding: KeyBinding?,
-        requestedFields: List<String>,
+        presentationPaths: List<ClaimsPathPointer>,
         authorizationRequest: AuthorizationRequest,
     ): Result<String, CreateVcSdJwtVerifiablePresentationError>
 }

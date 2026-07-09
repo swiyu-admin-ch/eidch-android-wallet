@@ -6,8 +6,8 @@ import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingActivityV
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingConfirmPassphraseFailureScreen
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingConfirmPassphraseScreen
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingConfirmPassphraseViewModel
-import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingErrorScreen
-import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingErrorViewModel
+import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingFatalErrorScreen
+import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingFatalErrorViewModel
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingIntroScreen
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingIntroViewModel
 import ch.admin.foitt.wallet.feature.onboarding.presentation.OnboardingLocalDataScreen
@@ -121,10 +121,18 @@ object EntryProviderInstallerModule {
             }
         }
 
-        entry<Destination.OnboardingErrorScreen> {
-            val viewModel = hiltViewModel<OnboardingErrorViewModel>()
+        entry<Destination.OnboardingFatalErrorScreen> { navKey ->
+            val viewModel =
+                hiltViewModel<OnboardingFatalErrorViewModel, OnboardingFatalErrorViewModel.Factory>(
+                    creationCallback = { factory ->
+                        factory.create(
+                            primaryTextRes = navKey.primaryTextRes,
+                            secondaryTextRes = navKey.secondaryTextRes,
+                        )
+                    }
+                )
             SyncedScaffoldScreen(viewModel = viewModel) {
-                OnboardingErrorScreen(viewModel = viewModel)
+                OnboardingFatalErrorScreen(viewModel = viewModel)
             }
         }
 

@@ -7,5 +7,5 @@ import com.github.michaelbull.result.Result
 
 interface VersionEnforcementRepository {
     @CheckResult
-    suspend fun fetchLatestHighPriority(): Result<VersionEnforcement?, FetchVersionEnforcementError>
+    suspend fun fetchVersionEnforcement(): Result<VersionEnforcement?, FetchVersionEnforcementError>
 }

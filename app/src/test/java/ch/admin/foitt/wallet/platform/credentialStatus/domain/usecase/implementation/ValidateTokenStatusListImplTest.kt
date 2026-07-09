@@ -1,15 +1,20 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation
 
+import ch.admin.foitt.didResolver.domain.DidResolverHelper
+import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
 import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusList
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusListResponse
+import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ValidateTokenStatusList
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance.safeJson
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
@@ -23,22 +28,26 @@ import org.junit.jupiter.api.assertInstanceOf
 import java.text.ParseException
 
 class ValidateTokenStatusListImplTest {
+    @MockK
+    private lateinit var mockDidResolverHelper: DidResolverHelper
 
     @MockK
     private lateinit var mockVerifyJwtSignatureFromDid: VerifyJwtSignatureFromDid
 
-    private lateinit var useCase: ValidateTokenStatusListImpl
+    private lateinit var useCase: ValidateTokenStatusList
 
     @BeforeEach
     fun setup() {
         MockKAnnotations.init(this)
 
         useCase = ValidateTokenStatusListImpl(
-            safeJson = safeJson,
+            didResolverHelper = mockDidResolverHelper,
             verifyJwtSignatureFromDid = mockVerifyJwtSignatureFromDid,
+            safeJson = safeJson,
         )
 
-        coEvery { mockVerifyJwtSignatureFromDid(did = any(), kid = any(), jwt = any()) } returns Ok(Unit)
+        every { mockDidResolverHelper.getDidStringFromAbsoluteKeyId(KEY_ID) } returns Ok(ISSUER)
+        coEvery { mockVerifyJwtSignatureFromDid(kid = any(), jwt = any()) } returns Ok(Unit)
     }
 
     @AfterEach
@@ -48,17 +57,8 @@ class ValidateTokenStatusListImplTest {
 
     @Test
     fun `Validating token status list which is valid returns response`(): Unit = runTest {
-        val result = useCase(ISSUER, JWT, SUBJECT)
-
-        val response = result.assertOk()
-        assertEquals(tokenResponse, response)
-    }
-
-    @Test
-    fun `Validating token status list which has no issuer returns error`(): Unit = runTest {
-        val result = useCase(ISSUER, JWT_WITHOUT_ISSUER, SUBJECT)
-        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
-        assertInstanceOf<IllegalStateException>(error.cause)
+        val result = useCase(ISSUER, JWT, SUBJECT).assertOk()
+        assertEquals(tokenResponse, result)
     }
 
     @Test
@@ -69,33 +69,10 @@ class ValidateTokenStatusListImplTest {
         assertInstanceOf<ParseException>(error.cause)
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     @Test
-    fun `Validating token status list with wrong issuer returns error`(): Unit = runTest {
-        val result = useCase("otherIssuer", JWT, SUBJECT)
-
-        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
-        assertInstanceOf<IllegalStateException>(error.cause)
-    }
-
-    @Test
-    fun `Validating token status list with wrong subject returns error`(): Unit = runTest {
-        val result = useCase(ISSUER, JWT, "otherSubject")
-
-        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
-        assertInstanceOf<IllegalStateException>(error.cause)
-    }
-
-    @Test
-    fun `Validating token status list with expired JWT returns error`(): Unit = runTest {
-        val result = useCase(ISSUER, JWT_WITH_EXPIRATION_DATE_ZERO, SUBJECT)
-
-        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
-        assertInstanceOf<IllegalStateException>(error.cause)
-    }
-
-    @Test
-    fun `Validating token status list with invalid payload returns error`(): Unit = runTest {
-        val result = useCase(ISSUER, JWT_WITHOUT_BITS, SUBJECT)
+    fun `Validating token status list with missing status_list returns error`(): Unit = runTest {
+        val result = useCase(ISSUER, JWT_WITHOUT_STATUS_LIST, SUBJECT)
 
         val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
         assertInstanceOf<SerializationException>(error.cause)
@@ -125,47 +102,112 @@ class ValidateTokenStatusListImplTest {
         assertInstanceOf<IllegalStateException>(error.cause)
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     @Test
-    fun `Validating token status list with missing status_list returns error`(): Unit = runTest {
-        val result = useCase(ISSUER, JWT_WITHOUT_STATUS_LIST, SUBJECT)
+    fun `Validating token status list with wrong subject returns error`(): Unit = runTest {
+        val result = useCase(ISSUER, JWT, "otherSubject")
+
+        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
+        assertInstanceOf<IllegalStateException>(error.cause)
+    }
+
+    @Test
+    fun `Validating token status list with expired JWT returns error`(): Unit = runTest {
+        val result = useCase(ISSUER, JWT_WITH_EXPIRATION_DATE_ZERO, SUBJECT)
+
+        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
+        assertInstanceOf<IllegalStateException>(error.cause)
+    }
+
+    @Test
+    fun `Validating token status list with missing keyId returns error`(): Unit = runTest {
+        val result = useCase(ISSUER, JWT_WITHOUT_KEY_ID, SUBJECT)
+
+        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
+        assertInstanceOf<IllegalStateException>(error.cause)
+    }
+
+    @Test
+    fun `Validating token status list with wrong issuer returns error`(): Unit = runTest {
+        val result = useCase("otherIssuer", JWT, SUBJECT)
+
+        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
+        assertInstanceOf<IllegalStateException>(error.cause)
+    }
+
+    @Test
+    fun `Validating token status list with wrong trust statement issuer returns error`(): Unit = runTest {
+        every {
+            mockDidResolverHelper.getDidStringFromAbsoluteKeyId(KEY_ID)
+        } returns Ok("otherIssuer")
+
+        val result = useCase(ISSUER, JWT, SUBJECT)
+
+        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
+        assertInstanceOf<IllegalStateException>(error.cause)
+    }
+
+    @Test
+    fun `Validating token status list maps errors from did resolver`(): Unit = runTest {
+        val exception = IllegalStateException("did error")
+        every {
+            mockDidResolverHelper.getDidStringFromAbsoluteKeyId(KEY_ID)
+        } returns Err(exception)
+
+        val result = useCase(ISSUER, JWT, SUBJECT)
+
+        val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
+        assertInstanceOf<IllegalStateException>(error.cause)
+    }
+
+    @Test
+    fun `Validating token status list maps errors from verifying jwt signature`(): Unit = runTest {
+        coEvery {
+            mockVerifyJwtSignatureFromDid(kid = any(), jwt = any())
+        } returns Err(JwtError.DidDocumentDeactivated)
+
+        useCase(ISSUER, JWT, SUBJECT).assertErrorType(CredentialStatusError.DidDocumentDeactivated::class)
+    }
+
+    @Test
+    fun `Validating token status list with invalid payload returns error`(): Unit = runTest {
+        val result = useCase(ISSUER, JWT_WITHOUT_BITS, SUBJECT)
 
         val error = result.assertErrorType(CredentialStatusError.Unexpected::class)
         assertInstanceOf<SerializationException>(error.cause)
     }
 
     private companion object {
-        const val ISSUER = "issuer"
+        const val ISSUER = "issuerDid"
+        const val KEY_ID = "$ISSUER#key-01"
         const val SUBJECT = "subject"
         val statusList = TokenStatusList(bits = 2, lst = "lst")
         val tokenResponse = TokenStatusListResponse(timeToLive = 43200, statusList = statusList)
         const val JWT =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwiaXNzIjoiaXNzdWVyIiwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.Di0wLIouZjHbQvvMhK3chhQ97gnkfj-oKrTeYbnRT3Xb2qQyURuroD9LOsc72TQytsCoueFyzd-z_xz95ZR-VA"
+            "eyJhbGciOiJFUzI1NiIsImtpZCI6Imlzc3VlckRpZCNrZXktMDEiLCJ0eXAiOiJzdGF0dXNsaXN0K2p3dCJ9.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.VZ4ZsBUYWcXRCArg9Tcs-7F6kYLp-_1PeL-A9VQipuNG2qvhHyYoeQ6PIrcBI2Lt-XGRJJhVFZIQmo4_LsHeGw"
+        const val JWT_WITHOUT_KEY_ID =
+            "eyJhbGciOiJFUzI1NiIsInR5cCI6InN0YXR1c2xpc3Qrand0In0.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.yCZPrK_bMtLJe3f0tvk2SpoqhrUV7O6poyTwn30xGIBMCnPL--yOaUbc8WPthGHXjexFFYWtkAuM_Z1bVwejww"
         const val JWT_WITH_EXPIRATION_DATE_ZERO =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjAsImlhdCI6MTY4NjkyMDE3MCwiaXNzIjoiaXNzdWVyIiwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.PJkzqde4UgfY9yBPMgIfCYKfCksRbqRDVo-1QiiiA5mrefbrrcLxFEporWNajw1UQhhHKg_fdgmHElFI70buXw"
-        const val JWT_WITHOUT_ISSUER =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.qNVbi2GEZBzpQ_K-3jWty1kGk_IwKgYsnPH5B570CXVSHCogYGkgK76NFE4utBcppPDN2moB3-iIj2fJMRyBgg"
+            "eyJhbGciOiJFUzI1NiIsImtpZCI6Imlzc3VlckRpZCNrZXktMDEiLCJ0eXAiOiJzdGF0dXNsaXN0K2p3dCJ9.eyJleHAiOjAsImlhdCI6MTY4NjkyMDE3MCwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.4vgRp_62qW6_wSsiRuW18SVk-f7CvexxH0DsiqrCxK6t6oOzMOfP1CF8awJfOXR8gNVOAtdG7pZQptWWH0zkqQ"
         const val JWT_WITHOUT_BITS =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwiaXNzIjoiaXNzdWVyIiwic3RhdHVzX2xpc3QiOnsibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.VD_fKygkmcJFDLD1MkuHOrlarfhIHeHPhLXOhYwA347NYQJ7k-hhO_o29X0ieloJow85-iB5OXiPTqYOPP9ULQ"
+            "eyJhbGciOiJFUzI1NiIsImtpZCI6Imlzc3VlckRpZCNrZXktMDEiLCJ0eXAiOiJzdGF0dXNsaXN0K2p3dCJ9.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwic3RhdHVzX2xpc3QiOnsibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.YNpEaukt1Dvp2R6v2f4EkFPygNYe6k5HM5TN-2qsWWUimptwWGbJD7mS6IM19a5w-ck1m2-GhRcAISrLwErm5w"
         const val JWT_WITHOUT_SUBJECT =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwiaXNzIjoiaXNzdWVyIiwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInR0bCI6NDMyMDB9.NF11zqGHRRRU-3p7arjhXD8LCLypM3p_i9fwE4Wtcs9_J0CJROsBJnCe09ZG86EThnGCVYpqFx2GCnatdvBWMw"
+            "eyJhbGciOiJFUzI1NiIsImtpZCI6Imlzc3VlckRpZCNrZXktMDEiLCJ0eXAiOiJzdGF0dXNsaXN0K2p3dCJ9.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInR0bCI6NDMyMDB9.KUvqdrJ8Q3kYyyrxawgyiEIUHCQ1vcIXOvKAGGXvoKd65VbX5-hRdKo3UcpnKkKgi9tZW51bwPU-Rdv_EJ3hpw"
         const val JWT_WITHOUT_IAT =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjIyOTE3MjAxNzAsImlzcyI6Imlzc3VlciIsInN0YXR1c19saXN0Ijp7ImJpdHMiOjIsImxzdCI6ImxzdCJ9LCJzdWIiOiJzdWJqZWN0IiwidHRsIjo0MzIwMH0.9yZAC_8eGOflsxamKQXVcqZF6TovQSH10ckpug39hsUHD2O3FxGIaRzHPJYN040pCnDgYArtUSAiHmsZXOxxBA"
+            "eyJhbGciOiJFUzI1NiIsImtpZCI6Imlzc3VlckRpZCNrZXktMDEiLCJ0eXAiOiJzdGF0dXNsaXN0K2p3dCJ9.eyJleHAiOjIyOTE3MjAxNzAsInN0YXR1c19saXN0Ijp7ImJpdHMiOjIsImxzdCI6ImxzdCJ9LCJzdWIiOiJzdWJqZWN0IiwidHRsIjo0MzIwMH0.pHSlJKviRPAHfKEiVkysYgGGshG_fliDRxeQYmqg22Z0li_W20LrXVWK3F1SHYxg6wYyVbL4yGr0MWyfq_QqUQ"
         const val JWT_WITH_WRONG_TYPE =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoianNvbiJ9.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwiaXNzIjoiaXNzdWVyIiwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInR0bCI6NDMyMDB9.BjQo9W0oHZ2kIUe6Z_qSYVathL2vEjIZzZ7rnsmw3Tzqyf4oPnI91IptdXSdz8kJNPMSbB0frihb7DzpGmzh_g"
+            "eyJhbGciOiJFUzI1NiIsImtpZCI6Imlzc3VlckRpZCNrZXktMDEiLCJ0eXAiOiJ3cm9uZ1R5cGUifQ.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwic3RhdHVzX2xpc3QiOnsiYml0cyI6MiwibHN0IjoibHN0In0sInN1YiI6InN1YmplY3QiLCJ0dGwiOjQzMjAwfQ.qcscri_siWlaWSEDX735URorWhDAcyK0Q2rpjtAYVqhRM-2uxJCmwAh3UMhpblGFyap6qbBo56kOjl4L_DCRfg"
         const val JWT_WITHOUT_STATUS_LIST =
-            "eyJhbGciOiJFUzI1NiIsImtpZCI6ImM0NDI5NzI4MGU1ZDNjYjVmOTE1ZjRiN2JiOGRjZWFjIiwidHlwIjoic3RhdHVzbGlzdCtqd3QifQ.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwiaXNzIjoiaXNzdWVyIiwic3ViIjoic3ViamVjdCIsInR0bCI6NDMyMDB9.K7nU10KOZAx-UIsd57pJeaCKjfdzJSRUj4RnvTpQyecteCZpt0aCR6VPwl4el1pc5sc8k3yPqKqy5jF5EL1t6A"
+            "eyJhbGciOiJFUzI1NiIsImtpZCI6Imlzc3VlckRpZCNrZXktMDEiLCJ0eXAiOiJzdGF0dXNsaXN0K2p3dCJ9.eyJleHAiOjIyOTE3MjAxNzAsImlhdCI6MTY4NjkyMDE3MCwic3ViIjoic3ViamVjdCIsInR0bCI6NDMyMDB9.73XOBdRETiNH6ZgRXWZOfk1HOnVQMRt6sVCu__vhncaUtFc4MT_u_mQSRfvYsrStdxN9kTKNGA_8JgbBVfLi9g"
 /*
 JWT Header is:
 {
     "alg": "ES256",
-    "kid": "c44297280e5d3cb5f915f4b7bb8dceac",
+    "kid": "issuerDid#key-01",
     "typ": "statuslist+jwt"
 }
 JWT payload is: {
                   "exp": 2291720170,
                   "iat": 1686920170,
-                  "iss": "issuer",
                   "status_list": {
                     "bits": 2,
                     "lst": "lst"

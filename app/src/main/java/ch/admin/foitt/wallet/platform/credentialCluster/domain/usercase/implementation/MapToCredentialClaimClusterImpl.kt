@@ -1,13 +1,17 @@
 package ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.allIndices
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.claimsPathPointerFrom
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.ResolveClaimTemplate
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.MapToCredentialClaimCluster
 import ch.admin.foitt.wallet.platform.database.domain.model.ClusterWithDisplaysAndClaims
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithDisplays
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimImage
-import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimItem
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
+import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialElement
 import ch.admin.foitt.wallet.platform.ssi.domain.model.GetCredentialDetailFlowError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.MapToCredentialClaimDataError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.toGetCredentialDetailFlowError
@@ -26,52 +30,50 @@ import javax.inject.Inject
 class MapToCredentialClaimClusterImpl @Inject constructor(
     private val getLocalizedDisplay: GetLocalizedDisplay,
     private val mapToCredentialClaimData: MapToCredentialClaimData,
+    private val resolveClaimTemplate: ResolveClaimTemplate,
 ) : MapToCredentialClaimCluster {
     override suspend fun invoke(clustersWithDisplaysAndClaims: List<ClusterWithDisplaysAndClaims>): List<CredentialClaimCluster> {
+        val allClaims = mutableSetOf<CredentialClaimWithDisplays>()
         // Step 1: Create all nodes with only Claim items
         val nodes = clustersWithDisplaysAndClaims.associate { (clusterWithDisplays, claimsWithDisplays) ->
+            allClaims.addAll(claimsWithDisplays)
+
             clusterWithDisplays.cluster.id to CredentialClaimCluster(
                 id = clusterWithDisplays.cluster.id,
                 localizedLabel = getLocalizedDisplay(clusterWithDisplays.displays)?.name ?: "",
                 parentId = clusterWithDisplays.cluster.parentClusterId,
                 order = clusterWithDisplays.cluster.order,
-                items = getCredentialClaimData(claimsWithDisplays).get()?.toMutableList() ?: mutableListOf()
+                items = getCredentialClaimData(claimsWithDisplays).get()?.toMutableList() ?: mutableListOf(),
+                path = claimsPathPointerFrom(clusterWithDisplays.cluster.path) ?: emptyList(),
+                isSensitive = clusterWithDisplays.cluster.isSensitive,
             )
         }
 
         // Step 2: Link each Cluster to its parent
         nodes.values.forEach { node ->
-            if (node.parentId != null) {
-                val parent = nodes[node.parentId] ?: return@forEach
-                parent.items.add(
-                    CredentialClaimCluster(
-                        id = node.id,
-                        order = node.order,
-                        localizedLabel = node.localizedLabel,
-                        parentId = node.parentId,
-                        items = node.items
-                    )
-                )
-                parent.items.sortInPlaceByOrder()
-            } else {
-                node.items.sortInPlaceByOrder()
+            node.parentId?.let { parentId ->
+                nodes[parentId]?.items?.add(node)
             }
         }
+        nodes.values.forEach { it.items.sortInPlaceByOrder() }
 
         // Step 3: Only return root nodes (parentId == null)
         val roots = nodes.values.filter { it.parentId == null }
         roots.setNumberOfNonClusterChildren()
 
-        // Step 4: Filter empty clusters (mainly for presentation when verifier requests only a few fields)
-        val cleanedClusters = filterEmptyClusters(roots)
+        // Step 4: Determine if node is a simple type claim cluster
+        roots.determineSimpleTypeClusterNodes()
 
-        // Step 5: Return ordered root clusters
-        return cleanedClusters.sortByOrder()
+        // Step 5: Return filtered and sorted roots
+        return roots.filterEmptyItems()
+            .resolveTemplates(allClaims.toList())
+            .filterIsInstance<CredentialClaimCluster>()
+            .sortByOrder()
     }
 
     private suspend fun getCredentialClaimData(
         claims: List<CredentialClaimWithDisplays>
-    ): Result<List<CredentialClaimItem>, GetCredentialDetailFlowError> = coroutineBinding {
+    ): Result<List<CredentialElement>, GetCredentialDetailFlowError> = coroutineBinding {
         claims.map { claimWithDisplays ->
             mapToCredentialClaimData(
                 claimWithDisplays
@@ -79,47 +81,70 @@ class MapToCredentialClaimClusterImpl @Inject constructor(
         }
     }
 
-    private fun List<CredentialClaimItem>.setNumberOfNonClusterChildren(): Int {
-        var count = 0
-        for (item in this) {
-            when (item) {
-                is CredentialClaimText, is CredentialClaimImage -> count++
-                is CredentialClaimCluster -> {
-                    val childCount = item.items.setNumberOfNonClusterChildren()
-                    item.numberOfNonClusterChildren = childCount
-                    count += childCount
+    private fun List<CredentialElement>.setNumberOfNonClusterChildren(): Int = sumOf { item ->
+        when (item) {
+            is CredentialClaimText, is CredentialClaimImage -> 1
+            is CredentialClaimCluster -> {
+                item.items.setNumberOfNonClusterChildren().also { count ->
+                    item.numberOfNonClusterChildren = count
                 }
-            }
-        }
-        return count
-    }
-
-    private fun filterEmptyClusters(items: List<CredentialClaimCluster>): List<CredentialClaimCluster> {
-        return items.mapNotNull { item ->
-            if (item.numberOfNonClusterChildren == 0) {
-                null
-            } else {
-                item.copy(
-                    items = filterEmptyClusterItems(item.items).toMutableList(),
-                )
             }
         }
     }
 
-    private fun filterEmptyClusterItems(items: MutableList<CredentialClaimItem>): List<CredentialClaimItem> {
-        return items.mapNotNull { item ->
+    /**
+     * Determines if a node is a CredentialClaimCluster with only simple type items.
+     * The function sets the isSimpleTypeCluster property of a node to true if:
+     * - The node itself is of type [CredentialClaimCluster]
+     * - The nodes [CredentialClaimCluster.path] has a [ClaimsPathPointerComponent.Null] value as its last entry.
+     * - The nodes [CredentialClaimCluster.items] do not contain any other [CredentialClaimCluster]
+     * If the nodes [CredentialClaimCluster.items] contain more [CredentialClaimCluster] then this function will
+     * call itself recursively to apply the [CredentialClaimCluster.isSimpleTypeCluster] property to the child items as well.
+     */
+    private fun List<CredentialElement>.determineSimpleTypeClusterNodes() {
+        filterIsInstance<CredentialClaimCluster>().forEach { node ->
+            node.isSimpleTypeCluster =
+                node.path.isNotEmpty() && node.path.last() == ClaimsPathPointerComponent.Null && node.items.none {
+                    it is CredentialClaimCluster
+                }
+            if (!node.isSimpleTypeCluster) {
+                node.items.determineSimpleTypeClusterNodes()
+            }
+        }
+    }
+
+    private fun List<CredentialElement>.filterEmptyItems(): List<CredentialElement> {
+        return this.mapNotNull { item ->
             when (item) {
                 is CredentialClaimCluster -> {
-                    if (item.numberOfNonClusterChildren == 0) {
-                        null
-                    } else {
-                        item.copy(
-                            items = filterEmptyClusterItems(item.items).toMutableList(),
-                        )
-                    }
+                    if (item.numberOfNonClusterChildren == 0) return@mapNotNull null
+                    item.copy(
+                        items = item.items.filterEmptyItems().toMutableList()
+                    )
                 }
 
-                is CredentialClaimText, is CredentialClaimImage -> item
+                else -> item
+            }
+        }
+    }
+
+    private fun List<CredentialElement>.resolveTemplates(
+        claims: List<CredentialClaimWithDisplays>,
+    ): List<CredentialElement> {
+        return this.map { element ->
+            when (element) {
+                is CredentialClaimCluster -> {
+                    val resolvedLabel = resolveClaimTemplate(
+                        template = element.localizedLabel,
+                        claims = claims,
+                        allIndices = element.path.allIndices
+                    )
+                    element.copy(
+                        localizedLabel = resolvedLabel,
+                        items = element.items.resolveTemplates(claims).toMutableList()
+                    )
+                }
+                else -> element
             }
         }
     }

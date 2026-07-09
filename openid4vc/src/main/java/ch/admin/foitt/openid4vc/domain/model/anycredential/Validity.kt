@@ -5,5 +5,6 @@ import java.time.Instant
 sealed interface Validity {
     data class NotYetValid(val validFrom: Instant) : Validity
     data object Valid : Validity
+    data class BusinessExpired(val expiredAt: Instant) : Validity
     data class Expired(val expiredAt: Instant) : Validity
 }

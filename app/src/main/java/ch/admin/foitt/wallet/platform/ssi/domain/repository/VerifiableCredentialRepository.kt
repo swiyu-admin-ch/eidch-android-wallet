@@ -13,4 +13,9 @@ interface VerifiableCredentialRepository {
         credentialId: Long,
         progressionState: VerifiableProgressionState
     ): Result<Int, VerifiableCredentialRepositoryError>
+
+    suspend fun updateNextBundleIdByCredentialId(
+        credentialId: Long,
+        nextPresentableBundleItemId: Long
+    ): Result<Int, VerifiableCredentialRepositoryError>
 }

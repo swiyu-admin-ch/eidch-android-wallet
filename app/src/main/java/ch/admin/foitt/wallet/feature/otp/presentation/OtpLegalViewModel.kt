@@ -27,9 +27,11 @@ internal class OtpLegalViewModel @Inject constructor(
 
     fun onContinue() = navManager.navigateTo(Destination.OtpEmailInputScreen)
 
-    fun onTerms() = appContext.openLink(appContext.getString(R.string.tk_eidRequest_otp_legal_linkValue))
+    fun onTerms() = appContext.openLink(appContext.getString(R.string.tk_eidRequest_otp_legal_terms_linkValue))
+
+    fun onPrivacy() = appContext.openLink(appContext.getString(R.string.tk_eidRequest_otp_legal_privacy_linkValue))
 
     private fun onBack() = navManager.popBackStack()
 
-    private fun onClose() = navManager.popBackStackTo(Destination.HomeScreen::class, false)
+    fun onClose() = navManager.popBackStackTo(Destination.HomeScreen::class, false)
 }

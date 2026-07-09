@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.AnyCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
@@ -13,8 +14,10 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDispl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.UpdateDeferredCredential
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationWithDpopBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialOfferRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.DeferredCredentialRepository
@@ -142,7 +145,7 @@ class UpdateDeferredCredentialImplTest {
                 anyCredential = null,
                 issuerInfo = mockIssuerCredentialInfo,
                 trustStatement = null,
-                metadata = mockAnyCredentialConfiguration,
+                credentialConfiguration = mockAnyCredentialConfiguration,
                 ocaBundle = null,
             )
             mockCredentialOfferRepository.updateDeferredCredentialMetaData(
@@ -225,6 +228,8 @@ class UpdateDeferredCredentialImplTest {
     @Suppress("MayBeConst")
     private companion object {
         private val currentTime = Instant.ofEpochSecond(15L).epochSecond
+        private val ACCESS_TOKEN = "accessToken01"
+        private val REFRESH_TOKEN = "refreshToken01"
         private val transactionId01 = "transactionId01"
         private val issuerEndpoint01 = "https://example"
         private val polledAt01 = 5L
@@ -239,8 +244,6 @@ class UpdateDeferredCredentialImplTest {
             credentialId = 1L,
             progressionState = DeferredProgressionState.IN_PROGRESS,
             transactionId = transactionId01,
-            accessToken = "accessToken01",
-            refreshToken = "refreshToken01",
             endpoint = issuerEndpoint01,
             pollInterval = pollInterval01,
             createdAt = 4L,
@@ -255,10 +258,21 @@ class UpdateDeferredCredentialImplTest {
             issuerUrl = URL(ISSUER01_URL)
         )
 
-        private val deferredCredentialWithBinding01 = DeferredCredentialWithKeyBinding(
+        private val credentialAuthenticationWithDpopBinding = CredentialAuthenticationWithDpopBinding(
+            credentialAuthentication = CredentialAuthenticationEntity(
+                credentialId = credentialEntity01.id,
+                tokenType = TokenType.BEARER,
+                accessToken = ACCESS_TOKEN,
+                refreshToken = REFRESH_TOKEN,
+            ),
+            dpopBinding = null,
+        )
+
+        private val deferredCredentialWithBinding01 = DeferredCredentialWithAuthenticationAndKeyBinding(
             deferredCredential = deferredCredentialEntity01,
             credential = credentialEntity01,
             keyBindings = listOf(),
+            authentication = credentialAuthenticationWithDpopBinding,
         )
 
         private val deferredCredentialResponse01 = CredentialResponse.DeferredCredential(

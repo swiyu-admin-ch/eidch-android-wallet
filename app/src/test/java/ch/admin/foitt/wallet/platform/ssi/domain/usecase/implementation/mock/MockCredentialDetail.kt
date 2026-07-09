@@ -28,7 +28,7 @@ object MockCredentialDetail {
     private const val CLAIM_ID_2 = 2L
     private const val ISSUER_URL = "https://example.com/issuer"
 
-    private val credential = Credential(
+    val credential = Credential(
         id = CREDENTIAL_ID,
         format = CredentialFormat.VC_SD_JWT,
         createdAt = 1700463600000,

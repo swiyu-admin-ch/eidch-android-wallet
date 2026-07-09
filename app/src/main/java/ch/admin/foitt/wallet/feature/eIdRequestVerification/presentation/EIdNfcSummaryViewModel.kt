@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 
+import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
@@ -24,7 +25,10 @@ class EIdNfcSummaryViewModel @AssistedInject constructor(
     @Assisted("documentId") internal val documentId: String,
     @Assisted("expiryDate") internal val expiryDate: String,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.WithCloseButton(::onClose)
+    override val topBarState = TopBarState.WithCloseButton(
+        titleId = R.string.tk_eidRequest_nfcScan_summary_title,
+        onClose = ::onClose,
+    )
 
     @AssistedFactory
     interface Factory {

@@ -3,7 +3,6 @@ package ch.admin.foitt.wallet.platform.actorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.implementation.GetActorEnvironmentImpl
-import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockCredential
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -46,14 +45,16 @@ class GetActorEnvironmentImplTest {
 
     @Test
     fun `Getting a PROD payload should return Prod`() = runTest {
-        val result = useCase(MockCredential.vcSdJwtCredentialProd.issuer)
+        val prodIssuer = "did:tdw:foo=:identifier-reg.trust-infra.swiyu.admin.ch:bar"
+        val result = useCase(prodIssuer)
 
         assertEquals(ActorEnvironment.PRODUCTION, result)
     }
 
     @Test
     fun `Getting a BETA payload should return Beta`() = runTest {
-        val result = useCase(MockCredential.vcSdJwtCredentialBeta.issuer)
+        val betaIssuer = "did:tdw:foo=:identifier-reg.trust-infra.swiyu-int.admin.ch:bar"
+        val result = useCase(betaIssuer)
 
         assertEquals(ActorEnvironment.BETA, result)
     }

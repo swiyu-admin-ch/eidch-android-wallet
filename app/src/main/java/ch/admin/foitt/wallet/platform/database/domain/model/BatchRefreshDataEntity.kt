@@ -9,5 +9,4 @@ data class BatchRefreshDataEntity(
     @PrimaryKey
     val credentialId: Long,
     val batchSize: BatchSize,
-    val refreshToken: String
 )

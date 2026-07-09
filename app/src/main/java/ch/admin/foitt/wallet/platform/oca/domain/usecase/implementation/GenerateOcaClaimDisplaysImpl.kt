@@ -1,7 +1,9 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
-import ch.admin.foitt.wallet.platform.credential.domain.util.addFallbackLanguageIfNecessary
+import ch.admin.foitt.wallet.platform.credential.domain.util.addFallbackLanguage
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.imageValidation.domain.model.ValidateImageError
@@ -29,19 +31,20 @@ class GenerateOcaClaimDisplaysImpl @Inject constructor(
 ) : GenerateOcaClaimDisplays {
 
     override fun invoke(
-        claimsPathPointer: String,
+        claimsPathPointer: ClaimsPathPointer,
         value: String?,
-        ocaClaimData: OcaClaimData,
+        ocaClaimData: OcaClaimData?,
+        order: Int?,
     ): Result<Pair<CredentialClaim, List<AnyClaimDisplay>>, GenerateOcaDisplaysError> = binding {
         var formattedValue = value
         var valueType: String? = null
         var valueDisplayInfo: String? = null
-        if (ocaClaimData.standard == Standard.DataUrl) {
+        if (ocaClaimData?.standard == Standard.DataUrl) {
             value?.parseDataUrlMimeType()?.let { mimeType ->
                 formattedValue = value.substringAfter(";base64,")
                 valueType = mimeType
             }
-        } else if (ocaClaimData.attributeType == AttributeType.DateTime) {
+        } else if (ocaClaimData?.attributeType == AttributeType.DateTime) {
             valueType = ValueType.DATETIME.value
             value?.let {
                 val (dateTime, format) = parseDateTime(value, ocaClaimData)
@@ -61,17 +64,17 @@ class GenerateOcaClaimDisplaysImpl @Inject constructor(
 
         val claim = CredentialClaim(
             clusterId = UNKNOWN_CLUSTER_ID,
-            path = claimsPathPointer,
+            path = claimsPathPointer.toPointerString(),
             value = formattedValue,
             valueType = finalValueType,
             valueDisplayInfo = valueDisplayInfo,
-            order = ocaClaimData.order ?: -1,
-            isSensitive = ocaClaimData.isSensitive
+            order = order ?: ocaClaimData?.order ?: -1,
+            isSensitive = ocaClaimData?.isSensitive ?: false,
         )
         val claimDisplays = createClaimDisplays(
             ocaClaim = ocaClaimData,
             value = formattedValue,
-            defaultClaimsPathPointer = claimsPathPointer,
+            defaultClaimsPathPointer = claimsPathPointer.toPointerString(),
         )
 
         claim to claimDisplays
@@ -89,13 +92,14 @@ class GenerateOcaClaimDisplaysImpl @Inject constructor(
         }
     }
 
-    private fun getValueType(claim: OcaClaimData): String =
-        when (claim.attributeType) {
+    private fun getValueType(claim: OcaClaimData?): String =
+        when (claim?.attributeType) {
             AttributeType.Binary -> getValueTypeForBinary(claim)
             AttributeType.Boolean -> ValueType.BOOLEAN.value
             AttributeType.DateTime -> ValueType.DATETIME.value
             AttributeType.Numeric -> ValueType.NUMERIC.value
             AttributeType.Text, is AttributeType.Reference, is AttributeType.Array -> ValueType.STRING.value
+            null -> ValueType.STRING.value
         }
 
     private fun getValueTypeForBinary(claim: OcaClaimData): String = when {
@@ -105,21 +109,21 @@ class GenerateOcaClaimDisplaysImpl @Inject constructor(
     }
 
     private fun createClaimDisplays(
-        ocaClaim: OcaClaimData,
+        ocaClaim: OcaClaimData?,
         value: String?,
         defaultClaimsPathPointer: String,
     ): List<AnyClaimDisplay> {
-        val displays = ocaClaim.labels.map { (locale, label) ->
+        val displays = ocaClaim?.labels?.map { (locale, label) ->
             val entries = ocaClaim.entryMappings.entries.find { it.key == locale }?.value ?: emptyMap()
             val localizedValue = entries.entries.find { it.key == value }?.value
             AnyClaimDisplay(locale = locale, name = label, value = localizedValue)
-        }.addFallbackLanguageIfNecessary {
+        }.addFallbackLanguage {
             AnyClaimDisplay(locale = DisplayLanguage.FALLBACK, name = defaultClaimsPathPointer)
         }
         if (value == null) return displays
 
         val locales = displays.map { it.locale }
-        val missedEntries = ocaClaim.entryMappings.filterNot { it.key in locales }
+        val missedEntries = ocaClaim?.entryMappings?.filterNot { it.key in locales } ?: emptyMap()
         val entriesOnlyDisplays = createClaimDisplays(missedEntries, value, defaultClaimsPathPointer)
         return displays + entriesOnlyDisplays
     }

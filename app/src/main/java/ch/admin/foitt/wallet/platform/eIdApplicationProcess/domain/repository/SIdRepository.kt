@@ -6,6 +6,7 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestation
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.ApplyRequest
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AutoVerificationResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.CaseResponse
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdPeerPushIdRequest
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdStartAutoVerificationType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.GuardianVerificationResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletError
@@ -57,4 +58,11 @@ interface SIdRepository {
         walletPairingId: String,
         clientAttestation: ClientAttestation,
     ): Result<WalletPairingStateResponse, SIdRepositoryError>
+
+    suspend fun setPeerPushId(
+        caseId: String,
+        clientAttestation: ClientAttestation,
+        clientAttestationPoP: ClientAttestationPoP,
+        request: EIdPeerPushIdRequest
+    ): Result<Unit, SIdRepositoryError>
 }

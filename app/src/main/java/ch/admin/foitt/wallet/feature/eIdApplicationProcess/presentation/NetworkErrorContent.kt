@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -30,19 +30,22 @@ fun NetworkErrorContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_retry),
-            onClick = onRetry,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_close),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_retry),
+                        onClick = onRetry,
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_eidRequest_attestation_unexpectedError_button_close),
+                        onClick = onClose,
+                    )
+                },
+            ),
         )
     },
 ) {

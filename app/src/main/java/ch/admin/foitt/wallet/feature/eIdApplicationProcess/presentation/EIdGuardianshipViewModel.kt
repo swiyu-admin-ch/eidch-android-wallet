@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
-import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetHasLegalGuardian
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
@@ -12,18 +11,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EIdGuardianshipViewModel @Inject constructor(
-    private val avBeam: AVBeam,
     private val navManager: NavigationManager,
     private val setHasLegalGuardian: SetHasLegalGuardian,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.DetailsWithCloseButton(
         titleId = null,
-        onUp = {
-            shutDownLibraryAndGoBack()
-        },
+        onUp = ::goBack,
         onClose = {
-            avBeam.shutDown()
             navManager.navigateBackToHomeScreen(Destination.EIdIntroScreen::class)
         },
     )
@@ -33,8 +28,7 @@ class EIdGuardianshipViewModel @Inject constructor(
         navManager.navigateTo(Destination.EIdDocumentSelectionScreen)
     }
 
-    fun shutDownLibraryAndGoBack() {
-        avBeam.shutDown()
+    fun goBack() {
         navManager.popBackStack()
     }
 }

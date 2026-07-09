@@ -10,14 +10,14 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class OverlaySpecType(val type: String) {
-    @SerialName("extend/overlays/data_source/1.0")
-    DATA_SOURCE_1_0("extend/overlays/data_source/1.0"),
-
     @SerialName("extend/overlays/data_source/2.0")
     DATA_SOURCE_2_0("extend/overlays/data_source/2.0"),
 
     @SerialName("spec/overlays/label/1.0")
     LABEL_1_0("spec/overlays/label/1.0"),
+
+    @SerialName("spec/overlays/label/1.1")
+    LABEL_1_1("spec/overlays/label/1.1"),
 
     @SerialName("spec/overlays/character_encoding/1.0")
     CHARACTER_ENCODING_1_0("spec/overlays/character_encoding/1.0"),

@@ -8,6 +8,9 @@ fun interface CheckCameraPermission {
     suspend operator fun invoke(
         permissionsAreGranted: Boolean,
         rationaleShouldBeShown: Boolean,
-        promptWasTriggered: Boolean,
+        introPromptWasAccepted: Boolean,
+        autoPromptWasTriggered: Boolean,
+        manualPromptWasTriggered: Boolean,
+        rationaleWasShown: Boolean,
     ): PermissionState
 }

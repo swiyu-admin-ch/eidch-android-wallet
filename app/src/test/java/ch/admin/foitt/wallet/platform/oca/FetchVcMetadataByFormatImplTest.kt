@@ -46,6 +46,7 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json.Default.parseToJsonElement
+import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -290,7 +291,7 @@ class FetchVcMetadataByFormatImplTest {
         every { mockVcSdJwtCredential.vctMetadataUriIntegrity } returns VCT_METADATA_URI_INTEGRITY
         every {
             mockVcSdJwtCredential.getClaimsForPresentation()
-        } returns parseToJsonElement(CREDENTIAL_CLAIMS_FOR_PRESENTATION)
+        } returns parseToJsonElement(CREDENTIAL_CLAIMS_FOR_PRESENTATION).jsonObject
 
         val typeMetadata = safeJson.safeDecodeStringTo<TypeMetadata>(typeMetadataFullExample).value
         coEvery {

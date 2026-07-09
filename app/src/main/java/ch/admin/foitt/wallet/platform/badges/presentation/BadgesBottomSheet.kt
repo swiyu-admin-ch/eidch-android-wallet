@@ -24,12 +24,12 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheetUiState
-import ch.admin.foitt.wallet.platform.composables.presentation.ClusterListItem
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
 import ch.admin.foitt.wallet.platform.utils.TraversalIndex
 import ch.admin.foitt.wallet.platform.utils.setIsTraversalGroup
 import ch.admin.foitt.wallet.theme.Sizes
+import ch.admin.foitt.wallet.theme.WalletListItems
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
 
@@ -79,6 +79,26 @@ private fun ModalBottomSheetContent(
             badgeBottomSheetUiState.actorName,
             badgeBottomSheetUiState.actorName,
         ),
+        onMoreInformation = badgeBottomSheetUiState.onMoreInformation,
+    )
+
+    is BadgeBottomSheetUiState.VerifiedCheckApp -> BottomSheetContent(
+        badge = {
+            TrustBadgeTrusted()
+        },
+        title = stringResource(R.string.tk_badgeInformation_trustedCheckApp_primary),
+        body = stringResource(R.string.tk_badgeInformation_trustedCheckApp_secondary),
+        hint = stringResource(R.string.tk_badgeInformation_trustedCheckApp_hint),
+        onMoreInformation = badgeBottomSheetUiState.onMoreInformation,
+    )
+
+    is BadgeBottomSheetUiState.NotVerifiedCheckApp -> BottomSheetContent(
+        badge = {
+            TrustBadgeNotTrusted()
+        },
+        title = stringResource(R.string.tk_badgeInformation_notTrustedCheckApp_primary),
+        body = stringResource(R.string.tk_badgeInformation_notTrustedCheckApp_secondary),
+        hint = stringResource(R.string.tk_badgeInformation_notTrustedCheckApp_hint),
         onMoreInformation = badgeBottomSheetUiState.onMoreInformation,
     )
 
@@ -190,7 +210,7 @@ private fun BottomSheetContent(
         Spacer(modifier = Modifier.height(Sizes.s02))
     }
     bodySecondary?.let {
-        ClusterListItem(
+        WalletListItems.Cluster(
             isFirstItem = true,
             isLastItem = true,
             backgroundColor = WalletTheme.colorScheme.surface,
@@ -224,7 +244,7 @@ private fun MoreInformationButton(
     verticalAlignment = Alignment.CenterVertically,
 ) {
     val linkText = stringResource(R.string.tk_badgeInformation_furtherInformation_link_text)
-    val linkAltText = stringResource(R.string.tk_global_externalLink_alt)
+    val linkAltText = stringResource(R.string.tk_global_externalLink_hint)
 
     WalletTexts.LabelLargeEmphasized(
         modifier = Modifier.semantics {
@@ -245,6 +265,8 @@ private class BadgesBottomSheetPreviewParams : PreviewParameterProvider<BadgeBot
     override val values = sequenceOf(
         BadgeBottomSheetUiState.TrustVerified(actorName = "Preview actor", onMoreInformation = {}),
         BadgeBottomSheetUiState.TrustNotVerified(actorName = "Preview actor", onMoreInformation = {}),
+        BadgeBottomSheetUiState.VerifiedCheckApp(actorName = "swiyu Check", onMoreInformation = {}),
+        BadgeBottomSheetUiState.NotVerifiedCheckApp(actorName = "swiyu Check", onMoreInformation = {}),
         BadgeBottomSheetUiState.LegitimateIssuer(actorName = "Preview actor", onMoreInformation = {}),
         BadgeBottomSheetUiState.NonLegitimateIssuer(actorName = "Preview actor", onMoreInformation = {}),
         BadgeBottomSheetUiState.LegitimateVerifier(actorName = "Preview actor", onMoreInformation = {}),

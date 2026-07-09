@@ -82,7 +82,7 @@ class RequestKeyAttestationImplTest {
 
         coEvery { mockCreateJWSKeyPairInHardware(any(), any(), any(), any(), any()) } returns Ok(jwsKeyPair)
 
-        coEvery { mockCreateJwk(any(), any(), any()) } returns Ok(jwk)
+        coEvery { mockCreateJwk(any(), any()) } returns Ok(jwk)
 
         mockkStatic(JWSKeyPair::getBase64CertificateChain)
         coEvery { any<JWSKeyPair>().getBase64CertificateChain() } returns Ok(listOf("base64Certificate"))
@@ -110,7 +110,7 @@ class RequestKeyAttestationImplTest {
         coVerifyOrder {
             mockAppAttestationRepository.fetchChallenge()
             mockCreateJWSKeyPairInHardware(any(), any(), any(), any(), any())
-            mockCreateJwk(jwsKeyPair.keyPair, jwsKeyPair.algorithm, any())
+            mockCreateJwk(jwsKeyPair.keyPair, jwsKeyPair.algorithm)
             mockAppAttestationRepository.fetchKeyAttestation(any())
             mockValidateKeyAttestation(any(), any())
         }
@@ -145,7 +145,7 @@ class RequestKeyAttestationImplTest {
     @Test
     fun `A Jwk string creation failure is propagated`() = runTest {
         val exception = Exception("myException")
-        coEvery { mockCreateJwk.invoke(any(), any(), any()) } returns Err(JwkError.Unexpected(exception))
+        coEvery { mockCreateJwk.invoke(any(), any()) } returns Err(JwkError.Unexpected(exception))
         val result: Result<KeyAttestation, RequestKeyAttestationError> = useCase()
         val error = result.assertErrorType(AttestationError.Unexpected::class)
         assertEquals(exception, error.throwable)

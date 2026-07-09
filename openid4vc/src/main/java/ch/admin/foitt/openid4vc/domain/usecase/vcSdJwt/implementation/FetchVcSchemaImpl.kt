@@ -14,7 +14,7 @@ import com.github.michaelbull.result.mapError
 import java.net.URL
 import javax.inject.Inject
 
-class FetchVcSchemaImpl @Inject constructor(
+internal class FetchVcSchemaImpl @Inject constructor(
     private val vcSchemaRepository: VcSchemaRepository,
     private val sriValidator: SRIValidator,
 ) : FetchVcSchema {

@@ -6,9 +6,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.onboarding.presentation.composables.OnboardingScreenContent
+import ch.admin.foitt.wallet.feature.onboarding.presentation.composables.OnboardingSwipeableScreen
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
-import ch.admin.foitt.wallet.platform.composables.presentation.SwipeableScreen
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
@@ -19,9 +20,10 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 fun OnboardingPassphraseExplanationScreen(
     viewModel: OnboardingPassphraseExplanationViewModel,
 ) {
-    SwipeableScreen(
+    OnboardingSwipeableScreen(
         onSwipeForward = viewModel::onNext,
         onSwipeBackWard = viewModel::onBack,
+        focusEvents = viewModel.focusEvents
     ) {
         OnboardingPassphraseExplanationScreenContent(
             onNext = viewModel::onNext,
@@ -41,10 +43,16 @@ private fun OnboardingPassphraseExplanationScreenContent(
         )
     },
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            modifier = Modifier.testTag(TestTags.CONTINUE_BUTTON.name),
-            text = stringResource(id = R.string.tk_onboarding_passwordIntroduction_button_primary),
-            onClick = onNext,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        modifier = Modifier.testTag(TestTags.CONTINUE_BUTTON.name),
+                        text = stringResource(id = R.string.tk_onboarding_passwordIntroduction_button_primary),
+                        onClick = onNext,
+                    )
+                }
+            )
         )
     }
 ) {

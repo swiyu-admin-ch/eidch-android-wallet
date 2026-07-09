@@ -99,6 +99,7 @@ fun VerifyJwtSignatureFromDidError.toValidateTrustStatementError(): ValidateTrus
     is JwtError.InvalidJwt,
     JwtError.DidDocumentDeactivated,
     JwtError.IssuerValidationFailed,
+    JwtError.InvalidDid,
     JwtError.NetworkError -> Unexpected(null)
     is JwtError.Unexpected -> Unexpected(throwable)
 }

@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.platform.invitation
 import ch.admin.foitt.wallet.platform.appSetupState.domain.usecase.GetFirstCredentialWasAdded
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.VerificationProcessType
 import ch.admin.foitt.wallet.platform.credentialPresentation.mock.MockPresentationRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.ProcessInvitationResult
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.HandleInvitationProcessingSuccess
@@ -75,12 +76,14 @@ class HandleInvitationProcessingSuccessTest {
 
         private val mockCompatibleCredential = CompatibleCredential(
             credentialId = mockCredentialOfferResult.credentialId,
-            requestedFields = listOf(),
+            presentationPaths = listOf(),
+            dcqlQueryId = "1"
         )
 
         private val mockPresentationRequestWithRaw = PresentationRequestWithRaw(
             mockPresentationRequest,
             RAW_JWT,
+            VerificationProcessType.NETWORK,
         )
 
         private val mockPresentationRequestResult = ProcessInvitationResult.PresentationRequest(

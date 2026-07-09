@@ -3,10 +3,13 @@ package ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.impleme
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
 import ch.admin.foitt.wallet.platform.utils.AppVersion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersionInfo
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcement
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcementError
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.repository.VersionEnforcementRepository
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetAppVersion
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetDeviceModel
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetOSVersion
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
@@ -22,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.time.LocalDate
 
 class FetchAppVersionInfoImplTest {
 
@@ -29,16 +33,16 @@ class FetchAppVersionInfoImplTest {
     private lateinit var mockGetAppVersion: GetAppVersion
 
     @MockK
+    private lateinit var mockGetOSVersion: GetOSVersion
+
+    @MockK
+    private lateinit var mockGetDeviceModel: GetDeviceModel
+
+    @MockK
     private lateinit var mockVersionEnforcementRepository: VersionEnforcementRepository
 
     @MockK
     private lateinit var mockGetLocalizedDisplay: GetLocalizedDisplay
-
-    @MockK
-    private lateinit var mockVersionEnforcement: VersionEnforcement
-
-    @MockK
-    private lateinit var mockDisplays: List<VersionEnforcement.Display>
 
     private lateinit var useCase: FetchAppVersionInfoImpl
 
@@ -49,7 +53,9 @@ class FetchAppVersionInfoImplTest {
         useCase = FetchAppVersionInfoImpl(
             getAppVersion = mockGetAppVersion,
             versionEnforcementRepository = mockVersionEnforcementRepository,
-            getLocalizedDisplay = mockGetLocalizedDisplay
+            getLocalizedDisplay = mockGetLocalizedDisplay,
+            getOsVersion = mockGetOSVersion,
+            getDeviceModel = mockGetDeviceModel,
         )
 
         setupDefaultMocks()
@@ -61,75 +67,78 @@ class FetchAppVersionInfoImplTest {
     }
 
     @Test
-    fun `Fetching app version info where version is lower than max app version and min app version is null returns blocked`() = runTest {
-        mockVersions(
-            minVersion = null,
-            maxVersion = higherAppVersion,
-            appVersion = middleAppVersion,
+    fun `Fetching app version info where OS version is too low returns blocked`() = runTest {
+        every { mockGetOSVersion() } returns "14"
+
+        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(
+            defaultVersionEnforcement
         )
 
         val info = useCase()
 
         assertTrue(info is AppVersionInfo.Blocked)
         info as AppVersionInfo.Blocked
-        assertEquals(info.title, TITLE)
-        assertEquals(info.text, TEXT)
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = [MIDDLE_APP_VERSION, HIGHER_APP_VERSION])
-    fun `Fetching app version info where version is equal or higher than max app version and min app version is null returns valid`(
-        version: String
-    ) = runTest {
-        mockVersions(
-            minVersion = null,
-            maxVersion = middleAppVersion,
-            appVersion = AppVersion(version),
-        )
-
-        val info = useCase()
-
-        assertTrue(info is AppVersionInfo.Valid)
+        assertEquals(EnforcementType.OS_UPDATE, info.type)
     }
 
     @Test
-    fun `Fetching app version info where version is lower than min app version returns valid`() = runTest {
-        mockVersions(
-            minVersion = middleAppVersion,
-            maxVersion = higherAppVersion,
-            appVersion = lowerAppVersion,
-        )
-
-        val info = useCase()
-
-        assertTrue(info is AppVersionInfo.Valid)
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = [LOWER_APP_VERSION, MIDDLE_APP_VERSION])
-    fun `Fetching app version info where version is equal or higher than min app version and lower than max app version returns blocked`(
-        version: String
-    ) = runTest {
-        mockVersions(
-            minVersion = lowerAppVersion,
-            maxVersion = higherAppVersion,
-            appVersion = AppVersion(version),
+    fun `Fetching app version info where device is blacklisted returns blocked`() = runTest {
+        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(
+            defaultVersionEnforcement.copy(defaultBlacklist = listOf(DEVICE_MODEL))
         )
 
         val info = useCase()
 
         assertTrue(info is AppVersionInfo.Blocked)
         info as AppVersionInfo.Blocked
-        assertEquals(info.title, TITLE)
-        assertEquals(info.text, TEXT)
+        assertEquals(EnforcementType.DEVICE_BLACKLIST, info.type)
     }
 
     @Test
-    fun `Fetching app version info where version is higher than max app version returns valid`() = runTest {
+    fun `Fetching app version info where version is lower than a forced version returns blocked`() = runTest {
         mockVersions(
-            minVersion = lowerAppVersion,
-            maxVersion = middleAppVersion,
-            appVersion = higherAppVersion,
+            appVersion = appVersion,
+            forcedVersion = forcedVersion,
+        )
+
+        val info = useCase()
+
+        assertTrue(info is AppVersionInfo.Blocked)
+        info as AppVersionInfo.Blocked
+        assertEquals(TITLE, info.title)
+        assertEquals(TEXT, info.text)
+        assertEquals(EnforcementType.APP_BLOCKED, info.type)
+    }
+
+    @Test
+    fun `Fetching app version info where a newer optional version exists returns update suggested`() = runTest {
+        val suggestedVersion = VersionEnforcement.Versions(
+            message = listOf(display),
+            releaseDate = LocalDate.now(),
+            supportUntil = LocalDate.now().plusDays(365),
+            updateType = "optional",
+            version = forcedVersion
+        )
+
+        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(
+            defaultVersionEnforcement.copy(versions = listOf(suggestedVersion))
+        )
+
+        val info = useCase()
+
+        assertTrue(info is AppVersionInfo.Blocked)
+        info as AppVersionInfo.Blocked
+        assertEquals(EnforcementType.UPDATE_SUGGESTED, info.type)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = [APP_VERSION, FORCED_APP_VERSION])
+    fun `Fetching app version info where version is equal or higher than forced version returns valid`(
+        version: String
+    ) = runTest {
+        mockVersions(
+            appVersion = AppVersion(version),
+            forcedVersion = appVersion,
         )
 
         val info = useCase()
@@ -139,19 +148,23 @@ class FetchAppVersionInfoImplTest {
 
     @Test
     fun `Fetching app version info where version is blocked and no localized display is found returns blocked`() = runTest {
-        coEvery { mockGetLocalizedDisplay(mockDisplays) } returns null
+        mockVersions(
+            appVersion = appVersion,
+            forcedVersion = forcedVersion,
+        )
+        every { mockGetLocalizedDisplay.invoke<VersionEnforcement.Display>(any()) } returns null
 
         val info = useCase()
 
         assertTrue(info is AppVersionInfo.Blocked)
         info as AppVersionInfo.Blocked
-        assertEquals(info.title, null)
-        assertEquals(info.text, null)
+        assertEquals(null, info.title)
+        assertEquals(null, info.text)
     }
 
     @Test
     fun `Fetching app version info where no info is available returns valid`() = runTest {
-        coEvery { mockVersionEnforcementRepository.fetchLatestHighPriority() } returns Ok(null)
+        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(null)
 
         val info = useCase()
 
@@ -161,7 +174,7 @@ class FetchAppVersionInfoImplTest {
     @Test
     fun `Fetching app version info where repository has an error returns unknown`() = runTest {
         coEvery {
-            mockVersionEnforcementRepository.fetchLatestHighPriority()
+            mockVersionEnforcementRepository.fetchVersionEnforcement()
         } returns Err(VersionEnforcementError.Unexpected(null))
 
         val info = useCase()
@@ -170,42 +183,74 @@ class FetchAppVersionInfoImplTest {
     }
 
     private fun setupDefaultMocks() {
-        every { mockGetAppVersion() } returns middleAppVersion
+        every { mockGetAppVersion() } returns appVersion
+        every { mockGetOSVersion() } returns CURRENT_OS_VERSION
+        every { mockGetDeviceModel() } returns DEVICE_MODEL
 
-        every { mockVersionEnforcement.displays } returns mockDisplays
-        coEvery { mockGetLocalizedDisplay(mockDisplays) } returns display
-        mockVersions(
-            minVersion = null,
-            maxVersion = higherAppVersion,
-            appVersion = middleAppVersion,
-        )
+        every { mockGetLocalizedDisplay.invoke<VersionEnforcement.Display>(any()) } returns display
 
         coEvery {
-            mockVersionEnforcementRepository.fetchLatestHighPriority()
-        } returns Ok(mockVersionEnforcement)
+            mockVersionEnforcementRepository.fetchVersionEnforcement()
+        } returns Ok(defaultVersionEnforcement)
     }
 
-    private fun mockVersions(minVersion: AppVersion?, maxVersion: AppVersion, appVersion: AppVersion) {
-        every { mockVersionEnforcement.criteria.minAppVersionIncluded } returns minVersion
-        every { mockVersionEnforcement.criteria.maxAppVersionExcluded } returns maxVersion
+    private fun mockVersions(
+        appVersion: AppVersion,
+        forcedVersion: AppVersion? = null,
+    ) {
         every { mockGetAppVersion() } returns appVersion
+
+        val versions = forcedVersion?.let {
+            listOf(
+                VersionEnforcement.Versions(
+                    message = listOf(display),
+                    releaseDate = LocalDate.now(),
+                    supportUntil = LocalDate.now().plusDays(30),
+                    updateType = "forced",
+                    version = it
+                )
+            )
+        } ?: defaultVersionEnforcement.versions
+
+        coEvery {
+            mockVersionEnforcementRepository.fetchVersionEnforcement()
+        } returns Ok(defaultVersionEnforcement.copy(versions = versions))
     }
 
     private companion object {
         const val TITLE = "title"
         const val TEXT = "text"
-        const val LOWER_APP_VERSION = "1.0.0"
-        const val MIDDLE_APP_VERSION = "1.1.0"
-        const val HIGHER_APP_VERSION = "1.2.0"
+        const val APP_VERSION = "1.1.0"
+        const val FORCED_APP_VERSION = "1.2.0"
+        const val CURRENT_OS_VERSION = "16"
+        const val DEVICE_MODEL = "Pixel 9"
 
-        val middleAppVersion = AppVersion(MIDDLE_APP_VERSION)
-        val lowerAppVersion = AppVersion(LOWER_APP_VERSION)
-        val higherAppVersion = AppVersion(HIGHER_APP_VERSION)
+        val appVersion = AppVersion(APP_VERSION)
+        val forcedVersion = AppVersion(FORCED_APP_VERSION)
 
         val display = VersionEnforcement.Display(
             title = TITLE,
             text = TEXT,
-            locale = "locale"
+            locale = "en"
+        )
+
+        val defaultVersionEnforcement = VersionEnforcement(
+            appId = "ch.admin.foitt.wallet",
+            displays = listOf(display),
+            lifetime = 30,
+            defaultBlacklist = emptyList(),
+            minOSVersion = AppVersion("15"),
+            platform = VersionEnforcement.Platform.ANDROID,
+            storeUrl = "https://play.google.com/store/apps/details?id=ch.admin.foitt.wallet",
+            versions = listOf(
+                VersionEnforcement.Versions(
+                    message = listOf(display),
+                    releaseDate = LocalDate.now().minusDays(10),
+                    supportUntil = LocalDate.now().plusDays(365),
+                    updateType = "optional",
+                    version = appVersion
+                )
+            )
         )
     }
 }

@@ -25,6 +25,7 @@ fun RequestKeyAttestationError.toGenerateProofKeyPairError(): GenerateProofKeyPa
     is AttestationError.UnsupportedKeyStorageSecurityLevel -> HolderBindingError.UnsupportedProofKeyStorageSecurityLevel
     is AttestationError.IncompatibleDeviceKeyStorage -> HolderBindingError.IncompatibleDeviceProofKeyStorage
     is AttestationError.ValidationError -> HolderBindingError.InvalidProofKeyAttestation
-    is AttestationError.NetworkError -> HolderBindingError.Unexpected(null)
+    AttestationError.NetworkError,
+    AttestationError.SocketTimeoutError -> HolderBindingError.Unexpected(null)
     is AttestationError.Unexpected -> HolderBindingError.Unexpected(throwable)
 }

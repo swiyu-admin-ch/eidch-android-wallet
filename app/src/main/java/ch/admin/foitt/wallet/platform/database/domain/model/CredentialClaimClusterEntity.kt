@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.database.domain.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -33,10 +34,16 @@ data class CredentialClaimClusterEntity(
     val verifiableCredentialId: Long, // Foreign key
     val parentClusterId: Long?, // Foreign key (on this table)
     val order: Int,
+    @ColumnInfo(defaultValue = "[]")
+    val path: String = "[]",
+    @ColumnInfo(defaultValue = "false")
+    val isSensitive: Boolean = false,
 )
 
 fun Cluster.toCredentialClaimClusterEntity(verifiableCredentialId: Long, parentClusterId: Long? = null) = CredentialClaimClusterEntity(
     verifiableCredentialId = verifiableCredentialId,
     parentClusterId = parentClusterId,
     order = this.order,
+    path = path,
+    isSensitive = isSensitive,
 )

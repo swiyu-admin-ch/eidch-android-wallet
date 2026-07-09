@@ -36,11 +36,23 @@ class LicencesViewModel @Inject constructor(
         _libraries.value = libs.libraries.map { library ->
             val libraryLicense = library.licenses.firstOrNull()
             val license = libs.licenses.firstOrNull { libraryLicense?.name == it.name }
+
+            val content = when {
+                library.uniqueId.contains("ch.admin.foitt.pxlsdk:pxlsdk") -> {
+                    license?.licenseContent?.takeIf { it.isNotBlank() && it != "content" }
+                        ?: appContext.resources.openRawResource(R.raw.online_verification_sdk_license).use {
+                            it.bufferedReader().readText()
+                        }
+                }
+
+                else -> license?.licenseContent ?: license?.url ?: "content"
+            }
+
             Library(
                 name = library.name,
                 version = library.artifactVersion,
                 licenseName = license?.name ?: "License name",
-                licenseContent = license?.licenseContent ?: license?.url ?: "content"
+                licenseContent = content
             )
         }
     }

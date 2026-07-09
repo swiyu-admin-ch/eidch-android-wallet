@@ -45,6 +45,7 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json.Default.parseToJsonElement
+import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -145,7 +146,7 @@ class SaveVcSdJwtCredentialsImplTest {
                 anyCredential = mockVcSdJwtCredential,
                 issuerInfo = oneConfigCredentialInformation,
                 trustStatement = mockIdentityTrustStatement,
-                metadata = credentialConfig,
+                credentialConfiguration = credentialConfig,
                 ocaBundle = ocaBundle
             )
             mockCredentialOfferRepository.saveCredentialOffer(
@@ -246,7 +247,7 @@ class SaveVcSdJwtCredentialsImplTest {
 
         every {
             mockVcSdJwtCredential.getClaimsForPresentation()
-        } returns parseToJsonElement(CREDENTIAL_CLAIMS_FOR_PRESENTATION)
+        } returns parseToJsonElement(CREDENTIAL_CLAIMS_FOR_PRESENTATION).jsonObject
         every { mockVcSdJwtCredential.issuer } returns ISSUER_DID
         every { mockVcSdJwtCredential.vcSchemaId } returns VC_SCHEMA_ID
         coEvery { mockVcSdJwtCredential.keyBinding } returns keyBinding
@@ -278,7 +279,7 @@ class SaveVcSdJwtCredentialsImplTest {
                 anyCredential = any(),
                 issuerInfo = credentialInfo,
                 trustStatement = any(),
-                metadata = credentialConfig,
+                credentialConfiguration = credentialConfig,
                 ocaBundle = any(),
             )
         } returns Ok(anyDisplays)
@@ -304,10 +305,12 @@ class SaveVcSdJwtCredentialsImplTest {
             mockCredentialOfferRepository.saveDeferredCredentialOffer(
                 transactionId = any(),
                 accessToken = any(),
+                tokenType = any(),
                 refreshToken = any(),
                 endpoint = any(),
                 pollInterval = any(),
                 keyBindings = any(),
+                dpopKeyBinding = any(),
                 format = any(),
                 issuerDisplays = any(),
                 credentialDisplays = any(),

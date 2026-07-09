@@ -6,25 +6,32 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.avwrapper.AVBeamError
-import ch.admin.foitt.avwrapper.AVBeamInitConfig
+import ch.admin.foitt.avwrapper.AVBeamErrorType
 import ch.admin.foitt.avwrapper.AVBeamPackageResult
 import ch.admin.foitt.avwrapper.AVBeamStatus
 import ch.admin.foitt.avwrapper.AvBeamNotification
 import ch.admin.foitt.avwrapper.config.AVBeamCaptureFaceConfig
-import ch.admin.foitt.avwrapper.config.AVBeamConfigLogLevel
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.TextKeyType
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.toTextRes
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.CreateSDKErrorTextKeys
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveEIdRequestFiles
-import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerButtonState
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.faceScanner.EIdFaceScanStatus
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.faceScanner.EIdFaceScannerUiState
-import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.SDKInfoState
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.OnPermissionResult
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.PermissionState
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.infra.PermissionStateHandler
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFileCategory
-import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.DocumentScannerErrorType
+import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManager
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
+import ch.admin.foitt.wallet.platform.scanning.di.AvBeamSdkEntryPoint
+import ch.admin.foitt.wallet.platform.utils.launchTimer
 import ch.admin.foitt.wallet.platform.utils.openLink
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -32,11 +39,10 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -49,9 +55,10 @@ import timber.log.Timber
 class EIdFaceScannerViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val navManager: NavigationManager,
-    private val avBeam: AVBeam,
     private val saveEIdRequestFiles: SaveEIdRequestFiles,
-    private val environmentSetupRepository: EnvironmentSetupRepository,
+    private val permissionStateHandler: PermissionStateHandler,
+    private val createSDKErrorTextKeys: CreateSDKErrorTextKeys,
+    destinationScopedComponentManager: DestinationScopedComponentManager,
     @Assisted private val caseId: String,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
@@ -60,6 +67,13 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
     interface Factory {
         fun create(caseId: String): EIdFaceScannerViewModel
     }
+
+    private val avBeamRepository = destinationScopedComponentManager.getEntryPoint(
+        entryPointClass = AvBeamSdkEntryPoint::class.java,
+        componentScope = ComponentScope.AvBeamSdkSession,
+    ).avBeamRepository()
+
+    private val avBeam: AVBeam get() = avBeamRepository.getBeam()
 
     override val topBarState: TopBarState
         get() {
@@ -71,8 +85,7 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
                         onUp = ::onUp,
                         onClose = ::onClose,
                     )
-                EIdFaceScannerUiState.Finish,
-                is EIdFaceScannerUiState.Scan ->
+                is EIdFaceScannerUiState.Scanning ->
                     TopBarState.DetailsWithCloseRoundButtons(
                         titleId = null,
                         onUp = ::onUp,
@@ -83,8 +96,9 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
 
     private val logTitle = "Face Scan:"
 
-    private val _uiState = MutableStateFlow<EIdFaceScannerUiState>(EIdFaceScannerUiState.Initializing)
-    val uiState: StateFlow<EIdFaceScannerUiState> = _uiState.asStateFlow()
+    private val errorState = MutableStateFlow<DocumentScannerErrorType>(DocumentScannerErrorType.None)
+
+    private val eIdFaceScanStatus = MutableStateFlow<EIdFaceScanStatus>(EIdFaceScanStatus.Initializing)
 
     private val isCameraRunning = MutableStateFlow(false)
     private val isViewReady = MutableStateFlow(false)
@@ -93,23 +107,76 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
     private var viewHeight = 0
     private var lastActivityHash: Int? = null
     private var isRotation: Boolean = false
+    private var faceScanProgressJob: Job? = null
 
-    val isLoading: StateFlow<Boolean> = combine(
-        uiState,
-        isViewReady,
-    ) { state, viewReady ->
-        when (state) {
-            EIdFaceScannerUiState.Initializing -> true
-            is EIdFaceScannerUiState.Scan -> !viewReady
-            is EIdFaceScannerUiState.Error -> false
-            EIdFaceScannerUiState.Finish -> false
+    val permissionState get() = permissionStateHandler.permissionState
+
+    val onPermissionResult =
+        OnPermissionResult { permissionGranted, shouldShowRationale, isActivePrompt ->
+            viewModelScope.launch {
+                permissionStateHandler.updateState(
+                    hasPermission = permissionGranted,
+                    shouldShowRationale = shouldShowRationale,
+                    isActivePrompt = isActivePrompt,
+                )
+            }
         }
-    }.toStateFlow(true)
+
+    val uiState: StateFlow<EIdFaceScannerUiState> = combine(
+        errorState,
+        permissionState,
+        avBeam.initializedFlow,
+        eIdFaceScanStatus,
+        avBeam.statusFlow,
+    ) { errorState, permission, initialized, status, avBeamStatus ->
+        when {
+            errorState is DocumentScannerErrorType.SdkError ->
+                EIdFaceScannerUiState.Error(
+                    type = errorState,
+                    onButton = {
+                        when (errorState.errorType) {
+                            AVBeamErrorType.None,
+                            AVBeamErrorType.Unknown,
+                            AVBeamErrorType.Unsupported -> onClose()
+
+                            AVBeamErrorType.Blocking -> onUp()
+                            AVBeamErrorType.Contextual -> onRetry()
+                        }
+                    },
+                    onHelp = ::onHelp,
+                    title = createSDKErrorTextKeys(errorState.errorCode, TextKeyType.TITLE),
+                    content = createSDKErrorTextKeys(errorState.errorCode, TextKeyType.CONTENT),
+                    buttonText = when (errorState.errorType) {
+                        AVBeamErrorType.None,
+                        AVBeamErrorType.Unknown,
+                        AVBeamErrorType.Unsupported -> R.string.tk_global_close
+
+                        AVBeamErrorType.Blocking,
+                        AVBeamErrorType.Contextual -> R.string.tk_error_generic_button_primary
+                    }
+                )
+
+            errorState == DocumentScannerErrorType.Generic -> EIdFaceScannerUiState.Error(
+                type = errorState,
+                onButton = ::onRetry,
+                onHelp = ::onHelp,
+                title = R.string.tk_error_generic_primary,
+                content = R.string.tk_error_generic_secondary,
+                buttonText = R.string.tk_error_generic_button_primary
+            )
+
+            permission !is PermissionState.Granted -> EIdFaceScannerUiState.Initializing
+            !initialized -> EIdFaceScannerUiState.Initializing
+            else -> EIdFaceScannerUiState.Scanning(
+                infoText = avBeamStatus.toTextRes(),
+                status = status,
+            )
+        }
+    }.toStateFlow(EIdFaceScannerUiState.Initializing)
 
     val shouldLock: StateFlow<Boolean> = uiState.map { state ->
-        state is EIdFaceScannerUiState.Initializing || (
-            state is EIdFaceScannerUiState.Scan && state.scannerButtonState == ScannerButtonState.Scanning
-            )
+        state is EIdFaceScannerUiState.Initializing && permissionState.value is PermissionState.Granted ||
+            (state is EIdFaceScannerUiState.Scanning && state.status.isScanning)
     }.toStateFlow(false)
 
     init {
@@ -130,7 +197,6 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
     fun onPause() {
         viewModelScope.launch {
             resetScanningState()
-            _uiState.update { EIdFaceScannerUiState.Initializing }
             Timber.d("$logTitle view paused")
         }
     }
@@ -139,22 +205,10 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
         isRotation = lastActivityHash != null && lastActivityHash != activity.hashCode()
         lastActivityHash = activity.hashCode()
 
-        launch(Dispatchers.IO) {
-            val logLevel = if (environmentSetupRepository.avBeamLoggingEnabled) {
-                AVBeamConfigLogLevel.DEBUG
-            } else {
-                AVBeamConfigLogLevel.NONE
-            }
-            avBeam.init(AVBeamInitConfig(logLevel), activity)
+        launch {
+            avBeamRepository.init(activity)
             avBeam.initializedFlow.awaitValue(true)
             Timber.d("$logTitle initScannerSdk done")
-            _uiState.update {
-                EIdFaceScannerUiState.Scan(
-                    infoState = SDKInfoState.Loading,
-                    infoText = null,
-                    scannerButtonState = ScannerButtonState.Ready
-                )
-            }
         }
         setupSdkFlowCollection()
     }
@@ -169,24 +223,12 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
         viewWidth = witdh
         viewHeight = height
         isViewReady.update { true }
-        _uiState.update {
-            EIdFaceScannerUiState.Scan(
-                infoState = SDKInfoState.Ready,
-                infoText = null,
-                scannerButtonState = ScannerButtonState.Ready
-            )
-        }
+        eIdFaceScanStatus.update { EIdFaceScanStatus.Ready }
     }
 
     private fun CoroutineScope.setupSdkFlowCollection() {
         launch {
             avBeam.statusFlow.collect { status ->
-                _uiState.updateScanState {
-                    copy(
-                        infoState = SDKInfoState.InfoData,
-                        infoText = status.toTextRes(),
-                    )
-                }
                 if (status == AVBeamStatus.StreamingStarted) {
                     isCameraRunning.update { true }
                 }
@@ -196,15 +238,9 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
             avBeam.captureFaceFlow.collect { notification ->
                 when (notification) {
                     is AvBeamNotification.Completed -> onFaceScanCompleted(notification.packageData)
-                    AvBeamNotification.Empty, AvBeamNotification.Initial -> {
-                        _uiState.updateScanState { copy(infoState = SDKInfoState.Empty) }
-                    }
-
+                    AvBeamNotification.Empty, AvBeamNotification.Initial -> {}
                     is AvBeamNotification.Error -> onFaceScanError(notification)
-
-                    AvBeamNotification.Loading -> {
-                        _uiState.updateScanState { copy(infoState = SDKInfoState.Loading) }
-                    }
+                    AvBeamNotification.Loading -> {}
                 }
             }
         }
@@ -212,35 +248,23 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
             avBeam.errorFlow.collect { errorNotification ->
                 if (errorNotification != AVBeamError.None) {
                     Timber.e("$logTitle Error - avBeam errorFlow ${errorNotification.name}")
-                    _uiState.update { EIdFaceScannerUiState.Error(onRetry = ::onRetry) }
+                    errorState.update { DocumentScannerErrorType.Generic }
                 }
             }
         }
     }
 
-    private fun MutableStateFlow<EIdFaceScannerUiState>.updateScanState(
-        update: EIdFaceScannerUiState.Scan.() -> EIdFaceScannerUiState.Scan
-    ) {
-        update { currentState ->
-            if (currentState is EIdFaceScannerUiState.Scan) {
-                currentState.update()
-            } else {
-                currentState
-            }
-        }
-    }
-
     private fun onFaceScanCompleted(packageResult: AVBeamPackageResult) = viewModelScope.launch {
-        _uiState.updateScanState {
-            copy(
-                scannerButtonState = ScannerButtonState.Done,
-                isProcessing = true
-            )
-        }
+        eIdFaceScanStatus.update { EIdFaceScanStatus.Finished }
+
         delay(NAVIGATION_DELAY)
-        resetScanningState()
-        _uiState.update { EIdFaceScannerUiState.Finish }
-        avBeam.shutDown()
+
+        avBeam.stopCaptureFace()
+        faceScanProgressJob?.cancel()
+        faceScanProgressJob = null
+        avBeam.stopCamera()
+        isViewReady.update { false }
+
         Timber.d(message = "$logTitle Completed: ${packageResult.data?.size()}")
 
         saveEIdRequestFiles(
@@ -264,7 +288,9 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
             }
             Timber.e(message = baseError.toString())
 
-            _uiState.update { EIdFaceScannerUiState.Error(onRetry = ::onRetry) }
+            val errorCode = avBeamError.packageData?.errorCode ?: AVBeamError.Unknown
+            val errorType = avBeamError.packageData?.errorType ?: AVBeamErrorType.Unknown
+            errorState.update { DocumentScannerErrorType.SdkError(errorCode, errorType) }
         } else {
             isRotation = false
         }
@@ -272,11 +298,11 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
 
     fun onToggleScan() {
         viewModelScope.launch {
-            val currentState = _uiState.value as? EIdFaceScannerUiState.Scan ?: return@launch
-            when (currentState.scannerButtonState) {
-                ScannerButtonState.Ready -> startScanning()
-                ScannerButtonState.Scanning -> stopScanning()
-                ScannerButtonState.Done -> {}
+            when (eIdFaceScanStatus.value) {
+                EIdFaceScanStatus.Ready -> startScanning()
+                is EIdFaceScanStatus.Scanning -> stopScanning()
+                EIdFaceScanStatus.Finished,
+                EIdFaceScanStatus.Initializing -> {}
             }
         }
     }
@@ -294,7 +320,7 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
             prepareScanner()
         }
 
-        isCameraRunning.first { it }
+        isCameraRunning.awaitValue(true)
 
         val configScanning = AVBeamCaptureFaceConfig(
             rectWidth = viewWidth,
@@ -302,29 +328,28 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
             videoLength = VIDEO_LENGTH_SECONDS,
         )
 
-        val currentState = _uiState.value as? EIdFaceScannerUiState.Scan
-        if (currentState?.scannerButtonState != ScannerButtonState.Scanning) {
+        if (eIdFaceScanStatus.value !is EIdFaceScanStatus.Scanning) {
             avBeam.startCaptureFace(config = configScanning)
-        }
-
-        _uiState.updateScanState {
-            copy(scannerButtonState = ScannerButtonState.Scanning)
+            eIdFaceScanStatus.update { EIdFaceScanStatus.Scanning(0f) }
+            faceScanProgressJob = viewModelScope.launchTimer(VIDEO_LENGTH_MILLIS) { progressRatio ->
+                if (eIdFaceScanStatus.value is EIdFaceScanStatus.Scanning) {
+                    eIdFaceScanStatus.update { EIdFaceScanStatus.Scanning(progressRatio) }
+                }
+            }
         }
     }
 
     private fun stopScanning() {
-        val currentState = _uiState.value as? EIdFaceScannerUiState.Scan
-        if (currentState?.scannerButtonState == ScannerButtonState.Scanning) {
+        if (eIdFaceScanStatus.value is EIdFaceScanStatus.Scanning) {
             avBeam.stopCaptureFace()
+            faceScanProgressJob?.cancel()
+            faceScanProgressJob = null
+
             viewModelScope.launch {
                 prepareScanner()
             }
         }
-        _uiState.updateScanState {
-            copy(
-                scannerButtonState = ScannerButtonState.Ready
-            )
-        }
+        eIdFaceScanStatus.update { EIdFaceScanStatus.Ready }
     }
 
     private fun resetScanningState() {
@@ -333,29 +358,33 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
         isViewReady.update { false }
     }
 
+    private fun clearFlows() {
+        errorState.update { DocumentScannerErrorType.None }
+        eIdFaceScanStatus.update { EIdFaceScanStatus.Initializing }
+        avBeam.clearNotificationsFlow()
+    }
+
     private fun onRetry() {
         viewModelScope.launch {
             resetScanningState()
-            _uiState.update { EIdFaceScannerUiState.Initializing }
+            clearFlows()
             prepareScanner()
         }
     }
 
     fun onUp() {
         resetScanningState()
-        avBeam.shutDown()
-        _uiState.update { EIdFaceScannerUiState.Finish }
+        clearFlows()
         navManager.popBackStack()
     }
 
     fun onClose() {
-        avBeam.shutDown()
         navManager.navigateBackToHomeScreen(Destination.EIdStartAvSessionScreen::class)
     }
 
     override fun onCleared() {
         resetScanningState()
-        _uiState.update { EIdFaceScannerUiState.Finish }
+        clearFlows()
         super.onCleared()
     }
 
@@ -365,7 +394,8 @@ class EIdFaceScannerViewModel @AssistedInject constructor(
         this.first { it == value }
 
     companion object {
-        private const val VIDEO_LENGTH_SECONDS = 10
+        const val VIDEO_LENGTH_SECONDS = 10
+        private const val VIDEO_LENGTH_MILLIS = VIDEO_LENGTH_SECONDS * 1000L
         private const val NAVIGATION_DELAY = 1000L
     }
 }

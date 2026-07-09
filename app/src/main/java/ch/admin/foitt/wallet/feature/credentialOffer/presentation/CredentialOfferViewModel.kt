@@ -191,7 +191,7 @@ class CredentialOfferViewModel @AssistedInject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.Offer.generic()))
     }
 
     fun onReportWrongDataClicked() {

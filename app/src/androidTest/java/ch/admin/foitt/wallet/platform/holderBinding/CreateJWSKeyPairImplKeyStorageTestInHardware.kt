@@ -7,6 +7,8 @@ import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateJWSKeyPairInHardwareImpl
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateKeyGenSpecImpl
+import ch.admin.foitt.wallet.util.SkipTestOnEmulator
+import ch.admin.foitt.wallet.util.RealDeviceTest
 import ch.admin.foitt.wallet.util.assertOk
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -28,7 +30,7 @@ class CreateJWSKeyPairImplKeyStorageTestInHardware(
     private val keyStorageList: List<KeyStorageSecurityLevel>,
     private val deviceHasStrongBox: Boolean,
     private val expectedResult: Boolean,
-) {
+) : RealDeviceTest() {
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -56,6 +58,7 @@ class CreateJWSKeyPairImplKeyStorageTestInHardware(
     }
 
     @Test
+    @SkipTestOnEmulator
     fun keyGenSpecHasTheCorrectStrongBoxFlag() = runTest(testDispatcher) {
         coEvery {
             mockAppContext.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)

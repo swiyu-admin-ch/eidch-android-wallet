@@ -1,6 +1,8 @@
 package ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.implementation
 
-import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.claimsPathPointerFrom
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.pointsAtSetOf
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.GetPresentationRequestFlowError
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.PresentationRequestDisplayData
 import ch.admin.foitt.wallet.feature.presentationRequest.domain.model.toGetPresentationRequestFlowError
@@ -8,7 +10,6 @@ import ch.admin.foitt.wallet.feature.presentationRequest.domain.usecase.GetPrese
 import ch.admin.foitt.wallet.platform.credential.domain.model.MapToCredentialDisplayDataError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.MapToCredentialClaimCluster
-import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestField
 import ch.admin.foitt.wallet.platform.database.domain.model.ClusterWithDisplaysAndClaims
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialWithDisplaysRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithDisplaysAndClustersRepository
@@ -27,7 +28,7 @@ class GetPresentationRequestFlowImpl @Inject constructor(
 ) : GetPresentationRequestFlow {
     override fun invoke(
         id: Long,
-        requestedFields: List<PresentationRequestField>,
+        presentationPaths: List<ClaimsPathPointer>,
     ): Flow<Result<PresentationRequestDisplayData, GetPresentationRequestFlowError>> =
         verifiableCredentialWithDisplaysAndClustersRepository.getVerifiableCredentialWithDisplaysAndClustersFlowById(id)
             .mapError(CredentialWithDisplaysRepositoryError::toGetPresentationRequestFlowError)
@@ -36,25 +37,36 @@ class GetPresentationRequestFlowImpl @Inject constructor(
                     val credentialDisplayData = mapToCredentialDisplayData(
                         verifiableCredential = credentialWithDisplaysAndClusters.verifiableCredential,
                         credentialDisplays = credentialWithDisplaysAndClusters.credentialDisplays,
-                        claims = credentialWithDisplaysAndClusters.clusters.flatMap { it.claimsWithDisplays }
+                        claims = credentialWithDisplaysAndClusters.clusters.flatMap { it.claimsWithDisplays },
+                        credentialFormat = credentialWithDisplaysAndClusters.credential.format
                     ).mapError(MapToCredentialDisplayDataError::toGetPresentationRequestFlowError)
                         .bind()
 
                     PresentationRequestDisplayData(
                         credential = credentialDisplayData,
                         requestedClaims = mapToCredentialClaimCluster(
-                            credentialWithDisplaysAndClusters.clusters.filterFor(requestedFields)
+                            credentialWithDisplaysAndClusters.clusters.filterFor(presentationPaths)
                         )
                     )
                 }
             }
 
     private fun List<ClusterWithDisplaysAndClaims>.filterFor(
-        requestedFields: List<PresentationRequestField>
+        presentationPaths: List<ClaimsPathPointer>
     ): List<ClusterWithDisplaysAndClaims> = this.map { cluster ->
+        if (
+            presentationPaths.any {
+                val clusterPath = claimsPathPointerFrom(cluster.clusterWithDisplays.cluster.path) ?: return@any false
+                it.pointsAtSetOf(clusterPath)
+            }
+        ) {
+            return@map cluster
+        }
+
         val filteredClaimsWithDisplays = cluster.claimsWithDisplays.filter { (claim, _) ->
-            requestedFields.any { field ->
-                field.path.toPointerString() == claim.path
+            presentationPaths.any { requestedPath ->
+                val claimPath = claimsPathPointerFrom(claim.path) ?: return@any false
+                requestedPath.pointsAtSetOf(claimPath)
             }
         }
 

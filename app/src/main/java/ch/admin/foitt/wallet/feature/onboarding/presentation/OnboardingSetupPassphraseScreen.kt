@@ -1,23 +1,31 @@
 package ch.admin.foitt.wallet.feature.onboarding.presentation
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.feature.onboarding.presentation.composables.CollectFocusEvents
+import ch.admin.foitt.wallet.platform.composables.AdaptiveButtonContainer
 import ch.admin.foitt.wallet.platform.composables.Buttons
+import ch.admin.foitt.wallet.platform.composables.presentation.RequestViewFocusOnResume
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
+import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
@@ -34,12 +42,18 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 fun OnboardingSetupPassphraseScreen(
     viewModel: OnboardingSetupPassphraseViewModel,
 ) {
+    RequestViewFocusOnResume()
+    val passwordFocusRequester = remember { FocusRequester() }
+    CollectFocusEvents(viewModel.focusEvents) {
+        passwordFocusRequester.requestFocus()
+    }
     OnboardingPassphraseScreenContent(
         textFieldValue = viewModel.textFieldValue.collectAsStateWithLifecycle().value,
         passphraseInputFieldState = viewModel.passphraseInputFieldState.collectAsStateWithLifecycle().value,
         isPassphraseValid = viewModel.isPassphraseValid.collectAsStateWithLifecycle().value,
         onTextFieldValueChange = viewModel::onTextFieldValueChange,
         onCheckPassphrase = viewModel::onCheckPassphrase,
+        passwordFocusRequester = passwordFocusRequester
     )
 }
 
@@ -50,6 +64,7 @@ private fun OnboardingPassphraseScreenContent(
     isPassphraseValid: Boolean,
     onTextFieldValueChange: (TextFieldValue) -> Unit,
     onCheckPassphrase: () -> Unit,
+    passwordFocusRequester: FocusRequester
 ) {
     FullscreenGradient()
 
@@ -62,14 +77,24 @@ private fun OnboardingPassphraseScreenContent(
                     textFieldValue = textFieldValue,
                     passphraseInputFieldState = passphraseInputFieldState,
                     onTextFieldValueChange = onTextFieldValueChange,
-                    onCheckPassphrase = onCheckPassphrase
+                    onCheckPassphrase = onCheckPassphrase,
+                    passwordFocusRequester = passwordFocusRequester
                 )
             },
-            stickyBottomHorizontalAlignment = Alignment.End,
             stickyBottomContent = {
-                BottomButton(
-                    isEnabled = isPassphraseValid,
-                    onCheckPassphrase = onCheckPassphrase,
+                AdaptiveButtonContainer(
+                    buttons = listOf(
+                        {
+                            BottomButton(
+                                isEnabled = isPassphraseValid,
+                                onCheckPassphrase = onCheckPassphrase,
+                            )
+                        }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bottomSafeDrawing()
+                        .padding(Sizes.s04)
                 )
             },
         )
@@ -83,7 +108,8 @@ private fun OnboardingPassphraseScreenContent(
                     passphraseInputFieldState = passphraseInputFieldState,
                     isPassphraseValid = isPassphraseValid,
                     onTextFieldValueChange = onTextFieldValueChange,
-                    onCheckPassphrase = onCheckPassphrase
+                    onCheckPassphrase = onCheckPassphrase,
+                    passwordFocusRequester = passwordFocusRequester
                 )
             },
         )
@@ -96,10 +122,13 @@ private fun CompactContent(
     passphraseInputFieldState: PassphraseInputFieldState,
     onTextFieldValueChange: (TextFieldValue) -> Unit,
     onCheckPassphrase: () -> Unit,
+    passwordFocusRequester: FocusRequester
 ) {
     Spacer(modifier = Modifier.height(Sizes.s12))
     PassphraseInputComponent(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(passwordFocusRequester),
         passphraseInputFieldState = passphraseInputFieldState,
         textFieldValue = textFieldValue,
         colors = WalletTextFieldColors.textFieldColorsFixed(),
@@ -119,13 +148,16 @@ private fun LargeContent(
     isPassphraseValid: Boolean,
     onTextFieldValueChange: (TextFieldValue) -> Unit,
     onCheckPassphrase: () -> Unit,
+    passwordFocusRequester: FocusRequester
 ) {
     Spacer(modifier = Modifier.height(Sizes.s04))
     Row(
         modifier = Modifier.fillMaxWidth()
     ) {
         PassphraseInputComponent(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .focusRequester(passwordFocusRequester),
             passphraseInputFieldState = passphraseInputFieldState,
             textFieldValue = textFieldValue,
             colors = WalletTextFieldColors.textFieldColorsFixed(),
@@ -168,6 +200,7 @@ private fun BottomButton(
     onClick = onCheckPassphrase
 )
 
+@SuppressLint("RememberInComposition")
 @WalletAllScreenPreview
 @Composable
 private fun OnboardingPassphraseScreenPreview() {
@@ -178,6 +211,7 @@ private fun OnboardingPassphraseScreenPreview() {
             onTextFieldValueChange = {},
             isPassphraseValid = true,
             onCheckPassphrase = {},
+            passwordFocusRequester = FocusRequester()
         )
     }
 }

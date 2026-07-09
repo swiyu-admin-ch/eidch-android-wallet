@@ -8,4 +8,6 @@ import kotlinx.serialization.Serializable
 data class PresentationRequestWithRaw(
     val authorizationRequest: AuthorizationRequest,
     val rawPresentationRequest: String,
+    val verificationProcessType: VerificationProcessType,
+    val verifierAttestationTrusted: Boolean? = null,
 ) : Invitation

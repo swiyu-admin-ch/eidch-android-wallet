@@ -120,8 +120,6 @@ class GetDeferredCredentialWithDetailFlowImplTest {
         private val deferredCredential = DeferredCredentialEntity(
             credentialId = CREDENTIAL_ID,
             transactionId = "transactionId",
-            accessToken = "accessToken",
-            refreshToken = "refreshToken",
             endpoint = ENDPOINT,
         )
 

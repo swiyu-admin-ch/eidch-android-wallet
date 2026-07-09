@@ -1,51 +1,41 @@
 package ch.admin.foitt.wallet.feature.credentialDetail.presentation
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.BoxWithConstraintsScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.CredentialDeleteBottomSheet
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.MenuBottomSheet
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.VisibleBottomSheet
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.model.CredentialDetailUiState
+import ch.admin.foitt.wallet.feature.onboarding.presentation.composables.CollectFocusEvents
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.activityList.presentation.composables.activityListItem
 import ch.admin.foitt.wallet.platform.activityList.presentation.composables.disabledHistoryActivityListItem
@@ -56,22 +46,19 @@ import ch.admin.foitt.wallet.platform.activityList.presentation.model.ActivityUi
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
-import ch.admin.foitt.wallet.platform.composables.calculateVerticalPadding
-import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
-import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
-import ch.admin.foitt.wallet.platform.composables.presentation.topSafeDrawing
+import ch.admin.foitt.wallet.platform.composables.presentation.scrollToTopOnStuckFocus
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
-import ch.admin.foitt.wallet.platform.credential.presentation.LargeCredentialCard
-import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
+import ch.admin.foitt.wallet.platform.credential.presentation.CredentialCardCreditFormat
+import ch.admin.foitt.wallet.platform.credential.presentation.credentialElements
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
 import ch.admin.foitt.wallet.platform.preview.AllLargeScreensPreview
+import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPaddings
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.theme.Sizes
@@ -86,7 +73,12 @@ fun CredentialDetailScreen(
     viewModel: CredentialDetailViewModel,
 ) {
     val scope = rememberCoroutineScope()
-
+    val credentialHistoryFocusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    CollectFocusEvents(viewModel.focusEvents) {
+        focusManager.clearFocus()
+        credentialHistoryFocusRequester.requestFocus()
+    }
     val menuSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val deleteSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -105,8 +97,8 @@ fun CredentialDetailScreen(
             onDelete = {
                 scope.hideModalSheet(menuSheetState, onHidden = viewModel::onDelete)
             },
-            onWrongData = {
-                scope.hideModalSheet(menuSheetState, onHidden = viewModel::onWrongData)
+            onUpdate = {
+                scope.hideModalSheet(menuSheetState, onHidden = viewModel::onUpdate)
             }
         )
     }
@@ -125,11 +117,9 @@ fun CredentialDetailScreen(
     CredentialDetailScreenContent(
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         credentialDetail = viewModel.credentialDetailUiState.stateFlow.collectAsStateWithLifecycle().value,
+        credentialHistoryFocusRequester = credentialHistoryFocusRequester,
         onEntireHistory = viewModel::onEntireHistory,
         onActivitySettings = viewModel::onActivitySettings,
-        onWrongData = viewModel::onWrongData,
-        onBack = viewModel::onBack,
-        onMenu = viewModel::onMenu,
     )
 }
 
@@ -149,14 +139,12 @@ private fun CoroutineScope.hideModalSheet(
 private fun CredentialDetailScreenContent(
     isLoading: Boolean,
     credentialDetail: CredentialDetailUiState,
+    credentialHistoryFocusRequester: FocusRequester,
     windowWidthClass: WindowWidthClass = currentWindowAdaptiveInfo().windowWidthClass(),
     onEntireHistory: () -> Unit,
     onActivitySettings: () -> Unit,
-    onWrongData: () -> Unit,
-    onBack: () -> Unit,
-    onMenu: () -> Unit,
 ) {
-    BoxWithConstraints(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(color = WalletTheme.colorScheme.surfaceContainerLow)
@@ -164,20 +152,16 @@ private fun CredentialDetailScreenContent(
         when (windowWidthClass) {
             WindowWidthClass.COMPACT -> CredentialDetailCompact(
                 credentialDetail = credentialDetail,
+                credentialHistoryFocusRequester = credentialHistoryFocusRequester,
                 onEntireHistory = onEntireHistory,
                 onActivitySettings = onActivitySettings,
-                onWrongData = onWrongData,
-                onBack = onBack,
-                onMenu = onMenu,
             )
 
             else -> CredentialDetailLarge(
                 credentialDetail = credentialDetail,
+                credentialHistoryFocusRequester = credentialHistoryFocusRequester,
                 onEntireHistory = onEntireHistory,
                 onActivitySettings = onActivitySettings,
-                onWrongData = onWrongData,
-                onBack = onBack,
-                onMenu = onMenu,
             )
         }
         LoadingOverlay(showOverlay = isLoading)
@@ -185,34 +169,47 @@ private fun CredentialDetailScreenContent(
 }
 
 @Composable
-private fun BoxWithConstraintsScope.CredentialDetailCompact(
+private fun CredentialDetailCompact(
     credentialDetail: CredentialDetailUiState,
+    credentialHistoryFocusRequester: FocusRequester,
     onEntireHistory: () -> Unit,
     onActivitySettings: () -> Unit,
-    onWrongData: () -> Unit,
-    onBack: () -> Unit,
-    onMenu: () -> Unit,
 ) {
-    val lazyListState = rememberLazyListState()
+    val scrollState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     WalletLayouts.LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        state = lazyListState,
-        contentPadding = PaddingValues(bottom = Sizes.s04),
+        modifier = Modifier
+            .fillMaxWidth()
+            .scrollToTopOnStuckFocus(lazyListState = scrollState, coroutineScope = coroutineScope),
+        state = scrollState,
+        contentPadding = PaddingValues(vertical = Sizes.s04),
         useTopInsets = false,
     ) {
         item {
-            CredentialWithTopBar(
-                credentialDetail = credentialDetail,
-                credentialMinHeight = maxHeight * 0.7f,
-                onBack = onBack,
-                onMenu = onMenu
+            WalletLayouts.TopInsetSpacer(
+                shouldScrollUnderTopBar = true,
+                scaffoldPaddings = LocalScaffoldPaddings.current,
             )
-            Spacer(Modifier.height(Sizes.s06))
+        }
+
+        item {
+            CredentialCardCreditFormat(
+                credentialCardState = credentialDetail.credential,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Sizes.s04),
+            )
+        }
+
+        item {
+            Spacer(Modifier.height(Sizes.s04))
         }
 
         latestActivities(
             areActivitiesEnabled = credentialDetail.areActivitiesEnabled,
             activities = credentialDetail.activities,
+            credentialHistoryFocusRequester = credentialHistoryFocusRequester,
             onEntireHistory = onEntireHistory,
             onActivitySettings = onActivitySettings,
         )
@@ -221,52 +218,54 @@ private fun BoxWithConstraintsScope.CredentialDetailCompact(
             Spacer(modifier = Modifier.height(Sizes.s06))
         }
 
-        credentialClaimItems(
-            claimItems = credentialDetail.clusterItems,
+        credentialElements(
+            elements = credentialDetail.clusterItems,
             showIssuer = true,
             issuer = credentialDetail.issuer.name,
             issuerIcon = credentialDetail.issuer.painter,
-            onWrongData = onWrongData,
         )
     }
 }
 
 @Composable
-private fun BoxWithConstraintsScope.CredentialDetailLarge(
+private fun CredentialDetailLarge(
     credentialDetail: CredentialDetailUiState,
+    credentialHistoryFocusRequester: FocusRequester,
     onEntireHistory: () -> Unit,
     onActivitySettings: () -> Unit,
-    onWrongData: () -> Unit,
-    onBack: () -> Unit,
-    onMenu: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .horizontalSafeDrawing()
-    ) {
-        val verticalSafeDrawing = WindowInsets.safeDrawing.asPaddingValues().calculateVerticalPadding()
-        CredentialWithTopBar(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .topSafeDrawing()
-                .bottomSafeDrawing()
-                .padding(start = Sizes.s02, bottom = Sizes.s02),
-            credentialDetail = credentialDetail,
-            credentialMinHeight = this@CredentialDetailLarge.maxHeight - Sizes.s02 - verticalSafeDrawing,
-            onBack = onBack,
-            onMenu = onMenu,
+    Column {
+        WalletLayouts.TopInsetSpacer(
+            shouldScrollUnderTopBar = true,
+            scaffoldPaddings = LocalScaffoldPaddings.current,
         )
-        Spacer(modifier = Modifier.width(Sizes.s04))
-        Box(modifier = Modifier.weight(1f)) {
+
+        Row(
+            modifier = Modifier.horizontalSafeDrawing()
+        ) {
+            CredentialCardCreditFormat(
+                credentialCardState = credentialDetail.credential,
+                modifier = Modifier
+                    .semantics { isTraversalGroup = true }
+                    .weight(1f)
+                    .padding(Sizes.s04),
+            )
+
             val lazyListState = rememberLazyListState()
+            val coroutineScope = rememberCoroutineScope()
             WalletLayouts.LazyColumn(
+                modifier = Modifier
+                    .semantics { isTraversalGroup = true }
+                    .weight(1f)
+                    .scrollToTopOnStuckFocus(lazyListState = lazyListState, coroutineScope = coroutineScope),
                 state = lazyListState,
-                contentPadding = PaddingValues(start = Sizes.s04, end = Sizes.s04, bottom = Sizes.s02),
+                contentPadding = PaddingValues(Sizes.s04),
+                useTopInsets = false,
             ) {
                 latestActivities(
                     areActivitiesEnabled = credentialDetail.areActivitiesEnabled,
                     activities = credentialDetail.activities,
+                    credentialHistoryFocusRequester = credentialHistoryFocusRequester,
                     onEntireHistory = onEntireHistory,
                     onActivitySettings = onActivitySettings,
                 )
@@ -275,90 +274,21 @@ private fun BoxWithConstraintsScope.CredentialDetailLarge(
                     Spacer(modifier = Modifier.height(Sizes.s06))
                 }
 
-                credentialClaimItems(
-                    claimItems = credentialDetail.clusterItems,
+                credentialElements(
+                    elements = credentialDetail.clusterItems,
                     showIssuer = true,
                     issuer = credentialDetail.issuer.name,
                     issuerIcon = credentialDetail.issuer.painter,
-                    onWrongData = onWrongData,
                 )
             }
         }
     }
 }
 
-@Composable
-private fun CredentialWithTopBar(
-    modifier: Modifier = Modifier,
-    credentialMinHeight: Dp,
-    credentialDetail: CredentialDetailUiState,
-    onBack: () -> Unit,
-    onMenu: () -> Unit
-) {
-    Box(modifier = modifier) {
-        var topBarHeight by remember { mutableStateOf(0.dp) }
-        LargeCredentialCard(
-            contentPaddingValues = PaddingValues(
-                start = Sizes.s04,
-                top = Sizes.s03 + topBarHeight,
-                end = Sizes.s04,
-                bottom = Sizes.s06,
-            ),
-            minHeight = credentialMinHeight,
-            credentialCardState = credentialDetail.credential,
-        )
-        HeightReportingLayout(onContentHeightMeasured = { topBarHeight = it }) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Sizes.s03)
-                    .topSafeDrawing(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                BackButton(onBack)
-                MenuButton(onMenu)
-            }
-        }
-    }
-}
-
-@Composable
-private fun BackButton(onBack: () -> Unit) {
-    FilledIconButton(
-        onClick = onBack,
-        modifier = Modifier
-            .size(Sizes.s10)
-            .spaceBarKeyClickable(onBack)
-    ) {
-        Icon(
-            modifier = Modifier.size(Sizes.s06),
-            painter = painterResource(R.drawable.wallet_ic_back_navigation),
-            contentDescription = stringResource(id = R.string.tk_global_back_alt),
-            tint = WalletTheme.colorScheme.onPrimary,
-        )
-    }
-}
-
-@Composable
-private fun MenuButton(onBack: () -> Unit) {
-    FilledIconButton(
-        onClick = onBack,
-        modifier = Modifier
-            .size(Sizes.s10)
-            .spaceBarKeyClickable(onBack)
-    ) {
-        Icon(
-            modifier = Modifier.size(Sizes.s06),
-            painter = painterResource(R.drawable.wallet_ic_more_vert),
-            contentDescription = stringResource(id = R.string.tk_global_moreoptions_alt),
-            tint = WalletTheme.colorScheme.onPrimary,
-        )
-    }
-}
-
 private fun LazyListScope.latestActivities(
     areActivitiesEnabled: Boolean,
     activities: List<ActivityUiState>,
+    credentialHistoryFocusRequester: FocusRequester,
     onEntireHistory: () -> Unit,
     onActivitySettings: () -> Unit,
 ) {
@@ -374,6 +304,7 @@ private fun LazyListScope.latestActivities(
     if (areActivitiesEnabled) {
         enabledActivityList(
             contentPadding = contentPadding,
+            credentialHistoryFocusRequester = credentialHistoryFocusRequester,
             activities = activities,
             onEntireHistory = onEntireHistory,
         )
@@ -387,6 +318,7 @@ private fun LazyListScope.latestActivities(
 
 private fun LazyListScope.enabledActivityList(
     contentPadding: PaddingValues,
+    credentialHistoryFocusRequester: FocusRequester,
     activities: List<ActivityUiState>,
     onEntireHistory: () -> Unit,
 ) {
@@ -407,6 +339,7 @@ private fun LazyListScope.enabledActivityList(
 
         entireHistoryButton(
             paddingValues = contentPadding,
+            credentialHistoryFocusRequester = credentialHistoryFocusRequester,
             onClick = onEntireHistory,
         )
     }
@@ -439,6 +372,7 @@ private fun CredentialDetailScreenLargePreview() {
     }
 }
 
+@SuppressLint("RememberInComposition")
 @Composable
 private fun CredentialDetailScreenPreview(windowWidthClass: WindowWidthClass) {
     CredentialDetailScreenContent(
@@ -465,11 +399,9 @@ private fun CredentialDetailScreenPreview(windowWidthClass: WindowWidthClass) {
                 )
             ),
         ),
+        credentialHistoryFocusRequester = FocusRequester(),
         windowWidthClass = windowWidthClass,
         onEntireHistory = {},
-        onActivitySettings = {},
-        onWrongData = {},
-        onBack = {},
-        onMenu = {},
+        onActivitySettings = {}
     )
 }

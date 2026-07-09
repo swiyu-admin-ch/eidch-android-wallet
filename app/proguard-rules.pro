@@ -59,3 +59,6 @@
 
 -dontwarn java.awt.**
 -dontwarn javax.swing.**
+
+-dontwarn java.beans.ConstructorProperties
+-dontwarn java.beans.Transient

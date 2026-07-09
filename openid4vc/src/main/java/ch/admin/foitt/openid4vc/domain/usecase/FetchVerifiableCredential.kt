@@ -11,8 +11,10 @@ import com.github.michaelbull.result.Result
 internal interface FetchVerifiableCredential {
     @CheckResult
     suspend operator fun invoke(
+        isDPopEnabled: Boolean,
         verifiableCredentialParams: VerifiableCredentialParams,
-        bindingKeyPairs: List<BindingKeyPair>?,
+        credentialBindingKeyPairs: List<BindingKeyPair>?,
+        dpopKeyPair: BindingKeyPair? = null,
         payloadEncryptionType: PayloadEncryptionType,
     ): Result<FetchCredentialResult, FetchVerifiableCredentialError>
 }

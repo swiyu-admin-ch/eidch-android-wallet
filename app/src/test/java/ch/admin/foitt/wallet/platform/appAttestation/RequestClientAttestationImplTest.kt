@@ -97,7 +97,7 @@ class RequestClientAttestationImplTest {
 
         coEvery { mockCreateJWSKeyPairInHardware(any(), any(), any(), any(), any()) } returns Ok(jwsKeyPair)
 
-        coEvery { mockCreateJwk(any(), any(), any()) } returns Ok(jwk)
+        coEvery { mockCreateJwk(any(), any()) } returns Ok(jwk)
 
         mockkStatic(JWSKeyPair::getBase64CertificateChain)
         coEvery { any<JWSKeyPair>().getBase64CertificateChain() } returns Ok(listOf("base64Certificate"))
@@ -136,7 +136,7 @@ class RequestClientAttestationImplTest {
             mockAppAttestationRepository.fetchChallenge()
             mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any())
             mockClientAttestationRepository.delete(any())
-            mockCreateJwk.invoke(keyPair = keyPair, any(), any())
+            mockCreateJwk.invoke(keyPair = keyPair, any())
             mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
             mockValidateClientAttestation.invoke(any(), any(), any())
             mockClientAttestationRepository.save(mockClientAttestation)
@@ -160,7 +160,7 @@ class RequestClientAttestationImplTest {
             mockAppAttestationRepository.fetchChallenge()
             mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any())
             mockClientAttestationRepository.delete(any())
-            mockCreateJwk.invoke(keyPair = keyPair, any(), any())
+            mockCreateJwk.invoke(keyPair = keyPair, any())
             mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
             mockValidateClientAttestation.invoke(any(), any(), any())
             mockClientAttestationRepository.save(mockClientAttestation)
@@ -235,7 +235,7 @@ class RequestClientAttestationImplTest {
     @Test
     fun `A Jwk string creation failure is propagated`() = runTest {
         val exception = Exception("myException")
-        coEvery { mockCreateJwk.invoke(any(), any(), any()) } returns Err(JwkError.Unexpected(exception))
+        coEvery { mockCreateJwk.invoke(any(), any()) } returns Err(JwkError.Unexpected(exception))
         val result = useCase()
         val error = result.assertErrorType(AttestationError.Unexpected::class)
         assertEquals(exception, error.throwable)

@@ -15,6 +15,16 @@ sealed interface BadgeBottomSheetUiState {
         val onMoreInformation: () -> Unit,
     ) : BadgeBottomSheetUiState
 
+    data class VerifiedCheckApp(
+        val actorName: String,
+        val onMoreInformation: () -> Unit,
+    ) : BadgeBottomSheetUiState
+
+    data class NotVerifiedCheckApp(
+        val actorName: String,
+        val onMoreInformation: () -> Unit,
+    ) : BadgeBottomSheetUiState
+
     data class TrustNotInSystem(
         val actorName: String,
         val onMoreInformation: () -> Unit,
@@ -91,6 +101,16 @@ fun BadgeType.ActorInfoBadge.toBadgeBottomSheetUiState(
     )
 
     BadgeType.ActorInfoBadge.VerifiedTrust -> BadgeBottomSheetUiState.TrustVerified(
+        actorName = actorName,
+        onMoreInformation = { onMoreInformation(R.string.tk_badgeInformation_furtherInformation_link_value) },
+    )
+
+    BadgeType.ActorInfoBadge.VerifiedCheckApp -> BadgeBottomSheetUiState.VerifiedCheckApp(
+        actorName = actorName,
+        onMoreInformation = { onMoreInformation(R.string.tk_badgeInformation_furtherInformation_link_value) },
+    )
+
+    BadgeType.ActorInfoBadge.NotVerifiedCheckApp -> BadgeBottomSheetUiState.NotVerifiedCheckApp(
         actorName = actorName,
         onMoreInformation = { onMoreInformation(R.string.tk_badgeInformation_furtherInformation_link_value) },
     )

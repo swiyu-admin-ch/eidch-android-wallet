@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -21,6 +20,7 @@ import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.Unexpect
 import ch.admin.foitt.wallet.feature.otp.domain.model.OtpEmailValidationState
 import ch.admin.foitt.wallet.feature.otp.domain.model.OtpInputFieldState
 import ch.admin.foitt.wallet.feature.otp.domain.model.OtpValidationState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
@@ -201,12 +201,16 @@ private fun UnavailableContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_otp_unavailable_primaryButton),
-            onClick = onButtonClick,
-            modifier = Modifier.fillMaxWidth(),
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_otp_unavailable_primaryButton),
+                        onClick = onButtonClick,
+                    )
+                },
+            ),
         )
     },
 ) {

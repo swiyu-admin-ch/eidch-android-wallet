@@ -61,6 +61,9 @@ fun Context.hasNFCHardware(): Boolean =
     this.packageManager.hasSystemFeature(PackageManager.FEATURE_NFC) &&
         NfcAdapter.getDefaultAdapter(this) != null
 
+fun Context.hasGyroscope(): Boolean =
+    this.packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_GYROSCOPE)
+
 fun Context.openNFCSettings() {
     runSuspendCatching {
         val intent = Intent(Settings.ACTION_NFC_SETTINGS)
@@ -103,4 +106,11 @@ fun Context.shareText(
     }.onFailure {
         Timber.w(t = it, message = "Failed sharing text")
     }
+}
+
+fun Context.openPhoneSettings() {
+    val intent = Intent(Settings.ACTION_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    startActivity(intent)
 }

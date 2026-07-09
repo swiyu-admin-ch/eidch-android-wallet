@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.feature.credentialDetail.presentation
 
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.credentialDetail.domain.model.IssuerDisplay
 import ch.admin.foitt.wallet.feature.credentialDetail.domain.usecase.GetCredentialIssuerDisplaysFlow
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.VisibleBottomSheet
@@ -20,6 +21,8 @@ import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorSc
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
+import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarAction
+import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
@@ -30,6 +33,7 @@ import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteCredential
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetCredentialDetailFlow
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
+import ch.admin.foitt.wallet.platform.utils.UiString
 import ch.admin.foitt.wallet.platform.utils.toPainter
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.onFailure
@@ -37,8 +41,11 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
@@ -64,7 +71,31 @@ class CredentialDetailViewModel @AssistedInject constructor(
         fun create(credentialId: Long): CredentialDetailViewModel
     }
 
-    override val topBarState = TopBarState.None
+    override val topBarState: TopBarState
+        get() {
+            val state = credentialDetailUiState.stateFlow.value
+
+            return TopBarState.Custom(
+                title = state.credential.title?.let { UiString.Dynamic(it) },
+                onUp = ::onBack,
+                topBarBackground = TopBarBackground.CLUSTER,
+                actions = listOf(
+                    TopBarAction(
+                        onClick = ::onMenu,
+                        icon = R.drawable.wallet_ic_more_vert,
+                        contentDescription = R.string.tk_global_moreoptions_alt,
+                    )
+                ),
+                onAXDown = ::tryEmitFocusEvents
+            )
+        }
+
+    private val _focusEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val focusEvents = _focusEvents.asSharedFlow()
+
+    private fun tryEmitFocusEvents() {
+        _focusEvents.tryEmit(Unit)
+    }
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
@@ -127,6 +158,9 @@ class CredentialDetailViewModel @AssistedInject constructor(
     init {
         viewModelScope.launch {
             updateCredentialStatus(credentialId)
+            credentialDetailUiState.stateFlow.collectLatest {
+                setTopBarState(topBarState)
+            }
         }
     }
 
@@ -159,11 +193,11 @@ class CredentialDetailViewModel @AssistedInject constructor(
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.Offer.generic()))
     }
 
-    fun onWrongData() {
-        navManager.navigateTo(Destination.CredentialDetailWrongDataScreen)
+    fun onUpdate() {
+        navManager.navigateTo(Destination.UpdateCredentialScreen(credentialId))
         onBottomSheetDismiss()
     }
 

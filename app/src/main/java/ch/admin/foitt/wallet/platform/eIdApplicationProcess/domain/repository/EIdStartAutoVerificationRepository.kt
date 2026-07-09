@@ -4,6 +4,6 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AutoVer
 import kotlinx.coroutines.flow.StateFlow
 
 interface EIdStartAutoVerificationRepository {
-    val packageResult: StateFlow<AutoVerificationResponse?>
-    fun setPackageResult(packageResult: AutoVerificationResponse)
+    val autoVerificationResponse: StateFlow<AutoVerificationResponse?>
+    fun setAutoVerificationResponse(response: AutoVerificationResponse)
 }

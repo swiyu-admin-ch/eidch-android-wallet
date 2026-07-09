@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -38,10 +39,16 @@ private fun EIdIntroScreenContent(
             )
         },
         stickyBottomContent = {
-            Buttons.FilledPrimary(
-                text = stringResource(id = R.string.tk_global_getbetaid_primarybutton),
-                onClick = onBetaIdButtonClick,
-                startIcon = painterResource(id = R.drawable.wallet_ic_external_link)
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(id = R.string.tk_global_getbetaid_primarybutton),
+                            onClick = onBetaIdButtonClick,
+                            startIcon = painterResource(id = R.drawable.wallet_ic_external_link)
+                        )
+                    }
+                )
             )
         }
     ) {

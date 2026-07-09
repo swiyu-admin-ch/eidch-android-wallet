@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.composables.presentation
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ fun SwipeableScreen(
     }
     Box(
         modifier = Modifier
+            .focusGroup()
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragStart = {

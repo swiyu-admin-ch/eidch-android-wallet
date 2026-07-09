@@ -22,23 +22,21 @@ class LottieViewerViewModel @Inject constructor(
     )
 
     fun onNextAnimation() {
-        if (currentAnimationScaling.value == ContentScale.Fit) {
-            currentAnimationScaling.value = ContentScale.Crop
-            return
-        } else {
-            currentAnimationScaling.value = ContentScale.Fit
-        }
-
         currentAnimationIndex = (currentAnimationIndex + 1) % animations.size
         _animationRes.value = animations[currentAnimationIndex]
     }
 
     private var currentAnimationIndex = 0
-    private val currentAnimationScaling = MutableStateFlow(ContentScale.Fit)
+    private val currentAnimationScaling = MutableStateFlow(ContentScale.Crop)
     private val animations = arrayOf(
-        R.raw.face_record,
         R.raw.doc_record,
-        R.raw.doc_scan,
+        R.raw.doc_record_pass,
+        R.raw.doc_scan_front,
+        R.raw.doc_scan_back,
+        R.raw.doc_scan_pass_1,
+        R.raw.doc_scan_pass_2,
+        R.raw.face_scan,
+        R.raw.nfc_pass,
     )
 
     private val _animationRes = MutableStateFlow(animations[currentAnimationIndex])

@@ -25,8 +25,6 @@ data class DeferredCredentialEntity(
     val credentialId: Long, // Foreign key
     val progressionState: DeferredProgressionState = DeferredProgressionState.IN_PROGRESS,
     val transactionId: String,
-    val accessToken: String,
-    val refreshToken: String?,
     val endpoint: String,
     val pollInterval: Int = 5,
     val createdAt: Long = Instant.now().epochSecond,

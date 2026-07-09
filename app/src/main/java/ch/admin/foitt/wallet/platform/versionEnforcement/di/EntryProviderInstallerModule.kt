@@ -23,7 +23,12 @@ object EntryProviderInstallerModule {
             val viewModel =
                 hiltViewModel<AppVersionBlockedViewModel, AppVersionBlockedViewModel.Factory>(
                     creationCallback = { factory ->
-                        factory.create(title = navKey.title, text = navKey.text)
+                        factory.create(
+                            title = navKey.title,
+                            text = navKey.text,
+                            playStoreUrl = navKey.playStoreUrl,
+                            enforcedType = navKey.enforcedType
+                        )
                     }
                 )
             SyncedScaffoldScreen(viewModel = viewModel) {

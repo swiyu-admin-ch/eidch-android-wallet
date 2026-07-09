@@ -5,5 +5,5 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.SubmitPresentat
 import com.github.michaelbull.result.Result
 
 fun interface DeclinePresentation {
-    suspend operator fun invoke(url: String, reason: AuthorizationResponseErrorBody.ErrorType): Result<Unit, SubmitPresentationErrorError>
+    suspend operator fun invoke(url: String?, reason: AuthorizationResponseErrorBody.ErrorType): Result<Unit, SubmitPresentationErrorError>
 }

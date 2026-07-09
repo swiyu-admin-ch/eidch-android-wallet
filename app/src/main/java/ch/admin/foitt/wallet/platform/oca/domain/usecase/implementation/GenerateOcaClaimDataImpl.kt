@@ -11,7 +11,6 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.CharacterEncodin
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.CharacterEncodingOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.CharacterEncodingOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay
-import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryOverlay1x0
@@ -19,6 +18,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.FormatOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.FormatOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay1x0
+import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.OrderOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.OrderOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.Overlay
@@ -29,7 +29,6 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.StandardOverlay
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.StandardOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaClaimData
 import ch.admin.foitt.wallet.platform.oca.domain.util.getLatestOverlaysOfType
-import ch.admin.foitt.wallet.platform.oca.domain.util.naiveJsonPathToClaimsPathPointer
 import ch.admin.foitt.wallet.platform.utils.associateNotNull
 import ch.admin.foitt.wallet.platform.utils.associateWithNotNull
 import timber.log.Timber
@@ -75,6 +74,11 @@ class GenerateOcaClaimDataImpl @Inject constructor() : GenerateOcaClaimData {
                             overlay.language to it
                         }
                     }
+                    is LabelOverlay1x1 -> {
+                        overlay.attributeLabels[attribute]?.let {
+                            overlay.language to it
+                        }
+                    }
                 }
             }.toMap()
         }
@@ -111,12 +115,6 @@ class GenerateOcaClaimDataImpl @Inject constructor() : GenerateOcaClaimData {
                     is DataSourceOverlay2x0 -> {
                         overlay.attributeSources[attribute]?.let { claimsPathPointer ->
                             overlay.format to claimsPathPointer
-                        }
-                    }
-
-                    is DataSourceOverlay1x0 -> {
-                        overlay.attributeSources[attribute]?.let { jsonPathString ->
-                            overlay.format to naiveJsonPathToClaimsPathPointer(jsonPathString)
                         }
                     }
                 }

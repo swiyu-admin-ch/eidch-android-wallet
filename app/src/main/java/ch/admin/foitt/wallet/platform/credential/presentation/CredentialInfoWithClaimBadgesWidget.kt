@@ -36,7 +36,8 @@ fun LazyListScope.credentialInfoWithClaimBadgesWidget(
     credentialCardListItem(
         credentialCardState = credentialCardState,
         paddingValues = paddingValues,
-        isLastItem = claimBadgesUiStates.isEmpty()
+        isLastItem = claimBadgesUiStates.isEmpty(),
+        divider = null,
     )
 
     if (claimBadgesUiStates.isNotEmpty()) {
@@ -56,7 +57,7 @@ private fun LazyListScope.claimInfoBadgeListItem(
 ) = clusterLazyListItem(
     isFirstItem = false,
     isLastItem = true,
-    showDivider = false,
+    divider = null,
     paddingValues = paddingValues,
 ) {
     ListItem(

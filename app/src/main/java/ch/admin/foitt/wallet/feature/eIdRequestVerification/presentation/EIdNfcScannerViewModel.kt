@@ -8,11 +8,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.avwrapper.AVBeamError
-import ch.admin.foitt.avwrapper.AVBeamInitConfig
 import ch.admin.foitt.avwrapper.AVBeamPackageResult
 import ch.admin.foitt.avwrapper.AVBeamStatus
 import ch.admin.foitt.avwrapper.AvBeamNotification
-import ch.admin.foitt.avwrapper.config.AVBeamConfigLogLevel
 import ch.admin.foitt.avwrapper.config.AVBeamScanNfcConfig
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.EIdRequestVerificationError
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetDocumentScanData
@@ -21,11 +19,14 @@ import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcScan
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFileCategory
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.GetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManager
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
+import ch.admin.foitt.wallet.platform.scanning.di.AvBeamSdkEntryPoint
 import ch.admin.foitt.wallet.platform.utils.openNFCSettings
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.get
@@ -55,12 +56,12 @@ import java.lang.ref.WeakReference
 
 @HiltViewModel(assistedFactory = EIdNfcScannerViewModel.Factory::class)
 class EIdNfcScannerViewModel @AssistedInject constructor(
-    private val avBeam: AVBeam,
     private val environmentSetupRepository: EnvironmentSetupRepository,
     private val getStartAutoVerificationResult: GetStartAutoVerificationResult,
     private val saveEIdRequestFiles: SaveEIdRequestFiles,
     private val getDocumentScanData: GetDocumentScanData,
     private val navManager: NavigationManager,
+    destinationScopedComponentManager: DestinationScopedComponentManager,
     @param:ApplicationContext private val appContext: Context,
     @Assisted private val caseId: String,
     setTopBarState: SetTopBarState,
@@ -70,6 +71,13 @@ class EIdNfcScannerViewModel @AssistedInject constructor(
     interface Factory {
         fun create(caseId: String): EIdNfcScannerViewModel
     }
+
+    private val avBeamRepository = destinationScopedComponentManager.getEntryPoint(
+        entryPointClass = AvBeamSdkEntryPoint::class.java,
+        componentScope = ComponentScope.AvBeamSdkSession,
+    ).avBeamRepository()
+
+    private val avBeam: AVBeam get() = avBeamRepository.getBeam()
 
     override val topBarState: TopBarState = TopBarState.WithCloseButton(
         onClose = { navManager.navigateBackToHomeScreen(Destination.EIdNfcScannerScreen::class) },
@@ -125,12 +133,7 @@ class EIdNfcScannerViewModel @AssistedInject constructor(
     }
 
     private suspend fun initScannerSdk(activity: AppCompatActivity) = withContext(Dispatchers.IO) {
-        val logLevel = if (environmentSetupRepository.avBeamLoggingEnabled) {
-            AVBeamConfigLogLevel.DEBUG
-        } else {
-            AVBeamConfigLogLevel.NONE
-        }
-        avBeam.init(AVBeamInitConfig(logLevel), activity)
+        avBeamRepository.init(activity)
         avBeam.initializedFlow.awaitValue(true)
         Timber.d("$logTag initialization done")
     }

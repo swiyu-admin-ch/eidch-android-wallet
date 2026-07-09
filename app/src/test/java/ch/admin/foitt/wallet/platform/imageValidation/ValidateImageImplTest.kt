@@ -1,14 +1,11 @@
 package ch.admin.foitt.wallet.platform.imageValidation
 
-import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.imageValidation.domain.usecase.ValidateImage
 import ch.admin.foitt.wallet.platform.imageValidation.domain.usecase.implementation.ValidateImageImpl
 import ch.admin.foitt.wallet.platform.ssi.domain.model.ImageType
 import ch.admin.foitt.wallet.util.assertErr
 import ch.admin.foitt.wallet.util.assertOk
 import io.mockk.MockKAnnotations
-import io.mockk.every
-import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
@@ -21,20 +18,12 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 
 class ValidateImageImplTest {
-
-    @MockK
-    private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
-
     private lateinit var useCase: ValidateImage
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        useCase = ValidateImageImpl(mockEnvironmentSetupRepository)
-
-        every {
-            mockEnvironmentSetupRepository.isImageValidationEnabled
-        } returns true
+        useCase = ValidateImageImpl()
     }
 
     @AfterEach
@@ -66,18 +55,6 @@ class ValidateImageImplTest {
             mimeType = ImageType.PNG.mimeType,
             image = wrongImage,
         ).assertErr()
-    }
-
-    @Test
-    fun `No image validation occurs if the image validation flag is disabled`() = runTest {
-        every {
-            mockEnvironmentSetupRepository.isImageValidationEnabled
-        } returns false
-
-        useCase(
-            mimeType = ImageType.PNG.mimeType,
-            image = wrongImage,
-        ).assertOk()
     }
 
     private companion object {

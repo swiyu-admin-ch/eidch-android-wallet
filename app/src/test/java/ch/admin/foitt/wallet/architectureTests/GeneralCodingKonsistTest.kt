@@ -5,8 +5,10 @@ import ch.admin.foitt.wallet.app.MainActivity
 import ch.admin.foitt.wallet.app.WalletApplication
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
+import ch.admin.foitt.wallet.platform.pushNotification.data.WalletFirebaseMessagingService
 import ch.admin.foitt.wallet.util.assertTrue
 import com.lemonappdev.konsist.api.Konsist
+import com.lemonappdev.konsist.api.declaration.KoImportDeclaration
 import com.lemonappdev.konsist.api.ext.list.functions
 import com.lemonappdev.konsist.api.ext.list.modifierprovider.withOpenModifier
 import com.lemonappdev.konsist.api.ext.list.properties
@@ -150,11 +152,12 @@ class GeneralCodingKonsistTest {
             .scopeFromProject()
             .classes()
             .filterNot {
-                // Exceptions: Application and MainActivity
+                // Exceptions: Application, MainActivity and Services
                 it.fullyQualifiedName?.let { name ->
                     name in listOf(
                         WalletApplication::class.java.name,
-                        MainActivity::class.java.name
+                        MainActivity::class.java.name,
+                        WalletFirebaseMessagingService::class.java.name
                     )
                 } ?: false
             }
@@ -254,6 +257,21 @@ class GeneralCodingKonsistTest {
                             }
                         }
                     },
+                    DynamicTest.dynamicTest("${file.name}: ch.admin.eid.didresolver methods should not be used") {
+                        val exceptions =
+                            listOf("DidResolverHelperImpl", "VcSdJwtCredential")
+                        if (!file.hasClassWithName(names = exceptions)) {
+                            file.assertFalse(additionalMessage = "use methods from 'DidResolverHelper' instead") { fileDeclaration ->
+                                fileDeclaration.hasImport { import ->
+                                    import.name.startsWith("ch.admin.eid.didresolver.didresolver.") && import.isFunction()
+                                }
+                            }
+                        }
+                    },
                 )
             }
+
+    private fun KoImportDeclaration.isFunction(): Boolean {
+        return this.name.substringAfterLast(".").firstOrNull()?.isLowerCase() == true
+    }
 }

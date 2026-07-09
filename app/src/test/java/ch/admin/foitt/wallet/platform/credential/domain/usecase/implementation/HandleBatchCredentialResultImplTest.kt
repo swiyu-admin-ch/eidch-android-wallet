@@ -65,7 +65,9 @@ class HandleBatchCredentialResultImplTest {
             issuerUrl = ISSUER_URL,
             batchSize = BATCH_SIZE,
             anyVerifiedBatchCredential = AnyVerifiedBatchCredential(
-                refreshToken = "token",
+                accessToken = ACCESS_TOKEN,
+                refreshToken = REFRESH_TOKEN,
+                dpopKeyBinding = null,
                 vcSdJwtCredentials = listOf(mockVcSdJwtCredential)
             ),
             rawAndParsedCredentialInfo = RawAndParsedIssuerCredentialInfo(
@@ -92,7 +94,9 @@ class HandleBatchCredentialResultImplTest {
             mockBatchRefreshDataRepository.saveBatchRefreshData(
                 credentialId = any(),
                 batchSize = any(),
+                accessToken = any(),
                 refreshToken = any(),
+                dpopKeyBinding = any(),
             )
         } returns Ok(1L)
 
@@ -100,7 +104,9 @@ class HandleBatchCredentialResultImplTest {
             issuerUrl = ISSUER_URL,
             batchSize = BATCH_SIZE,
             anyVerifiedBatchCredential = AnyVerifiedBatchCredential(
+                accessToken = ACCESS_TOKEN,
                 refreshToken = REFRESH_TOKEN,
+                dpopKeyBinding = null,
                 vcSdJwtCredentials = listOf(mockVcSdJwtCredential)
             ),
             rawAndParsedCredentialInfo = RawAndParsedIssuerCredentialInfo(
@@ -126,7 +132,9 @@ class HandleBatchCredentialResultImplTest {
             mockBatchRefreshDataRepository.saveBatchRefreshData(
                 credentialId = CREDENTIAL_ID,
                 batchSize = BATCH_SIZE,
+                accessToken = ACCESS_TOKEN,
                 refreshToken = REFRESH_TOKEN,
+                dpopKeyBinding = null,
             )
         }
     }
@@ -147,7 +155,9 @@ class HandleBatchCredentialResultImplTest {
             issuerUrl = ISSUER_URL,
             batchSize = BATCH_SIZE,
             anyVerifiedBatchCredential = AnyVerifiedBatchCredential(
+                accessToken = ACCESS_TOKEN,
                 refreshToken = null,
+                dpopKeyBinding = null,
                 vcSdJwtCredentials = listOf(mockVcSdJwtCredential)
             ),
             rawAndParsedCredentialInfo = RawAndParsedIssuerCredentialInfo(
@@ -161,7 +171,13 @@ class HandleBatchCredentialResultImplTest {
         assertEquals(CREDENTIAL_ID, credentialResult.credentialId)
 
         coVerify(exactly = 0) {
-            mockBatchRefreshDataRepository.saveBatchRefreshData(any(), any(), any())
+            mockBatchRefreshDataRepository.saveBatchRefreshData(
+                credentialId = any(),
+                batchSize = any(),
+                accessToken = any(),
+                refreshToken = any(),
+                dpopKeyBinding = any(),
+            )
         }
     }
 
@@ -182,7 +198,9 @@ class HandleBatchCredentialResultImplTest {
             mockBatchRefreshDataRepository.saveBatchRefreshData(
                 credentialId = any(),
                 batchSize = any(),
+                accessToken = any(),
                 refreshToken = any(),
+                dpopKeyBinding = any(),
             )
         } returns Err(BatchRefreshDataRepositoryError.Unexpected(exception))
 
@@ -190,7 +208,9 @@ class HandleBatchCredentialResultImplTest {
             issuerUrl = ISSUER_URL,
             batchSize = BATCH_SIZE,
             anyVerifiedBatchCredential = AnyVerifiedBatchCredential(
+                accessToken = ACCESS_TOKEN,
                 refreshToken = REFRESH_TOKEN,
+                dpopKeyBinding = null,
                 vcSdJwtCredentials = listOf(mockVcSdJwtCredential)
             ),
             rawAndParsedCredentialInfo = RawAndParsedIssuerCredentialInfo(
@@ -207,6 +227,7 @@ class HandleBatchCredentialResultImplTest {
         private const val CREDENTIAL_ID = 1337L
         private const val BATCH_SIZE: BatchSize = 10
         private const val REFRESH_TOKEN = "refresh-token"
+        private const val ACCESS_TOKEN = "access-token"
         private val ISSUER_URL = URL("https://issuer.example")
     }
 }

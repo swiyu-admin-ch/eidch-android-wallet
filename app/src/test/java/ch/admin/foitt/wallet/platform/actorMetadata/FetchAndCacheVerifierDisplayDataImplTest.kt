@@ -3,11 +3,7 @@ package ch.admin.foitt.wallet.platform.actorMetadata
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientMetaData
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientName
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.Field
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptor
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.LogoUri
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationDefinition
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
@@ -19,7 +15,10 @@ import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementatio
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.actorComplianceState
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceData
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.nonComplianceReasons
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.VerificationProcessType
+import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.FetchNonComplianceData
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustRegistryError
@@ -45,6 +44,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import uniffi.heidi_dcql_rust.CredentialQuery
+import uniffi.heidi_dcql_rust.DcqlQuery
+import uniffi.heidi_dcql_rust.Meta
 
 class FetchAndCacheVerifierDisplayDataImplTest {
     @MockK
@@ -67,18 +69,6 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
     @MockK
     private lateinit var mockIdentityTrustStatement: IdentityV1TrustStatement
-
-    @MockK
-    private lateinit var mockPresentationDefinition: PresentationDefinition
-
-    @MockK
-    private lateinit var mockInputDescriptor: InputDescriptor
-
-    @MockK
-    private lateinit var mockInputDescriptorFormat: InputDescriptorFormat
-
-    @MockK
-    private lateinit var mockField: Field
 
     private lateinit var useCase: FetchAndCacheVerifierDisplayData
 
@@ -105,6 +95,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     fun `Fetching and caching the verifier display data is following specific steps`(): Unit = runTest {
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val expectedActorDisplayData = ActorDisplayData(
@@ -129,6 +121,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     fun `A valid trust statement from our prod ecosystem will display as trusted`(): Unit = runTest {
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -148,6 +142,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -167,6 +163,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -187,6 +185,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -206,6 +206,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -226,6 +228,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -247,6 +251,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -268,6 +274,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -283,10 +291,21 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
     @Test
     fun `VcSchema trust only fetched when the schemaId is available`() = runTest {
-        every { mockField.path } returns listOf("other path")
+        // No Meta.SdjwtVc on the credential query → getVcSchemaId returns null
+        every { mockAuthorizationRequest.dcqlQuery } returns DcqlQuery(
+            credentials = listOf(
+                CredentialQuery(
+                    id = "id",
+                    format = "vc+sd-jwt",
+                    meta = null,
+                )
+            )
+        )
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -308,6 +327,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
     fun `Valid trust statement data is shown first`(): Unit = runTest {
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -325,6 +346,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         coEvery { mockProcessIdentityV1TrustStatement.invoke(did = any()) } returns trustRegistryError
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -351,6 +374,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
         useCase(
             authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
         )
 
         val capturedDisplayData = slot<ActorDisplayData>()
@@ -362,18 +387,96 @@ class FetchAndCacheVerifierDisplayDataImplTest {
         assertEquals(VcSchemaTrustStatus.TRUSTED, capturedDisplayData.captured.vcSchemaTrustStatus)
     }
 
+    @Test
+    fun `Proximity flow with trusted attestation caches the verifier as TRUSTED_PROXIMITY_VERIFIER`(): Unit = runTest {
+        useCase(
+            authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.PROXIMITY,
+            verifierAttestationTrusted = true,
+        )
+
+        val capturedDisplayData = slot<ActorDisplayData>()
+        coVerify {
+            mockInitializeActorForScope.invoke(
+                actorDisplayData = capture(capturedDisplayData),
+                componentScope = ComponentScope.Verifier,
+            )
+        }
+
+        coVerify(exactly = 0) { mockGetActorEnvironment(any()) }
+        coVerify(exactly = 0) { mockProcessIdentityV1TrustStatement(any()) }
+        coVerify(exactly = 0) { mockFetchVcSchemaTrustStatus(any(), any(), any()) }
+        coVerify(exactly = 0) { mockFetchNonComplianceData(any()) }
+
+        assertEquals(TrustStatus.TRUSTED_PROXIMITY_VERIFIER, capturedDisplayData.captured.trustStatus)
+        assertEquals(VcSchemaTrustStatus.TRUSTED, capturedDisplayData.captured.vcSchemaTrustStatus)
+        assertEquals(ActorComplianceState.UNKNOWN, capturedDisplayData.captured.actorComplianceState)
+        assertEquals(mockMetadataNameDisplays, capturedDisplayData.captured.name)
+        assertEquals(mockMetadataLogoDisplays, capturedDisplayData.captured.image)
+    }
+
+    @Test
+    fun `Proximity flow with untrusted attestation caches the verifier as NOT_TRUSTED_PROXIMITY_VERIFIER`(): Unit = runTest {
+        useCase(
+            authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.PROXIMITY,
+            verifierAttestationTrusted = false,
+        )
+
+        val capturedDisplayData = slot<ActorDisplayData>()
+        coVerify {
+            mockInitializeActorForScope.invoke(
+                actorDisplayData = capture(capturedDisplayData),
+                componentScope = ComponentScope.Verifier,
+            )
+        }
+
+        assertEquals(TrustStatus.NOT_TRUSTED_PROXIMITY_VERIFIER, capturedDisplayData.captured.trustStatus)
+    }
+
+    @Test
+    fun `Proximity flow remaps verifier metadata fallback locale to the default locale`(): Unit = runTest {
+        every { mockAuthorizationRequest.clientMetaData } returns ClientMetaData(
+            clientNameList = listOf(ClientName("Reader", locale = DisplayLanguage.DEFAULT)),
+            logoUriList = listOf(LogoUri("logoUri", locale = DisplayLanguage.DEFAULT)),
+        )
+
+        useCase(
+            authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.PROXIMITY,
+            verifierAttestationTrusted = true,
+        )
+
+        val capturedDisplayData = slot<ActorDisplayData>()
+        coVerify {
+            mockInitializeActorForScope.invoke(
+                actorDisplayData = capture(capturedDisplayData),
+                componentScope = ComponentScope.Verifier,
+            )
+        }
+
+        assertEquals(
+            listOf(ActorField(value = "Reader", locale = DisplayLanguage.DEFAULT)),
+            capturedDisplayData.captured.name,
+        )
+        assertEquals(
+            listOf(ActorField(value = "logoUri", locale = DisplayLanguage.DEFAULT)),
+            capturedDisplayData.captured.image,
+        )
+    }
+
     private fun setupDefaultMocks() {
         every { mockAuthorizationRequest.clientId } returns clientId
         every { mockAuthorizationRequest.clientMetaData } returns mockClientMetadata
-        every { mockAuthorizationRequest.presentationDefinition } returns mockPresentationDefinition
-
-        every { mockPresentationDefinition.inputDescriptors } returns listOf(mockInputDescriptor)
-
-        every { mockInputDescriptor.formats } returns listOf(mockInputDescriptorFormat)
-        every { mockInputDescriptor.constraints.fields } returns listOf(mockField)
-
-        every { mockField.path } returns listOf("$.vct")
-        every { mockField.filter?.const } returns vcSchemaId
+        every { mockAuthorizationRequest.dcqlQuery } returns DcqlQuery(
+            credentials = listOf(
+                CredentialQuery(
+                    id = "id",
+                    format = "vc+sd-jwt",
+                    meta = Meta.SdjwtVc(vctValues = listOf(vcSchemaId)),
+                )
+            )
+        )
 
         every { mockIdentityTrustStatement.entityName } returns mockTrustedNames
 
@@ -391,8 +494,8 @@ class FetchAndCacheVerifierDisplayDataImplTest {
             mockInitializeActorForScope.invoke(any(), componentScope = ComponentScope.Verifier)
         } just runs
     }
-    //region mock data
 
+    //region mock data
     private val clientId = "clientId1"
     private val vcSchemaId = "vcSchemaId"
 

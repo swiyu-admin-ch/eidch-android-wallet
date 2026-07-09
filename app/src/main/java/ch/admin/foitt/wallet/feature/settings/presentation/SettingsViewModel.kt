@@ -52,7 +52,7 @@ class SettingsViewModel @Inject constructor(
     fun onHelp() = appContext.openLink(R.string.tk_settings_general_help_link_value)
 
     fun onFeedback() = appContext.openLink(R.string.tk_settings_general_feedback_link_value)
-
+    fun onAccessibility() = navManager.navigateTo(Destination.AccessibilityScreen)
     fun onLicenses() = navManager.navigateTo(Destination.LicencesScreen)
 
     fun onImprint() = navManager.navigateTo(Destination.ImpressumScreen)

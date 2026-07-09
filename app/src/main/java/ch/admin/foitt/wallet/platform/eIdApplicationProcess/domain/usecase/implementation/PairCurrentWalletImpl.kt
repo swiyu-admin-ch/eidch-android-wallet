@@ -4,6 +4,7 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequ
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairCurrentWalletError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletError
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toPairCurrentWalletError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.repository.EIdRequestCaseRepository
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PairCurrentWallet
@@ -24,7 +25,7 @@ class PairCurrentWalletImpl @Inject constructor(
 ) : PairCurrentWallet {
     override suspend operator fun invoke(
         caseId: String,
-    ): Result<Unit, PairCurrentWalletError> = coroutineBinding {
+    ): Result<PairWalletResponse, PairCurrentWalletError> = coroutineBinding {
         val pairingResult = pairWallet(caseId = caseId)
             .mapError(PairWalletError::toPairCurrentWalletError).bind()
         val processInvitationResult = processInvitation(pairingResult.credentialOfferLink)
@@ -43,5 +44,7 @@ class PairCurrentWalletImpl @Inject constructor(
                 Err(EIdRequestError.InvalidDeferredCredentialOffer).bind()
             }
         }
+
+        pairingResult
     }
 }

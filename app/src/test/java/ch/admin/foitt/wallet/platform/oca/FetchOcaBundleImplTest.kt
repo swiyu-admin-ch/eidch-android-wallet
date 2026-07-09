@@ -84,8 +84,14 @@ class FetchOcaBundleImplTest {
     }
 
     @Test
-    fun `Fetching oca bundle with url but without url integrity returns an error`() = runTest {
-        useCase(OCA_URL, null).assertErrorType(OcaError.InvalidOca::class)
+    fun `Fetching oca bundle with url but without url integrity does not validate the data`() = runTest {
+        val result = useCase(OCA_URL, null).assertOk()
+
+        assertEquals(ocaResponse, result.rawOcaBundle)
+
+        coVerify(exactly = 0) {
+            mockSRIValidator(any(), any())
+        }
     }
 
     @Test

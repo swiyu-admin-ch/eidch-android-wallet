@@ -166,8 +166,8 @@ data class WalletTypography(
                 credentialMedium = TextStyle(
                     fontFamily = abcDiatypeSemiMono,
                     fontWeight = FontWeight.Normal,
-                    fontSize = 14.sp,
-                    lineHeight = 18.sp,
+                    fontSize = 16.sp,
+                    lineHeight = 22.sp,
                     hyphens = Hyphens.Auto,
                 ),
                 credentialLarge = TextStyle(

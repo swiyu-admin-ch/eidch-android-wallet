@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +23,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.presentation.requestFocus
@@ -50,7 +51,8 @@ fun ScanInfoToast(
     backgroundColor = WalletTheme.colorScheme.surface,
     iconStart = null,
     text = text,
-    textColor = WalletTheme.colorScheme.onSurfaceVariant
+    textColor = WalletTheme.colorScheme.onSurfaceVariant,
+    liveRegionMode = LiveRegionMode.Polite,
 )
 
 @Composable
@@ -99,29 +101,30 @@ fun Toast(
     modifier: Modifier = Modifier,
     useContentMaxWidth: Boolean = true,
     shouldRequestFocus: Boolean = false,
+    useLiveRegion: Boolean = true,
+    liveRegionMode: LiveRegionMode = LiveRegionMode.Assertive,
     isSnackBarDesign: Boolean = false,
     backgroundColor: Color = WalletTheme.colorScheme.surface,
     @StringRes headline: Int? = null,
     headlineColor: Color = WalletTheme.colorScheme.onSurface,
     @StringRes text: Int? = null,
-    textAsString: String? = null,
     textColor: Color = WalletTheme.colorScheme.onSurfaceVariant,
-    @StringRes linkText: Int? = null,
     @DrawableRes iconStart: Int? = null,
     iconStartColor: Color = WalletTheme.colorScheme.onSurfaceVariant,
     @DrawableRes iconEnd: Int? = null,
     iconEndColor: Color = WalletTheme.colorScheme.onSurfaceVariant,
     @StringRes iconEndContentDescription: Int? = null,
-    onLink: () -> Unit = {},
     onIconEnd: () -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
+    val displayText = text?.let { stringResource(id = it) } ?: ""
+    val headlineText = headline?.let { stringResource(id = it) }
 
     Surface(
-        modifier = modifier,
         shadowElevation = Sizes.line02,
         shape = if (isSnackBarDesign) WalletShapes.default.extraSmall else WalletShapes.default.large,
         color = backgroundColor,
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier
@@ -133,8 +136,7 @@ fun Toast(
                         Modifier.padding(start = Sizes.s04, top = Sizes.s03, bottom = Sizes.s03, end = Sizes.s01)
                     }
                 )
-                .testTag(TestTags.ERROR.name)
-                .semantics(mergeDescendants = true) {},
+                .testTag(TestTags.ERROR.name),
             verticalAlignment = Alignment.CenterVertically
         ) {
             iconStart?.let {
@@ -149,29 +151,23 @@ fun Toast(
                 modifier = Modifier
                     .then(if (shouldRequestFocus) Modifier.requestFocus(focusRequester) else Modifier)
                     .then(if (useContentMaxWidth) Modifier.weight(1f) else Modifier)
+                    .semantics {
+                        if (useLiveRegion) {
+                            liveRegion = liveRegionMode
+                        }
+                    }
             ) {
-                headline?.let {
+                headlineText?.let {
                     WalletTexts.TitleSmall(
-                        text = stringResource(id = headline),
+                        text = headlineText,
                         color = headlineColor,
-                        modifier = Modifier.traversalIndex(TraversalIndex.HIGH1)
                     )
                 }
 
-                val displayText = textAsString ?: text?.let { stringResource(id = it) } ?: ""
-
-                WalletTexts.LabelLarge(
-                    text = displayText,
-                    color = textColor,
-                    modifier = Modifier.traversalIndex(TraversalIndex.HIGH2)
-                )
-                linkText?.let {
-                    Spacer(modifier = Modifier.height(Sizes.s01))
-                    Buttons.TextLink(
-                        text = stringResource(id = linkText),
-                        endIcon = painterResource(id = R.drawable.wallet_ic_chevron),
-                        onClick = onLink,
-                        modifier = Modifier.traversalIndex(TraversalIndex.HIGH3)
+                if (displayText.isNotEmpty()) {
+                    WalletTexts.LabelLarge(
+                        text = displayText,
+                        color = textColor,
                     )
                 }
             }
@@ -210,12 +206,9 @@ private fun ToastPreview() {
         Toast(
             headline = R.string.tk_global_warning_alt,
             text = R.string.tk_onboarding_introductionStep_security_secondary,
-            linkText = R.string.tk_global_warning_alt,
             iconStart = R.drawable.wallet_ic_qr,
             iconEnd = R.drawable.wallet_ic_cross,
-            onLink = { },
             onIconEnd = { },
-            shouldRequestFocus = false,
             isSnackBarDesign = false
         )
     }

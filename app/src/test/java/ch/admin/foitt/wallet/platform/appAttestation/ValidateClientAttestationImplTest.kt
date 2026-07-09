@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.appAttestation
 
+import ch.admin.foitt.didResolver.domain.DidResolverHelper
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwk.hasSameCurveAs
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
@@ -22,6 +23,7 @@ import com.github.michaelbull.result.getOrThrow
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
@@ -38,6 +40,8 @@ import java.time.Instant
 
 @OptIn(UnsafeResultValueAccess::class)
 class ValidateClientAttestationImplTest {
+    @MockK
+    private lateinit var mockDidResolverHelper: DidResolverHelper
 
     @MockK
     private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
@@ -50,6 +54,7 @@ class ValidateClientAttestationImplTest {
     private val keyStoreAlias = "keyStoreAlias"
     private val jwk = Jwk.fromEcKey(ClientAttestationMocks.jwkEcP256_01, null).getOrThrow()
     private val issuerDid = "Did"
+    private val keyId = "$issuerDid#key-01"
     private val clientAttestationRawJwt = ClientAttestationMocks.jwtAttestation01
     private val clientAttestationResponse = ClientAttestationResponse(clientAttestationRawJwt)
 
@@ -62,17 +67,19 @@ class ValidateClientAttestationImplTest {
         mockkConstructor(Jwk::class)
 
         useCase = ValidateClientAttestationImpl(
+            didResolverHelper = mockDidResolverHelper,
             environmentSetupRepo = mockEnvironmentSetupRepository,
             verifyJwtSignatureFromDid = mockVerifyJwtSignatureFromDid,
             safeJson = safeJson,
         )
 
-        coEvery { anyConstructed<Jwt>().iss } returns issuerDid
-        coEvery { anyConstructed<Jwt>().keyId } returns "$issuerDid#key01"
+        every { mockDidResolverHelper.getDidStringFromAbsoluteKeyId(keyId) } returns Ok(issuerDid)
+
+        coEvery { anyConstructed<Jwt>().keyId } returns keyId
         coEvery { anyConstructed<Jwt>().expInstant } returns Instant.MAX
         coEvery { mockEnvironmentSetupRepository.attestationsServiceTrustedDids } returns listOf(issuerDid)
         coEvery { mockEnvironmentSetupRepository.appId } returns "swiyu"
-        coEvery { mockVerifyJwtSignatureFromDid(any(), any(), any()) } returns Ok(Unit)
+        coEvery { mockVerifyJwtSignatureFromDid(any(), any()) } returns Ok(Unit)
     }
 
     @AfterEach
@@ -94,109 +101,46 @@ class ValidateClientAttestationImplTest {
     fun `invalid Jwt fails validation`() = runTest {
         val wrongJwt = "wrongJwt"
 
-        val result = useCase(keyStoreAlias, jwk, ClientAttestationResponse(wrongJwt))
-
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, ClientAttestationResponse(wrongJwt))
+            .assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 0) {
             anyConstructed<Jwt>().iss
             mockEnvironmentSetupRepository.attestationsServiceTrustedDids
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
-        }
-    }
-
-    @Test
-    fun `missing issuer fails validation`() = runTest {
-        coEvery { anyConstructed<Jwt>().iss } returns null
-
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
-
-        coVerify(exactly = 1) { anyConstructed<Jwt>().iss }
-
-        coVerify(exactly = 0) {
-            mockEnvironmentSetupRepository.attestationsServiceTrustedDids
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
-        }
-    }
-
-    @Test
-    fun `unexpected did fails validation`() = runTest {
-        coEvery { anyConstructed<Jwt>().iss } returns "otherDid"
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
-
-        coVerify(exactly = 1) {
-            anyConstructed<Jwt>().iss
-            mockEnvironmentSetupRepository.attestationsServiceTrustedDids
-        }
-
-        coVerify(exactly = 0) {
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any())
         }
     }
 
     @Test
     fun `missing kid fails validation`() = runTest {
         coEvery { anyConstructed<Jwt>().keyId } returns null
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
             anyConstructed<Jwt>().keyId
         }
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any())
         }
+    }
+
+    @Test
+    fun `validation maps errors from getting the issuer did`() = runTest {
+        val exception = IllegalStateException("did error")
+        every { mockDidResolverHelper.getDidStringFromAbsoluteKeyId(any()) } returns Err(exception)
+
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
     }
 
     @Test
     fun `unexpected kid fails validation`() = runTest {
-        coEvery { anyConstructed<Jwt>().keyId } returns "kid#key01"
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
+        every { mockDidResolverHelper.getDidStringFromAbsoluteKeyId(keyId) } returns Ok("otherDid")
 
-        result.assertErrorType(AttestationError.ValidationError::class)
-
-        coVerify(exactly = 1) {
-            anyConstructed<Jwt>().keyId
-        }
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
-        }
-    }
-
-    @Test
-    fun `failed signature verification fails validation`() = runTest {
-        coEvery { mockVerifyJwtSignatureFromDid(any(), any(), any()) } returns Err(JwtError.IssuerValidationFailed)
-
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
-
-        coVerify(exactly = 1) {
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
-        }
-    }
-
-    @Test
-    fun `unsupported algorithm fails validation`() = runTest {
-        coEvery { anyConstructed<Jwt>().algorithm } returns "unsupportedAlgorithm"
-
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
-
-        coVerify(atLeast = 1) {
-            anyConstructed<Jwt>().algorithm
-        }
-
-        coVerify(exactly = 0) {
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any())
         }
     }
 
@@ -204,29 +148,40 @@ class ValidateClientAttestationImplTest {
     fun `unsupported attestation type fails validation`() = runTest {
         coEvery { anyConstructed<Jwt>().type } returns "unsupportedType"
 
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
             anyConstructed<Jwt>().type
         }
 
         coVerify(exactly = 0) {
-            mockVerifyJwtSignatureFromDid(any(), any(), any())
+            mockVerifyJwtSignatureFromDid(any(), any())
         }
     }
 
     @Test
-    fun `missing nbf fails validation`() = runTest {
-        coEvery { anyConstructed<Jwt>().nbfInstant } returns null
+    fun `unsupported algorithm fails validation`() = runTest {
+        coEvery { anyConstructed<Jwt>().algorithm } returns "unsupportedAlgorithm"
 
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
-        result.assertErrorType(AttestationError.ValidationError::class)
+        coVerify(atLeast = 1) {
+            anyConstructed<Jwt>().algorithm
+        }
+
+        coVerify(exactly = 0) {
+            mockVerifyJwtSignatureFromDid(any(), any())
+        }
+    }
+
+    @Test
+    fun `failed signature verification fails validation`() = runTest {
+        coEvery { mockVerifyJwtSignatureFromDid(any(), any()) } returns Err(JwtError.IssuerValidationFailed)
+
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
-            anyConstructed<Jwt>().nbfInstant
+            mockVerifyJwtSignatureFromDid(any(), any())
         }
     }
 
@@ -234,9 +189,7 @@ class ValidateClientAttestationImplTest {
     fun `missing exp fails validation`() = runTest {
         coEvery { anyConstructed<Jwt>().expInstant } returns null
 
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
             anyConstructed<Jwt>().expInstant
@@ -247,12 +200,21 @@ class ValidateClientAttestationImplTest {
     fun `expired exp fails validation`() = runTest {
         coEvery { anyConstructed<Jwt>().expInstant } returns Instant.ofEpochSecond(0)
 
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
             anyConstructed<Jwt>().expInstant
+        }
+    }
+
+    @Test
+    fun `missing nbf fails validation`() = runTest {
+        coEvery { anyConstructed<Jwt>().nbfInstant } returns null
+
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
+
+        coVerify(exactly = 1) {
+            anyConstructed<Jwt>().nbfInstant
         }
     }
 
@@ -263,9 +225,8 @@ class ValidateClientAttestationImplTest {
                 "another_field" to JsonPrimitive("x"),
             )
         )
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
 
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
             anyConstructed<Jwt>().payloadJson
@@ -279,9 +240,8 @@ class ValidateClientAttestationImplTest {
                 "wallet_name" to JsonPrimitive("anotherWallet"),
             )
         )
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
 
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
             anyConstructed<Jwt>().payloadJson
@@ -295,9 +255,8 @@ class ValidateClientAttestationImplTest {
                 "wallet_name" to JsonPrimitive(mockEnvironmentSetupRepository.appId),
             )
         )
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
 
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 2) {
             anyConstructed<Jwt>().payloadJson
@@ -324,9 +283,8 @@ class ValidateClientAttestationImplTest {
                 )
             )
         )
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
 
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 2) {
             anyConstructed<Jwt>().payloadJson
@@ -337,9 +295,7 @@ class ValidateClientAttestationImplTest {
     fun `key mismatch between confirmation and subject fails validation`() = runTest {
         coEvery { anyConstructed<Jwt>().subject } returns ClientAttestationMocks.jwkEcP256_02_didJwk
 
-        val result = useCase(keyStoreAlias, jwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, jwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 2) {
             anyConstructed<Jwt>().payloadJson
@@ -351,9 +307,7 @@ class ValidateClientAttestationImplTest {
         val otherJwk = safeJson.safeDecodeStringTo<Jwk>(ClientAttestationMocks.jwkEcP256_02).value
         mockkStatic(Jwk::hasSameCurveAs)
 
-        val result = useCase(keyStoreAlias, otherJwk, clientAttestationResponse)
-
-        result.assertErrorType(AttestationError.ValidationError::class)
+        useCase(keyStoreAlias, otherJwk, clientAttestationResponse).assertErrorType(AttestationError.ValidationError::class)
 
         coVerify(exactly = 1) {
             any<Jwk>().hasSameCurveAs(any())

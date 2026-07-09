@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -20,7 +20,7 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 
 @Composable
 fun PermissionRationalScreenContent(
-    onAllow: () -> Unit,
+    onPrompt: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
         ScreenMainImage(
@@ -28,11 +28,16 @@ fun PermissionRationalScreenContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerHigh,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(id = R.string.tk_global_continue_button),
-            onClick = onAllow,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(id = R.string.tk_global_continue_button),
+                        onClick = onPrompt,
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -53,7 +58,7 @@ fun PermissionRationalScreenContent(
 private fun PermissionRationalScreenContentPreview() {
     WalletTheme {
         PermissionRationalScreenContent(
-            onAllow = {},
+            onPrompt = {},
         )
     }
 }

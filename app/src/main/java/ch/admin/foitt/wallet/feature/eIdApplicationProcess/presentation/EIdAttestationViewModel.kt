@@ -9,6 +9,7 @@ import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.At
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.AttestationUiState.InvalidClientAttestation
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.AttestationUiState.InvalidKeyAttestation
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.AttestationUiState.NetworkError
+import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.AttestationUiState.TimeoutError
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.AttestationUiState.Unexpected
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
@@ -30,6 +31,7 @@ import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.github.michaelbull.result.get
+import com.github.michaelbull.result.getError
 import com.github.michaelbull.result.unwrapError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -64,23 +66,37 @@ internal class EIdAttestationViewModel @Inject constructor(
         clientAttestationResult,
         sIdValidationResult,
     ) { isLoading, keyAttestation, clientAttestation, sidValidation ->
+        val keyAttestationError = keyAttestation?.getError()
+        val clientAttestationError = clientAttestation?.getError()
+
         when {
             isLoading -> AttestationUiState.Loading
             sidValidation?.isOk == true -> AttestationUiState.Valid
             sidValidation?.isErr == true -> sidValidation.unwrapError().toUiState()
-            keyAttestation?.isErr == true && keyAttestation.unwrapError() is AttestationError.NetworkError ->
+
+            keyAttestationError is AttestationError.NetworkError ->
                 NetworkError(
                     onClose = ::onClose,
                     onRetry = ::onRetry,
                 )
 
-            clientAttestation?.isErr == true && clientAttestation.unwrapError() is AttestationError.NetworkError ->
+            keyAttestationError is AttestationError.SocketTimeoutError ->
+                TimeoutError(
+                    onClose = ::onClose,
+                )
+
+            clientAttestationError is AttestationError.SocketTimeoutError ->
+                TimeoutError(
+                    onClose = ::onClose,
+                )
+
+            clientAttestationError is AttestationError.NetworkError ->
                 IntegrityNetworkError(
                     onClose = ::onClose,
                     onRetry = ::onRetry,
                 )
 
-            clientAttestation?.isErr == true && clientAttestation.unwrapError() is AttestationError.Unexpected ->
+            clientAttestationError is AttestationError.Unexpected ->
                 IntegrityError(
                     onClose = ::onClose,
                 )

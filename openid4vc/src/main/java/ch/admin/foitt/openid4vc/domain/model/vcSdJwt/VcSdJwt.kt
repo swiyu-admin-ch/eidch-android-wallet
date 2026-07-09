@@ -1,9 +1,12 @@
 package ch.admin.foitt.openid4vc.domain.model.vcSdJwt
 
+import ch.admin.foitt.openid4vc.domain.model.anycredential.toBusinessExpiryInstant
+import ch.admin.foitt.openid4vc.domain.model.anycredential.toInstant
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.openid4vc.domain.model.sdjwt.SdJwt
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.get
-import com.github.michaelbull.result.recoverCatching
 import com.nimbusds.jwt.JWTClaimNames
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -23,7 +26,6 @@ open class VcSdJwt(
         }
     }
 
-    val vcIssuer: String = iss ?: error("missing iss claim")
     val kid: String = keyId ?: error("missing keyId claim")
     val vct = processedJson.jsonObject[CLAIM_KEY_VCT]?.jsonPrimitive?.content ?: error("missing vct claim")
     val vctIntegrity: String? = processedJson.jsonObject[CLAIM_KEY_VCT_INTEGRITY]?.jsonPrimitive?.content
@@ -33,6 +35,11 @@ open class VcSdJwt(
         // Support for both malformed and standard format of cnf claim
         ?: processedJson.jsonObject[CLAIM_KEY_CNF]
     val status = processedJson.jsonObject[CLAIM_KEY_STATUS]
+
+    /* expiry_date claim can optionally be put in disclosures, so it has to be read here */
+    val businessExpiryDate: Instant? = runSuspendCatching {
+        processedJson.jsonObject[CLAIM_KEY_BUSINESS_EXPIRY_DATE]?.jsonPrimitive?.content
+    }.get()?.toBusinessExpiryInstant()
 
     /* "sub" claim can optionally be put in disclosures, so it has to be read here */
     override val subject: String? = runSuspendCatching {
@@ -44,12 +51,6 @@ open class VcSdJwt(
         processedJson.jsonObject[JWTClaimNames.ISSUED_AT]?.jsonPrimitive?.content
     }.get()?.toInstant()
 
-    private fun String.toInstant(): Instant? = runSuspendCatching {
-        Instant.ofEpochSecond(this.toLong())
-    }.recoverCatching {
-        Instant.parse(this)
-    }.get()
-
     companion object {
         private const val CLAIM_KEY_CNF = "cnf"
         private const val CLAIM_KEY_CNF_JWK = "jwk"
@@ -58,6 +59,7 @@ open class VcSdJwt(
         private const val CLAIM_KEY_VCT_METADATA_URI = "vct_metadata_uri"
         private const val CLAIM_KEY_VCT_METADATA_URI_INTEGRITY = "vct_metadata_uri#integrity"
         private const val CLAIM_KEY_STATUS = "status"
+        private const val CLAIM_KEY_BUSINESS_EXPIRY_DATE = "expiry_date"
 
         // See https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-15.html#section-3.2.2.2
         val NON_SELECTIVELY_DISCLOSABLE_CLAIMS = setOf(
@@ -65,5 +67,9 @@ open class VcSdJwt(
             "_sd", "_sd_alg",
             CLAIM_KEY_VCT, CLAIM_KEY_VCT_INTEGRITY, CLAIM_KEY_VCT_METADATA_URI, CLAIM_KEY_VCT_METADATA_URI_INTEGRITY,
         )
+
+        val BUSINESS_EXPIRY_DATE_CLAIM_PATH = listOf(
+            ClaimsPathPointerComponent.String(CLAIM_KEY_BUSINESS_EXPIRY_DATE)
+        ).toPointerString()
     }
 }

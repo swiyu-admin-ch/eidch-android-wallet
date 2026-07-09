@@ -13,22 +13,15 @@
             tools:node="replace" />
     <uses-permission android:name="android.permission.NFC" />
 
-    <!-- Removing fallback-triggered permission -->
     <uses-permission
-            android:name="android.permission.READ_PHONE_STATE"
-            tools:node="remove" />
+            android:name="android.permission.BLUETOOTH_SCAN"
+            android:usesPermissionFlags="neverForLocation" />
+    <uses-permission
+            android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission
+            android:name="android.permission.BLUETOOTH_CONNECT" />
 
-    <uses-permission
-            android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-            android:maxSdkVersion="32"
-            tools:node="remove"
-            tools:ignore="ScopedStorage" />
-
-    <uses-permission
-            android:name="android.permission.READ_EXTERNAL_STORAGE"
-            android:maxSdkVersion="32"
-            tools:node="remove" />
-    <!-- End Removing fallback-triggered permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
             android:allowBackup="false"
@@ -67,6 +60,18 @@
                 <data android:scheme="${deepLinkPresentationRequestSchemeSwiyu}" />
             </intent-filter>
         </activity>
+
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+        <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
+        <service
+                android:name="ch.admin.foitt.wallet.platform.pushNotification.data.WalletFirebaseMessagingService"
+                android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <service
                 android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
                 android:enabled="false"

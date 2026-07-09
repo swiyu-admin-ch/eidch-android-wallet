@@ -5,7 +5,7 @@ import androidx.core.database.getBlobOrNull
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 
-fun Cursor.getStringColumn(columnName: String) = getString(getColumnIndexOrThrow(columnName))
+fun Cursor.getStringColumn(columnName: String): String = getString(getColumnIndexOrThrow(columnName))
 fun Cursor.getStringOrNullColumn(columnName: String) = getStringOrNull(getColumnIndexOrThrow(columnName))
 fun Cursor.getIntColumn(columnName: String) = getInt(getColumnIndexOrThrow(columnName))
 fun Cursor.getLongColumn(columnName: String) = getLong(getColumnIndexOrThrow(columnName))

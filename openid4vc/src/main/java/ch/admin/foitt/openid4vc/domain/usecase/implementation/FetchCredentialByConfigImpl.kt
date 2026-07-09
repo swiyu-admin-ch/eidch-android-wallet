@@ -21,16 +21,20 @@ internal class FetchCredentialByConfigImpl @Inject constructor(
     private val fetchVcSdJwtCredential: FetchVcSdJwtCredential,
 ) : FetchCredentialByConfig {
     override suspend fun invoke(
+        isDPopEnabled: Boolean,
         verifiableCredentialParams: VerifiableCredentialParams,
         bindingKeyPairs: List<BindingKeyPair>?,
         payloadEncryptionType: PayloadEncryptionType,
+        dpopKeyPair: BindingKeyPair?,
     ): Result<AnyCredentialResult, FetchCredentialByConfigError> =
         when (verifiableCredentialParams.credentialConfiguration) {
             is VcSdJwtCredentialConfiguration -> {
                 fetchVcSdJwtCredential(
+                    isDPopEnabled = isDPopEnabled,
                     verifiableCredentialParams = verifiableCredentialParams,
                     bindingKeyPairs = bindingKeyPairs,
                     payloadEncryptionType = payloadEncryptionType,
+                    dpopKeyPair = dpopKeyPair,
                 ).mapError(FetchVcSdJwtCredentialError::toFetchCredentialByConfigError)
             }
             is UnknownCredentialConfiguration -> Err(CredentialOfferError.UnsupportedCredentialFormat)

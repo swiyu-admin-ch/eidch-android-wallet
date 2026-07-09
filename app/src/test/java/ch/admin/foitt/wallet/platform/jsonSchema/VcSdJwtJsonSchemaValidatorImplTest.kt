@@ -12,7 +12,6 @@ import ch.admin.foitt.wallet.platform.jsonSchema.mock.JsonSchemaMocks.jsonSchema
 import ch.admin.foitt.wallet.platform.jsonSchema.mock.JsonSchemaMocks.jsonSchemaKeywordMisuse2
 import ch.admin.foitt.wallet.platform.jsonSchema.mock.JsonSchemaMocks.minimalValidVcSdJwtJsonSchema
 import ch.admin.foitt.wallet.platform.jsonSchema.mock.JsonSchemaMocks.vcSdJwtJsonSchemaWithExternalRef
-import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import kotlinx.coroutines.test.runTest
@@ -25,11 +24,9 @@ class VcSdJwtJsonSchemaValidatorImplTest {
 
     private lateinit var jsonSchemaValidator: JsonSchemaValidator
 
-    private val safeJson = SafeJsonTestInstance.safeJson
-
     @BeforeEach
     fun setUp() {
-        jsonSchemaValidator = VcSdJwtJsonSchemaValidatorImpl(safeJson = safeJson)
+        jsonSchemaValidator = VcSdJwtJsonSchemaValidatorImpl()
     }
 
     @Test

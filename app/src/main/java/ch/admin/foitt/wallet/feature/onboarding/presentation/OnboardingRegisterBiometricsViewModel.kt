@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.feature.onboarding.presentation
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.onboarding.domain.usecase.SaveOnboardingState
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricManagerResult
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricPromptType
@@ -19,7 +20,6 @@ import ch.admin.foitt.wallet.platform.passphrase.domain.model.InitializePassphra
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.InitializePassphrase
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openSecuritySettings
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.andThen
@@ -47,13 +47,15 @@ class OnboardingRegisterBiometricsViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val setTopBarState: SetTopBarState,
     @Assisted private val passphrase: String,
-) : ScreenViewModel(setTopBarState) {
+) : OnboardingViewModel(setTopBarState) {
     @AssistedFactory
     interface Factory {
         fun create(passphrase: String): OnboardingRegisterBiometricsViewModel
     }
 
-    override val topBarState = TopBarState.Details(navManager::popBackStack, null)
+    override val topBarState = TopBarState.Details(navManager::popBackStack, null, onAXDown = {
+        tryEmitFocusEvents()
+    })
 
     private val _initializationInProgress = MutableStateFlow(false)
     val initializationInProgress = _initializationInProgress.asStateFlow()
@@ -125,9 +127,19 @@ class OnboardingRegisterBiometricsViewModel @AssistedInject constructor(
             completeOnboarding()
         }.onFailure { error: InitializePassphraseError ->
             Timber.e(t = error.throwable, message = "Biometrics registration: Initialization error")
+            val destination = when (error) {
+                is InitializePassphraseError.DatabaseSetupFailed -> Destination.OnboardingFatalErrorScreen(
+                    primaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_primary,
+                    secondaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_secondary,
+                )
+                is InitializePassphraseError.Unexpected -> Destination.OnboardingFatalErrorScreen(
+                    primaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_primary,
+                    secondaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_secondary,
+                )
+            }
             navManager.popUpToAndNavigate(
                 popToInclusive = Destination.OnboardingIntroScreen::class,
-                destination = Destination.OnboardingErrorScreen
+                destination = destination,
             )
         }
         _initializationInProgress.value = false

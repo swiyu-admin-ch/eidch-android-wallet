@@ -6,45 +6,48 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.avwrapper.AVBeamError
-import ch.admin.foitt.avwrapper.AVBeamInitConfig
 import ch.admin.foitt.avwrapper.AVBeamPackageResult
-import ch.admin.foitt.avwrapper.AVBeamStatus
 import ch.admin.foitt.avwrapper.AvBeamNotification
-import ch.admin.foitt.avwrapper.config.AVBeamConfigLogLevel
 import ch.admin.foitt.avwrapper.config.AVBeamRecordDocumentConfig
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.toTextRes
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.GetEIdRequestCase
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.SaveEIdRequestFiles
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.composables.ScannerButtonState
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentRecording.EIdDocumentRecordingStatus
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.documentRecording.EIdDocumentRecordingUiState
-import ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.model.SDKInfoState
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.OnPermissionResult
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.PermissionState
+import ch.admin.foitt.wallet.platform.cameraPermissionHandler.infra.PermissionStateHandler
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFileCategory
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.DocumentScannerErrorType
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.IdentityType
-import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toEIdDocumentType
+import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManager
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
+import ch.admin.foitt.wallet.platform.scanning.di.AvBeamSdkEntryPoint
+import ch.admin.foitt.wallet.platform.utils.launchTimer
 import ch.admin.foitt.wallet.platform.utils.openLink
-import com.github.michaelbull.result.onSuccess
+import com.github.michaelbull.result.mapOrElse
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -54,10 +57,10 @@ import timber.log.Timber
 class EIdDocumentRecordingViewModel @AssistedInject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val navManager: NavigationManager,
-    private val avBeam: AVBeam,
     private val saveEIdRequestFiles: SaveEIdRequestFiles,
-    private val environmentSetupRepository: EnvironmentSetupRepository,
-    private val getEIdRequestCase: GetEIdRequestCase,
+    getEIdRequestCase: GetEIdRequestCase,
+    private val permissionStateHandler: PermissionStateHandler,
+    destinationScopedComponentManager: DestinationScopedComponentManager,
     @Assisted private val caseId: String,
     private val setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
@@ -66,6 +69,13 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
     interface Factory {
         fun create(caseId: String): EIdDocumentRecordingViewModel
     }
+
+    private val avBeamRepository = destinationScopedComponentManager.getEntryPoint(
+        entryPointClass = AvBeamSdkEntryPoint::class.java,
+        componentScope = ComponentScope.AvBeamSdkSession,
+    ).avBeamRepository()
+
+    private val avBeam: AVBeam get() = avBeamRepository.getBeam()
 
     override val topBarState: TopBarState
         get() {
@@ -78,7 +88,7 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
                         onClose = ::onClose,
                     )
                 is EIdDocumentRecordingUiState.Recording -> {
-                    val titleId = if (state.showSecondSide) {
+                    val titleId = if (state.status is EIdDocumentRecordingStatus.BackSideScanning) {
                         R.string.tk_eidRequest_recordDocument_verso
                     } else {
                         R.string.tk_eidRequest_recordDocument_recto
@@ -94,39 +104,64 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
 
     private val logTitle = "Document Recording:"
 
-    private val _uiState = MutableStateFlow<EIdDocumentRecordingUiState>(EIdDocumentRecordingUiState.Initializing)
-    val uiState: StateFlow<EIdDocumentRecordingUiState> = _uiState.asStateFlow()
+    val permissionState get() = permissionStateHandler.permissionState
+
+    val onPermissionResult =
+        OnPermissionResult { permissionGranted, shouldShowRationale, isActivePrompt ->
+            viewModelScope.launch {
+                permissionStateHandler.updateState(
+                    hasPermission = permissionGranted,
+                    shouldShowRationale = shouldShowRationale,
+                    isActivePrompt = isActivePrompt,
+                )
+            }
+        }
+
+    private val errorState = MutableStateFlow<DocumentScannerErrorType>(DocumentScannerErrorType.None)
+
+    private val eIdDocumentRecordingStatus =
+        MutableStateFlow<EIdDocumentRecordingStatus>(EIdDocumentRecordingStatus.Initializing)
 
     private var viewWidth = 0
     private var viewHeight = 0
-    private var recordingTimerJob: Job? = null
-    private val isCameraRunning = MutableStateFlow(false)
+    private var recordingProgressJob: Job? = null
     private val isViewReady = MutableStateFlow(false)
 
-    private val _documentType = MutableStateFlow(IdentityType.SWISS_IDK)
-    val documentType: StateFlow<IdentityType?> = _documentType.asStateFlow()
-
-    private suspend fun fetchDocumentType() {
-        getEIdRequestCase(caseId).onSuccess { eIdCase ->
-            _documentType.value = eIdCase.selectedDocumentType
+    val uiState: StateFlow<EIdDocumentRecordingUiState> = combine(
+        errorState,
+        permissionState,
+        avBeam.initializedFlow,
+        eIdDocumentRecordingStatus,
+        avBeam.statusFlow,
+    ) { errorState, permissionState, initialized, eIdDocumentRecordingStatus, avBeamStatus ->
+        when {
+            errorState != DocumentScannerErrorType.None -> EIdDocumentRecordingUiState.Error(
+                type = errorState,
+                onRetry = ::onRetry,
+                onHelp = ::onHelp,
+            )
+            permissionState !is PermissionState.Granted -> EIdDocumentRecordingUiState.Initializing
+            !initialized -> EIdDocumentRecordingUiState.Initializing
+            else -> {
+                EIdDocumentRecordingUiState.Recording(
+                    infoText = avBeamStatus.toTextRes(),
+                    status = eIdDocumentRecordingStatus,
+                )
+            }
         }
-    }
+    }.toStateFlow(EIdDocumentRecordingUiState.Initializing)
 
-    val isLoading = combine(
-        uiState,
-        isViewReady,
-    ) { state, isViewReady ->
-        when (state) {
-            EIdDocumentRecordingUiState.Initializing -> true
-            is EIdDocumentRecordingUiState.Recording -> !isViewReady
-            is EIdDocumentRecordingUiState.Error -> false
-        }
-    }.toStateFlow(true)
+    val documentType: StateFlow<EIdUiDocumentType> = flow {
+        val documentType = getEIdRequestCase(caseId).mapOrElse(
+            default = { EIdUiDocumentType.IDENTITY_CARD },
+            transform = { it.selectedDocumentType.toEIdDocumentType() }
+        )
+        emit(documentType)
+    }.toStateFlow(EIdUiDocumentType.IDENTITY_CARD)
 
     val shouldLock: StateFlow<Boolean> = uiState.map { state ->
-        state is EIdDocumentRecordingUiState.Initializing || (
-            state is EIdDocumentRecordingUiState.Recording && state.scannerButtonState == ScannerButtonState.Scanning
-            )
+        state is EIdDocumentRecordingUiState.Initializing && permissionState.value is PermissionState.Granted ||
+            (state is EIdDocumentRecordingUiState.Recording && state.status.isRecording)
     }.toStateFlow(false)
 
     init {
@@ -140,7 +175,6 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
     fun onResume() {
         viewModelScope.launch {
             Timber.d("$logTitle view resumed")
-            fetchDocumentType()
             prepareScanner()
         }
     }
@@ -159,34 +193,19 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
 
     fun onUp() {
         resetRecordingState()
-        // Shutdown because up navigation might not guarantee shutdown
-        avBeam.shutDown()
         navManager.popBackStack()
     }
 
     fun onClose() {
-        avBeam.shutDown()
         navManager.navigateBackToHomeScreen(Destination.EIdStartAvSessionScreen::class)
     }
 
     fun initScannerSdk(activity: AppCompatActivity) = viewModelScope.launch {
-        launch(Dispatchers.IO) {
-            val logLevel = if (environmentSetupRepository.avBeamLoggingEnabled) {
-                AVBeamConfigLogLevel.DEBUG
-            } else {
-                AVBeamConfigLogLevel.NONE
-            }
-            avBeam.init(AVBeamInitConfig(logLevel), activity)
+        launch {
+            eIdDocumentRecordingStatus.update { EIdDocumentRecordingStatus.Initializing }
+            avBeamRepository.init(activity)
             avBeam.initializedFlow.awaitValue(true)
             Timber.d("$logTitle initScannerSdk done")
-            _uiState.update {
-                EIdDocumentRecordingUiState.Recording(
-                    infoState = SDKInfoState.Loading,
-                    infoText = null,
-                    showSecondSide = false,
-                    scannerButtonState = ScannerButtonState.Ready,
-                )
-            }
         }
 
         setupSdkFlowCollection()
@@ -202,48 +221,15 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
         viewWidth = witdh
         viewHeight = height
         isViewReady.update { true }
-        _uiState.update {
-            EIdDocumentRecordingUiState.Recording(
-                infoState = SDKInfoState.Ready,
-                infoText = null,
-                showSecondSide = false,
-                scannerButtonState = ScannerButtonState.Ready,
-            )
-        }
-    }
-
-    fun onToggleScan() {
-        viewModelScope.launch {
-            val currentState = _uiState.value as? EIdDocumentRecordingUiState.Recording ?: return@launch
-            when (currentState.scannerButtonState) {
-                ScannerButtonState.Ready -> startRecordingDocument()
-                ScannerButtonState.Scanning -> stopRecordingDocument()
-                ScannerButtonState.Done -> {}
-            }
-        }
+        eIdDocumentRecordingStatus.update { EIdDocumentRecordingStatus.FrontSide }
     }
 
     private fun CoroutineScope.setupSdkFlowCollection() {
         launch {
-            avBeam.statusFlow.collect { status ->
-                _uiState.updateRecordingState {
-                    copy(
-                        infoState = SDKInfoState.InfoData,
-                        infoText = status.toTextRes(),
-                    )
-                }
-                if (status == AVBeamStatus.StreamingStarted) {
-                    isCameraRunning.update { true }
-                }
-            }
-        }
-        launch {
             avBeam.recordDocumentFlow.collect { notification ->
                 when (notification) {
                     is AvBeamNotification.Completed -> onRecordingCompleted(notification.packageData)
-                    AvBeamNotification.Empty, AvBeamNotification.Initial -> {
-                        _uiState.updateRecordingState { copy(infoState = SDKInfoState.Empty) }
-                    }
+                    AvBeamNotification.Empty, AvBeamNotification.Initial -> {}
                 }
             }
         }
@@ -251,25 +237,38 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
             avBeam.errorFlow.collect { errorNotification ->
                 if (errorNotification != AVBeamError.None) {
                     Timber.e(message = "$logTitle Error - avBeam errorFlow: ${errorNotification.name}")
-                    _uiState.update {
-                        EIdDocumentRecordingUiState.Error(
-                            type = DocumentScannerErrorType.GENERIC,
-                            onRetry = ::onRetry,
-                            onHelp = ::onHelp,
-                        )
-                    }
+                    errorState.update { DocumentScannerErrorType.Generic }
                 }
+            }
+        }
+    }
+
+    fun onToggleScan() {
+        viewModelScope.launch {
+            when (eIdDocumentRecordingStatus.value) {
+                EIdDocumentRecordingStatus.FrontSide -> startRecordingDocument()
+
+                is EIdDocumentRecordingStatus.FrontSideScanning,
+                is EIdDocumentRecordingStatus.BackSideScanning -> stopRecordingDocument()
+
+                EIdDocumentRecordingStatus.Initializing,
+                EIdDocumentRecordingStatus.Finished -> {}
             }
         }
     }
 
     private fun onRecordingCompleted(packageResult: AVBeamPackageResult) = viewModelScope.launch {
         // The AvBeam sdk stops the recording and camera tasks automatically.
-        _uiState.updateRecordingState {
-            copy(scannerButtonState = ScannerButtonState.Done)
-        }
+        eIdDocumentRecordingStatus.update { EIdDocumentRecordingStatus.Finished }
+
         delay(NAVIGATION_DELAY)
-        resetRecordingState()
+
+        avBeam.stopRecordingDocument()
+        recordingProgressJob?.cancel()
+        recordingProgressJob = null
+        avBeam.stopCamera()
+        isViewReady.update { false }
+
         Timber.d(message = "$logTitle Completed: ${packageResult.data?.size()}")
 
         saveEIdRequestFiles(
@@ -293,62 +292,50 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
     private suspend fun startRecordingDocument() {
         Timber.d(message = "$logTitle startRecordingDocument: $viewWidth, $viewHeight")
 
-        if (!isCameraRunning.value) {
-            prepareScanner()
-        }
-        isCameraRunning.awaitValue(true)
-
         val configRecording = AVBeamRecordDocumentConfig(
             rectWidth = viewWidth,
             rectHeight = viewHeight,
             docRecVideoLength = VIDEO_LENGTH_SECONDS,
         )
 
-        val currentState = _uiState.value as? EIdDocumentRecordingUiState.Recording
-        if (currentState?.scannerButtonState != ScannerButtonState.Scanning) {
+        if (eIdDocumentRecordingStatus.value.toScannerButtonState() !is ScannerButtonState.Scanning) {
             avBeam.startRecordingDocument(configRecording)
-            recordingTimerJob = startRecordingTimer()
+            recordingProgressJob = startRecordingTimer()
         }
 
-        _uiState.updateRecordingState {
-            copy(
-                scannerButtonState = ScannerButtonState.Scanning,
-                showSecondSide = false,
-            )
-        }
+        eIdDocumentRecordingStatus.update { EIdDocumentRecordingStatus.FrontSideScanning(0f) }
     }
 
-    private fun startRecordingTimer(): Job = viewModelScope.launch {
-        delay(VIDEO_LENGTH_SECONDS * 1000 / 2L)
-        _uiState.updateRecordingState {
-            copy(showSecondSide = true)
+    private fun startRecordingTimer(): Job = viewModelScope.launchTimer(VIDEO_LENGTH_MILLIS) { progressRatio ->
+        if (
+            eIdDocumentRecordingStatus.value is EIdDocumentRecordingStatus.FrontSideScanning ||
+            eIdDocumentRecordingStatus.value is EIdDocumentRecordingStatus.BackSideScanning
+        ) {
+            if (progressRatio > 0.5f) {
+                eIdDocumentRecordingStatus.update { EIdDocumentRecordingStatus.BackSideScanning(progressRatio) }
+            } else {
+                eIdDocumentRecordingStatus.update { EIdDocumentRecordingStatus.FrontSideScanning(progressRatio) }
+            }
         }
     }
 
     private fun stopRecordingDocument() {
-        val currentState = _uiState.value as? EIdDocumentRecordingUiState.Recording
-        if (currentState?.scannerButtonState == ScannerButtonState.Scanning) {
+        if (eIdDocumentRecordingStatus.value.isRecording) {
             avBeam.stopRecordingDocument()
             viewModelScope.launch {
                 prepareScanner()
             }
         }
-        recordingTimerJob?.cancel()
-        recordingTimerJob = null
+        recordingProgressJob?.cancel()
+        recordingProgressJob = null
 
-        _uiState.updateRecordingState {
-            copy(
-                scannerButtonState = ScannerButtonState.Ready,
-                showSecondSide = false,
-            )
-        }
+        eIdDocumentRecordingStatus.update { EIdDocumentRecordingStatus.FrontSide }
     }
 
     private fun resetRecordingState() {
         stopRecordingDocument()
         avBeam.stopCamera()
 
-        isCameraRunning.update { false }
         isViewReady.update { false }
     }
 
@@ -356,30 +343,19 @@ class EIdDocumentRecordingViewModel @AssistedInject constructor(
         viewModelScope.launch {
             Timber.w("$logTitle - retry")
             resetRecordingState()
-            _uiState.update { EIdDocumentRecordingUiState.Initializing }
+            errorState.update { DocumentScannerErrorType.None }
             prepareScanner()
         }
     }
 
     private fun onHelp() = appContext.openLink(appContext.getString(R.string.tk_error_generic_helpLink_value))
 
-    private fun MutableStateFlow<EIdDocumentRecordingUiState>.updateRecordingState(
-        update: EIdDocumentRecordingUiState.Recording.() -> EIdDocumentRecordingUiState.Recording
-    ) {
-        update { currentState ->
-            if (currentState is EIdDocumentRecordingUiState.Recording) {
-                currentState.update()
-            } else {
-                currentState
-            }
-        }
-    }
-
     private suspend inline fun <T> StateFlow<T>.awaitValue(value: T) =
         this.first { it == value }
 
     companion object {
-        private const val VIDEO_LENGTH_SECONDS = 10
+        const val VIDEO_LENGTH_SECONDS = 10
+        private const val VIDEO_LENGTH_MILLIS = VIDEO_LENGTH_SECONDS * 1000L
         private const val NAVIGATION_DELAY = 1000L
     }
 }

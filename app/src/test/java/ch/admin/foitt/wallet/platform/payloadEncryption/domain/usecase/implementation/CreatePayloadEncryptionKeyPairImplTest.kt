@@ -71,7 +71,7 @@ class CreatePayloadEncryptionKeyPairImplTest {
 
     private companion object {
         const val ALGORITHM = "ECDH-ES"
-        const val ENCRYPTION = "A128GCM"
+        const val ENCRYPTION = "A256GCM"
         const val ZIP = "DEF"
         val credentialResponseEncryption = CredentialResponseEncryption(
             algValuesSupported = listOf(ALGORITHM),

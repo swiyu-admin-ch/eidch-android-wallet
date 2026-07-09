@@ -1,5 +1,8 @@
 package ch.admin.foitt.openid4vc.domain.model.sdjwt.mock
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.sdjwt.SdJwtDisclosure
+
 internal object DuplicateNameSdJwt {
     /*
 {
@@ -46,4 +49,35 @@ internal object DuplicateNameSdJwt {
     """
 
     val SD_JWT = JWT + listOf(DISCLOSURE_1, DISCLOSURE_2, DISCLOSURE_NESTED).toDisclosures()
+
+    val sdJwtDisclosure1 = SdJwtDisclosure(
+        paths = listOf(listOf(ClaimsPathPointerComponent.String("test_key_2"))),
+        disclosure = DISCLOSURE_NESTED
+    )
+
+    val sdJwtDisclosure2 = SdJwtDisclosure(
+        paths = listOf(
+            listOf(
+                ClaimsPathPointerComponent.String("test_key_2"),
+                ClaimsPathPointerComponent.String("test_key_1"),
+            )
+        ),
+        disclosure = DISCLOSURE_1
+    )
+
+    val sdJwtDisclosure3 = SdJwtDisclosure(
+        paths = listOf(
+            listOf(
+                ClaimsPathPointerComponent.String("test_key_3"),
+                ClaimsPathPointerComponent.String("test_key_2"),
+            )
+        ),
+        disclosure = DISCLOSURE_2
+    )
+
+    val sdJwtDisclosures = setOf(
+        sdJwtDisclosure1,
+        sdJwtDisclosure2,
+        sdJwtDisclosure3,
+    )
 }

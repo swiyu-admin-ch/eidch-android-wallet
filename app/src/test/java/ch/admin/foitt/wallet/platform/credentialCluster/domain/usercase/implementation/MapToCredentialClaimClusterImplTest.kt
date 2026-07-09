@@ -1,6 +1,19 @@
 package ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation
 
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.ResolveClaimTemplate
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.MapToCredentialClaimCluster
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.CLUSTER_NAME_1
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.CLUSTER_NAME_2
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.CLUSTER_NAME_3
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.CLUSTER_NAME_4
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.CLUSTER_NAME_5
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.CLUSTER_NAME_MINUS_1
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.RESOLVED_CLUSTER_NAME_1
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.RESOLVED_CLUSTER_NAME_2
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.RESOLVED_CLUSTER_NAME_3
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.RESOLVED_CLUSTER_NAME_4
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.RESOLVED_CLUSTER_NAME_5
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.RESOLVED_CLUSTER_NAME_MINUS_1
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.clusterInput
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.complexClusterInput
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.complexEmptyClusterInput
@@ -10,18 +23,18 @@ import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implemen
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimClusterEntities4
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimClusterEntities5
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimClusterEntitiesMinus1
-import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimItem1
-import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimItem2
-import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimItem3
-import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimItem4
-import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimItem5
-import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimItemMinus1
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimWithDisplay1
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimWithDisplay2
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimWithDisplay3
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimWithDisplay4
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimWithDisplay5
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialClaimWithDisplayMinus1
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialElement1
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialElement2
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialElement3
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialElement4
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialElement5
+import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.credentialElementMinus1
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.expectedCluster
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.expectedComplexCluster
 import ch.admin.foitt.wallet.platform.credentialCluster.domain.usercase.implementation.mock.ClusterMocks.expectedComplexEmptyCluster
@@ -49,6 +62,9 @@ class MapToCredentialClaimClusterImplTest {
     @MockK
     private lateinit var mockMapToCredentialClaimData: MapToCredentialClaimData
 
+    @MockK
+    private lateinit var mockResolveClaimTemplate: ResolveClaimTemplate
+
     private lateinit var useCase: MapToCredentialClaimCluster
 
     @BeforeEach
@@ -57,7 +73,11 @@ class MapToCredentialClaimClusterImplTest {
 
         initDefaultMocks()
 
-        useCase = MapToCredentialClaimClusterImpl(mockGetLocalizedDisplay, mockMapToCredentialClaimData)
+        useCase = MapToCredentialClaimClusterImpl(
+            getLocalizedDisplay = mockGetLocalizedDisplay,
+            mapToCredentialClaimData = mockMapToCredentialClaimData,
+            resolveClaimTemplate = mockResolveClaimTemplate,
+        )
     }
 
     @AfterEach
@@ -122,21 +142,40 @@ class MapToCredentialClaimClusterImplTest {
 
         coEvery {
             mockMapToCredentialClaimData(claimWithDisplays = credentialClaimWithDisplayMinus1)
-        } returns Ok(credentialClaimItemMinus1)
+        } returns Ok(credentialElementMinus1)
         coEvery {
             mockMapToCredentialClaimData(claimWithDisplays = credentialClaimWithDisplay1)
-        } returns Ok(credentialClaimItem1)
+        } returns Ok(credentialElement1)
         coEvery {
             mockMapToCredentialClaimData(claimWithDisplays = credentialClaimWithDisplay2)
-        } returns Ok(credentialClaimItem2)
+        } returns Ok(credentialElement2)
         coEvery {
             mockMapToCredentialClaimData(claimWithDisplays = credentialClaimWithDisplay3)
-        } returns Ok(credentialClaimItem3)
+        } returns Ok(credentialElement3)
         coEvery {
             mockMapToCredentialClaimData(claimWithDisplays = credentialClaimWithDisplay4)
-        } returns Ok(credentialClaimItem4)
+        } returns Ok(credentialElement4)
         coEvery {
             mockMapToCredentialClaimData(claimWithDisplays = credentialClaimWithDisplay5)
-        } returns Ok(credentialClaimItem5)
+        } returns Ok(credentialElement5)
+
+        coEvery {
+            mockResolveClaimTemplate(template = CLUSTER_NAME_MINUS_1, claims = any())
+        } returns RESOLVED_CLUSTER_NAME_MINUS_1
+        coEvery {
+            mockResolveClaimTemplate(template = CLUSTER_NAME_1, claims = any())
+        } returns RESOLVED_CLUSTER_NAME_1
+        coEvery {
+            mockResolveClaimTemplate(template = CLUSTER_NAME_2, claims = any())
+        } returns RESOLVED_CLUSTER_NAME_2
+        coEvery {
+            mockResolveClaimTemplate(template = CLUSTER_NAME_3, claims = any())
+        } returns RESOLVED_CLUSTER_NAME_3
+        coEvery {
+            mockResolveClaimTemplate(template = CLUSTER_NAME_4, claims = any())
+        } returns RESOLVED_CLUSTER_NAME_4
+        coEvery {
+            mockResolveClaimTemplate(template = CLUSTER_NAME_5, claims = any())
+        } returns RESOLVED_CLUSTER_NAME_5
     }
 }

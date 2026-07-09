@@ -5,8 +5,8 @@ import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
 import ch.admin.foitt.wallet.platform.oca.domain.model.DateTimePattern
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimImage
-import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimItem
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimText
+import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialElement
 import ch.admin.foitt.wallet.platform.ssi.domain.model.MapToCredentialClaimDataError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.ValueType
 import ch.admin.foitt.wallet.platform.ssi.domain.model.toMapToCredentialClaimDataError
@@ -29,7 +29,7 @@ class MapToCredentialClaimDataImpl @Inject constructor(
 ) : MapToCredentialClaimData {
     override suspend fun invoke(
         claimWithDisplays: CredentialClaimWithDisplays,
-    ): Result<CredentialClaimItem, MapToCredentialClaimDataError> =
+    ): Result<CredentialElement, MapToCredentialClaimDataError> =
         runSuspendCatching {
             val displays = claimWithDisplays.displays
             val claim = claimWithDisplays.claim

@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
-import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
-import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
@@ -14,6 +13,7 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.OcaCredentialData
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaClaimDisplays
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaDisplays
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.GetClaimsPathPointers
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GetRootCaptureBase
 import ch.admin.foitt.wallet.platform.oca.util.createClaimsPathPointer
 import ch.admin.foitt.wallet.util.assertErrorType
@@ -22,11 +22,12 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -39,15 +40,22 @@ class GenerateOcaDisplaysImplTest {
     private lateinit var mockGetRootCaptureBase: GetRootCaptureBase
 
     @MockK
+    private lateinit var mockGetClaimsPathPointers: GetClaimsPathPointers
+
+    @MockK
     private lateinit var mockGenerateOcaClaimDisplays: GenerateOcaClaimDisplays
 
     @MockK
     private lateinit var mockOcaBundle: OcaBundle
 
     @MockK
-    private lateinit var mockRootCaptureBase: CaptureBase
+    private lateinit var mockCaptureBase: CaptureBase
 
-    private lateinit var ocaClaimData: OcaClaimData
+    @MockK
+    private lateinit var mockClaim: CredentialClaim
+
+    @MockK
+    private lateinit var mockClaimDisplays: List<AnyClaimDisplay>
 
     private lateinit var useCase: GenerateOcaDisplays
 
@@ -56,6 +64,7 @@ class GenerateOcaDisplaysImplTest {
         MockKAnnotations.init(this)
 
         useCase = GenerateOcaDisplaysImpl(
+            getClaimsPathPointers = mockGetClaimsPathPointers,
             getRootCaptureBase = mockGetRootCaptureBase,
             generateOcaClaimDisplays = mockGenerateOcaClaimDisplays,
         )
@@ -69,157 +78,129 @@ class GenerateOcaDisplaysImplTest {
     }
 
     @Test
-    fun `Generating valid Oca displays with returns success`() = runTest {
-        val result = useCase(credentialClaims, VC_SD_JWT, mockOcaBundle).assertOk()
+    fun `Generating oca displays for flat json returns meta displays`() = runTest {
+        val result = useCase(jsonObject, FORMAT, mockOcaBundle).assertOk()
 
-        val expectedCredentialDisplays = listOf(
-            AnyCredentialDisplay(
-                locale = LANGUAGE_EN,
-                name = "name",
-                description = "description",
-                logo = "logoData",
-                backgroundColor = "backgroundColor",
-                theme = "theme"
-            ),
-        )
+        assertCredentialDisplays(result.credentialDisplays)
+        val clusters = result.clusters
+        assertEquals(1, clusters.size)
+        val cluster = clusters.first()
+        assertEquals(cluster.path, "[]")
+        assertEquals(mockClaimDisplays, cluster.claims[mockClaim])
 
-        val expectedCluster = Cluster(
-            claims = mapOf(claim to claimDisplays)
-        )
-
-        assertEquals(expectedCredentialDisplays, result.credentialDisplays)
-        assertEquals(1, result.clusters.size)
-        assertEquals(expectedCluster, result.clusters.first())
+        coVerify(exactly = 1) {
+            mockGenerateOcaClaimDisplays(any(), any(), any(), any())
+        }
     }
 
     @Test
-    fun `Generating valid Oca displays with multiple claims returns success`() = runTest {
-        val otherClaimsPathPointer = createClaimsPathPointer("otherClaim")
-        val otherValue = JsonPrimitive("otherValue")
-        val otherClaim = mockk<CredentialClaim>()
-        val otherClaimDisplays = mockk<List<AnyClaimDisplay>>()
-        val otherOcaClaimData = mockOcaClaimData(otherClaimsPathPointer)
+    fun `Generating oca displays for null json object returns meta displays`() = runTest {
+        val result = useCase(null, FORMAT, mockOcaBundle).assertOk()
 
-        every {
-            mockGenerateOcaClaimDisplays(
-                claimsPathPointer = otherClaimsPathPointer.toPointerString(),
-                value = otherValue.content,
-                ocaClaimData = otherOcaClaimData
-            )
-        } returns Ok(otherClaim to otherClaimDisplays)
-        every { mockOcaBundle.getAttributes("digest") } returns listOf(ocaClaimData, otherOcaClaimData)
-        every { mockOcaBundle.ocaClaimData } returns listOf(ocaClaimData, otherOcaClaimData)
-
-        val claims = credentialClaims + (otherClaimsPathPointer to otherValue)
-
-        val result = useCase(claims, VC_SD_JWT, mockOcaBundle).assertOk()
-
-        assertEquals(1, result.clusters.size)
-        val clusterClaims = result.clusters.first().claims
-        assertEquals(2, clusterClaims.size)
-        assertEquals(claimDisplays, clusterClaims[claim])
-        assertEquals(otherClaimDisplays, clusterClaims[otherClaim])
+        assertCredentialDisplays(result.credentialDisplays)
+        assertEquals(0, result.clusters.size)
     }
 
     @Test
-    fun `Generating valid Oca displays where a claim does not have oca data returns success`() = runTest {
-        val otherClaimsPathPointer = createClaimsPathPointer("otherClaim")
-        val otherValue = JsonPrimitive("otherValue")
-        val otherClaim = mockk<CredentialClaim>()
-        val otherClaimDisplays = mockk<List<AnyClaimDisplay>>()
-        val otherOcaClaimData = mockOcaClaimData(otherClaimsPathPointer)
-
-        every {
-            mockGenerateOcaClaimDisplays(
-                claimsPathPointer = otherClaimsPathPointer.toPointerString(),
-                value = otherValue.content,
-                ocaClaimData = otherOcaClaimData
-            )
-        } returns Ok(otherClaim to otherClaimDisplays)
-
-        val claims = credentialClaims + (otherClaimsPathPointer to otherValue)
-
-        val result = useCase(claims, VC_SD_JWT, mockOcaBundle).assertOk()
-
-        val expectedOtherClaim = CredentialClaim(
-            clusterId = -1,
-            path = otherClaimsPathPointer.toPointerString(),
-            value = otherValue.content,
-            valueType = "string"
-        )
-
-        val expectedOtherClaimDisplay = AnyClaimDisplay(
-            locale = "fallback",
-            name = otherClaimsPathPointer.toPointerString()
-        )
-
-        assertEquals(2, result.clusters.size)
-        assertEquals(mapOf(claim to claimDisplays), result.clusters[0].claims)
-        assertEquals(mapOf(expectedOtherClaim to listOf(expectedOtherClaimDisplay)), result.clusters[1].claims)
-    }
-
-    @Test
-    fun `Generating valid Oca displays without credential data returns credential without displays`() = runTest {
+    fun `Generating oca displays when no oca is available returns meta displays`() = runTest {
         every { mockOcaBundle.ocaCredentialData } returns emptyList()
+        every { mockOcaBundle.getAttributes(any()) } returns emptyList()
+        mockGenerateClaim(ocaClaim = null)
 
-        val result = useCase(credentialClaims, VC_SD_JWT, mockOcaBundle).assertOk()
+        val result = useCase(jsonObject, FORMAT, mockOcaBundle).assertOk()
 
         assertEquals(0, result.credentialDisplays.size)
+        val clusters = result.clusters
+        assertEquals(2, clusters.size)
+        assertEquals(Cluster(order = 0, path = "[]", claims = emptyMap(), isSensitive = false), clusters[0])
+        assertEquals("[]", clusters[1].path)
+        assertEquals(0, clusters[1].childClusters.size)
+        assertEquals(mockClaimDisplays, clusters[1].claims[mockClaim])
+
+        coVerify(exactly = 1) {
+            mockGenerateOcaClaimDisplays(
+                claimsPathPointer = claimPathPointer,
+                value = jsonPrimitive.content,
+                ocaClaimData = null,
+                order = null,
+            )
+        }
     }
 
     @Test
-    fun `Generating Oca displays maps errors from getting the root capture base`() = runTest {
+    fun `Generating oca displays maps errors from getting root capture base`() = runTest {
         coEvery { mockGetRootCaptureBase(any()) } returns Err(OcaError.InvalidRootCaptureBase)
 
-        useCase(credentialClaims, VC_SD_JWT, mockOcaBundle).assertErrorType(OcaError.InvalidRootCaptureBase::class)
+        useCase(jsonObject, FORMAT, mockOcaBundle).assertErrorType(OcaError.InvalidRootCaptureBase::class)
+    }
+
+    @Test
+    fun `Generating oca displays maps errors from generating claim displays`() = runTest {
+        coEvery { mockGenerateOcaClaimDisplays(any(), any(), any(), any()) } returns Err(OcaError.UnsupportedImageFormat)
+
+        useCase(jsonObject, FORMAT, mockOcaBundle).assertErrorType(OcaError.UnsupportedImageFormat::class)
     }
 
     private fun setupDefaultMocks() {
-        every { mockRootCaptureBase.digest } returns "digest"
-        val captureBases = listOf(mockRootCaptureBase)
-        ocaClaimData = mockOcaClaimData(claimPathPointer)
-        every { mockOcaBundle.getAttributes("digest") } returns listOf(ocaClaimData)
-        every { mockOcaBundle.ocaClaimData } returns listOf(ocaClaimData)
         every { mockOcaBundle.ocaCredentialData } returns listOf(ocaCredentialData)
-        every { mockOcaBundle.captureBases } returns captureBases
-
-        coEvery { mockGetRootCaptureBase(captureBases) } returns Ok(mockRootCaptureBase)
-        every {
-            mockGenerateOcaClaimDisplays(
-                claimsPathPointer = claimPathPointer.toPointerString(),
-                value = claimValueElement.content,
-                ocaClaimData = ocaClaimData
-            )
-        } returns Ok(claim to claimDisplays)
+        every { mockOcaBundle.getAttributes(DIGEST) } returns listOf(ocaClaimData)
+        mockGenerateClaim()
+        coEvery { mockGetRootCaptureBase(mockOcaBundle.captureBases) } returns Ok(mockCaptureBase)
+        every { mockCaptureBase.digest } returns DIGEST
+        coEvery { mockGetClaimsPathPointers(jsonObject) } returns mapOf(
+            emptyList<ClaimsPathPointerComponent>() to jsonObject,
+            claimPathPointer to jsonPrimitive
+        )
     }
 
-    private fun mockOcaClaimData(claimsPathPointer: ClaimsPathPointer): OcaClaimData {
-        val otherOcaClaimData = mockk<OcaClaimData> {
-            every { attributeType } returns AttributeType.Text
-            every { dataSources } returns mapOf(VC_SD_JWT to claimsPathPointer)
-        }
-        return otherOcaClaimData
+    private fun mockGenerateClaim(ocaClaim: OcaClaimData? = ocaClaimData) {
+        coEvery {
+            mockGenerateOcaClaimDisplays(
+                claimsPathPointer = claimPathPointer,
+                value = jsonPrimitive.content,
+                ocaClaimData = ocaClaim,
+                order = null,
+            )
+        } returns Ok(mockClaim to mockClaimDisplays)
+    }
+
+    private fun assertCredentialDisplays(credentialDisplays: List<AnyCredentialDisplay>) {
+        assertEquals(1, credentialDisplays.size)
+        assertEquals(LANGUAGE, credentialDisplays[0].locale)
+        assertEquals(CREDENTIAL_NAME, credentialDisplays[0].name)
+        assertEquals(DESCRIPTION, credentialDisplays[0].description)
+        assertEquals(LOGO, credentialDisplays[0].logo)
+        assertEquals(BACKGROUND_COLOR, credentialDisplays[0].backgroundColor)
+        assertEquals(THEME, credentialDisplays[0].theme)
     }
 
     private companion object {
-        const val VC_SD_JWT = "vc+sd-jwt"
-        const val CLAIM_NAME = "claimName"
-        const val CLAIM_VALUE = "claim_value"
-        val claimValueElement = JsonPrimitive(CLAIM_VALUE)
-        const val LANGUAGE_EN = "en"
-        val claimPathPointer = createClaimsPathPointer(CLAIM_NAME)
-        val ocaCredentialData = OcaCredentialData(
-            captureBaseDigest = "digest",
-            locale = LANGUAGE_EN,
+        const val FORMAT = "format"
+        const val CREDENTIAL_NAME = "credential"
+        const val KEY = "key"
+        const val LANGUAGE = "language"
+        const val DESCRIPTION = "description"
+        const val LOGO = "logo"
+        const val BACKGROUND_COLOR = "backgroundColor"
+        const val THEME = "theme"
+        const val DIGEST = "digest"
+        val claimPathPointer = createClaimsPathPointer(KEY)
+        val jsonPrimitive = JsonPrimitive("value")
+        val jsonObject = JsonObject(mapOf(KEY to jsonPrimitive))
+        val ocaClaimData = OcaClaimData(
+            attributeType = AttributeType.Text,
+            captureBaseDigest = DIGEST,
             name = "name",
-            description = "description",
-            logoData = "logoData",
-            backgroundColor = "backgroundColor",
-            theme = "theme"
+            dataSources = mapOf(FORMAT to claimPathPointer),
         )
-
-        val credentialClaims = mapOf(claimPathPointer to claimValueElement)
-        val claim = mockk<CredentialClaim>()
-        val claimDisplays = mockk<List<AnyClaimDisplay>>()
+        val ocaCredentialData = OcaCredentialData(
+            captureBaseDigest = DIGEST,
+            locale = LANGUAGE,
+            name = CREDENTIAL_NAME,
+            description = DESCRIPTION,
+            logoData = LOGO,
+            backgroundColor = BACKGROUND_COLOR,
+            theme = THEME,
+        )
     }
 }

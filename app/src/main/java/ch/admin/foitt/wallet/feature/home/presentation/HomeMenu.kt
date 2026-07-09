@@ -10,11 +10,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -35,13 +34,16 @@ fun HomeCompactMenu(
     preferredWidth: Dp,
     showEIdRequestButton: Boolean,
     showBetaIdRequestButton: Boolean,
+    alignment: Alignment = Alignment.BottomStart,
+    offset: IntOffset = IntOffset(0, 0),
     onMenu: (Boolean) -> Unit,
     onGetEId: () -> Unit,
     onGetBetaId: () -> Unit,
     onSettings: () -> Unit,
     onHelp: () -> Unit,
 ) = Popup(
-    alignment = Alignment.BottomStart,
+    alignment = alignment,
+    offset = offset,
     onDismissRequest = { onMenu(false) },
     properties = PopupProperties(
         focusable = true,
@@ -65,20 +67,17 @@ fun HomeLargeMenu(
     preferredWidth: Dp,
     showEIdRequestButton: Boolean,
     showBetaIdRequestButton: Boolean,
+    alignment: Alignment,
+    offset: IntOffset = IntOffset(0, 0),
     onMenu: (Boolean) -> Unit,
     onGetEId: () -> Unit,
     onGetBetaId: () -> Unit,
     onSettings: () -> Unit,
     onHelp: () -> Unit,
 ) {
-    val density = LocalDensity.current
-    val xOffset = with(density) {
-        Sizes.s04.toPx().toInt()
-    }
-
     Popup(
-        alignment = Alignment.CenterStart,
-        offset = IntOffset(-xOffset, 0),
+        alignment = alignment,
+        offset = offset,
         onDismissRequest = { onMenu(false) },
         properties = PopupProperties(
             focusable = true,
@@ -107,40 +106,46 @@ private fun HomeMenuContent(
     onGetBetaId: () -> Unit,
     onSettings: () -> Unit,
     onHelp: () -> Unit,
-) = Column(
+) = Surface(
+    shape = WalletShapes.default.large,
+    color = WalletTheme.colorScheme.surfaceContainerHighest,
+    shadowElevation = Sizes.s01,
     modifier = Modifier
         .widthIn(Sizes.homeMenuMinWidth, preferredWidth)
-        .clip(WalletShapes.default.large)
-        .verticalScroll(rememberScrollState())
 ) {
-    if (showEIdRequestButton) {
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+    ) {
+        if (showEIdRequestButton) {
+            MenuItem(
+                title = stringResource(R.string.tk_menu_homeList_orderEid),
+                leadingIcon = R.drawable.wallet_ic_credential,
+                onClick = onGetEId,
+            )
+        }
+        if (showBetaIdRequestButton) {
+            MenuItem(
+                title = stringResource(R.string.tk_menu_homeList_menu_add),
+                leadingIcon = R.drawable.wallet_ic_credential,
+                onClick = onGetBetaId,
+            )
+        }
         MenuItem(
-            title = stringResource(R.string.tk_menu_homeList_orderEid),
-            leadingIcon = R.drawable.wallet_ic_credential,
-            onClick = onGetEId,
+            title = stringResource(R.string.tk_menu_homeList_settings),
+            leadingIcon = R.drawable.wallet_ic_settings,
+            onClick = onSettings,
+        )
+        val helpTitle = stringResource(R.string.tk_menu_homeList_help)
+        val helpLinkAltText = stringResource(R.string.tk_global_externalLink_hint)
+        MenuItem(
+            title = helpTitle,
+            titleAltText = "$helpTitle $helpLinkAltText",
+            leadingIcon = R.drawable.wallet_ic_questionmark,
+            trailingIcon = R.drawable.wallet_ic_external_link,
+            onClick = onHelp,
         )
     }
-    if (showBetaIdRequestButton) {
-        MenuItem(
-            title = stringResource(R.string.tk_menu_homeList_menu_add),
-            leadingIcon = R.drawable.wallet_ic_credential,
-            onClick = onGetBetaId,
-        )
-    }
-    MenuItem(
-        title = stringResource(R.string.tk_menu_homeList_settings),
-        leadingIcon = R.drawable.wallet_ic_settings,
-        onClick = onSettings,
-    )
-    val helpTitle = stringResource(R.string.tk_menu_homeList_help)
-    val helpLinkAltText = stringResource(R.string.tk_global_externalLink_alt)
-    MenuItem(
-        title = helpTitle,
-        titleAltText = "$helpTitle $helpLinkAltText",
-        leadingIcon = R.drawable.wallet_ic_questionmark,
-        trailingIcon = R.drawable.wallet_ic_external_link,
-        onClick = onHelp,
-    )
 }
 
 @Composable
@@ -179,5 +184,5 @@ private fun MenuItem(
             contentDescription = null,
             tint = WalletTheme.colorScheme.onSurfaceVariant,
         )
-    }
+    },
 )

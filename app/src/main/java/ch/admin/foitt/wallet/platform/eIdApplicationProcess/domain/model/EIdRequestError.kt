@@ -39,6 +39,7 @@ interface EIdRequestError {
         AvUploadFilesError,
         AvSubmitCaseError,
         WalletPairingStateError,
+        SetEIdPeerPushIdError,
         SIdAPIError
 
     data object InvalidClientAttestation :
@@ -83,6 +84,7 @@ interface EIdRequestError {
         AvUploadFilesError,
         AvSubmitCaseError,
         WalletPairingStateError,
+        SetEIdPeerPushIdError,
         SIdAPIError
 }
 
@@ -103,6 +105,7 @@ sealed interface AvRepositoryError
 sealed interface AvUploadFilesError
 sealed interface AvSubmitCaseError
 sealed interface WalletPairingStateError
+sealed interface SetEIdPeerPushIdError
 
 sealed interface SIdAPIError
 
@@ -113,8 +116,9 @@ internal fun SIdRepositoryError.toStartOnlineSessionError(): StartOnlineSessionE
 
 internal fun RequestClientAttestationError.toStartOnlineSessionError(): StartOnlineSessionError = when (this) {
     is AttestationError.NetworkError -> NetworkError
-    is AttestationError.Unexpected -> Unexpected(throwable)
     is AttestationError.ValidationError -> InvalidClientAttestation
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun SIdRepositoryError.toApplyRequestError(): ApplyRequestError = when (this) {
@@ -129,8 +133,9 @@ internal fun SIdRepositoryError.toStartAutoVerificationError(): StartAutoVerific
 
 internal fun RequestClientAttestationError.toStartAutoVerificationError(): StartAutoVerificationError = when (this) {
     is AttestationError.NetworkError -> NetworkError
-    is AttestationError.Unexpected -> Unexpected(throwable)
     is AttestationError.ValidationError -> InvalidClientAttestation
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun SIdRepositoryError.toPairWalletError(): PairWalletError = when (this) {
@@ -143,16 +148,38 @@ internal fun SIdRepositoryError.toWalletPairingStateError(): WalletPairingStateE
     is NetworkError -> this
 }
 
+internal fun SIdRepositoryError.toSetEIdPeerPushIdError(): SetEIdPeerPushIdError = when (this) {
+    NetworkError -> NetworkError
+    is Unexpected -> Unexpected(cause)
+}
+
+internal fun RequestClientAttestationError.toSetEIdPeerPushIdError(): SetEIdPeerPushIdError = when (this) {
+    AttestationError.NetworkError -> NetworkError
+    is AttestationError.ValidationError -> Unexpected(null)
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
+}
+
+internal fun GenerateProofOfPossessionError.toSetEIdPeerPushIdError(): SetEIdPeerPushIdError = when (this) {
+    is AttestationError.Unexpected -> Unexpected(throwable)
+}
+
+internal fun JsonParsingError.toSetEIdPeerPushIdError(): SetEIdPeerPushIdError = when (this) {
+    is JsonError.Unexpected -> Unexpected(throwable)
+}
+
 internal fun RequestClientAttestationError.toPairWalletError(): PairWalletError = when (this) {
     is AttestationError.NetworkError -> NetworkError
-    is AttestationError.Unexpected -> Unexpected(throwable)
     is AttestationError.ValidationError -> InvalidClientAttestation
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun RequestClientAttestationError.toWalletPairingStateError(): WalletPairingStateError = when (this) {
     is AttestationError.NetworkError -> NetworkError
-    is AttestationError.Unexpected -> Unexpected(throwable)
     is AttestationError.ValidationError -> InvalidClientAttestation
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun EIdRequestCaseRepositoryError.toPairCurrentWalletError(): PairCurrentWalletError = when (this) {
@@ -174,6 +201,8 @@ internal fun ProcessInvitationError.toPairCurrentWalletError(): PairCurrentWalle
     InvitationError.InvalidCredentialOffer,
     InvitationError.InvalidInput,
     is InvitationError.InvalidPresentation,
+    is InvitationError.InvalidClientPresentation,
+    is InvitationError.InvalidTransactionData,
     InvitationError.InvalidPresentationRequest,
     is InvitationError.NoCompatibleCredential,
     is InvitationError.Unexpected,
@@ -210,10 +239,15 @@ internal fun AvRepositoryError.toAvSubmitCaseError(): AvSubmitCaseError = when (
     is NetworkError -> this
 }
 
+internal fun EIdRequestCaseRepositoryError.toAvSubmitCaseError(): AvSubmitCaseError = when (this) {
+    is Unexpected -> this
+}
+
 internal fun RequestClientAttestationError.toApplyRequestError(): ApplyRequestError = when (this) {
     is AttestationError.NetworkError -> NetworkError
-    is AttestationError.Unexpected -> Unexpected(throwable)
     is AttestationError.ValidationError -> InvalidClientAttestation
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun GenerateProofOfPossessionError.toApplyRequestError(): ApplyRequestError = when (this) {
@@ -234,8 +268,9 @@ internal fun GenerateProofOfPossessionError.toStartAutoVerificationError(): Star
 
 internal fun RequestClientAttestationError.toStateRequestError(): StateRequestError = when (this) {
     is AttestationError.NetworkError -> NetworkError
-    is AttestationError.Unexpected -> Unexpected(throwable)
     is AttestationError.ValidationError -> InvalidClientAttestation
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun SIdRepositoryError.toStateRequestError(): StateRequestError = when (this) {
@@ -245,8 +280,9 @@ internal fun SIdRepositoryError.toStateRequestError(): StateRequestError = when 
 
 internal fun RequestClientAttestationError.toGuardianVerificationError(): GuardianVerificationError = when (this) {
     is AttestationError.NetworkError -> NetworkError
-    is AttestationError.Unexpected -> Unexpected(throwable)
     is AttestationError.ValidationError -> InvalidClientAttestation
+    AttestationError.SocketTimeoutError -> Unexpected(null)
+    is AttestationError.Unexpected -> Unexpected(throwable)
 }
 
 internal fun SIdRepositoryError.toGuardianVerificationError(): GuardianVerificationError = when (this) {

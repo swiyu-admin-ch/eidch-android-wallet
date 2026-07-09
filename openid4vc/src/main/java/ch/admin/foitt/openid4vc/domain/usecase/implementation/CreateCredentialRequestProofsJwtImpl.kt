@@ -35,7 +35,7 @@ internal class CreateCredentialRequestProofsJwtImpl @Inject constructor(
         val attestationJwts = keyPairs.map { bindingKeyPair ->
             val keyPair = bindingKeyPair.keyPair
             val attestationJwt = bindingKeyPair.attestationJwt
-            val jwk = createJwk(keyPair = keyPair.keyPair, algorithm = keyPair.algorithm, asDid = false)
+            val jwk = createJwk(keyPair = keyPair.keyPair, algorithm = keyPair.algorithm)
                 .mapError(CreateJwkError::toFetchVerifiableCredentialError)
                 .bind()
             val header = createHeader(keyPair, jwk, attestationJwt)

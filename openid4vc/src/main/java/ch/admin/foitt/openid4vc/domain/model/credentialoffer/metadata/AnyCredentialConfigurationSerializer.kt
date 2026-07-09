@@ -11,7 +11,7 @@ object AnyCredentialConfigurationSerializer : JsonContentPolymorphicSerializer<A
 ) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<AnyCredentialConfiguration> {
         return when (element.jsonObject["format"]?.jsonPrimitive?.content) {
-            CredentialFormat.VC_SD_JWT.format -> {
+            CredentialFormat.VC_SD_JWT.format, CredentialFormat.DC_SD_JWT.format -> {
                 VcSdJwtCredentialConfiguration.serializer()
             }
             else -> UnknownCredentialConfiguration.serializer()

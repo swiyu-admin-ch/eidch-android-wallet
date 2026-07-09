@@ -14,6 +14,7 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
@@ -54,6 +55,7 @@ class FetchCredentialByConfigImplTest {
         every { mockVcSdJwtCredentialConfig.format } returns CredentialFormat.VC_SD_JWT
         coEvery {
             mockFetchVcSdJwtCredential(
+                any(),
                 mockVerifiableCredentialParams,
                 null,
                 mockPayloadEncryptionType
@@ -69,6 +71,7 @@ class FetchCredentialByConfigImplTest {
     @Test
     fun `Fetching credential by config with vc+sd_jwt config returns a valid credential`() = runTest {
         val result = useCase(
+            true,
             mockVerifiableCredentialParams,
             null,
             mockPayloadEncryptionType
@@ -82,12 +85,32 @@ class FetchCredentialByConfigImplTest {
     fun `Fetching vc+sd_jwt credential by config maps error from fetching jwt vc json credential`() = runTest {
         val exception = IllegalStateException()
         coEvery {
-            mockFetchVcSdJwtCredential(any(), any(), any())
+            mockFetchVcSdJwtCredential(any(), any(), any(), any())
         } returns Err(CredentialOfferError.Unexpected(exception))
 
-        val result = useCase(mockVerifiableCredentialParams, null, mockPayloadEncryptionType)
+        val result = useCase(true, mockVerifiableCredentialParams, null, mockPayloadEncryptionType)
 
         val error = result.assertErrorType(CredentialOfferError.Unexpected::class)
         assertEquals(exception, error.cause)
+    }
+
+    @Test
+    fun `With dpop disabled pass false`() = runTest {
+        useCase(
+            false,
+            mockVerifiableCredentialParams,
+            null,
+            mockPayloadEncryptionType
+        ).assertOk()
+
+        coVerify {
+            mockFetchVcSdJwtCredential(
+                isDPopEnabled = false,
+                verifiableCredentialParams = any(),
+                bindingKeyPairs = any(),
+                payloadEncryptionType = any(),
+                dpopKeyPair = any(),
+            )
+        }
     }
 }

@@ -17,6 +17,6 @@ class GetStartAutoVerificationResultImpl @Inject constructor(
             componentScope = ComponentScope.EidOnlineSession,
         ).eidStartAutoVerificationRepository()
 
-        return repository.packageResult
+        return repository.autoVerificationResponse
     }
 }

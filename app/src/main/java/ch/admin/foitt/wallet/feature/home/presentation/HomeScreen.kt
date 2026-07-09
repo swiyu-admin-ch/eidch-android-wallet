@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,7 +31,6 @@ import androidx.compose.material.pullrefresh.PullRefreshDefaults
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,7 +43,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
@@ -59,15 +56,16 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.nonFocusableAccessibilityAnchor
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
-import ch.admin.foitt.wallet.platform.credential.presentation.CredentialListRow
+import ch.admin.foitt.wallet.platform.credential.presentation.credentialCardListItems
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayData
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayStatus
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
 import ch.admin.foitt.wallet.platform.preview.AllLargeScreensPreview
 import ch.admin.foitt.wallet.platform.preview.ComposableWrapper
+import ch.admin.foitt.wallet.platform.utils.OnPauseEventHandler
+import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
 import ch.admin.foitt.wallet.platform.utils.TestTags
 import ch.admin.foitt.wallet.platform.utils.TraversalIndex
 import ch.admin.foitt.wallet.platform.utils.setIsTraversalGroup
@@ -83,6 +81,9 @@ fun HomeScreen(
     LaunchedEffect(uiMode) {
         viewModel.screenContentState.refreshData()
     }
+
+    OnResumeEventHandler(viewModel::onResume)
+    OnPauseEventHandler(viewModel::onPause)
 
     HomeScreenContent(
         screenState = viewModel.screenContentState.stateFlow.collectAsStateWithLifecycle().value,
@@ -114,6 +115,16 @@ private fun HomeScreenContent(
     containerState = containerState,
     onMenu = onMenu,
 ) { stickyBottomHeightDp ->
+    val topPadding = if (containerState.isProximityEngagementEnabled) {
+        0.dp
+    } else {
+        WindowInsets.safeDrawing.only(WindowInsetsSides.Top).asPaddingValues().calculateTopPadding()
+    }
+
+    val paddingValues = PaddingValues(
+        top = topPadding,
+        bottom = stickyBottomHeightDp,
+    )
 
     when (screenState) {
         is HomeScreenState.Initial -> {
@@ -125,7 +136,7 @@ private fun HomeScreenContent(
             ongoingEIdRequests = screenState.eIdRequests,
             onEidNotificationAction = onEidNotificationAction,
             onCloseEId = onCloseEId,
-            contentBottomPadding = stickyBottomHeightDp,
+            paddingValues = paddingValues,
             onCredentialClick = screenState.onCredentialClick,
             onRefresh = onRefresh,
             messageToast = eventMessage,
@@ -133,7 +144,7 @@ private fun HomeScreenContent(
         )
 
         is HomeScreenState.NoCredential -> WalletEmptyWithEIdRequestsContent(
-            contentBottomPadding = stickyBottomHeightDp,
+            paddingValues = paddingValues,
             isRefreshing = isRefreshing,
             ongoingEIdRequests = screenState.eIdRequests,
             onEidNotificationAction = onEidNotificationAction,
@@ -146,7 +157,7 @@ private fun HomeScreenContent(
         )
 
         is HomeScreenState.WalletEmpty -> WalletEmptyContent(
-            contentBottomPadding = stickyBottomHeightDp,
+            paddingValues = paddingValues,
             showEIdRequestButton = containerState.showEIdRequestButton,
             showBetaIdRequestButton = containerState.showBetaIdRequestButton,
             onRequestEId = containerState.onGetEId,
@@ -161,7 +172,7 @@ private fun HomeScreenContent(
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun WalletEmptyWithEIdRequestsContent(
-    contentBottomPadding: Dp,
+    paddingValues: PaddingValues,
     isRefreshing: Boolean,
     ongoingEIdRequests: List<SIdRequestDisplayData>,
     onEidNotificationAction: (caseId: String, status: SIdRequestDisplayStatus) -> Unit,
@@ -177,13 +188,14 @@ fun WalletEmptyWithEIdRequestsContent(
         refreshingOffset = pullToRefreshTopPadding(),
         onRefresh = onRefresh,
     )
-    LazyColumn(
+    WalletLayouts.LazyColumn(
+        useTopInsets = false,
+        useBottomInsets = false,
         state = rememberLazyListState(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        contentPadding = paddingValues,
+        horizontalAlgnment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-            .padding(bottom = contentBottomPadding)
             .pullRefresh(
                 state = pullRefreshState,
             )
@@ -233,7 +245,7 @@ fun WalletEmptyWithEIdRequestsContent(
 
 @Composable
 fun BoxScope.WalletEmptyContent(
-    contentBottomPadding: Dp,
+    paddingValues: PaddingValues,
     showEIdRequestButton: Boolean,
     showBetaIdRequestButton: Boolean,
     onRequestEId: () -> Unit,
@@ -245,8 +257,7 @@ fun BoxScope.WalletEmptyContent(
             .align(Alignment.Center)
             .wrapContentHeight()
             .verticalScroll(rememberScrollState())
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-            .padding(bottom = contentBottomPadding)
+            .padding(paddingValues)
             .padding(start = Sizes.s06, end = Sizes.s06, top = Sizes.s04, bottom = Sizes.s06)
             .widthIn(max = Sizes.maxTextWidth)
             .setIsTraversalGroup(index = TraversalIndex.HIGH1),
@@ -311,11 +322,11 @@ private fun Credentials(
     isRefreshing: Boolean,
     @StringRes messageToast: Int?,
     onCloseToast: () -> Unit,
-    contentBottomPadding: Dp,
+    paddingValues: PaddingValues,
     ongoingEIdRequests: List<SIdRequestDisplayData>,
     onEidNotificationAction: (caseId: String, status: SIdRequestDisplayStatus) -> Unit,
     onCloseEId: (id: String) -> Unit,
-    onCredentialClick: (id: Long, progressState: VerifiableProgressionState, isDeferred: Boolean) -> Unit,
+    onCredentialClick: (credentialState: CredentialCardState) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val pullRefreshState = rememberPullRefreshState(
@@ -324,6 +335,7 @@ private fun Credentials(
         onRefresh = onRefresh,
     )
     WalletLayouts.LazyColumn(
+        useTopInsets = false,
         useBottomInsets = false,
         modifier = Modifier
             .setIsTraversalGroup()
@@ -331,40 +343,28 @@ private fun Credentials(
             .pullRefresh(state = pullRefreshState)
             .testTag(TestTags.CREDENTIAL_LIST.name),
         contentPadding = PaddingValues(
-            top = Sizes.s06,
-            bottom = contentBottomPadding + Sizes.s06
+            top = paddingValues.calculateTopPadding() + Sizes.s06,
+            bottom = paddingValues.calculateBottomPadding() + Sizes.s06
         )
     ) {
         if (ongoingEIdRequests.isNotEmpty()) {
             items(ongoingEIdRequests) { eIdRequest: SIdRequestDisplayData ->
-                Box(modifier = Modifier.padding(horizontal = Sizes.s03)) {
+                Box(modifier = Modifier.padding(horizontal = Sizes.s04)) {
                     EIdRequestCard(
                         eIdRequest = eIdRequest,
                         onMainButton = { onEidNotificationAction(eIdRequest.caseId, eIdRequest.status) },
                         onClose = { onCloseEId(eIdRequest.caseId) },
                     )
                 }
-                Spacer(modifier = Modifier.height(Sizes.s02))
-            }
-
-            item {
-                HorizontalDivider()
+                Spacer(modifier = Modifier.height(Sizes.s04))
             }
         }
 
-        items(credentialsState) { credentialState ->
-            CredentialListRow(
-                showDivider = true,
-                credentialState = credentialState,
-                onClick = {
-                    onCredentialClick(
-                        credentialState.credentialId,
-                        credentialState.progressionState,
-                        credentialState.isDeferred,
-                    )
-                },
-            )
-        }
+        credentialCardListItems(
+            credentialCardStates = credentialsState,
+            paddingValues = PaddingValues(horizontal = Sizes.s04),
+            onClick = onCredentialClick,
+        )
     }
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -382,7 +382,7 @@ private fun Credentials(
         messageToast = messageToast,
         onCloseToast = onCloseToast,
         iconEnd = R.drawable.wallet_ic_cross,
-        contentBottomPadding = contentBottomPadding + Sizes.s06
+        contentBottomPadding = paddingValues.calculateBottomPadding() + Sizes.s06
     )
 }
 
@@ -410,7 +410,7 @@ private class HomePreviewParams : PreviewParameterProvider<ComposableWrapper<Hom
             HomeScreenState.CredentialList(
                 eIdRequests = emptyList(),
                 credentials = CredentialMocks.cardStates.toList().map { it.value() },
-                onCredentialClick = { _, _, _ -> },
+                onCredentialClick = { _ -> },
             )
         },
         ComposableWrapper {
@@ -421,16 +421,18 @@ private class HomePreviewParams : PreviewParameterProvider<ComposableWrapper<Hom
                         firstName = "Seraina",
                         lastName = "Muster",
                         caseId = "1",
+                        createdAt = 1L,
                     ),
                     SIdRequestDisplayData(
                         status = SIdRequestDisplayStatus.AV_READY,
                         firstName = "Seraina",
                         lastName = "Muster",
                         caseId = "2",
+                        createdAt = 2L,
                     )
                 ),
                 credentials = CredentialMocks.cardStates.toList().map { it.value() },
-                onCredentialClick = { _, _, _ -> },
+                onCredentialClick = { _ -> },
             )
         },
         ComposableWrapper {
@@ -446,13 +448,15 @@ private class HomePreviewParams : PreviewParameterProvider<ComposableWrapper<Hom
                         firstName = "Seraina",
                         lastName = "Muster",
                         caseId = "1",
+                        createdAt = 1L,
 
                     ),
                     SIdRequestDisplayData(
                         status = SIdRequestDisplayStatus.AV_READY,
                         firstName = "Seraina",
                         lastName = "Muster",
-                        caseId = "2"
+                        caseId = "2",
+                        createdAt = 2L,
                     )
                 ),
             )

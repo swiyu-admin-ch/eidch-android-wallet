@@ -67,6 +67,19 @@ class BundleItemRepositoryImpl @Inject constructor(
         SsiError.Unexpected(throwable)
     }
 
+    override suspend fun onPresented(
+        credentialId: Long,
+        bundleItemId: Long,
+    ): Result<Long, BundleItemRepositoryError> = runSuspendCatching {
+        withContext(ioDispatcher) {
+            bundleItemDao().onPresented(bundleItemId)
+            bundleItemDao().getNextBundleItemIdToPresent(credentialId)
+        }
+    }.mapError { throwable ->
+        Timber.e(throwable)
+        SsiError.Unexpected(throwable)
+    }
+
     private suspend fun bundleItemDao(): BundleItemEntityDao = suspendUntilNonNull {
         bundleItemDaoFlow.value
     }

@@ -24,7 +24,7 @@ internal class FetchRawAndParsedIssuerCredentialInfoImpl @Inject constructor(
         issuerEndpoint: URL,
     ): Result<RawAndParsedIssuerCredentialInfo, FetchIssuerCredentialInfoError> =
         coroutineBinding {
-            val rawAndParsedInfo = credentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(
+            var rawAndParsedInfo = credentialOfferRepository.fetchRawAndParsedIssuerCredentialInformation(
                 issuerEndpoint = issuerEndpoint,
             ).bind()
             // it was already parsed in the repo, so we can assume that we get the JWT if available
@@ -36,6 +36,7 @@ internal class FetchRawAndParsedIssuerCredentialInfoImpl @Inject constructor(
                     type = "openidvci-issuer-metadata+jwt"
                 ).mapError(ValidateIssuerMetadataJwtError::toFetchIssuerCredentialInfoError)
                     .bind()
+                rawAndParsedInfo = rawAndParsedInfo.copy(rawIssuerCredentialInfo = jwt.payloadString)
             }
             rawAndParsedInfo
         }

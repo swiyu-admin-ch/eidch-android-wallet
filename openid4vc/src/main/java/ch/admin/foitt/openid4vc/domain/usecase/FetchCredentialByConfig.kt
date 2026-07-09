@@ -7,10 +7,12 @@ import ch.admin.foitt.openid4vc.domain.model.keyBinding.BindingKeyPair
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import com.github.michaelbull.result.Result
 
-fun interface FetchCredentialByConfig {
+interface FetchCredentialByConfig {
     suspend operator fun invoke(
+        isDPopEnabled: Boolean,
         verifiableCredentialParams: VerifiableCredentialParams,
         bindingKeyPairs: List<BindingKeyPair>?,
         payloadEncryptionType: PayloadEncryptionType,
+        dpopKeyPair: BindingKeyPair? = null,
     ): Result<AnyCredentialResult, FetchCredentialByConfigError>
 }

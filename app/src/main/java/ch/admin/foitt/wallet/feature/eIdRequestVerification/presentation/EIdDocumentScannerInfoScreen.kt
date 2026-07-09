@@ -1,17 +1,18 @@
 package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
-import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
+import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainAnimation
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
@@ -22,27 +23,37 @@ internal fun EIdDocumentScannerInfoScreen(
     viewModel: EIdDocumentScannerInfoViewModel,
 ) {
     EIdDocumentScannerInfoScreenContent(
+        documentType = viewModel.documentType.collectAsStateWithLifecycle().value,
         onContinue = viewModel::onContinue,
     )
 }
 
 @Composable
 private fun EIdDocumentScannerInfoScreenContent(
+    documentType: EIdUiDocumentType,
     onContinue: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
-        ScreenMainImage(
-            iconRes = R.drawable.wallet_ic_docscan,
-            backgroundColor = WalletTheme.colorScheme.surfaceContainerLow,
-            fillMaxWidth = 0.75f,
-            paddingValues = PaddingValues(vertical = Sizes.s04)
+        val animationRes = when (documentType) {
+            EIdUiDocumentType.IDENTITY_CARD, EIdUiDocumentType.RESIDENT_PERMIT -> R.raw.doc_scan_front
+            EIdUiDocumentType.PASSPORT -> R.raw.doc_scan_pass_1
+        }
+
+        ScreenMainAnimation(
+            animationRes = animationRes,
+            fallbackImage = R.drawable.wallet_ic_docscan
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_scanDocument_information_button_primary),
-            onClick = onContinue,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_scanDocument_information_button_primary),
+                        onClick = onContinue,
+                    )
+                },
+            ),
         )
     }
 ) {
@@ -59,6 +70,7 @@ private fun EIdDocumentScannerInfoScreenContent(
 private fun EIdDocumentScannerInfoScreenPreview() {
     WalletTheme {
         EIdDocumentScannerInfoScreenContent(
+            documentType = EIdUiDocumentType.IDENTITY_CARD,
             onContinue = {},
         )
     }

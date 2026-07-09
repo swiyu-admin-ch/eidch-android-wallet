@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -13,6 +12,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.GuardianVerificationUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.LoadingIndicator
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
@@ -73,14 +73,18 @@ private fun InfoContent(
             iconRes = R.drawable.wallet_ic_person_checkmark_colored,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_guardianVerification_info_button_start),
-            onClick = onStart,
-            enabled = !isLoading,
-            isActive = isLoading,
-            modifier = Modifier.fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_guardianVerification_info_button_start),
+                        onClick = onStart,
+                        enabled = !isLoading,
+                        isActive = isLoading,
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -106,17 +110,24 @@ private fun NoValidCredentialContent(
             iconRes = R.drawable.wallet_ic_cross_circle_colored,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_guardianVerification_noCredential_button_requestEId),
-            onClick = onRequest,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_guardianVerification_noCredential_button_cancel),
-            onClick = onCancel,
-            modifier = Modifier.fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_guardianVerification_noCredential_button_requestEId),
+                        onClick = onRequest,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_eidRequest_guardianVerification_noCredential_button_cancel),
+                        onClick = onCancel,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -147,17 +158,24 @@ private fun NetworkErrorContent(
             iconRes = R.drawable.wallet_ic_cross_circle_colored,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_guardianVerification_networkError_button_retry),
-            onClick = onRetry,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_guardianVerification_networkError_button_cancel),
-            onClick = onClose,
-            modifier = Modifier.fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_guardianVerification_networkError_button_retry),
+                        onClick = onRetry,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_eidRequest_guardianVerification_networkError_button_cancel),
+                        onClick = onClose,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -181,12 +199,17 @@ private fun UnexpectedErrorContent(
             iconRes = R.drawable.wallet_ic_cross_circle_colored,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_guardianVerification_unexpectedError_button_cancel),
-            onClick = onClose,
-            modifier = Modifier.fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_guardianVerification_unexpectedError_button_cancel),
+                        onClick = onClose,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -208,12 +231,16 @@ private fun LoadingContent(
     stickyStartContent = {
         LoadingIndicator()
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_guardianVerification_loading_button_cancel),
-            onClick = onCancel,
-            modifier = Modifier.fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_guardianVerification_loading_button_cancel),
+                        onClick = onCancel,
+                    )
+                },
+            ),
         )
     },
 ) {

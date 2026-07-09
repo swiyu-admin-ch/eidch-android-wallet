@@ -1,9 +1,9 @@
 package ch.admin.foitt.wallet.feature.deeplink
 
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationDefinition
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.VerificationProcessType
 import ch.admin.foitt.wallet.platform.deeplink.domain.repository.DeepLinkIntentRepository
 import ch.admin.foitt.wallet.platform.deeplink.domain.usecase.HandleDeeplink
 import ch.admin.foitt.wallet.platform.deeplink.domain.usecase.implementation.HandleDeeplinkImpl
@@ -289,13 +289,16 @@ class HandleDeeplinkTest {
                 InvitationErrorScreenState.INVALID_PRESENTATION,
                 null
             ),
-            InvitationError.EmptyWallet() to Destination.InvitationFailureScreen(InvitationErrorScreenState.EMPTY_WALLET, null),
+            InvitationError.EmptyWallet("some uri") to Destination.InvitationFailureScreen(
+                InvitationErrorScreenState.EMPTY_WALLET,
+                null
+            ),
             InvitationError.InvalidCredentialOffer to Destination.InvitationFailureScreen(
                 InvitationErrorScreenState.INVALID_CREDENTIAL,
                 null
             ),
             InvitationError.InvalidInput to Destination.InvitationFailureScreen(InvitationErrorScreenState.INVALID_CREDENTIAL, null),
-            InvitationError.NoCompatibleCredential() to Destination.InvitationFailureScreen(
+            InvitationError.NoCompatibleCredential("some uri") to Destination.InvitationFailureScreen(
                 InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL,
                 null
             ),
@@ -325,12 +328,6 @@ class HandleDeeplinkTest {
 
         private val mockAuthorizationRequest = AuthorizationRequest(
             nonce = "iusto",
-            presentationDefinition = PresentationDefinition(
-                id = "diam",
-                inputDescriptors = listOf(),
-                purpose = "purpose",
-                name = "name",
-            ),
             responseUri = "tincidunt",
             responseMode = "suscipit",
             clientId = "clientId",
@@ -338,16 +335,19 @@ class HandleDeeplinkTest {
             dcqlQuery = null,
             clientMetaData = null,
             state = null,
+            expectedOrigins = emptyList()
         )
 
         private val mockPresentationRequestWithRaw = PresentationRequestWithRaw(
             authorizationRequest = mockAuthorizationRequest,
-            rawPresentationRequest = "raw presentation request"
+            rawPresentationRequest = "raw presentation request",
+            verificationProcessType = VerificationProcessType.NETWORK,
         )
 
         private val mockCompatibleCredential = CompatibleCredential(
             credentialId = mockCredentialOfferResult.credentialId,
-            requestedFields = listOf(),
+            presentationPaths = listOf(),
+            dcqlQueryId = "1"
         )
 
         private val mockPresentationRequestResult = ProcessInvitationResult.PresentationRequest(
@@ -363,7 +363,7 @@ class HandleDeeplinkTest {
         private val mockSuccesses: List<ProcessInvitationResult> = listOf(
             ProcessInvitationResult.CredentialOffer(0L),
             ProcessInvitationResult.PresentationRequest(
-                CompatibleCredential(0L, listOf()),
+                CompatibleCredential(0L, listOf(), "1"),
                 mockPresentationRequestWithRaw,
             ),
             ProcessInvitationResult.PresentationRequestCredentialList(
@@ -373,11 +373,11 @@ class HandleDeeplinkTest {
         )
 
         private val mockFailures: List<ProcessInvitationError> = listOf(
-            InvitationError.EmptyWallet(),
+            InvitationError.EmptyWallet("some uri"),
             InvitationError.InvalidCredentialOffer,
             InvitationError.InvalidInput,
             InvitationError.NetworkError,
-            InvitationError.NoCompatibleCredential(),
+            InvitationError.NoCompatibleCredential("some uri"),
             InvitationError.MetadataMisconfiguration("Message"),
             InvitationError.Unexpected,
         )

@@ -68,7 +68,7 @@ internal fun ScannerCamera(
             surfaceView.post {
                 onAfterViewLayout(surfaceView.width, surfaceView.height)
             }
-            Timber.d("Recording: AndroidView updated")
+            Timber.d("ScannerCamera: AndroidView updated")
         },
         onReset = null,
         modifier = Modifier

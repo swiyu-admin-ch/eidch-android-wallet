@@ -18,14 +18,18 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getError
+import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -51,20 +55,22 @@ internal class EIdProcessDataViewModel @AssistedInject constructor(
     override val topBarState = TopBarState.Empty
 
     private val isLoading = MutableStateFlow(false)
+    private val uploadProgress = MutableStateFlow(0f)
 
     private val uploadFilesResult = MutableStateFlow<Result<Unit, AvUploadFilesError>?>(null)
     private val submitCaseIdResult = MutableStateFlow<Result<Unit, AvSubmitCaseError>?>(null)
 
     val state: StateFlow<ProcessDataUiState> = combine(
         isLoading,
+        uploadProgress,
         uploadFilesResult,
         submitCaseIdResult,
-    ) { isLoading, uploadFiles, submitCaseId ->
+    ) { isLoading, progress, uploadFiles, submitCaseId ->
         val uploadError = uploadFiles?.getError()
         val submitError = submitCaseId?.getError()
         when {
-            isLoading -> ProcessDataUiState.Loading
-            uploadFiles?.isOk == true && submitCaseId?.isOk == true -> ProcessDataUiState.Valid
+            isLoading -> ProcessDataUiState.Processing(progress)
+            uploadFiles?.isOk == true && submitCaseId?.isOk == true -> ProcessDataUiState.Processing(1f)
             submitError is EIdRequestError.NetworkError ||
                 uploadError is EIdRequestError.NetworkError ->
                 ProcessDataUiState.GenericError(
@@ -86,7 +92,7 @@ internal class EIdProcessDataViewModel @AssistedInject constructor(
                 onHelp = ::onHelp
             )
         }
-    }.toStateFlow(ProcessDataUiState.Loading)
+    }.toStateFlow(ProcessDataUiState.Processing(0f))
 
     init {
         onRefreshState()
@@ -101,16 +107,29 @@ internal class EIdProcessDataViewModel @AssistedInject constructor(
             val jwt = autoVerification.jwt
 
             saveMetadataFile(caseId = caseId)
+            uploadProgress.value = 0f
+            uploadFilesResult.value = null
 
-            uploadFilesResult.value = uploadAllFiles(
-                caseId = caseId,
-                accessToken = jwt
-            ).onSuccess {
-                submitCaseId(
-                    caseId = caseId,
-                    accessToken = jwt
-                ).also { submitCaseIdResult.value = it }
+            uploadAllFiles(caseId = caseId, accessToken = jwt).collect { result ->
+                result
+                    .onSuccess { progress ->
+                        // Add 1 to total to account for submitCaseId
+                        uploadProgress.value = progress.completed.toFloat() / (progress.total + 1)
+                    }
+                    .onFailure { error ->
+                        uploadFilesResult.value = Err(error)
+                    }
+            }
+
+            if (uploadFilesResult.value == null) {
+                uploadFilesResult.value = Ok(Unit)
+                submitCaseId(caseId = caseId, accessToken = jwt)
+                    .also { submitCaseIdResult.value = it }
                     .onSuccess {
+                        // Needs to be called cause track completion is done after navigation
+                        isLoading.value = false
+                        // Small delay to let animations finish before navigating
+                        delay(600)
                         navManager.navigateTo(Destination.EIdProcessDataConfirmationScreen)
                     }
             }

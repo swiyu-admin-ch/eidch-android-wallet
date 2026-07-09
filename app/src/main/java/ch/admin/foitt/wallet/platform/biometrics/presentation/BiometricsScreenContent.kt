@@ -21,12 +21,18 @@ internal fun BiometricsContent(
     WalletTexts.TitleScreen(text = stringResource(id = title))
     Spacer(modifier = Modifier.height(Sizes.s04))
     WalletTexts.Body(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth(),
         text = stringResource(id = description),
         color = WalletTheme.colorScheme.secondary,
     )
     infoText?.let {
-        Spacer(modifier = Modifier.height(Sizes.s04))
-        WalletTexts.LabelSmall(text = stringResource(id = infoText))
+        Spacer(
+            modifier = Modifier
+                .height(Sizes.s04)
+        )
+        WalletTexts.LabelSmall(
+            text = stringResource(id = infoText)
+        )
     }
 }

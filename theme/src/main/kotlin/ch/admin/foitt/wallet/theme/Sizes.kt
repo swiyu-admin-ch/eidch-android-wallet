@@ -14,6 +14,7 @@ object Sizes {
     val s08 = 32.dp
     val s09 = 36.dp
     val s10 = 40.dp
+    val s11 = 44.dp
     val s12 = 48.dp
     val s14 = 56.dp
     val s15 = 60.dp
@@ -61,7 +62,11 @@ object Sizes {
 
     val homeMenuMinWidth = 200.dp
 
-    val maxClusterWidth = 600.dp
-
     val contentMaxWidth = 650.dp
+
+    val cornerSmall = s04
+
+    val cornerLarge = s07
+
+    const val CREDIT_CARD_ASPECT_RATIO = 1.586f
 }

@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.platform.oca.domain.util
 
 import ch.admin.foitt.wallet.platform.oca.domain.model.OverlayVersion
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay
-import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.Overlay
 
 /**

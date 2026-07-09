@@ -4,15 +4,19 @@ import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientIdentifier
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.RequestObject
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.RequestObjectVerificationOutcome
+import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.usecase.VerifyRequestObjectSignature
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.ValidatePresentationRequestError
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.VerificationProcessType
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.toValidatePresentationRequestError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ValidatePresentationRequest
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.utils.JsonParsingError
 import ch.admin.foitt.wallet.platform.utils.SafeJson
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -29,9 +33,10 @@ class ValidatePresentationRequestImpl @Inject constructor(
     private val verifyRequestObjectSignature: VerifyRequestObjectSignature,
 ) : ValidatePresentationRequest {
     override suspend fun invoke(
+        verificationProcessType: VerificationProcessType,
         requestObject: RequestObject
     ): Result<PresentationRequestWithRaw, ValidatePresentationRequestError> = coroutineBinding {
-        val presentationRequestWithRaw = validateRequestObject(requestObject).bind()
+        val presentationRequestWithRaw = validateRequestObject(verificationProcessType, requestObject).bind()
 
         validateAuthorizationRequest(
             authorizationRequest = presentationRequestWithRaw.authorizationRequest,
@@ -41,7 +46,8 @@ class ValidatePresentationRequestImpl @Inject constructor(
     }
 
     private suspend fun validateRequestObject(
-        requestObject: RequestObject,
+        verificationProcessType: VerificationProcessType,
+        requestObject: RequestObject
     ): Result<PresentationRequestWithRaw, ValidatePresentationRequestError> = coroutineBinding {
         val jwt = requestObject.jwt
 
@@ -63,33 +69,76 @@ class ValidatePresentationRequestImpl @Inject constructor(
         }
 
         val responseUri = runSuspendCatching {
-            checkNotNull(jwt.payloadJson[CLAIM_RESPONSE_URI]?.jsonPrimitive?.content)
+            if (verificationProcessType == VerificationProcessType.NETWORK) {
+                checkNotNull(jwt.payloadJson[CLAIM_RESPONSE_URI]?.jsonPrimitive?.content)
+            } else {
+                null
+            }
         }.mapError { throwable ->
             CredentialPresentationError.Unexpected(throwable)
         }.bind()
 
+        if (verificationProcessType == VerificationProcessType.NETWORK) {
+            val clientIdentifier = ClientIdentifier.fromRequestObject(requestObject)
+                .mapError { CredentialPresentationError.InvalidRequest(responseUri) }
+                .bind()
+            if (clientIdentifier.clientIdPrefix == ClientIdentifier.ClientIdPrefix.VerifierAttestationJwt) {
+                Err(CredentialPresentationError.InvalidRequest(responseUri)).bind<Unit>()
+            }
+        }
+
         runSuspendCatching {
             check(jwt.algorithm == SigningAlgorithm.ES256.stdName)
-            checkNotNull(jwt.keyId) { "keyId is missing" }
+            if (verificationProcessType == VerificationProcessType.NETWORK) {
+                checkNotNull(jwt.keyId) { "keyId is missing" }
+            }
             check(jwt.jwtValidity == Validity.Valid) { "jwt is not yet valid or expired" }
+            // aud is currently optional due to expand phase
+            val aud = jwt.payloadJson[CLAIM_AUDIENCE]?.jsonPrimitive?.content
+            aud?.let {
+                check(aud == "https://self-issued.me/v2" || aud == jwt.iss) { "neither static nor dynamic discovery is used" }
+            }
         }.mapError { throwable ->
-            throwable.toValidatePresentationRequestError(responseUri = responseUri, message = "validateJwtPresentationRequest error")
+            throwable.toValidatePresentationRequestError(responseUri = responseUri, message = "validatePresentationRequest error")
         }.bind()
 
-        verifyRequestObjectSignature(
-            requestObject = requestObject,
-            trustedAttestationDids = environmentSetupRepository.attestationsServiceTrustedDids,
-        ).mapError { error ->
-            error.toValidatePresentationRequestError(responseUri)
+        val verificationOutcome =
+            if (environmentSetupRepository.verifyRequestObjectSignature) {
+                verifyRequestObjectSignature(
+                    requestObject = requestObject,
+                    trustedAttestationDids = environmentSetupRepository.attestationsServiceTrustedDids,
+                ).mapError { error ->
+                    error.toValidatePresentationRequestError(responseUri)
+                }.bind()
+            } else {
+                null
+            }
+
+        if (verificationOutcome == RequestObjectVerificationOutcome.ATTESTATION_UNTRUSTED &&
+            verificationProcessType == VerificationProcessType.NETWORK
+        ) {
+            Err(VcSdJwtError.IssuerValidationFailed.toValidatePresentationRequestError(responseUri)).bind<Unit>()
+        }
+
+        runSuspendCatching {
+            check(jwt.payloadJson[CLAIM_TRANSACTION_DATA] == null) { "authorization request contains transaction_data field" }
+        }.mapError { _ ->
+            CredentialPresentationError.InvalidTransactionData(responseUri)
         }.bind()
 
-        val authorizationRequest = safeJson.safeDecodeElementTo<AuthorizationRequest>(jwt.payloadJson).mapError {
-            CredentialPresentationError.Unexpected(null)
-        }.bind()
+        val authorizationRequest = safeJson.safeDecodeElementTo<AuthorizationRequest>(jwt.payloadJson)
+            .mapError(JsonParsingError::toValidatePresentationRequestError)
+            .bind()
 
         PresentationRequestWithRaw(
+            verificationProcessType = verificationProcessType,
             authorizationRequest = authorizationRequest,
             rawPresentationRequest = jwt.rawJwt,
+            verifierAttestationTrusted = when (verificationOutcome) {
+                RequestObjectVerificationOutcome.ATTESTATION_TRUSTED -> true
+                RequestObjectVerificationOutcome.ATTESTATION_UNTRUSTED -> false
+                RequestObjectVerificationOutcome.DID_PATH, null -> null
+            },
         )
     }
 
@@ -97,43 +146,34 @@ class ValidatePresentationRequestImpl @Inject constructor(
     private fun validateAuthorizationRequest(
         authorizationRequest: AuthorizationRequest,
     ): Result<Unit, ValidatePresentationRequestError> {
-        val validationError = Err(CredentialPresentationError.InvalidPresentation(authorizationRequest.responseUri))
+        val validationError = Err(CredentialPresentationError.InvalidRequest(authorizationRequest.responseUri))
         return when {
             authorizationRequest.responseType != VP_TOKEN -> validationError
             authorizationRequest.responseMode !in SUPPORTED_RESPONSE_MODES -> validationError
             authorizationRequest.responseMode == DIRECT_POST_JWT && authorizationRequest.clientMetaData == null -> validationError
-            authorizationRequest.isFieldsEmpty() -> validationError
+            authorizationRequest.dcqlQuery == null -> validationError
             authorizationRequest.isClaimsEmpty() -> validationError
-            authorizationRequest.presentationDefinition == null && authorizationRequest.dcqlQuery == null -> validationError
-            authorizationRequest.hasInvalidConstraintsPath() -> validationError
+            authorizationRequest.hasInvalidStateField() -> validationError
             else -> Ok(Unit)
         }
     }
 
-    private fun AuthorizationRequest.isFieldsEmpty() = presentationDefinition?.inputDescriptors?.any { inputDescriptor ->
-        inputDescriptor.formats.any { format ->
-            format is InputDescriptorFormat.VcSdJwt &&
-                inputDescriptor.constraints.fields.isEmpty()
-        }
-    } ?: false
-
     private fun AuthorizationRequest.isClaimsEmpty() = dcqlQuery?.let { dcqlQuery ->
         dcqlQuery.credentials?.let { credentialQueries ->
-            credentialQueries.any { it.format == CredentialFormat.VC_SD_JWT.format && it.claims?.isEmpty() == true }
+            credentialQueries.any {
+                (it.format == CredentialFormat.VC_SD_JWT.format || it.format == CredentialFormat.DC_SD_JWT.format) &&
+                    it.claims?.isEmpty() == true
+            }
         } ?: false
     } ?: false
 
-    private fun AuthorizationRequest.hasInvalidConstraintsPath(): Boolean {
-        // JsonPath filter expressions in path are not allowed.
-        // The filter expression starts with "[?" and may contain whitespace between these characters
-        val invalidConstrainPath = """.*\[\s*\?.*""".toRegex()
-        return presentationDefinition?.inputDescriptors?.any { inputDescriptor ->
-            inputDescriptor.constraints.fields.any { field ->
-                field.path.any { path ->
-                    invalidConstrainPath.matches(path)
-                }
-            }
+    // State field must be provided if no holder binding is requested
+    // see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.3
+    private fun AuthorizationRequest.hasInvalidStateField(): Boolean {
+        val hasCredentialWithoutBinding = dcqlQuery?.credentials?.any {
+            it.requireCryptographicHolderBinding == false
         } ?: false
+        return hasCredentialWithoutBinding && state == null
     }
 
     private companion object {
@@ -141,7 +181,10 @@ class ValidatePresentationRequestImpl @Inject constructor(
         const val VP_TOKEN = "vp_token"
         const val DIRECT_POST = "direct_post"
         const val DIRECT_POST_JWT = "direct_post.jwt"
-        val SUPPORTED_RESPONSE_MODES = listOf(DIRECT_POST, DIRECT_POST_JWT)
+        const val DC_API_JWT = "dc_api.jwt"
+        val SUPPORTED_RESPONSE_MODES = listOf(DIRECT_POST, DIRECT_POST_JWT, DC_API_JWT)
         const val CLAIM_RESPONSE_URI = "response_uri"
+        const val CLAIM_AUDIENCE = "aud"
+        const val CLAIM_TRANSACTION_DATA = "transaction_data"
     }
 }

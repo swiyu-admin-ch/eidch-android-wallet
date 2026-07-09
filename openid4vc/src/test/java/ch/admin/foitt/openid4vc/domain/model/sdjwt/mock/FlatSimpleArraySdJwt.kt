@@ -1,5 +1,9 @@
 package ch.admin.foitt.openid4vc.domain.model.sdjwt.mock
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.sdjwt.SdJwtDisclosure
+import ch.admin.foitt.openid4vc.domain.model.sdjwt.util.assertSelectiveDisclosure
+
 internal object FlatSimpleArraySdJwt {
     /*
 {
@@ -42,11 +46,77 @@ internal object FlatSimpleArraySdJwt {
     // HWWQ_E69DRWp7FhCHyQdS01ushRMA9GXJpzh5DosDHU
     const val DISCLOSURE_ELEMENT_2 = "WyJ0ZXN0X3NhbHQiLCAidGVzdF9hcnJheV92YWx1ZV8yIl0"
 
-    const val JSON_WITH_OTHER_CLAIMS = """{"test_key_1":"test_value_1", "array_key":["test_array_value_1", "test_array_value_2"]}"""
+    const val KEY_1 = "test_key_1"
+    const val VALUE_1 = "test_value_1"
+    val PATH_1 = listOf(ClaimsPathPointerComponent.String(KEY_1))
+    val sdJwtDisclosure1 = SdJwtDisclosure(
+        paths = listOf(PATH_1),
+        disclosure = Disclosure1
+    )
 
-    const val JSON_WITH_ARRAY_ONLY = """{"array_key":["test_array_value_1", "test_array_value_2"]}"""
+    const val ARRAY_KEY = "array_key"
+    const val ARRAY_VALUE_1 = "test_array_value_1"
+    const val ARRAY_VALUE_2 = "test_array_value_2"
+    val pathArrayValue1 = listOf(
+        ClaimsPathPointerComponent.String(ARRAY_KEY),
+        ClaimsPathPointerComponent.Index(0),
+    )
+    val sdJwtArrayDisclosure1 = SdJwtDisclosure(
+        paths = listOf(pathArrayValue1),
+        disclosure = DISCLOSURE_ELEMENT_1
+    )
+    val pathArrayValue2 = listOf(
+        ClaimsPathPointerComponent.String(ARRAY_KEY),
+        ClaimsPathPointerComponent.Index(1),
+    )
+    val requestedPathArrayValue2 = listOf(pathArrayValue2)
+    val sdJwtArrayDisclosure2 = SdJwtDisclosure(
+        paths = listOf(pathArrayValue2),
+        disclosure = DISCLOSURE_ELEMENT_2
+    )
+
+    val sdJwtDisclosuresArrayOther = setOf(
+        sdJwtDisclosure1,
+        sdJwtArrayDisclosure2,
+    )
+
+    val sdJwtDisclosuresArray = setOf(
+        sdJwtArrayDisclosure1,
+        sdJwtArrayDisclosure2,
+    )
+
+    val pathArray = listOf(
+        ClaimsPathPointerComponent.String(ARRAY_KEY),
+        ClaimsPathPointerComponent.Null,
+    )
+    val requestedPathArray = listOf(pathArray)
+
+    const val JSON_WITH_OTHER_CLAIMS = """{"$KEY_1":"$VALUE_1", "$ARRAY_KEY":["$ARRAY_VALUE_1", "$ARRAY_VALUE_2"]}"""
+
+    const val JSON_WITH_ARRAY_ONLY = """{"$ARRAY_KEY":["$ARRAY_VALUE_1", "$ARRAY_VALUE_2"]}"""
 
     val SD_JWT_WITH_OTHER_CLAIMS = JWT_WITH_OTHER_CLAIMS + listOf(Disclosure1, DISCLOSURE_ELEMENT_2).toDisclosures()
 
     val SD_JWT_WITH_ARRAY_ONLY = JWT_WITH_ARRAY_ONLY + listOf(DISCLOSURE_ELEMENT_1, DISCLOSURE_ELEMENT_2).toDisclosures()
+
+    fun assertWhole(selectiveDisclosure: String) {
+        assertSelectiveDisclosure(
+            selectiveDisclosure = selectiveDisclosure,
+            jwt = JWT_WITH_ARRAY_ONLY,
+            disclosures = listOf(
+                DISCLOSURE_ELEMENT_1,
+                DISCLOSURE_ELEMENT_2
+            )
+        )
+    }
+
+    fun assertPartial(selectiveDisclosure: String) {
+        assertSelectiveDisclosure(
+            selectiveDisclosure = selectiveDisclosure,
+            jwt = JWT_WITH_ARRAY_ONLY,
+            disclosures = listOf(
+                DISCLOSURE_ELEMENT_2
+            )
+        )
+    }
 }

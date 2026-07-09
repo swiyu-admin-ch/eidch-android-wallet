@@ -11,8 +11,10 @@ import com.github.michaelbull.result.Result
 internal interface FetchVcSdJwtCredential {
     @CheckResult
     suspend operator fun invoke(
+        isDPopEnabled: Boolean,
         verifiableCredentialParams: VerifiableCredentialParams,
         bindingKeyPairs: List<BindingKeyPair>?,
         payloadEncryptionType: PayloadEncryptionType,
+        dpopKeyPair: BindingKeyPair? = null,
     ): Result<AnyCredentialResult, FetchVcSdJwtCredentialError>
 }

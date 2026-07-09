@@ -27,9 +27,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
-import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.clusterLazyListItem
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -72,13 +72,13 @@ private fun EIdNfcSummaryScreenContent(
     WalletLayouts.LazyColumn(
         modifier = Modifier
             .align(Alignment.TopCenter)
-            .widthIn(max = Sizes.maxClusterWidth)
+            .widthIn(max = Sizes.contentMaxWidth)
             .fillMaxWidth()
             .padding(
                 start = Sizes.s04,
                 end = Sizes.s04,
             ),
-        useTopInsets = true,
+        useTopInsets = false,
         useBottomInsets = false,
     ) {
         item {
@@ -88,11 +88,7 @@ private fun EIdNfcSummaryScreenContent(
             )
         }
         item {
-            Spacer(modifier = Modifier.height(Sizes.s01))
-            WalletTexts.HeadlineSmall(
-                text = stringResource(R.string.tk_eidRequest_nfcScan_summary_primary)
-            )
-            Spacer(modifier = Modifier.height(Sizes.s06))
+            Spacer(modifier = Modifier.height(Sizes.s03))
         }
         documentImage(
             headerText = R.string.tk_eidRequest_nfcScan_summary_documentPicture,
@@ -124,19 +120,15 @@ private fun EIdNfcSummaryScreenContent(
         modifier = Modifier.align(Alignment.BottomCenter),
         onContentHeightMeasured = { height -> reportedBlockHeight = height },
     ) {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_nfcScan_summary_button_continue),
-            onClick = onContinue,
-            modifier = Modifier
-                .widthIn(max = Sizes.maxClusterWidth)
-                .fillMaxWidth()
-                .bottomSafeDrawing()
-                .padding(
-                    start = WalletLayouts.paddingStickyMedium,
-                    end = WalletLayouts.paddingStickyMedium,
-                    bottom = WalletLayouts.paddingStickyMedium
-                ),
-
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_nfcScan_summary_button_continue),
+                        onClick = onContinue,
+                    )
+                }
+            )
         )
     }
 }

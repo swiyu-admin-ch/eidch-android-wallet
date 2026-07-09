@@ -7,4 +7,5 @@ data class SIdRequestDisplayData(
     val lastName: String,
     val onlineSessionStartOpenAt: String? = null,
     val onlineSessionStartTimeoutAt: String? = null,
+    val createdAt: Long,
 )

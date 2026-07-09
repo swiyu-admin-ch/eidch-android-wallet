@@ -3,7 +3,6 @@ package ch.admin.foitt.wallet.platform.biometrics.domain.model
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricAuthenticationError
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.GetCipherForDecryptionError
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.GetCipherForEncryptionError
-import ch.admin.foitt.wallet.platform.passphrase.domain.model.InitializePassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.StorePassphraseError
 import java.security.InvalidKeyException
 
@@ -23,10 +22,6 @@ fun BiometricAuthenticationError.toEnableBiometricsError() = when (this) {
     BiometricAuthenticationError.PromptLocked -> BiometricsError.Locked
     is BiometricAuthenticationError.PromptFailure -> BiometricsError.Unexpected(this.throwable)
     is BiometricAuthenticationError.Unexpected -> BiometricsError.Unexpected(this.throwable)
-}
-
-fun InitializePassphraseError.toEnableBiometricsError() = when (this) {
-    is InitializePassphraseError.Unexpected -> BiometricsError.Unexpected(this.throwable)
 }
 
 fun GetCipherForEncryptionError.toEnableBiometricsError() = when (this) {

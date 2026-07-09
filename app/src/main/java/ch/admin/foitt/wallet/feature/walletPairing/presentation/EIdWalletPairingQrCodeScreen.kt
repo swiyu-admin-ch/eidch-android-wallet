@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
@@ -36,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.QrBoxUiState
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.WalletPairingQrCodeUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.NetworkErrorContent
 import ch.admin.foitt.wallet.platform.composables.StandardErrorScreen
@@ -114,49 +114,55 @@ private fun WalletPairingContent(
             onRefresh = onRefresh,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        if (waitingForDevicePairing) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
+        Column {
+            if (waitingForDevicePairing) {
                 Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .clip(WalletTheme.shapes.extraLarge)
-                        .background(WalletTheme.colorScheme.background)
-                        .padding(horizontal = Sizes.s04, vertical = Sizes.s02)
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .semantics(mergeDescendants = true) {}
+                            .clip(WalletTheme.shapes.extraLarge)
+                            .background(WalletTheme.colorScheme.background)
+                            .padding(horizontal = Sizes.s04, vertical = Sizes.s02)
                     ) {
-                        CircularProgressIndicator(
-                            color = WalletTheme.colorScheme.primary,
-                            trackColor = WalletTheme.colorScheme.secondaryContainer,
-                            strokeWidth = Sizes.s01,
-                            strokeCap = StrokeCap.Round,
-                            modifier = Modifier.size(Sizes.s05)
-                                .clearAndSetSemantics {}
-                        )
-                        Spacer(modifier = Modifier.width(Sizes.s02))
-                        WalletTexts.BodyLarge(
-                            text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_fetchDevice_body),
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .semantics(mergeDescendants = true) {}
+                        ) {
+                            CircularProgressIndicator(
+                                color = WalletTheme.colorScheme.primary,
+                                trackColor = WalletTheme.colorScheme.secondaryContainer,
+                                strokeWidth = Sizes.s01,
+                                strokeCap = StrokeCap.Round,
+                                modifier = Modifier.size(Sizes.s05)
+                                    .clearAndSetSemantics {}
+                            )
+                            Spacer(modifier = Modifier.width(Sizes.s02))
+                            WalletTexts.BodyLarge(
+                                text = stringResource(id = R.string.tk_walletPairing_devicePairingQRCode_fetchDevice_body),
+                            )
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(Sizes.s06))
             }
-            Spacer(modifier = Modifier.height(Sizes.s06))
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(R.string.tk_walletPairing_devicePairingQRCode_button_close),
+                            onClick = onCloseScreen,
+                            enabled = qrBoxState !is QrBoxUiState.Loading,
+                        )
+                    },
+                ),
+            )
         }
-        Buttons.FilledPrimary(
-            modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.tk_walletPairing_devicePairingQRCode_button_close),
-            onClick = onCloseScreen,
-            enabled = qrBoxState !is QrBoxUiState.Loading,
-        )
     },
 ) {
     Spacer(modifier = Modifier.height(Sizes.s06))

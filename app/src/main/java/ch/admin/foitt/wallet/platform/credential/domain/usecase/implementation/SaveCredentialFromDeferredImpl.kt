@@ -15,7 +15,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.toSaveCredentialFr
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchTrustForIssuance
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveCredentialFromDeferred
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
 import ch.admin.foitt.wallet.platform.oca.domain.model.FetchVcMetadataByFormatError
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.FetchVcMetadataByFormat
@@ -41,14 +41,14 @@ class SaveCredentialFromDeferredImpl @Inject constructor(
     private val credentialOfferRepository: CredentialOfferRepository,
 ) : SaveCredentialFromDeferred {
     override suspend fun invoke(
-        deferredCredentialEntity: DeferredCredentialWithKeyBinding,
+        deferredCredentialEntity: DeferredCredentialWithAuthenticationAndKeyBinding,
         credentialResponse: CredentialResponse.VerifiableCredential,
         rawAndParsedIssuerCredentialInfo: RawAndParsedIssuerCredentialInfo,
     ): Result<Long, SaveCredentialFromDeferredError> = coroutineBinding {
         Timber.d("Deferred refresh: handle getting credential for ${deferredCredentialEntity.deferredCredential.credentialId}")
 
-        val anyCredential: AnyCredential = when (deferredCredentialEntity.credential.format) {
-            CredentialFormat.VC_SD_JWT -> {
+        val anyCredential: AnyCredential = when (val format = deferredCredentialEntity.credential.format) {
+            CredentialFormat.DC_SD_JWT, CredentialFormat.VC_SD_JWT -> {
                 val keyBinding: KeyBinding? = deferredCredentialEntity.firstKeyBinding
                 val payload: String = credentialResponse.firstCredential
                     ?: Err(CredentialError.InvalidCredentialOffer).bind()
@@ -56,6 +56,7 @@ class SaveCredentialFromDeferredImpl @Inject constructor(
                 verifyVcSdJwtSignature(
                     keyBinding = keyBinding,
                     payload = payload,
+                    format = format,
                 ).mapError(VerifyVcSdJwtSignatureError::toSaveCredentialFromDeferredError).bind()
             }
 
@@ -85,7 +86,7 @@ class SaveCredentialFromDeferredImpl @Inject constructor(
             anyCredential = anyCredential,
             issuerInfo = rawAndParsedIssuerCredentialInfo.issuerCredentialInfo,
             trustStatement = trustCheckResult.actorTrustStatement,
-            metadata = credentialConfig,
+            credentialConfiguration = credentialConfig,
             ocaBundle = ocaBundle,
         ).mapError(GenerateCredentialDisplaysError::toSaveCredentialFromDeferredError).bind()
 
@@ -108,7 +109,7 @@ class SaveCredentialFromDeferredImpl @Inject constructor(
         ).mapError(CredentialOfferRepositoryError::toSaveCredentialFromDeferredError).bind()
     }
 
-    private val DeferredCredentialWithKeyBinding.firstKeyBinding: KeyBinding?
+    private val DeferredCredentialWithAuthenticationAndKeyBinding.firstKeyBinding: KeyBinding?
         get() = this.keyBindings.firstOrNull()?.toKeyBinding()?.getOr(null)
 
     private val CredentialResponse.VerifiableCredential.firstCredential

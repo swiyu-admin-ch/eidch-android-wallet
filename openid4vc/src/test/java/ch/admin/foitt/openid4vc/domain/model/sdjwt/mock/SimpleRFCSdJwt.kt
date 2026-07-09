@@ -1,5 +1,8 @@
 package ch.admin.foitt.openid4vc.domain.model.sdjwt.mock
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
+import ch.admin.foitt.openid4vc.domain.model.sdjwt.SdJwtDisclosure
+
 /**
  * SD-JWT example can be found here: https://www.rfc-editor.org/rfc/rfc9901.html#name-simple-structured-sd-jwt
  */
@@ -57,15 +60,110 @@ internal object SimpleRFCSdJwt {
     const val JWT =
         "eyJhbGciOiAiRVMyNTYiLCAidHlwIjogImV4YW1wbGUrc2Qtand0In0.eyJfc2QiOiBbIkM5aW5wNllvUmFFWFI0Mjd6WUpQN1FyazFXSF84YmR3T0FfWVVyVW5HUVUiLCAiS3VldDF5QWEwSElRdlluT1ZkNTloY1ZpTzlVZzZKMmtTZnFZUkJlb3d2RSIsICJNTWxkT0ZGekIyZDB1bWxtcFRJYUdlcmhXZFVfUHBZZkx2S2hoX2ZfOWFZIiwgIlg2WkFZT0lJMnZQTjQwVjd4RXhad1Z3ejd5Um1MTmNWd3Q1REw4Ukx2NGciLCAiWTM0em1JbzBRTExPdGRNcFhHd2pCZ0x2cjE3eUVoaFlUMEZHb2ZSLWFJRSIsICJmeUdwMFdUd3dQdjJKRFFsbjFsU2lhZW9iWnNNV0ExMGJRNTk4OS05RFRzIiwgIm9tbUZBaWNWVDhMR0hDQjB1eXd4N2ZZdW8zTUhZS08xNWN6LVJaRVlNNVEiLCAiczBCS1lzTFd4UVFlVTh0VmxsdE03TUtzSVJUckVJYTFQa0ptcXhCQmY1VSJdLCAiaXNzIjogImh0dHBzOi8vaXNzdWVyLmV4YW1wbGUuY29tIiwgImlhdCI6IDE2ODMwMDAwMDAsICJleHAiOiAxODgzMDAwMDAwLCAiYWRkcmVzcyI6IHsiX3NkIjogWyI2YVVoelloWjdTSjFrVm1hZ1FBTzN1MkVUTjJDQzFhSGhlWnBLbmFGMF9FIiwgIkF6TGxGb2JrSjJ4aWF1cFJFUHlvSnotOS1OU2xkQjZDZ2pyN2ZVeW9IemciLCAiUHp6Y1Z1MHFiTXVCR1NqdWxmZXd6a2VzRDl6dXRPRXhuNUVXTndrclEtayIsICJiMkRrdzBqY0lGOXJHZzhfUEY4WmN2bmNXN3p3Wmo1cnlCV3ZYZnJwemVrIiwgImNQWUpISVo4VnUtZjlDQ3lWdWIyVWZnRWs4anZ2WGV6d0sxcF9KbmVlWFEiLCAiZ2xUM2hyU1U3ZlNXZ3dGNVVEWm1Xd0JUdzMyZ25VbGRJaGk4aEdWQ2FWNCIsICJydkpkNmlxNlQ1ZWptc0JNb0d3dU5YaDlxQUFGQVRBY2k0MG9pZEVlVnNBIiwgInVOSG9XWWhYc1poVkpDTkUyRHF5LXpxdDd0NjlnSkt5NVFhRnY3R3JNWDQiXX0sICJfc2RfYWxnIjogInNoYS0yNTYifQ.EOZa2YqK8j4i7cqBDkfPcTMaFsgPwcx3aYJkFoMfvV46LxL-PPqrWsIyNukB4x8Y2LT31eIHDc4Wg4XNzaqu4w"
     val SD_JWT = JWT + listOf(
-        "WyIyR0xDNDJzS1F2ZUNmR2ZyeU5STjl3IiwgInN1YiIsICI2YzVjMGE0OS1iNTg5LTQzMWQtYmFlNy0yMTkxMjJhOWVjMmMiXQ",
-        "WyJlbHVWNU9nM2dTTklJOEVZbnN4QV9BIiwgImdpdmVuX25hbWUiLCAiXHU1OTJhXHU5MGNlIl0",
-        "WyI2SWo3dE0tYTVpVlBHYm9TNXRtdlZBIiwgImZhbWlseV9uYW1lIiwgIlx1NWM3MVx1NzUzMCJd",
-        "WyJlSThaV205UW5LUHBOUGVOZW5IZGhRIiwgImVtYWlsIiwgIlwidW51c3VhbCBlbWFpbCBhZGRyZXNzXCJAZXhhbXBsZS5qcCJd",
-        "WyJRZ19PNjR6cUF4ZTQxMmExMDhpcm9BIiwgInBob25lX251bWJlciIsICIrODEtODAtMTIzNC01Njc4Il0",
-        "WyJBSngtMDk1VlBycFR0TjRRTU9xUk9BIiwgInN0cmVldF9hZGRyZXNzIiwgIlx1Njc3MVx1NGVhY1x1OTBmZFx1NmUyZlx1NTMzYVx1ODI5ZFx1NTE2Y1x1NTcxMlx1ZmYxNFx1NGUwMVx1NzZlZVx1ZmYxMlx1MjIxMlx1ZmYxOCJd",
-        "WyJQYzMzSk0yTGNoY1VfbEhnZ3ZfdWZRIiwgImxvY2FsaXR5IiwgIlx1Njc3MVx1NGVhY1x1OTBmZCJd",
-        "WyJHMDJOU3JRZmpGWFE3SW8wOXN5YWpBIiwgInJlZ2lvbiIsICJcdTZlMmZcdTUzM2EiXQ",
-        "WyJsa2x4RjVqTVlsR1RQVW92TU5JdkNBIiwgImNvdW50cnkiLCAiSlAiXQ",
-        "WyJ5eXRWYmRBUEdjZ2wyckk0QzlHU29nIiwgImJpcnRoZGF0ZSIsICIxOTQwLTAxLTAxIl0",
+        SUB_DISCLOSURE,
+        GIVEN_NAME_DISCLOSURE,
+        FAMILY_NAME_DISCLOSURE,
+        EMAIL_DISCLOSURE,
+        PHONE_NUMBER_DISCLOSURE,
+        STREET_ADDRESS_DISCLOSURE,
+        LOCALITY_DISCLOSURE,
+        REGION_DISCLOSURE,
+        COUNTRY_DISCLOSURE,
+        BIRTHDATE_DISCLOSURE,
     ).toDisclosures()
+
+    const val SUB_DISCLOSURE = "WyIyR0xDNDJzS1F2ZUNmR2ZyeU5STjl3IiwgInN1YiIsICI2YzVjMGE0OS1iNTg5LTQzMWQtYmFlNy0yMTkxMjJhOWVjMmMiXQ"
+    const val GIVEN_NAME_DISCLOSURE = "WyJlbHVWNU9nM2dTTklJOEVZbnN4QV9BIiwgImdpdmVuX25hbWUiLCAiXHU1OTJhXHU5MGNlIl0"
+    const val FAMILY_NAME_DISCLOSURE = "WyI2SWo3dE0tYTVpVlBHYm9TNXRtdlZBIiwgImZhbWlseV9uYW1lIiwgIlx1NWM3MVx1NzUzMCJd"
+    const val EMAIL_DISCLOSURE = "WyJlSThaV205UW5LUHBOUGVOZW5IZGhRIiwgImVtYWlsIiwgIlwidW51c3VhbCBlbWFpbCBhZGRyZXNzXCJAZXhhbXBsZS5qcCJd"
+    const val PHONE_NUMBER_DISCLOSURE = "WyJRZ19PNjR6cUF4ZTQxMmExMDhpcm9BIiwgInBob25lX251bWJlciIsICIrODEtODAtMTIzNC01Njc4Il0"
+    const val STREET_ADDRESS_DISCLOSURE =
+        "WyJBSngtMDk1VlBycFR0TjRRTU9xUk9BIiwgInN0cmVldF9hZGRyZXNzIiwgIlx1Njc3MVx1NGVhY1x1OTBmZFx1NmUyZlx1NTMzYVx1ODI5ZFx1NTE2Y1x1NTcxMlx1ZmYxNFx1NGUwMVx1NzZlZVx1ZmYxMlx1MjIxMlx1ZmYxOCJd"
+    const val LOCALITY_DISCLOSURE = "WyJQYzMzSk0yTGNoY1VfbEhnZ3ZfdWZRIiwgImxvY2FsaXR5IiwgIlx1Njc3MVx1NGVhY1x1OTBmZCJd"
+    const val REGION_DISCLOSURE = "WyJHMDJOU3JRZmpGWFE3SW8wOXN5YWpBIiwgInJlZ2lvbiIsICJcdTZlMmZcdTUzM2EiXQ"
+    const val COUNTRY_DISCLOSURE = "WyJsa2x4RjVqTVlsR1RQVW92TU5JdkNBIiwgImNvdW50cnkiLCAiSlAiXQ"
+    const val BIRTHDATE_DISCLOSURE = "WyJ5eXRWYmRBUEdjZ2wyckk0QzlHU29nIiwgImJpcnRoZGF0ZSIsICIxOTQwLTAxLTAxIl0"
+
+    val sdJwtDisclosure1 = SdJwtDisclosure(
+        paths = listOf(listOf(ClaimsPathPointerComponent.String("family_name"))),
+        disclosure = FAMILY_NAME_DISCLOSURE
+    )
+
+    val sdJwtDisclosure2 = SdJwtDisclosure(
+        paths = listOf(listOf(ClaimsPathPointerComponent.String("email"))),
+        disclosure = EMAIL_DISCLOSURE
+    )
+
+    val sdJwtDisclosure3 = SdJwtDisclosure(
+        paths = listOf(listOf(ClaimsPathPointerComponent.String("birthdate"))),
+        disclosure = BIRTHDATE_DISCLOSURE
+    )
+
+    val sdJwtDisclosure4 = SdJwtDisclosure(
+        paths = listOf(listOf(ClaimsPathPointerComponent.String("sub"))),
+        disclosure = SUB_DISCLOSURE
+    )
+
+    val sdJwtDisclosure5 = SdJwtDisclosure(
+        paths = listOf(listOf(ClaimsPathPointerComponent.String("given_name"))),
+        disclosure = GIVEN_NAME_DISCLOSURE
+    )
+
+    val sdJwtDisclosure6 = SdJwtDisclosure(
+        paths = listOf(listOf(ClaimsPathPointerComponent.String("phone_number"))),
+        disclosure = PHONE_NUMBER_DISCLOSURE
+    )
+
+    val sdJwtDisclosure7 = SdJwtDisclosure(
+        paths = listOf(
+            listOf(
+                ClaimsPathPointerComponent.String("address"),
+                ClaimsPathPointerComponent.String("street_address"),
+            )
+        ),
+        disclosure = STREET_ADDRESS_DISCLOSURE
+    )
+
+    val sdJwtDisclosure8 = SdJwtDisclosure(
+        paths = listOf(
+            listOf(
+                ClaimsPathPointerComponent.String("address"),
+                ClaimsPathPointerComponent.String("region"),
+            )
+        ),
+        disclosure = REGION_DISCLOSURE
+    )
+
+    val sdJwtDisclosure9 = SdJwtDisclosure(
+        paths = listOf(
+            listOf(
+                ClaimsPathPointerComponent.String("address"),
+                ClaimsPathPointerComponent.String("locality"),
+            )
+        ),
+        disclosure = LOCALITY_DISCLOSURE
+    )
+
+    val sdJwtDisclosure10 = SdJwtDisclosure(
+        paths = listOf(
+            listOf(
+                ClaimsPathPointerComponent.String("address"),
+                ClaimsPathPointerComponent.String("country"),
+            )
+        ),
+        disclosure = COUNTRY_DISCLOSURE
+    )
+
+    val sdJwtDisclosures = setOf(
+        sdJwtDisclosure1,
+        sdJwtDisclosure2,
+        sdJwtDisclosure3,
+        sdJwtDisclosure4,
+        sdJwtDisclosure5,
+        sdJwtDisclosure6,
+        sdJwtDisclosure7,
+        sdJwtDisclosure8,
+        sdJwtDisclosure9,
+        sdJwtDisclosure10,
+    )
 }

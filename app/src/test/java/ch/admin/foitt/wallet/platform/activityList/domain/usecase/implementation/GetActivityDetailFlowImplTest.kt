@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.activityList.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityDetail
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityListError
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityWithDetailsRepository
@@ -142,6 +143,7 @@ class GetActivityDetailFlowImplTest {
                 verifiableCredential = mockVerifiableCredential,
                 credentialDisplays = mockCredentialDisplays,
                 claims = claimsWithDisplays,
+                credentialFormat = CredentialFormat.VC_SD_JWT
             )
         } returns Err(CredentialError.Unexpected(IllegalStateException()))
 
@@ -169,6 +171,7 @@ class GetActivityDetailFlowImplTest {
                 verifiableCredential = mockVerifiableCredential,
                 credentialDisplays = mockCredentialDisplays,
                 claims = claimsWithDisplays,
+                credentialFormat = CredentialFormat.VC_SD_JWT
             )
         } returns Ok(mockCredentialDisplayData)
 

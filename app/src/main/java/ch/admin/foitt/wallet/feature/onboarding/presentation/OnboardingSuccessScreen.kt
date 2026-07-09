@@ -9,8 +9,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
+import ch.admin.foitt.wallet.platform.composables.presentation.RequestViewFocusOnResume
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -24,6 +26,7 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 fun OnboardingSuccessScreen(
     viewModel: OnboardingSuccessViewModel,
 ) {
+    RequestViewFocusOnResume()
     OnboardingSuccessScreenContent(
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         onNext = viewModel::onNext,
@@ -44,10 +47,16 @@ private fun OnboardingSuccessScreenContent(
             )
         },
         stickyBottomContent = {
-            Buttons.FilledPrimary(
-                text = stringResource(id = R.string.tk_global_continue),
-                onClick = onNext,
-                modifier = Modifier.testTag(TestTags.CONTINUE_BUTTON.name)
+            AdaptiveBottomButtonBar(
+                buttons = listOf(
+                    {
+                        Buttons.FilledPrimary(
+                            text = stringResource(id = R.string.tk_global_continue),
+                            onClick = onNext,
+                            modifier = Modifier.testTag(TestTags.CONTINUE_BUTTON.name)
+                        )
+                    }
+                )
             )
         }
     ) {

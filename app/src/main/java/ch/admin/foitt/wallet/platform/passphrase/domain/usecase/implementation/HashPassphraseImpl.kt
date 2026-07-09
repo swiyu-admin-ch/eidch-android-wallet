@@ -33,7 +33,7 @@ class HashPassphraseImpl @Inject constructor(
                 hashData
             }
         }.onFailure { error ->
-            Timber.e(message = "Error while trying to hash PIN", t = error.throwable)
+            Timber.e(t = error.throwable, message = "Error while trying to hash PIN")
         }
     }
 }

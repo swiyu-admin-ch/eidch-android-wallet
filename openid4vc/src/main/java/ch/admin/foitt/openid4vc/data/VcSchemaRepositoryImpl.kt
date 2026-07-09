@@ -1,6 +1,6 @@
 package ch.admin.foitt.openid4vc.data
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSchemaRepositoryError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.toVcSchemaRepositoryError
 import ch.admin.foitt.openid4vc.domain.repository.VcSchemaRepository

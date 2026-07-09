@@ -1,17 +1,14 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
-import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Logo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.OidIssuerDisplay
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.VcSdJwtCredentialConfiguration
-import ch.admin.foitt.wallet.platform.claimsPathPointer.domain.usecase.GetClaimsPathPointers
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyIssuerDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
-import ch.admin.foitt.wallet.platform.credential.domain.model.MetadataDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.util.entityNames
@@ -19,12 +16,11 @@ import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedCredentialInformationDisplay
+import ch.admin.foitt.wallet.platform.oca.domain.model.MetaDisplays
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
-import ch.admin.foitt.wallet.platform.oca.domain.model.OcaDisplays
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaDisplays
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1TrustStatement
-import ch.admin.foitt.wallet.util.SafeJsonTestInstance.safeJson
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -35,10 +31,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -49,9 +45,6 @@ class GenerateAnyDisplaysImplTest {
 
     @MockK
     private lateinit var mockGetLocalizedCredentialInformationDisplay: GetLocalizedCredentialInformationDisplay
-
-    @MockK
-    private lateinit var mockGetClaimsPathPointers: GetClaimsPathPointers
 
     @MockK
     private lateinit var mockGenerateOcaDisplays: GenerateOcaDisplays
@@ -69,12 +62,10 @@ class GenerateAnyDisplaysImplTest {
     private lateinit var mockTrustStatement: IdentityV1TrustStatement
 
     @MockK
-    private lateinit var mockMetadata: VcSdJwtCredentialConfiguration
+    private lateinit var mockCredentialConfiguration: VcSdJwtCredentialConfiguration
 
     @MockK
     private lateinit var mockOcaBundle: OcaBundle
-
-    private val json = safeJson
 
     private lateinit var useCase: GenerateAnyDisplays
 
@@ -84,7 +75,6 @@ class GenerateAnyDisplaysImplTest {
 
         useCase = GenerateAnyDisplaysImpl(
             getLocalizedCredentialInformationDisplay = mockGetLocalizedCredentialInformationDisplay,
-            getClaimsPathPointers = mockGetClaimsPathPointers,
             generateOcaDisplays = mockGenerateOcaDisplays,
             generateMetadataDisplays = mockGenerateMetadataDisplays,
         )
@@ -99,7 +89,7 @@ class GenerateAnyDisplaysImplTest {
 
     @Test
     fun `Generating valid credential displays returns success`() = runTest {
-        val result = useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockMetadata, mockOcaBundle).assertOk()
+        val result = useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockCredentialConfiguration, mockOcaBundle).assertOk()
 
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = TRUST_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
@@ -107,36 +97,28 @@ class GenerateAnyDisplaysImplTest {
             AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
         )
 
-        val expectedCredentialDisplays = emptyList<AnyCredentialDisplay>()
-        val expectedClusters = emptyList<Cluster>()
-
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
-        assertEquals(expectedCredentialDisplays, result.credentialDisplays)
-        assertEquals(expectedClusters, result.clusters)
+        assertEquals(ocaCredentialDisplays, result.credentialDisplays)
+        assertEquals(ocaClusters, result.clusters)
     }
 
     @Test
     fun `Generating the credential displays uses the metadata issuer name when trust issuer name is not provided`() = runTest {
-        val result = useCase(mockAnyCredential, mockIssuerInfo, null, mockMetadata, mockOcaBundle).assertOk()
+        val result = useCase(mockAnyCredential, mockIssuerInfo, null, mockCredentialConfiguration, mockOcaBundle).assertOk()
 
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = METADATA_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
             AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
         )
 
-        val expectedCredentialDisplays = emptyList<AnyCredentialDisplay>()
-        val expectedClusters = emptyList<Cluster>()
-
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
-        assertEquals(expectedCredentialDisplays, result.credentialDisplays)
-        assertEquals(expectedClusters, result.clusters)
     }
 
     @Test
     fun `Generating credential displays adds fallback language if displays empty`() = runTest {
         every { mockIssuerInfo.display } returns null
 
-        val result = useCase(mockAnyCredential, mockIssuerInfo, null, mockMetadata, mockOcaBundle).assertOk()
+        val result = useCase(mockAnyCredential, mockIssuerInfo, null, mockCredentialConfiguration, mockOcaBundle).assertOk()
 
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
@@ -146,8 +128,8 @@ class GenerateAnyDisplaysImplTest {
     }
 
     @Test
-    fun `Generating credential displays adds fallback language if not contained`() = runTest {
-        val result = useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockMetadata, mockOcaBundle).assertOk()
+    fun `Generating credential displays adds fallback language`() = runTest {
+        val result = useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockCredentialConfiguration, mockOcaBundle).assertOk()
 
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = TRUST_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
@@ -162,14 +144,16 @@ class GenerateAnyDisplaysImplTest {
     fun `Generating credential displays maps errors from getting the credential claims`() = runTest {
         every { mockAnyCredential.getClaimsToSave() } throws IllegalStateException()
 
-        useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockMetadata, mockOcaBundle)
+        useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockCredentialConfiguration, mockOcaBundle)
             .assertErrorType(CredentialError.Unexpected::class)
     }
 
     @Test
     fun `Generating credential displays gets the oca displays if oca bundle is provided`() = runTest {
-        useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockMetadata, mockOcaBundle).assertOk()
+        val result = useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockCredentialConfiguration, mockOcaBundle).assertOk()
 
+        assertEquals(ocaCredentialDisplays, result.credentialDisplays)
+        assertEquals(ocaClusters, result.clusters)
         coVerify(exactly = 1) {
             mockGenerateOcaDisplays(any(), any(), any())
         }
@@ -180,8 +164,10 @@ class GenerateAnyDisplaysImplTest {
 
     @Test
     fun `Generating credential displays gets the metadata displays if the oca bundle is not provided`() = runTest {
-        useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockMetadata, null).assertOk()
+        val result = useCase(mockAnyCredential, mockIssuerInfo, mockTrustStatement, mockCredentialConfiguration, null).assertOk()
 
+        assertEquals(metadataCredentialDisplays, result.credentialDisplays)
+        assertEquals(metadataClusters, result.clusters)
         coVerify(exactly = 1) {
             mockGenerateMetadataDisplays(any(), any())
         }
@@ -193,13 +179,13 @@ class GenerateAnyDisplaysImplTest {
     @Test
     fun `Generating credential displays maps errors from generating the oca displays`() = runTest {
         val exception = IllegalStateException()
-        coEvery { mockGenerateOcaDisplays(any(), any(), mockOcaBundle) } returns Err(OcaError.Unexpected(exception))
+        coEvery { mockGenerateOcaDisplays(any(), any(), any()) } returns Err(OcaError.Unexpected(exception))
 
         useCase(
             mockAnyCredential,
             mockIssuerInfo,
             mockTrustStatement,
-            mockMetadata,
+            mockCredentialConfiguration,
             mockOcaBundle
         ).assertErrorType(CredentialError.Unexpected::class)
     }
@@ -207,29 +193,26 @@ class GenerateAnyDisplaysImplTest {
     @Test
     fun `Generating credential displays maps errors from generating the metadata displays`() = runTest {
         val exception = IllegalStateException()
-        coEvery { mockGenerateMetadataDisplays(any(), mockMetadata) } returns Err(CredentialError.Unexpected(exception))
+        coEvery { mockGenerateMetadataDisplays(any(), any()) } returns Err(CredentialError.Unexpected(exception))
 
         useCase(
             mockAnyCredential,
             mockIssuerInfo,
             mockTrustStatement,
-            mockMetadata,
+            mockCredentialConfiguration,
             null
         ).assertErrorType(CredentialError.Unexpected::class)
     }
 
     private fun setupDefaultMocks() {
-        val disclosableClaims = json.safeDecodeStringTo<JsonObject>(DISCLOSABLE_CLAIMS_JSON).value
-
-        every { mockAnyCredential.claimsPath } returns "$"
-        every { mockAnyCredential.format } returns CredentialFormat.VC_SD_JWT
-        every { mockAnyCredential.getClaimsToSave() } returns disclosableClaims
+        every { mockAnyCredential.format } returns CREDENTIAL_FORMAT
+        every { mockAnyCredential.getClaimsToSave() } returns mockJsonObject
 
         every { mockIssuerInfo.display } returns listOf(issuerDisplay)
 
         every { mockTrustStatement.entityNames() } returns trustIssuerNames
 
-        every { mockMetadata.format } returns CredentialFormat.VC_SD_JWT
+        every { mockCredentialConfiguration.format } returns CREDENTIAL_FORMAT
 
         coEvery {
             mockGetLocalizedCredentialInformationDisplay(listOf(issuerDisplay), LANGUAGE_EN)
@@ -238,13 +221,8 @@ class GenerateAnyDisplaysImplTest {
             mockGetLocalizedCredentialInformationDisplay(listOf(issuerDisplay), LANGUAGE_FR)
         } returns null
 
-        coEvery { mockGetClaimsPathPointers(disclosableClaims) } returns
-            mapOf(
-                listOf(ClaimsPathPointerComponent.String("claim")) to JsonPrimitive("value")
-            )
-
-        coEvery { mockGenerateOcaDisplays(any(), any(), mockOcaBundle) } returns Ok(ocaDisplays)
-        coEvery { mockGenerateMetadataDisplays(any(), mockMetadata) } returns Ok(metadataDisplays)
+        coEvery { mockGenerateOcaDisplays(mockJsonObject, CREDENTIAL_FORMAT.format, mockOcaBundle) } returns Ok(ocaDisplays)
+        coEvery { mockGenerateMetadataDisplays(mockJsonObject, mockCredentialConfiguration) } returns Ok(metadataDisplays)
     }
 
     private companion object {
@@ -254,6 +232,7 @@ class GenerateAnyDisplaysImplTest {
         const val TRUST_ISSUER_NAME_FR = "trust issuer name fr"
         const val METADATA_ISSUER_NAME_EN = "metadata issuer name en"
         const val METADATA_LOGO_URI = "logo uri"
+        val CREDENTIAL_FORMAT = CredentialFormat.VC_SD_JWT
         val issuerDisplay =
             OidIssuerDisplay(locale = LANGUAGE_EN, name = METADATA_ISSUER_NAME_EN, logo = Logo(uri = METADATA_LOGO_URI))
         val trustIssuerNames = mapOf(
@@ -261,13 +240,19 @@ class GenerateAnyDisplaysImplTest {
             LANGUAGE_FR to TRUST_ISSUER_NAME_FR,
         )
 
-        const val DISCLOSABLE_CLAIMS_JSON = """
-        {
-            "claim":"value"
-        }
-        """
+        val mockJsonObject = mockk<JsonObject>()
 
-        val ocaDisplays = OcaDisplays(credentialDisplays = emptyList(), clusters = emptyList())
-        val metadataDisplays = MetadataDisplays(credentialDisplays = emptyList(), clusters = emptyList())
+        val metadataCredentialDisplays = mockk<List<AnyCredentialDisplay>>()
+        val metadataClusters = mockk<List<Cluster>>()
+        val metadataDisplays = mockk<MetaDisplays> {
+            every { credentialDisplays } returns metadataCredentialDisplays
+            every { clusters } returns metadataClusters
+        }
+        val ocaCredentialDisplays = mockk<List<AnyCredentialDisplay>>()
+        val ocaClusters = mockk<List<Cluster>>()
+        val ocaDisplays = mockk<MetaDisplays> {
+            every { credentialDisplays } returns ocaCredentialDisplays
+            every { clusters } returns ocaClusters
+        }
     }
 }

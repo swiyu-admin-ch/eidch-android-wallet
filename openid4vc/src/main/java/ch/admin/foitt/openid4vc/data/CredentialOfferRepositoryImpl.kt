@@ -1,8 +1,9 @@
 package ch.admin.foitt.openid4vc.data
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.openid4vc.domain.model.CredentialRequestType
 import ch.admin.foitt.openid4vc.domain.model.HttpErrorBody
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchAccessTokenError
@@ -11,6 +12,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerConfigur
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchIssuerCredentialInfoError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchNonceError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchVerifiableCredentialError
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.IssuerNonce
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.NonceResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.TokenResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerConfiguration
@@ -40,7 +42,6 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.getOrElse
-import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapBoth
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.onSuccess
@@ -95,12 +96,12 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         issuerEndpoint: URL,
     ): Result<RawAndParsedIssuerCredentialInfo, FetchIssuerCredentialInfoError> = coroutineBinding {
         val response = fetchIssuerCredentialInfo(issuerEndpoint).bind()
-        val rawString = response.getRawMetadataString().bind()
-        val info = safeJson.safeDecodeStringTo<IssuerCredentialInfo>(rawString)
+        val payload = getPayloadString(response.contentType(), response.body()).bind()
+        val info = safeJson.safeDecodeStringTo<IssuerCredentialInfo>(payload)
             .mapError(JsonParsingError::toFetchIssuerCredentialInfoError).bind()
         RawAndParsedIssuerCredentialInfo(
             issuerCredentialInfo = info,
-            rawIssuerCredentialInfo = rawString
+            rawIssuerCredentialInfo = response.body()
         )
     }
 
@@ -127,16 +128,20 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun HttpResponse.getRawMetadataString(): Result<String, CredentialOfferError.InvalidSignedMetadata> {
-        val rawData = body<String>()
-        return if (contentType()?.content == applicationJwt.content) {
-            runSuspendCatching { Jwt(rawData) }.mapError { error ->
+    private suspend fun getPayloadString(
+        contentType: ContentType?,
+        body: String
+    ): Result<String, CredentialOfferError.InvalidSignedMetadata> = coroutineBinding {
+        if (contentType?.content == applicationJwt.content) {
+            runSuspendCatching {
+                Jwt(body).payloadString
+            }.mapError { error ->
                 val message = "issuer credential info jwt parsing failed"
                 Timber.e(t = error, message = message)
                 CredentialOfferError.InvalidSignedMetadata(error.localizedMessage ?: message)
-            }.map { it.payloadString }
+            }.bind()
         } else {
-            Ok(rawData)
+            body
         }
     }
 
@@ -193,14 +198,19 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
 
     override suspend fun fetchNonce(
         nonceEndpoint: URL
-    ) = runSuspendCatching<String> {
-        val response = httpClient.post(nonceEndpoint).body<NonceResponse>()
-        response.cNonce
+    ) = runSuspendCatching<IssuerNonce> {
+        val response = httpClient.post(nonceEndpoint)
+        val body = response.body<NonceResponse>()
+        IssuerNonce(
+            cNonce = body.cNonce,
+            dpopNonce = response.headers[Constants.DPOP_NONCE_HEADER],
+        )
     }.mapError(Throwable::toFetchNonceError)
 
     override suspend fun fetchAccessToken(
         tokenEndpoint: URL,
-        preAuthorizedCode: String
+        preAuthorizedCode: String,
+        dpopProof: String?,
     ) = runSuspendCatching<TokenResponse> {
         val formParameters = Parameters.build {
             append("grant_type", PRE_AUTHORIZED_KEY)
@@ -209,6 +219,7 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
 
         httpClient.post(tokenEndpoint) {
             header(Constants.SWIYU_API_VERSION_HEADER, Constants.SWIYU_API_VERSION_2)
+            dpopProof?.let { header(Constants.DPOP_HEADER, it) }
             setBody(
                 // Using directly FormDataContent automatically adds a charset in the header, which makes the API fails.
                 TextContent(formParameters, ContentType.Application.FormUrlEncoded)
@@ -226,7 +237,10 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
                     val errorBodyResult = safeJson.safeDecodeStringTo<HttpErrorBody>(errorBodyString)
                     errorBodyResult.mapBoth(
                         success = { errorBody ->
-                            handleAccessTokenErrorBody(errorBody)
+                            handleAccessTokenErrorBody(
+                                errorBody = errorBody,
+                                dpopNonce = response.headers[Constants.DPOP_NONCE_HEADER],
+                            )
                         },
                         failure = { jsonParsingError ->
                             when (jsonParsingError) {
@@ -246,6 +260,7 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
 
     private fun handleAccessTokenErrorBody(
         errorBody: HttpErrorBody,
+        dpopNonce: String?,
     ): FetchAccessTokenError = when (errorBody.error.lowercase()) {
         // see https://www.rfc-editor.org/rfc/rfc6749.html#section-5.2
         // see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-6.3
@@ -254,10 +269,16 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         "invalid_client" -> CredentialOfferError.InvalidClient
         "unauthorized_client" -> CredentialOfferError.UnauthorizedClient
         "unauthorized_grant_type" -> CredentialOfferError.UnauthorizedGrantType
+        "use_dpop_nonce" -> CredentialOfferError.UseDPoPNonce(dpopNonce)
+        "invalid_dpop_proof" -> CredentialOfferError.InvalidDPoPProof
         else -> CredentialOfferError.InvalidCredentialOffer
     }
 
-    override suspend fun fetchAccessTokenByRefreshToken(tokenEndpoint: URL, refreshToken: String) = runSuspendCatching<TokenResponse> {
+    override suspend fun fetchAccessTokenByRefreshToken(
+        tokenEndpoint: URL,
+        refreshToken: String,
+        dpopProof: String?,
+    ) = runSuspendCatching<TokenResponse> {
         val formParameters = Parameters.build {
             append("grant_type", REFRESH_TOKEN_KEY)
             append("refresh_token", refreshToken)
@@ -265,6 +286,7 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
 
         httpClient.post(tokenEndpoint) {
             header(Constants.SWIYU_API_VERSION_HEADER, Constants.SWIYU_API_VERSION_2)
+            dpopProof?.let { header(Constants.DPOP_HEADER, it) }
             setBody(
                 TextContent(formParameters, ContentType.Application.FormUrlEncoded)
             )
@@ -278,11 +300,13 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         tokenResponse: TokenResponse,
         credentialRequestType: CredentialRequestType,
         payloadEncryptionType: PayloadEncryptionType,
+        dpopProof: String?,
     ): Result<CredentialResponse, FetchVerifiableCredentialError> = coroutineBinding {
         val httpResponse = runSuspendCatching {
             httpClient.post(issuerEndpoint) {
                 contentType(credentialRequestType.toContentType())
                 addAuthorizationHeader(tokenResponse)
+                dpopProof?.let { header(Constants.DPOP_HEADER, it) }
                 header(Constants.SWIYU_API_VERSION_HEADER, Constants.SWIYU_API_VERSION_2)
                 accept(ContentType.Application.Json) // without response encryption it's JSON
                 accept(applicationJwt) // with response encryption it's JWE
@@ -328,9 +352,9 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
     }
 
     private fun HttpRequestBuilder.addAuthorizationHeader(tokenResponse: TokenResponse) {
-        val value = when (tokenResponse.tokenType.uppercase()) {
-            "BEARER" -> "Bearer ${tokenResponse.accessToken}"
-            else -> error("Unsupported access token type: ${tokenResponse.tokenType}")
+        val value = when (tokenResponse.tokenType) {
+            TokenType.BEARER -> "Bearer ${tokenResponse.accessToken}"
+            TokenType.DPOP -> "DPoP ${tokenResponse.accessToken}"
         }
         header("Authorization", value)
     }
@@ -343,7 +367,10 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
                     val errorBodyResult = safeJson.safeDecodeStringTo<HttpErrorBody>(errorBodyString)
                     errorBodyResult.mapBoth(
                         success = { errorBody ->
-                            handleVerifiableCredentialErrorBody(errorBody)
+                            handleVerifiableCredentialErrorBody(
+                                errorBody = errorBody,
+                                dpopNonce = response.headers[Constants.DPOP_NONCE_HEADER],
+                            )
                         },
                         failure = { jsonParsingError ->
                             when (jsonParsingError) {
@@ -377,6 +404,7 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
 
     private fun handleVerifiableCredentialErrorBody(
         errorBody: HttpErrorBody,
+        dpopNonce: String?,
     ): FetchVerifiableCredentialError = when (errorBody.error.lowercase()) {
         // see https://www.rfc-editor.org/rfc/rfc6750.html#section-3.1
         "invalid_request" -> CredentialOfferError.InvalidRequestBearerToken
@@ -388,6 +416,8 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         "unknown_credential_identifier" -> CredentialOfferError.UnknownCredentialIdentifier
         "invalid_proof" -> CredentialOfferError.InvalidProof
         "invalid_nonce" -> CredentialOfferError.InvalidNonce
+        "use_dpop_nonce" -> CredentialOfferError.UseDPoPNonce(dpopNonce)
+        "invalid_dpop_proof" -> CredentialOfferError.InvalidDPoPProof
         "invalid_encryption_parameters" -> CredentialOfferError.InvalidEncryptionParameters
         "credential_request_denied" -> CredentialOfferError.CredentialRequestDenied
         else -> CredentialOfferError.InvalidCredentialOffer
@@ -396,13 +426,16 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
     override suspend fun fetchDeferredCredential(
         issuerEndpoint: String,
         accessToken: String,
+        tokenType: TokenType,
         credentialRequestType: CredentialRequestType,
         payloadEncryptionType: PayloadEncryptionType,
+        dpopProof: String?,
     ): Result<CredentialResponse, FetchDeferredCredentialError> = coroutineBinding {
         val httpResponse = runSuspendCatching {
             httpClient.post(issuerEndpoint) {
                 contentType(credentialRequestType.toContentType())
-                header("Authorization", "BEARER $accessToken")
+                header(HttpHeaders.Authorization, authorizationHeaderValue(tokenType, accessToken))
+                dpopProof?.let { header(Constants.DPOP_HEADER, it) }
                 header(Constants.SWIYU_API_VERSION_HEADER, Constants.SWIYU_API_VERSION_2)
                 accept(ContentType.Application.Json) // without response encryption it's JSON
                 accept(applicationJwt) // with response encryption it's JWE
@@ -457,7 +490,10 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
                         val errorBodyResult = safeJson.safeDecodeStringTo<HttpErrorBody>(errorBodyString)
                         errorBodyResult.mapBoth(
                             success = { errorBody ->
-                                handleDeferredCredentialErrorBody(errorBody)
+                                handleDeferredCredentialErrorBody(
+                                    errorBody = errorBody,
+                                    dpopNonce = response.headers[Constants.DPOP_NONCE_HEADER],
+                                )
                             },
                             failure = { jsonParsingError ->
                                 when (jsonParsingError) {
@@ -476,8 +512,10 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun handleDeferredCredentialErrorBody(
         errorBody: HttpErrorBody,
+        dpopNonce: String?,
     ): FetchDeferredCredentialError = when (errorBody.error.lowercase()) {
         // see https://www.rfc-editor.org/rfc/rfc6750.html#section-3.1
         "invalid_request" -> CredentialOfferError.InvalidRequestBearerToken
@@ -489,6 +527,8 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         "unknown_credential_identifier" -> CredentialOfferError.UnknownCredentialIdentifier
         "invalid_proof" -> CredentialOfferError.InvalidProof
         "invalid_nonce" -> CredentialOfferError.InvalidNonce
+        "use_dpop_nonce" -> CredentialOfferError.UseDPoPNonce(dpopNonce)
+        "invalid_dpop_proof" -> CredentialOfferError.InvalidDPoPProof
         "invalid_encryption_parameters" -> CredentialOfferError.InvalidEncryptionParameters
         "credential_request_denied" -> CredentialOfferError.CredentialRequestDenied
         // see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-9.3
@@ -496,11 +536,17 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
         else -> CredentialOfferError.InvalidCredentialOffer
     }
 
+    private fun authorizationHeaderValue(tokenType: TokenType, accessToken: String): String = when (tokenType) {
+        TokenType.BEARER -> "Bearer $accessToken"
+        TokenType.DPOP -> "DPoP $accessToken"
+    }
+
     companion object {
         private const val PRE_AUTHORIZED_KEY = "urn:ietf:params:oauth:grant-type:pre-authorized_code"
         private const val REFRESH_TOKEN_KEY = "urn:ietf:params:oauth:grant-type:refresh_token"
     }
 }
+
 private fun Throwable.toFetchNonceError(): FetchNonceError = when (this) {
     is IOException -> CredentialOfferError.NetworkInfoError
     else -> CredentialOfferError.Unexpected(this)

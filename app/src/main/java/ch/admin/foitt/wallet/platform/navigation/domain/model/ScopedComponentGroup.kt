@@ -31,6 +31,12 @@ sealed interface ScopedComponentGroup {
      * [ScopedComponentGroup] for keeping the otp variables in memory.
      */
     sealed interface Otp : ScopedComponentGroup
+
+    /**
+     * [ScopedComponentGroup] for keeping the AvBeam SDK alive.
+     * Should be as small as possible, so that the required memory can be released as soon as possible.
+     */
+    sealed interface AvBeamSdkSession : ScopedComponentGroup
 }
 
 /**
@@ -44,6 +50,7 @@ enum class ComponentScope {
     EidDocumentScan,
     EidOnlineSession,
     Otp,
+    AvBeamSdkSession
 }
 
 internal fun ComponentScope.contains(destination: Destination?): Boolean = when (this) {
@@ -54,4 +61,5 @@ internal fun ComponentScope.contains(destination: Destination?): Boolean = when 
     ComponentScope.EidDocumentScan -> destination is ScopedComponentGroup.EidDocumentScan
     ComponentScope.EidOnlineSession -> destination is ScopedComponentGroup.EidOnlineSession
     ComponentScope.Otp -> destination is ScopedComponentGroup.Otp
+    ComponentScope.AvBeamSdkSession -> destination is ScopedComponentGroup.AvBeamSdkSession
 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,7 +44,7 @@ import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
-import ch.admin.foitt.wallet.platform.credential.presentation.CredentialListRow
+import ch.admin.foitt.wallet.platform.credential.presentation.credentialCardListItems
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
@@ -176,14 +175,12 @@ private fun CompactCredentialList(
         item {
             headerContent()
         }
-        itemsIndexed(credentialStates) { index, state ->
-            CredentialListRow(
-                onClick = { onCredentialSelected(state.credentialId) },
-                credentialState = state,
-                showDivider = index != credentialStates.lastIndex,
-                backgroundColor = WalletTheme.colorScheme.listItemBackground
-            )
-        }
+
+        credentialCardListItems(
+            credentialCardStates = credentialStates,
+            paddingValues = PaddingValues(horizontal = Sizes.s04),
+            onClick = { state -> onCredentialSelected(state.credentialId) },
+        )
     }
 }
 

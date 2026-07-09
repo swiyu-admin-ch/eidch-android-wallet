@@ -1,6 +1,7 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationRequestError
@@ -58,7 +59,7 @@ class CreateAnyVerifiablePresentationImplTest {
     fun `Submitting presentation for vc+sd_jwt credential returns verifiable presentation`() = runTest {
         val result = useCase(
             anyCredential = mockVcSdJwtCredential,
-            requestedFields = requestedFields,
+            presentationPaths = presentationPaths,
             authorizationRequest = mockAuthorizationRequest,
         ).assertOk()
 
@@ -69,7 +70,7 @@ class CreateAnyVerifiablePresentationImplTest {
     fun `Submitting presentation for unsupported credential format returns error`() = runTest {
         val result = useCase(
             anyCredential = mockAnyCredential,
-            requestedFields = requestedFields,
+            presentationPaths = presentationPaths,
             authorizationRequest = mockAuthorizationRequest,
         )
 
@@ -80,7 +81,7 @@ class CreateAnyVerifiablePresentationImplTest {
         coEvery {
             mockCreateVcSdJwtVerifiablePresentation(
                 credential = mockVcSdJwtCredential,
-                requestedFields = requestedFields,
+                presentationPaths = presentationPaths,
                 authorizationRequest = mockAuthorizationRequest,
                 keyBinding = mockKeyBinding,
             )
@@ -90,8 +91,8 @@ class CreateAnyVerifiablePresentationImplTest {
     }
 
     private companion object {
-        const val FIELD = "field"
-        val requestedFields = listOf(FIELD)
+        val claimsPathPointer1 = listOf(ClaimsPathPointerComponent.String("field"))
+        val presentationPaths = listOf(claimsPathPointer1)
 
         const val VERIFIABLE_PRESENTATION = "verifiablePresentation"
     }

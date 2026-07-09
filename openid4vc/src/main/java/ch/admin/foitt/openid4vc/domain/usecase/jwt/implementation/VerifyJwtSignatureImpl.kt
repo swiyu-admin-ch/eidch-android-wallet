@@ -17,7 +17,7 @@ import com.nimbusds.jose.jwk.ECKey
 import com.nimbusds.jose.util.Base64URL
 import javax.inject.Inject
 
-class VerifyJwtSignatureImpl @Inject constructor() : VerifyJwtSignature {
+internal class VerifyJwtSignatureImpl @Inject constructor() : VerifyJwtSignature {
     override fun invoke(jwt: Jwt, publicKey: Jwk): Result<Unit, VerifyJwtSignatureError> = binding {
         val valid = runSuspendCatching {
             val key = ECKey.Builder(

@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.impl
 
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.model.FileUploadConfig
 import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.UploadAllFiles
+import ch.admin.foitt.wallet.feature.eIdRequestVerification.domain.usecase.UploadAllFilesProgress
 import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestFile
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AvUploadFilesError
@@ -22,8 +23,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 class UploadAllFilesImpl @Inject constructor(
@@ -31,35 +35,61 @@ class UploadAllFilesImpl @Inject constructor(
     private val uploadFileToCase: UploadFileToCase,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : UploadAllFiles {
-    override suspend fun invoke(
+    override fun invoke(
         caseId: String,
         accessToken: String
-    ): Result<Unit, AvUploadFilesError> = withContext(ioDispatcher) {
-        coroutineBinding {
-            filesToUpload.map { fileToUpload ->
-                async {
-                    val file = getEIdRequestFile(caseId, fileToUpload.fileName).getOrElse {
-                        if (!fileToUpload.isMandatory) {
-                            Timber.d("Skipping optional file '${fileToUpload.fileName}' (not found)")
-                            return@async Ok(Unit)
-                        }
-                        Err(it).bind()
-                    }
+    ): Flow<Result<UploadAllFilesProgress, AvUploadFilesError>> = channelFlow {
+        val total = filesToUpload.size
+        val completed = AtomicInteger(0)
+        send(Ok(UploadAllFilesProgress(total = total, completed = 0)))
 
-                    retryWithLimit(NUMBER_RETRIES) {
-                        uploadFileToCase(
-                            UploadFileRequest(
-                                caseId = caseId,
-                                accessToken = accessToken,
-                                fileName = fileToUpload.serverFileName,
-                                document = file.data,
-                                mime = fileToUpload.contentType
-                            )
-                        ).mapError { it.toAvUploadFilesError() }
-                    }.bind()
-                }
-            }.awaitAll()
+        val uploadResult = withContext(ioDispatcher) {
+            coroutineBinding {
+                filesToUpload.map { fileToUpload ->
+                    async {
+                        val file = getEIdRequestFile(caseId, fileToUpload.fileName).getOrElse {
+                            if (!fileToUpload.isMandatory) {
+                                Timber.d("Skipping optional file '${fileToUpload.fileName}' (not found)")
+                                send(
+                                    Ok(
+                                        UploadAllFilesProgress(
+                                            total = total,
+                                            completed = completed.incrementAndGet()
+                                        )
+                                    )
+                                )
+                                return@async Ok(Unit)
+                            }
+                            Err(it).bind()
+                        }
+
+                        retryWithLimit(NUMBER_RETRIES) {
+                            uploadFileToCase(
+                                UploadFileRequest(
+                                    caseId = caseId,
+                                    accessToken = accessToken,
+                                    fileName = fileToUpload.serverFileName,
+                                    document = file.data,
+                                    mime = fileToUpload.contentType
+                                )
+                            ).mapError { it.toAvUploadFilesError() }
+                        }.also { result ->
+                            if (result.isOk) {
+                                send(
+                                    Ok(
+                                        UploadAllFilesProgress(
+                                            total = total,
+                                            completed = completed.incrementAndGet()
+                                        )
+                                    )
+                                )
+                            }
+                        }.bind()
+                    }
+                }.awaitAll()
+            }
         }
+        uploadResult.getError()?.let { error -> send(Err(error)) }
     }
 
     private suspend fun getEIdRequestFile(

@@ -1,7 +1,6 @@
 package ch.admin.foitt.wallet.feature.home.presentation.model
 
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayData
 
 sealed interface HomeScreenState {
@@ -9,7 +8,7 @@ sealed interface HomeScreenState {
     data class CredentialList(
         val eIdRequests: List<SIdRequestDisplayData>,
         val credentials: List<CredentialCardState>,
-        val onCredentialClick: (Long, VerifiableProgressionState, isDeferred: Boolean) -> Unit,
+        val onCredentialClick: (credentialCardState: CredentialCardState) -> Unit,
     ) : HomeScreenState
     data class NoCredential(
         val eIdRequests: List<SIdRequestDisplayData>,

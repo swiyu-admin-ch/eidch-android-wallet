@@ -2,7 +2,6 @@ package ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.imp
 
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptor
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
@@ -19,7 +18,6 @@ import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
@@ -42,9 +40,6 @@ class ProcessPresentationRequestImplTest {
 
     @MockK
     private lateinit var mockPresentationRequestWithRaw: PresentationRequestWithRaw
-
-    @MockK
-    private lateinit var mockInputDescriptors: List<InputDescriptor>
 
     @MockK
     private lateinit var mockCompatibleCredential: CompatibleCredential
@@ -143,9 +138,6 @@ class ProcessPresentationRequestImplTest {
     }
 
     private fun setupDefaultMocks() {
-        every { mockAuthorizationRequest.presentationDefinition } returns mockk {
-            every { inputDescriptors } returns mockInputDescriptors
-        }
         every { mockAuthorizationRequest.responseUri } returns RESPONSE_URI
         coEvery { mockVerifiableCredentialRepo.getAllIds() } returns Ok(listOf(1, 2, 3))
         coEvery { mockGetCompatibleCredentials(mockAuthorizationRequest) } returns Ok(setOf(mockCompatibleCredential))

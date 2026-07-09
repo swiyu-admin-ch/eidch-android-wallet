@@ -5,13 +5,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.walletPairing.presentation.model.WalletPairingUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.StandardErrorScreen
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
@@ -70,20 +70,25 @@ private fun InitialContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow,
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_getEid_walletPairing1_primaryButton),
-            onClick = onSingleDeviceFlow,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading,
-            isActive = isLoading,
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_getEid_walletPairing1_secondaryButton),
-            onClick = onMultiDeviceFlow,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_getEid_walletPairing1_primaryButton),
+                        onClick = onSingleDeviceFlow,
+                        enabled = !isLoading,
+                        isActive = isLoading,
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_getEid_walletPairing1_secondaryButton),
+                        onClick = onMultiDeviceFlow,
+                        enabled = !isLoading,
+                    )
+                },
+            ),
         )
     }
 ) {

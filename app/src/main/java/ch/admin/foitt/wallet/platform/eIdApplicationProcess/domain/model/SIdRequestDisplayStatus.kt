@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model
 
-import ch.admin.foitt.wallet.platform.database.domain.model.EIdRequestState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.CANCELLED
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.CLOSED
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState.IN_AUTO_VERIFICATION
@@ -27,6 +26,7 @@ enum class SIdRequestDisplayStatus {
     AV_EXPIRED_LEGAL_CONSENT_OK,
     AV_EXPIRED_LEGAL_CONSENT_PENDING,
     IN_AUTO_VERIFICATION,
+    AV_FILES_SUBMITTED,
     IN_TARGET_WALLET_PAIRING,
     IN_AGENT_REVIEW,
     READY_FOR_FINAL_ENTITLEMENT_CHECK,
@@ -37,15 +37,47 @@ enum class SIdRequestDisplayStatus {
     UNKNOWN,
 }
 
-fun StateResponse.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus =
-    getSIdRequestDisplayStatus(state, toLegalRepresentativeConsent())
+val SIdRequestDisplayStatus.priority: Int
+    get() = when (this) {
+        SIdRequestDisplayStatus.IN_AUTO_VERIFICATION -> 1
+        SIdRequestDisplayStatus.AV_FILES_SUBMITTED -> 2
+        SIdRequestDisplayStatus.IN_ISSUANCE -> 3
+        SIdRequestDisplayStatus.CLOSED -> 4
 
-fun EIdRequestState.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus =
-    getSIdRequestDisplayStatus(state, legalRepresentativeConsent)
+        SIdRequestDisplayStatus.AV_READY -> 5
+        SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_OK -> 6
+        SIdRequestDisplayStatus.AV_READY_LEGAL_CONSENT_PENDING -> 7
+
+        SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING -> 8
+        SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK -> 9
+
+        SIdRequestDisplayStatus.QUEUEING -> 10
+        SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_OK -> 11
+        SIdRequestDisplayStatus.QUEUEING_LEGAL_CONSENT_PENDING -> 12
+
+        SIdRequestDisplayStatus.REFUSED -> 13
+        SIdRequestDisplayStatus.UNKNOWN -> 14
+
+        SIdRequestDisplayStatus.AV_EXPIRED -> 15
+        SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK -> 16
+        SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING -> 17
+
+        SIdRequestDisplayStatus.CANCELLED -> 18
+        SIdRequestDisplayStatus.IN_AGENT_REVIEW -> 19
+    }
+
+fun StateResponse.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus =
+    getSIdRequestDisplayStatus(state, toLegalRepresentativeConsent(), false)
+
+fun EIdRequestCaseWithState.toSIdRequestDisplayStatus(): SIdRequestDisplayStatus =
+    this.state?.let { state ->
+        getSIdRequestDisplayStatus(state.state, state.legalRepresentativeConsent, case.filesSubmitted)
+    } ?: SIdRequestDisplayStatus.UNKNOWN
 
 private fun getSIdRequestDisplayStatus(
     queueState: EIdRequestQueueState,
     legalConsent: LegalRepresentativeConsent,
+    filesSubmitted: Boolean,
 ): SIdRequestDisplayStatus = when (queueState) {
     READY_FOR_ONLINE_SESSION -> handleReadyState(legalConsent)
     IN_QUEUING -> handleQueueingState(legalConsent)
@@ -54,7 +86,7 @@ private fun getSIdRequestDisplayStatus(
     // We currently do not try to differentiate if other devices are paired
     IN_ISSUANCE -> SIdRequestDisplayStatus.IN_ISSUANCE
     IN_TARGET_WALLET_PAIRING -> SIdRequestDisplayStatus.IN_TARGET_WALLET_PAIRING
-    IN_AUTO_VERIFICATION -> SIdRequestDisplayStatus.IN_AUTO_VERIFICATION
+    IN_AUTO_VERIFICATION -> handleAutoVerificationState(filesSubmitted)
     READY_FOR_FINAL_ENTITLEMENT_CHECK -> SIdRequestDisplayStatus.READY_FOR_FINAL_ENTITLEMENT_CHECK
     CANCELLED -> SIdRequestDisplayStatus.CANCELLED
     TIMEOUT -> handleExpiredState(legalConsent)
@@ -77,4 +109,9 @@ private fun handleExpiredState(legalConsent: LegalRepresentativeConsent): SIdReq
     NOT_REQUIRED -> SIdRequestDisplayStatus.AV_EXPIRED
     VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_OK
     NOT_VERIFIED -> SIdRequestDisplayStatus.AV_EXPIRED_LEGAL_CONSENT_PENDING
+}
+
+private fun handleAutoVerificationState(filesSubmitted: Boolean): SIdRequestDisplayStatus = when (filesSubmitted) {
+    true -> SIdRequestDisplayStatus.AV_FILES_SUBMITTED
+    false -> SIdRequestDisplayStatus.IN_AUTO_VERIFICATION
 }

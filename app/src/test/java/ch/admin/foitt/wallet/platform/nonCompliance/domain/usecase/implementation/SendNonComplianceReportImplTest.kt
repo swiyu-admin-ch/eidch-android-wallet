@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityListError
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.CredentialActivityRepository
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
@@ -15,6 +16,7 @@ import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceEr
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceMetadata
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceRequest
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceRequestField
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.repository.NonComplianceRepository
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.SendNonComplianceReport
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.mock.NonComplianceMocks.PRESENTATION_REQUEST_JWT
@@ -27,11 +29,14 @@ import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
+import io.mockk.CapturingSlot
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonElement
@@ -39,6 +44,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -82,19 +88,25 @@ class SendNonComplianceReportImplTest {
     @MockK
     private lateinit var mockNonComplianceChallengeResponse: NonComplianceChallengeResponse
 
+    @MockK
+    private lateinit var mockAuthorizationRequest: AuthorizationRequest
+
     private lateinit var useCase: SendNonComplianceReport
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        useCase = SendNonComplianceReportImpl(
-            credentialActivityRepository = mockCredentialActivityRepository,
-            verifiableCredentialRepo = mockVerifiableCredentialRepository,
-            requestClientAttestation = mockRequestClientAttestation,
-            nonComplianceRepository = mockNonComplianceRepository,
-            generateProofOfPossession = mockGenerateProofOfPossession,
-            environmentSetupRepository = mockEnvironmentSetupRepository,
-            safeJson = safeJson,
+        useCase = spyk(
+            objToCopy = SendNonComplianceReportImpl(
+                credentialActivityRepository = mockCredentialActivityRepository,
+                verifiableCredentialRepo = mockVerifiableCredentialRepository,
+                requestClientAttestation = mockRequestClientAttestation,
+                nonComplianceRepository = mockNonComplianceRepository,
+                generateProofOfPossession = mockGenerateProofOfPossession,
+                environmentSetupRepository = mockEnvironmentSetupRepository,
+                safeJson = safeJson,
+            ),
+            recordPrivateCalls = true
         )
 
         setupDefaultMocks()
@@ -211,10 +223,96 @@ class SendNonComplianceReportImplTest {
             .assertErrorType(NonComplianceError.Unexpected::class)
     }
 
+    @Test
+    fun `getPresentationRequestFields uses dcqlQuery when present`() = runTest {
+        every { mockCredentialActivity.nonComplianceData } returns "{}" // value won't be used as we stub private method
+
+        val expectedFields = listOf(
+            NonComplianceRequestField(name = "vct", constraint = "TestVct"),
+            NonComplianceRequestField(name = "$.given_name", constraint = "John"),
+        )
+
+        every {
+            useCase invoke "getPresentationRequest" withArguments listOf(anyNullable<String>())
+        } returns Ok(mockAuthorizationRequest)
+
+        every {
+            useCase invoke "getPresentationRequestFields" withArguments listOf(mockAuthorizationRequest)
+        } returns expectedFields
+
+        val capturedRequest: CapturingSlot<NonComplianceRequest> = slot()
+        coEvery {
+            mockGenerateProofOfPossession(
+                clientAttestation = any(),
+                challenge = any(),
+                audience = any(),
+                requestBody = any(),
+            )
+        } returns Ok(mockClientAttestationPoP)
+        coEvery {
+            mockNonComplianceRepository.sendReport(any(), any(), capture(capturedRequest))
+        } returns Ok(Unit)
+
+        useCase(
+            ACTIVITY_ID,
+            reason,
+            DESCRIPTION,
+            EMAIL,
+        ).assertOk()
+
+        val metadataFields = capturedRequest.captured.metadata.presentationRequestFields
+        assertEquals(expectedFields, metadataFields)
+    }
+
+    @Test
+    fun `getPresentationRequestFields uses presentationDefinition when dcqlQuery is null`() = runTest {
+        every { mockCredentialActivity.nonComplianceData } returns "{}"
+
+        val expectedFields = listOf(
+            NonComplianceRequestField(name = "path1", constraint = null),
+            NonComplianceRequestField(name = "path2", constraint = "constraint2"),
+        )
+
+        every {
+            useCase invoke "getPresentationRequest" withArguments listOf(anyNullable<String>())
+        } returns Ok(mockAuthorizationRequest)
+
+        every {
+            useCase invoke "getPresentationRequestFields" withArguments listOf(mockAuthorizationRequest)
+        } returns expectedFields
+
+        val capturedRequest: CapturingSlot<NonComplianceRequest> = slot()
+        coEvery {
+            mockGenerateProofOfPossession(
+                clientAttestation = any(),
+                challenge = any(),
+                audience = any(),
+                requestBody = any(),
+            )
+        } returns Ok(mockClientAttestationPoP)
+        coEvery {
+            mockNonComplianceRepository.sendReport(any(), any(), capture(capturedRequest))
+        } returns Ok(Unit)
+
+        useCase(
+            ACTIVITY_ID,
+            reason,
+            DESCRIPTION,
+            EMAIL,
+        ).assertOk()
+
+        val metadataFields = capturedRequest.captured.metadata.presentationRequestFields
+        assertEquals(expectedFields, metadataFields)
+    }
+
     private fun setupDefaultMocks() {
         every { mockCredentialActivity.credentialId } returns CREDENTIAL_ID
         every { mockCredentialActivity.createdAt } returns ACTIVITY_CREATED_AT
         every { mockCredentialActivity.nonComplianceData } returns PRESENTATION_REQUEST_JWT
+
+        every { mockAuthorizationRequest.clientId } returns VERIFIER_DID
+        every { mockAuthorizationRequest.responseUri } returns VERIFIER_URL
+        every { mockAuthorizationRequest.dcqlQuery } returns io.mockk.mockk()
 
         every { mockVerifiableCredential.issuer } returns ISSUER_DID
 
@@ -305,6 +403,6 @@ class SendNonComplianceReportImplTest {
         const val VERIFIER_DID = "did:example:12345"
         const val VERIFIER_URL = "https://example.com"
         const val ISSUER_DID = "issuerDid"
-        val presentationRequestFields = listOf(("path1" to null), ("path2" to "constraint2"))
+        val presentationRequestFields = emptyList<Pair<String, String?>>()
     }
 }

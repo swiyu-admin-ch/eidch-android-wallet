@@ -30,12 +30,24 @@ object ClusterMocks {
     const val NAME_3 = "name_3"
     const val NAME_4 = "name_4"
     const val NAME_5 = "name_5"
+    const val CLUSTER_NAME_MINUS_1 = "Cluster #$CLUSTER_ID_MINUS_1"
+    const val CLUSTER_NAME_1 = "Cluster #$CLUSTER_ID_1"
+    const val CLUSTER_NAME_2 = "Cluster #$CLUSTER_ID_2"
+    const val CLUSTER_NAME_3 = "Cluster #$CLUSTER_ID_3"
+    const val CLUSTER_NAME_4 = "Cluster #$CLUSTER_ID_4"
+    const val CLUSTER_NAME_5 = "Cluster #$CLUSTER_ID_5"
+    const val RESOLVED_CLUSTER_NAME_MINUS_1 = "Resolved Cluster #$CLUSTER_ID_MINUS_1"
+    const val RESOLVED_CLUSTER_NAME_1 = "Resolved Cluster #$CLUSTER_ID_1"
+    const val RESOLVED_CLUSTER_NAME_2 = "Resolved Cluster #$CLUSTER_ID_2"
+    const val RESOLVED_CLUSTER_NAME_3 = "Resolved Cluster #$CLUSTER_ID_3"
+    const val RESOLVED_CLUSTER_NAME_4 = "Resolved Cluster #$CLUSTER_ID_4"
+    const val RESOLVED_CLUSTER_NAME_5 = "Resolved Cluster #$CLUSTER_ID_5"
 
     val credentialClaimClusterEntitiesMinus1 = listOf(
         CredentialClaimClusterDisplayEntity(
             id = -1,
             clusterId = CLUSTER_ID_MINUS_1,
-            name = "Cluster #$CLUSTER_ID_MINUS_1",
+            name = CLUSTER_NAME_MINUS_1,
             locale = "en"
         )
     )
@@ -43,7 +55,7 @@ object ClusterMocks {
         CredentialClaimClusterDisplayEntity(
             id = 1,
             clusterId = CLUSTER_ID_1,
-            name = "Cluster #$CLUSTER_ID_1",
+            name = CLUSTER_NAME_1,
             locale = "en"
         )
     )
@@ -51,7 +63,7 @@ object ClusterMocks {
         CredentialClaimClusterDisplayEntity(
             id = 2,
             clusterId = CLUSTER_ID_2,
-            name = "Cluster #$CLUSTER_ID_2",
+            name = CLUSTER_NAME_2,
             locale = "en"
         )
     )
@@ -59,7 +71,7 @@ object ClusterMocks {
         CredentialClaimClusterDisplayEntity(
             id = 3,
             clusterId = CLUSTER_ID_3,
-            name = "Cluster #$CLUSTER_ID_3",
+            name = CLUSTER_NAME_3,
             locale = "en"
         )
     )
@@ -67,7 +79,7 @@ object ClusterMocks {
         CredentialClaimClusterDisplayEntity(
             id = 4,
             clusterId = CLUSTER_ID_4,
-            name = "Cluster #$CLUSTER_ID_4",
+            name = CLUSTER_NAME_4,
             locale = "en"
         )
     )
@@ -75,7 +87,7 @@ object ClusterMocks {
         CredentialClaimClusterDisplayEntity(
             id = 5,
             clusterId = CLUSTER_ID_5,
-            name = "Cluster #$CLUSTER_ID_5",
+            name = CLUSTER_NAME_5,
             locale = "en"
         )
     )
@@ -188,7 +200,7 @@ object ClusterMocks {
         )
     )
 
-    val credentialClaimItemMinus1 = CredentialClaimText(
+    val credentialElementMinus1 = CredentialClaimText(
         id = -1L,
         localizedLabel = "key",
         order = -1,
@@ -196,7 +208,7 @@ object ClusterMocks {
         isSensitive = false
     )
 
-    val credentialClaimItem1 = CredentialClaimText(
+    val credentialElement1 = CredentialClaimText(
         id = 1L,
         localizedLabel = "key",
         order = 1,
@@ -204,7 +216,7 @@ object ClusterMocks {
         isSensitive = false
     )
 
-    val credentialClaimItem2 = CredentialClaimText(
+    val credentialElement2 = CredentialClaimText(
         id = 2L,
         localizedLabel = "key",
         order = 2,
@@ -212,21 +224,21 @@ object ClusterMocks {
         isSensitive = false
     )
 
-    val credentialClaimItem3 = CredentialClaimText(
+    val credentialElement3 = CredentialClaimText(
         id = 3L,
         localizedLabel = "key",
         order = 3,
         value = NAME_3,
         isSensitive = false
     )
-    val credentialClaimItem4 = CredentialClaimText(
+    val credentialElement4 = CredentialClaimText(
         id = 4L,
         localizedLabel = "key",
         order = 4,
         value = NAME_4,
         isSensitive = false
     )
-    val credentialClaimItem5 = CredentialClaimText(
+    val credentialElement5 = CredentialClaimText(
         id = 5L,
         localizedLabel = "key",
         order = 5,
@@ -318,21 +330,21 @@ object ClusterMocks {
         CredentialClaimCluster(
             id = CLUSTER_ID_2,
             order = 1,
-            localizedLabel = "Cluster #$CLUSTER_ID_2",
+            localizedLabel = RESOLVED_CLUSTER_NAME_2,
             parentId = null,
             numberOfNonClusterChildren = 1,
             items = mutableListOf(
-                credentialClaimItem2
+                credentialElement2
             ),
         ),
         CredentialClaimCluster(
             id = CLUSTER_ID_1,
             order = 2,
-            localizedLabel = "Cluster #$CLUSTER_ID_1",
+            localizedLabel = RESOLVED_CLUSTER_NAME_1,
             parentId = null,
             numberOfNonClusterChildren = 1,
             items = mutableListOf(
-                credentialClaimItem1
+                credentialElement1
             ),
         ),
     )
@@ -341,31 +353,31 @@ object ClusterMocks {
         CredentialClaimCluster(
             id = CLUSTER_ID_2,
             order = 1,
-            localizedLabel = "Cluster #$CLUSTER_ID_2",
+            localizedLabel = RESOLVED_CLUSTER_NAME_2,
             parentId = null,
             numberOfNonClusterChildren = 2,
             items = mutableListOf(
                 CredentialClaimCluster(
                     id = CLUSTER_ID_3,
                     order = 1,
-                    localizedLabel = "Cluster #$CLUSTER_ID_3",
+                    localizedLabel = RESOLVED_CLUSTER_NAME_3,
                     parentId = CLUSTER_ID_2,
                     numberOfNonClusterChildren = 1,
                     items = mutableListOf(
-                        credentialClaimItem3
+                        credentialElement3
                     ),
                 ),
-                credentialClaimItem2,
+                credentialElement2,
             ),
         ),
         CredentialClaimCluster(
             id = CLUSTER_ID_1,
             order = 2,
-            localizedLabel = "Cluster #$CLUSTER_ID_1",
+            localizedLabel = RESOLVED_CLUSTER_NAME_1,
             parentId = null,
             numberOfNonClusterChildren = 1,
             items = mutableListOf(
-                credentialClaimItem1
+                credentialElement1
             ),
         ),
     )
@@ -449,50 +461,50 @@ object ClusterMocks {
         CredentialClaimCluster(
             id = CLUSTER_ID_1,
             order = 1,
-            localizedLabel = "Cluster #$CLUSTER_ID_1",
+            localizedLabel = RESOLVED_CLUSTER_NAME_1,
             parentId = null,
             numberOfNonClusterChildren = 6,
             items = mutableListOf(
-                credentialClaimItem1,
+                credentialElement1,
                 CredentialClaimCluster(
                     id = CLUSTER_ID_2,
                     order = 1,
-                    localizedLabel = "Cluster #$CLUSTER_ID_2",
+                    localizedLabel = RESOLVED_CLUSTER_NAME_2,
                     parentId = CLUSTER_ID_1,
                     numberOfNonClusterChildren = 3,
                     items = mutableListOf(
                         CredentialClaimCluster(
                             id = CLUSTER_ID_3,
                             order = 1,
-                            localizedLabel = "Cluster #$CLUSTER_ID_3",
+                            localizedLabel = RESOLVED_CLUSTER_NAME_3,
                             parentId = CLUSTER_ID_2,
                             numberOfNonClusterChildren = 1,
                             items = mutableListOf(
-                                credentialClaimItem3
+                                credentialElement3
                             ),
                         ),
                         CredentialClaimCluster(
                             id = CLUSTER_ID_4,
                             order = 1,
-                            localizedLabel = "Cluster #$CLUSTER_ID_4",
+                            localizedLabel = RESOLVED_CLUSTER_NAME_4,
                             parentId = CLUSTER_ID_2,
                             numberOfNonClusterChildren = 1,
                             items = mutableListOf(
-                                credentialClaimItem4
+                                credentialElement4
                             ),
                         ),
-                        credentialClaimItem2,
+                        credentialElement2,
                     ),
                 ),
-                credentialClaimItemMinus1,
+                credentialElementMinus1,
                 CredentialClaimCluster(
                     id = CLUSTER_ID_5,
                     order = -1,
-                    localizedLabel = "Cluster #$CLUSTER_ID_5",
+                    localizedLabel = RESOLVED_CLUSTER_NAME_5,
                     parentId = CLUSTER_ID_1,
                     numberOfNonClusterChildren = 1,
                     items = mutableListOf(
-                        credentialClaimItem5
+                        credentialElement5
                     ),
                 ),
             )
@@ -530,11 +542,11 @@ object ClusterMocks {
         CredentialClaimCluster(
             id = CLUSTER_ID_1,
             order = 2,
-            localizedLabel = "Cluster #$CLUSTER_ID_1",
+            localizedLabel = RESOLVED_CLUSTER_NAME_1,
             parentId = null,
             numberOfNonClusterChildren = 1,
             items = mutableListOf(
-                credentialClaimItem1
+                credentialElement1
             ),
         ),
     )
@@ -582,21 +594,21 @@ object ClusterMocks {
         CredentialClaimCluster(
             id = CLUSTER_ID_2,
             order = 1,
-            localizedLabel = "Cluster #$CLUSTER_ID_2",
+            localizedLabel = RESOLVED_CLUSTER_NAME_2,
             parentId = null,
             numberOfNonClusterChildren = 1,
             items = mutableListOf(
-                credentialClaimItem2,
+                credentialElement2,
             ),
         ),
         CredentialClaimCluster(
             id = CLUSTER_ID_1,
             order = 2,
-            localizedLabel = "Cluster #$CLUSTER_ID_1",
+            localizedLabel = RESOLVED_CLUSTER_NAME_1,
             parentId = null,
             numberOfNonClusterChildren = 1,
             items = mutableListOf(
-                credentialClaimItem1
+                credentialElement1
             ),
         ),
     )

@@ -1,21 +1,38 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.ProcessDataUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
-import ch.admin.foitt.wallet.platform.composables.presentation.LoadingIndicator
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
+import ch.admin.foitt.wallet.platform.composables.presentation.WalletLinearProgressIndicator
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
@@ -36,8 +53,7 @@ internal fun EIdProcessDataScreen(
 private fun EIdProcessDataScreenContent(
     processDataState: ProcessDataUiState,
 ) = when (processDataState) {
-    ProcessDataUiState.Loading,
-    ProcessDataUiState.Valid -> LoadingContent()
+    is ProcessDataUiState.Processing -> LoadingContent(processDataState.progress)
 
     is ProcessDataUiState.Declined -> DeclinedErrorContent(
         onClose = processDataState.onClose,
@@ -51,18 +67,61 @@ private fun EIdProcessDataScreenContent(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LoadingContent() = WalletLayouts.ScrollableColumnWithPicture(
-    stickyStartContent = {
-        LoadingIndicator()
-    },
-    stickyBottomBackgroundColor = Color.Transparent,
-    stickyBottomContent = null,
-) {
-    Spacer(modifier = Modifier.height(Sizes.s06))
-    WalletTexts.TitleScreen(
-        text = stringResource(id = R.string.tk_eidRequest_dataProcess_loading_primary),
+private fun LoadingContent(progress: Float) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(
+            durationMillis = 500,
+            easing = LinearEasing,
+        ),
+        label = "upload_progress",
     )
+
+    WalletLayouts.ScrollableColumnWithPicture(
+        stickyStartContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(WalletTheme.shapes.extraLarge)
+                    .background(WalletTheme.colorScheme.surfaceContainerLow),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(Sizes.s06)
+                        .widthIn(max = 240.dp),
+                ) {
+                    WalletLinearProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(Sizes.s02),
+                    )
+                    Spacer(modifier = Modifier.height(Sizes.s02))
+                    WalletTexts.BodyMedium(
+                        text = "${(animatedProgress * 100).toInt()}%",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { hideFromAccessibility() },
+                        textAlign = TextAlign.End,
+                        color = WalletTheme.colorScheme.progressTrackColor,
+                    )
+                }
+            }
+        },
+    ) {
+        Spacer(modifier = Modifier.height(Sizes.s06))
+        WalletTexts.TitleScreen(
+            text = stringResource(id = R.string.tk_eidRequest_submitDocuments_primary),
+        )
+        Spacer(modifier = Modifier.height(Sizes.s06))
+        WalletTexts.BodyLarge(
+            modifier = Modifier.fillMaxWidth(),
+            text = stringResource(id = R.string.tk_eidRequest_submitDocuments_secondary),
+        )
+    }
 }
 
 @Composable
@@ -76,13 +135,16 @@ private fun DeclinedErrorContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_dataProcess_declined_primaryButton),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_dataProcess_declined_primaryButton),
+                        onClick = onClose,
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -115,19 +177,22 @@ private fun GenericErrorContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_dataProcess_error_primaryButton),
-            onClick = onRetry,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Buttons.TonalSecondary(
-            text = stringResource(R.string.tk_eidRequest_dataProcess_error_secondaryButton),
-            onClick = onClose,
-            modifier = Modifier
-                .fillMaxWidth()
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_dataProcess_error_primaryButton),
+                        onClick = onRetry,
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_eidRequest_dataProcess_error_secondaryButton),
+                        onClick = onClose,
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -150,7 +215,8 @@ private fun GenericErrorContent(
 
 private class EIdProcessDataPreviewParams : PreviewParameterProvider<ProcessDataUiState> {
     override val values: Sequence<ProcessDataUiState> = sequenceOf(
-        ProcessDataUiState.Valid,
+        ProcessDataUiState.Processing(0.5f),
+        ProcessDataUiState.Processing(1f),
         ProcessDataUiState.Declined({}, {}),
         ProcessDataUiState.GenericError({}, {}, {}),
     )

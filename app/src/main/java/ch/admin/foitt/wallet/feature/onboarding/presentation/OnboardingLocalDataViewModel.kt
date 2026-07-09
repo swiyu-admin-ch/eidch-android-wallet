@@ -6,7 +6,6 @@ import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -17,8 +16,10 @@ class OnboardingLocalDataViewModel @Inject constructor(
     private val navManager: NavigationManager,
     @param:ApplicationContext private val appContext: Context,
     setTopBarState: SetTopBarState,
-) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Details(navManager::popBackStack, null)
+) : OnboardingViewModel(setTopBarState) {
+    override val topBarState = TopBarState.Details(navManager::popBackStack, null, onAXDown = {
+        tryEmitFocusEvents()
+    })
 
     fun onMoreInformation() = appContext.openLink(R.string.tk_onboarding_introductionStep_yourData_tertiary_link_value)
 

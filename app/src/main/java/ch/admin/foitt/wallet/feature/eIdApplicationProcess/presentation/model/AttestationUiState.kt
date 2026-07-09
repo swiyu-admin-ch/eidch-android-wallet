@@ -20,6 +20,9 @@ internal sealed interface AttestationUiState {
         val onClose: () -> Unit,
         val onRetry: () -> Unit,
     ) : AttestationUiState
+    data class TimeoutError(
+        val onClose: () -> Unit
+    ) : AttestationUiState
     data class IntegrityError(
         val onClose: () -> Unit,
     ) : AttestationUiState

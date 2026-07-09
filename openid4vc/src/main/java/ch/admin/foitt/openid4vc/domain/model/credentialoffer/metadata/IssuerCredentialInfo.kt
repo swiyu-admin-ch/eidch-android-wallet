@@ -99,6 +99,9 @@ enum class CredentialFormat(val format: String) {
     @SerialName("vc+sd-jwt")
     VC_SD_JWT("vc+sd-jwt"),
 
+    @SerialName("dc+sd-jwt")
+    DC_SD_JWT("dc+sd-jwt"),
+
     UNKNOWN("unknown"),
 }
 

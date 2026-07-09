@@ -49,7 +49,7 @@ fun WalletListItems.LinkSettingsItem(
     @DrawableRes leadingIcon: Int? = null,
 ) = SettingsItem(
     title = title,
-    titleAltText = "$title ${stringResource(R.string.tk_global_externalLink_alt)}",
+    titleAltText = "$title ${stringResource(R.string.tk_global_externalLink_hint)}",
     backgroundColor = WalletTheme.colorScheme.listItemBackground,
     onClick = onClick,
     leadingContent = leadingIcon?.let {
@@ -218,7 +218,7 @@ fun WalletListItems.SpecialLinkSettingsItem(
         Row(
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val linkAltText = stringResource(R.string.tk_global_externalLink_alt)
+            val linkAltText = stringResource(R.string.tk_global_externalLink_hint)
             WalletTexts.BodyMedium(
                 modifier = Modifier.semantics {
                     contentDescription = "$title $linkAltText"

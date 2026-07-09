@@ -1,50 +1,50 @@
 package ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.implementation
 
-import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
-import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptor
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.InputDescriptorFormat
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.PresentationDefinition
+import ch.admin.foitt.swiyu.shared.dcql.DcqlSupport
+import ch.admin.foitt.swiyu.shared.dcql.SwissProfileTrustedDidAuthority
+import ch.admin.foitt.swiyu.shared.dcql.model.DcqlCredentialMatch
+import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.toAnyCredentials
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
-import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestField
-import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.GetRequestedFields
+import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialWithBundleItemsWithKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialWithBundleItemsWithKeyBindingRepository
-import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
+import ch.admin.foitt.wallet.util.assertTrue
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
+import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import uniffi.heidi_dcql_rust.DcqlQuery
+import java.time.Instant
 
 class GetCompatibleCredentialsImplTest {
 
     @MockK
     private lateinit var verifiableCredentialWithBundleItemsWithKeyBindingRepository:
         VerifiableCredentialWithBundleItemsWithKeyBindingRepository
-
-    @MockK
-    private lateinit var mockGetRequestedFields: GetRequestedFields
 
     @MockK
     private lateinit var mockCredential: Credential
@@ -54,9 +54,6 @@ class GetCompatibleCredentialsImplTest {
 
     @MockK
     private lateinit var mockDbCredential: VerifiableCredentialWithBundleItemsWithKeyBinding
-
-    @MockK
-    private lateinit var mockKeyBinding: KeyBinding
 
     @MockK
     private lateinit var mockCredential2: Credential
@@ -70,10 +67,8 @@ class GetCompatibleCredentialsImplTest {
     @MockK
     private lateinit var mockAuthorizationRequest: AuthorizationRequest
 
-    private val json = SafeJsonTestInstance.safeJson
-
     @MockK
-    private lateinit var mockKeyBinding2: KeyBinding
+    private lateinit var mockDcqlQuery: DcqlQuery
 
     private lateinit var useCase: GetCompatibleCredentialsImpl
 
@@ -82,10 +77,7 @@ class GetCompatibleCredentialsImplTest {
         MockKAnnotations.init(this)
         useCase = GetCompatibleCredentialsImpl(
             verifiableCredentialWithBundleItemsWithKeyBindingRepository = verifiableCredentialWithBundleItemsWithKeyBindingRepository,
-            getRequestedFields = mockGetRequestedFields,
-            safeJson = json
         )
-
         setupDefaultMocks()
     }
 
@@ -95,7 +87,7 @@ class GetCompatibleCredentialsImplTest {
     }
 
     @Test
-    fun `Getting compatible credentials with no credential returns empty list`() = runTest {
+    fun `Getting compatible credentials with no credential returns empty set`() = runTest {
         setupDefaultMocks(credentials = emptyList())
 
         val result = useCase(mockAuthorizationRequest).assertOk()
@@ -104,60 +96,119 @@ class GetCompatibleCredentialsImplTest {
     }
 
     @Test
-    fun `Getting compatible credentials with two matching credentials returns both ids and their fields`() = runTest {
-        setupDefaultMocks(
-            credentials = listOf(mockDbCredential, mockDbCredential2),
-            requestedFields = requestedFields,
-            requestedFields2 = requestedFields2,
+    fun `Getting compatible credentials with null dcql query returns empty set`() = runTest {
+        every { mockAuthorizationRequest.dcqlQuery } returns null
+
+        val result = useCase(mockAuthorizationRequest).assertOk()
+
+        assertTrue(result.isEmpty()) { "Result should be empty when dcqlQuery is null" }
+    }
+
+    @Test
+    fun `Expired Verifiable Credential is never part of compatible credentials`() = runTest {
+        setupDefaultMocks()
+        every { mockDbCredential.verifiableCredential.validUntil } returns Instant.now().minusSeconds(60).epochSecond
+
+        val result = useCase(mockAuthorizationRequest).assertOk()
+
+        assertTrue(result.isEmpty()) { "Result should be empty" }
+    }
+
+    @Test
+    fun `Not yet valid Verifiable Credential is never part of compatible credentials`() = runTest {
+        setupDefaultMocks()
+        every { mockDbCredential.verifiableCredential.validUntil } returns Instant.now().plusSeconds(600).epochSecond
+        every { mockDbCredential.verifiableCredential.validFrom } returns Instant.now().plusSeconds(60).epochSecond
+
+        val result = useCase(mockAuthorizationRequest).assertOk()
+
+        assertTrue(result.isEmpty()) { "Result should be empty" }
+    }
+
+    @Test
+    fun `Verifiable Credential with revoked status is not part of compatible credentials`() = runTest {
+        setupDefaultMocks()
+        every { mockDbCredential.nextBundleItemToPresent } returns BundleItemEntity(
+            credentialId = CREDENTIAL_ID,
+            payload = CREDENTIAL_PAYLOAD_1,
+            status = CredentialStatus.REVOKED,
         )
 
         val result = useCase(mockAuthorizationRequest).assertOk()
-        val credential1 = result.find { it.credentialId == CREDENTIAL_ID }
-        val credential2 = result.find { it.credentialId == CREDENTIAL_ID_2 }
+
+        assertTrue(result.isEmpty()) { "Result should be empty" }
+    }
+
+    @TestFactory
+    fun `Verifiable credential with specific status is considered compatible`(): List<DynamicTest> {
+        val statuses = listOf(
+            CredentialStatus.SUSPENDED,
+            CredentialStatus.UNSUPPORTED,
+            CredentialStatus.UNKNOWN,
+            CredentialStatus.VALID,
+        )
+        return statuses.map { status ->
+            DynamicTest.dynamicTest("Verifiable credential with status $status is considered compatible") {
+                runTest {
+                    setupDefaultMocks()
+                    every { mockDbCredential.nextBundleItemToPresent } returns BundleItemEntity(
+                        credentialId = CREDENTIAL_ID,
+                        payload = CREDENTIAL_PAYLOAD_1,
+                        status = status,
+                    )
+
+                    val result = useCase(mockAuthorizationRequest).assertOk()
+
+                    assertNotNull(result.find { it.credentialId == CREDENTIAL_ID })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `Getting compatible credentials with two matching credentials returns both`() = runTest {
+        setupDefaultMocks(credentials = listOf(mockDbCredential, mockDbCredential2))
+
+        val result = useCase(mockAuthorizationRequest).assertOk()
 
         assertEquals(2, result.size)
-        assertEquals(CREDENTIAL_ID, credential1?.credentialId)
-        assertEquals(requestedFields, credential1?.requestedFields)
-
-        assertEquals(CREDENTIAL_ID_2, credential2?.credentialId)
-        assertEquals(requestedFields2, credential2?.requestedFields)
+        assertNotNull(result.find { it.credentialId == CREDENTIAL_ID })
+        assertNotNull(result.find { it.credentialId == CREDENTIAL_ID_2 })
     }
 
     @Test
-    fun `Getting compatible credentials with two credentials where one matches returns the matched credential id and the fields`() = runTest {
-        setupDefaultMocks(
-            credentials = listOf(mockDbCredential, mockDbCredential2),
-            requestedFields = emptyList(),
-            requestedFields2 = requestedFields2,
+    fun `Getting compatible credentials with two credentials where one matches returns the matched credential`() = runTest {
+        setupDefaultMocks(credentials = listOf(mockDbCredential, mockDbCredential2))
+        every { DcqlSupport.matchDcqlCredentials(mockDcqlQuery, any()) } returns listOf(
+            DcqlCredentialMatch(DCQL_QUERY_ID_2, CREDENTIAL_PAYLOAD_2, emptyList()),
         )
 
         val result = useCase(mockAuthorizationRequest).assertOk()
-        val credential2 = result.find { it.credentialId == CREDENTIAL_ID_2 }
 
         assertEquals(1, result.size)
-        assertEquals(CREDENTIAL_ID_2, credential2?.credentialId)
-        assertEquals(requestedFields2, credential2?.requestedFields)
+        assertNotNull(result.find { it.credentialId == CREDENTIAL_ID_2 })
     }
 
     @Test
-    fun `Getting compatible credentials where the credential has a non-matching format returns an empty list`() = runTest {
-        every { mockAnyCredential.format } returns CredentialFormat.UNKNOWN
+    fun `Getting compatible credentials with two credentials where none matches returns empty set`() = runTest {
+        setupDefaultMocks(credentials = listOf(mockDbCredential, mockDbCredential2))
+        every { DcqlSupport.matchDcqlCredentials(mockDcqlQuery, any()) } returns emptyList()
 
         val result = useCase(mockAuthorizationRequest).assertOk()
+
         assertEquals(0, result.size)
     }
 
     @Test
-    fun `Getting compatible credentials with two credentials where none matches returns empty list`() = runTest {
-        setupDefaultMocks(
-            credentials = listOf(mockDbCredential, mockDbCredential2),
-            requestedFields = emptyList(),
-            requestedFields2 = emptyList(),
+    fun `Getting compatible credentials sets dcqlQueryId on the result`() = runTest {
+        setupDefaultMocks()
+        every { DcqlSupport.matchDcqlCredentials(mockDcqlQuery, any()) } returns listOf(
+            DcqlCredentialMatch(DCQL_QUERY_ID_1, CREDENTIAL_PAYLOAD_1, emptyList()),
         )
 
         val result = useCase(mockAuthorizationRequest).assertOk()
 
-        assertEquals(0, result.size)
+        assertEquals(DCQL_QUERY_ID_1, result.first().dcqlQueryId)
     }
 
     @Test
@@ -167,155 +218,75 @@ class GetCompatibleCredentialsImplTest {
             verifiableCredentialWithBundleItemsWithKeyBindingRepository.getAll()
         } returns Err(SsiError.Unexpected(exception))
 
-        val result = useCase(mockAuthorizationRequest)
+        val error = useCase(mockAuthorizationRequest).assertErrorType(CredentialPresentationError.Unexpected::class)
 
-        val error = result.assertErrorType(CredentialPresentationError.Unexpected::class)
         assertEquals(exception, error.cause)
     }
 
     @Test
-    fun `Getting compatible credentials maps errors from getting requested fields`() = runTest {
+    fun `Getting compatible credentials maps errors from toAnyCredentials`() = runTest {
+        setupDefaultMocks()
         val exception = IllegalStateException()
-        coEvery { mockGetRequestedFields(any(), any()) } returns Err(CredentialPresentationError.Unexpected(exception))
+        every { mockDbCredential.toAnyCredentials() } returns Err(CredentialError.Unexpected(exception))
 
-        val result = useCase(mockAuthorizationRequest)
+        val error = useCase(mockAuthorizationRequest).assertErrorType(CredentialPresentationError.Unexpected::class)
 
-        val error = result.assertErrorType(CredentialPresentationError.Unexpected::class)
-        assertEquals(exception, error.cause)
-    }
-
-    @Test
-    fun `Getting compatible credentials maps errors from json parsing`() = runTest {
-        val exception = IllegalStateException()
-        coEvery { mockAnyCredential.getClaimsForPresentation().toString() } throws exception
-
-        val result = useCase(mockAuthorizationRequest)
-
-        val error = result.assertErrorType(CredentialPresentationError.Unexpected::class)
         assertEquals(exception, error.cause)
     }
 
     @ParameterizedTest
     @MethodSource("generateCredentialStates")
     fun `Getting compatible credentials only returns accepted credentials`(
-        states: TestCredentialStates
+        states: TestCredentialStates,
     ) = runTest {
-        setupDefaultMocks(
-            credentials = listOf(mockDbCredential, mockDbCredential2),
-            requestedFields = requestedFields,
-            requestedFields2 = requestedFields2,
-        )
-        coEvery { mockDbCredential.verifiableCredential.progressionState } returns states.credentialState1
-        coEvery { mockDbCredential2.verifiableCredential.progressionState } returns states.credentialState2
+        setupDefaultMocks(credentials = listOf(mockDbCredential, mockDbCredential2))
+        every { mockDbCredential.verifiableCredential.progressionState } returns states.credentialState1
+        every { mockDbCredential2.verifiableCredential.progressionState } returns states.credentialState2
 
         val result = useCase(mockAuthorizationRequest).assertOk()
 
-        assertEquals(states.expectedIds, result.map { it.credentialId })
-    }
-
-    @Test
-    fun `Getting compatible credentials without key binding with two matching credentials returns both ids and their fields`() = runTest {
-        setupDefaultMocks(
-            credentials = listOf(mockDbCredential, mockDbCredential2),
-            requestedFields = requestedFields,
-            requestedFields2 = requestedFields2,
-        )
-
-        every { mockAnyCredential.keyBinding } returns null
-        every { mockAnyCredential2.keyBinding } returns null
-        every { inputDescriptor.formats } returns listOf(inputDescriptorFormatVcSdJwtEmpty)
-
-        val result = useCase(mockAuthorizationRequest).assertOk()
-        val credential1 = result.find { it.credentialId == CREDENTIAL_ID }
-        val credential2 = result.find { it.credentialId == CREDENTIAL_ID_2 }
-
-        assertEquals(2, result.size)
-        assertEquals(CREDENTIAL_ID, credential1?.credentialId)
-        assertEquals(requestedFields, credential1?.requestedFields)
-
-        assertEquals(CREDENTIAL_ID_2, credential2?.credentialId)
-        assertEquals(requestedFields2, credential2?.requestedFields)
-    }
-
-    @Test
-    fun `Getting compatible key bound credentials returns the credential with matching key binding algorithm`() = runTest {
-        setupDefaultMocks(
-            credentials = listOf(mockDbCredential, mockDbCredential2),
-            requestedFields = requestedFields,
-            requestedFields2 = requestedFields2,
-        )
-
-        every { mockAnyCredential2.keyBinding } returns mockKeyBinding2
-        every { mockKeyBinding2.algorithm } returns SigningAlgorithm.ES512
-
-        val result = useCase(mockAuthorizationRequest).assertOk()
-        val credential1 = result.find { it.credentialId == CREDENTIAL_ID }
-
-        assertEquals(1, result.size)
-
-        assertEquals(CREDENTIAL_ID, credential1?.credentialId)
-        assertEquals(requestedFields, credential1?.requestedFields)
-    }
-
-    @Test
-    fun `Getting compatible key bound credentials returns the credential with key binding`() = runTest {
-        setupDefaultMocks(
-            credentials = listOf(mockDbCredential, mockDbCredential2),
-            requestedFields = requestedFields,
-            requestedFields2 = requestedFields2,
-        )
-
-        every { mockAnyCredential.keyBinding } returns null
-
-        val result = useCase(mockAuthorizationRequest).assertOk()
-        val credential2 = result.find { it.credentialId == CREDENTIAL_ID_2 }
-
-        assertEquals(1, result.size)
-
-        assertEquals(CREDENTIAL_ID_2, credential2?.credentialId)
-        assertEquals(requestedFields2, credential2?.requestedFields)
+        assertEquals(states.expectedIds.toSet(), result.map { it.credentialId }.toSet())
     }
 
     private fun setupDefaultMocks(
         credentials: List<VerifiableCredentialWithBundleItemsWithKeyBinding> = listOf(mockDbCredential),
-        requestedFields: List<PresentationRequestField> = emptyList(),
-        requestedFields2: List<PresentationRequestField> = emptyList(),
     ) {
         mockkStatic(VerifiableCredentialWithBundleItemsWithKeyBinding::toAnyCredentials)
+        mockkObject(SwissProfileTrustedDidAuthority)
+        every { SwissProfileTrustedDidAuthority.register() } returns Unit
+        mockkObject(DcqlSupport)
 
-        every { mockAuthorizationRequest.dcqlQuery } returns null
-        every { mockAuthorizationRequest.presentationDefinition } returns presentationDefinition
-
-        every { mockAnyCredential.id } returns CREDENTIAL_ID
-        every { mockAnyCredential.getClaimsForPresentation().toString() } returns CREDENTIAL_JSON
-        every { mockAnyCredential.format } returns CredentialFormat.VC_SD_JWT
-        every { mockAnyCredential.payload } returns CREDENTIAL_PAYLOAD
-        every { mockAnyCredential.keyBinding } returns mockKeyBinding
-        every { mockKeyBinding.algorithm } returns SigningAlgorithm.ES256
+        every { mockAuthorizationRequest.dcqlQuery } returns mockDcqlQuery
+        every { DcqlSupport.matchDcqlCredentials(mockDcqlQuery, any()) } returns listOf(
+            DcqlCredentialMatch(DCQL_QUERY_ID_1, CREDENTIAL_PAYLOAD_1, emptyList()),
+            DcqlCredentialMatch(DCQL_QUERY_ID_2, CREDENTIAL_PAYLOAD_2, emptyList()),
+        )
 
         every { mockDbCredential.verifiableCredential.progressionState } returns VerifiableProgressionState.ACCEPTED
-        every { mockDbCredential.toAnyCredentials() } returns Ok(listOf(mockAnyCredential))
+        every { mockDbCredential.verifiableCredential.validFrom } returns Instant.now().minusSeconds(5).epochSecond
+        every { mockDbCredential.verifiableCredential.validUntil } returns Instant.now().plusSeconds(5).epochSecond
+        every { mockDbCredential.nextBundleItemToPresent } returns BundleItemEntity(
+            credentialId = CREDENTIAL_ID,
+            payload = CREDENTIAL_PAYLOAD_1,
+        )
         every { mockDbCredential.credential } returns mockCredential
-        every { mockCredential.format } returns CredentialFormat.VC_SD_JWT
+        every { mockDbCredential.toAnyCredentials() } returns Ok(listOf(mockAnyCredential))
         every { mockCredential.id } returns CREDENTIAL_ID
-
-        every { mockAnyCredential2.id } returns CREDENTIAL_ID_2
-        every { mockAnyCredential2.getClaimsForPresentation().toString() } returns CREDENTIAL_JSON_2
-        every { mockAnyCredential2.format } returns CredentialFormat.VC_SD_JWT
-        every { mockAnyCredential2.payload } returns CREDENTIAL_PAYLOAD
-        every { mockAnyCredential2.keyBinding } returns mockKeyBinding2
-        every { mockKeyBinding2.algorithm } returns SigningAlgorithm.ES256
+        every { mockAnyCredential.getPathsForPresentation(any()) } returns emptySet()
 
         every { mockDbCredential2.verifiableCredential.progressionState } returns VerifiableProgressionState.ACCEPTED
-        every { mockDbCredential2.toAnyCredentials() } returns Ok(listOf(mockAnyCredential2))
+        every { mockDbCredential2.verifiableCredential.validFrom } returns Instant.now().minusSeconds(5).epochSecond
+        every { mockDbCredential2.verifiableCredential.validUntil } returns Instant.now().plusSeconds(5).epochSecond
+        every { mockDbCredential2.nextBundleItemToPresent } returns BundleItemEntity(
+            credentialId = CREDENTIAL_ID_2,
+            payload = CREDENTIAL_PAYLOAD_2,
+        )
         every { mockDbCredential2.credential } returns mockCredential2
-        every { mockCredential2.format } returns CredentialFormat.VC_SD_JWT
+        every { mockDbCredential2.toAnyCredentials() } returns Ok(listOf(mockAnyCredential2))
         every { mockCredential2.id } returns CREDENTIAL_ID_2
+        every { mockAnyCredential2.getPathsForPresentation(any()) } returns emptySet()
 
-        every { inputDescriptor.formats } returns listOf(inputDescriptorFormatVcSdJwt)
         coEvery { verifiableCredentialWithBundleItemsWithKeyBindingRepository.getAll() } returns Ok(credentials)
-        coEvery { mockGetRequestedFields(CREDENTIAL_JSON, inputDescriptors) } returns Ok(requestedFields)
-        coEvery { mockGetRequestedFields(CREDENTIAL_JSON_2, inputDescriptors) } returns Ok(requestedFields2)
     }
 
     data class TestCredentialStates(
@@ -327,29 +298,10 @@ class GetCompatibleCredentialsImplTest {
     private companion object {
         const val CREDENTIAL_ID = 1L
         const val CREDENTIAL_ID_2 = 2L
-        const val CREDENTIAL_JSON = "credentialJson"
-        const val CREDENTIAL_JSON_2 = "credentialJson2"
-
-        val inputDescriptor: InputDescriptor = mockk()
-        val inputDescriptorFormatVcSdJwt = InputDescriptorFormat.VcSdJwt(
-            sdJwtAlgorithms = listOf(SigningAlgorithm.ES256),
-            kbJwtAlgorithms = listOf(SigningAlgorithm.ES256),
-        )
-        val inputDescriptorFormatVcSdJwtEmpty = InputDescriptorFormat.VcSdJwt(
-            sdJwtAlgorithms = listOf(),
-            kbJwtAlgorithms = listOf(),
-        )
-        val inputDescriptors: List<InputDescriptor> = listOf(inputDescriptor)
-        val presentationDefinition: PresentationDefinition = PresentationDefinition(
-            id = "diam",
-            inputDescriptors = inputDescriptors,
-            purpose = "definitionPurpose",
-            name = "name",
-        )
-        val requestedFields: List<PresentationRequestField> = listOf(mockk())
-        val requestedFields2: List<PresentationRequestField> = listOf(mockk())
-
-        const val CREDENTIAL_PAYLOAD = """{"proof":{"cryptosuite":"ES256"}}"""
+        const val CREDENTIAL_PAYLOAD_1 = "payload1"
+        const val CREDENTIAL_PAYLOAD_2 = "payload2"
+        const val DCQL_QUERY_ID_1 = "queryId1"
+        const val DCQL_QUERY_ID_2 = "queryId2"
 
         @JvmStatic
         fun generateCredentialStates() = listOf(

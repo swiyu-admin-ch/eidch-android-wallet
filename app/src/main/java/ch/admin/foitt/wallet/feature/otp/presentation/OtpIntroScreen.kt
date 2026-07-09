@@ -2,13 +2,12 @@ package ch.admin.foitt.wallet.feature.otp.presentation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
@@ -41,17 +40,22 @@ private fun OtpIntroScreenContent(
             paddingValues = PaddingValues(vertical = Sizes.s04)
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.tk_eidRequest_otp_intro_primaryButton),
-            onClick = onContinue,
-        )
-        Buttons.TonalSecondary(
-            modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.tk_eidRequest_otp_intro_secondaryButton),
-            onClick = onCancel,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_otp_intro_primaryButton),
+                        onClick = onContinue,
+                    )
+                },
+                {
+                    Buttons.TonalSecondary(
+                        text = stringResource(R.string.tk_eidRequest_otp_intro_secondaryButton),
+                        onClick = onCancel,
+                    )
+                },
+            ),
         )
     }
 ) {

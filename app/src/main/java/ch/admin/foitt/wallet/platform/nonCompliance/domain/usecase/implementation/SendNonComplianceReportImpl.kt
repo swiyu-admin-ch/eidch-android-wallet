@@ -30,8 +30,10 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.get
 import com.github.michaelbull.result.mapBoth
 import com.github.michaelbull.result.mapError
+import uniffi.heidi_dcql_rust.Meta
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -70,7 +72,7 @@ class SendNonComplianceReportImpl @Inject constructor(
             presentationActionCreatedAt = formattedCreatedAt,
             presentedCredentialIssuerDid = credential.issuer,
             presentationRequestJwt = activity.nonComplianceData,
-            presentationRequestFields = presentationRequestFields ?: emptyList(),
+            presentationRequestFields = presentationRequestFields,
         )
 
         val nonComplianceRequest = NonComplianceRequest(
@@ -132,14 +134,29 @@ class SendNonComplianceReportImpl @Inject constructor(
         authorizationRequest
     }
 
-    private fun getPresentationRequestFields(authorizationRequest: AuthorizationRequest) =
-        authorizationRequest.presentationDefinition?.inputDescriptors?.firstOrNull()?.constraints?.fields?.map { (filter, path) ->
-            val constraint = filter?.const
-            val name = path.joinToString(", ")
-
-            NonComplianceRequestField(
-                name = name,
-                constraint = constraint,
-            )
-        }
+    private fun getPresentationRequestFields(authorizationRequest: AuthorizationRequest): List<NonComplianceRequestField> {
+        return authorizationRequest.dcqlQuery?.credentials?.flatMap { credential ->
+            buildList {
+                add(
+                    NonComplianceRequestField(
+                        name = "vct",
+                        constraint = when (val meta = credential.meta) {
+                            is Meta.SdjwtVc -> meta.vctValues.joinToString(", ")
+                            else -> null
+                        }
+                    )
+                )
+                credential.claims?.map { claim ->
+                    add(
+                        NonComplianceRequestField(
+                            name = claim.path.joinToString(", "),
+                            constraint = claim.values
+                                ?.mapNotNull { safeJson.safeEncodeObjectToString(it).get() }
+                                ?.joinToString(", ")
+                        )
+                    )
+                }
+            }
+        } ?: emptyList()
+    }
 }

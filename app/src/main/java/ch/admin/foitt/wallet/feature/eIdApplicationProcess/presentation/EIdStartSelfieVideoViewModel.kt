@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation
 
-import ch.admin.foitt.avwrapper.AVBeam
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
@@ -14,7 +13,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 @HiltViewModel(assistedFactory = EIdStartSelfieVideoViewModel.Factory::class)
 class EIdStartSelfieVideoViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
-    private val avBeam: AVBeam,
     setTopBarState: SetTopBarState,
     @Assisted private val caseId: String,
 ) : ScreenViewModel(setTopBarState) {
@@ -35,7 +33,6 @@ class EIdStartSelfieVideoViewModel @AssistedInject constructor(
     }
 
     fun onClose() {
-        avBeam.shutDown()
         navManager.navigateBackToHomeScreen(popUntil = Destination.EIdStartAvSessionScreen::class)
     }
 }

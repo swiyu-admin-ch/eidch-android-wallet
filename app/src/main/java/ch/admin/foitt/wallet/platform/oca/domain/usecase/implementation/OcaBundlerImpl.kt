@@ -66,7 +66,7 @@ class OcaBundlerImpl @Inject constructor(
             .mapError(OcaOverlayValidationError::toOcaBundlerError)
             .bind()
 
-        val transformedOverlays = transformOcaOverlays(validOverlays)
+        val transformedOverlays = transformOcaOverlays(overlays = validOverlays, captureBases = validCaptureBases)
 
         val ocaClaimData = generateOcaClaimData(captureBases = validCaptureBases, overlays = transformedOverlays)
 

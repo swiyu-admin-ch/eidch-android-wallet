@@ -46,7 +46,7 @@ class VerifyJwtSignatureFromDidImplTest {
         )
 
         coEvery {
-            mockResolvePublicKey(did = DID, kid = KID)
+            mockResolvePublicKey(kid = KID)
         } returns Ok(mockJwk)
 
         coEvery {
@@ -61,17 +61,17 @@ class VerifyJwtSignatureFromDidImplTest {
 
     @Test
     fun `Verifying a did that matches the signature of the jwt returns a success`() = runTest {
-        useCase(DID, KID, mockJwt).assertOk()
+        useCase(KID, mockJwt).assertOk()
     }
 
     @Test
     fun `VerifyJwtSignature maps unexpected errors from resolving the public key`() = runTest {
         val exception = IllegalStateException("public key error")
         coEvery {
-            mockResolvePublicKey(DID, KID)
+            mockResolvePublicKey(KID)
         } returns Err(VcSdJwtError.Unexpected(exception))
 
-        useCase(DID, KID, mockJwt).assertErrorType(JwtError.Unexpected::class)
+        useCase(KID, mockJwt).assertErrorType(JwtError.Unexpected::class)
     }
 
     @Test
@@ -81,11 +81,10 @@ class VerifyJwtSignatureFromDidImplTest {
             mockVerifyJwtSignature(mockJwt, mockJwk)
         } returns Err(JwtError.Unexpected(exception))
 
-        useCase(DID, KID, mockJwt).assertErrorType(JwtError.Unexpected::class)
+        useCase(KID, mockJwt).assertErrorType(JwtError.Unexpected::class)
     }
 
     private companion object {
-        const val DID = "did"
         const val KID = "keyIdentifier"
     }
 }

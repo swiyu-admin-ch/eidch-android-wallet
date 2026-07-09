@@ -2,17 +2,17 @@ package ch.admin.foitt.wallet.feature.eIdRequestVerification.presentation.nfcSca
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.presentation.LoadingIndicator
+import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainAnimation
 import ch.admin.foitt.wallet.platform.composables.presentation.ScreenMainImage
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithPicture
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -25,18 +25,21 @@ internal fun NfcScannerInfoContent(
     onStart: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
-        ScreenMainImage(
-            iconRes = R.drawable.wallet_nfc_info,
-            backgroundColor = WalletTheme.colorScheme.surfaceContainerLow,
-            paddingValues = PaddingValues(vertical = Sizes.s04)
+        ScreenMainAnimation(
+            animationRes = R.raw.nfc_pass,
+            fallbackImage = R.drawable.wallet_nfc_info
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        Buttons.FilledPrimary(
-            text = stringResource(R.string.tk_eidRequest_nfcScan_intro_primaryButton),
-            onClick = onStart,
-            modifier = Modifier.fillMaxWidth(),
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledPrimary(
+                        text = stringResource(R.string.tk_eidRequest_nfcScan_intro_primaryButton),
+                        onClick = onStart,
+                    )
+                },
+            ),
         )
     },
 ) {
@@ -129,8 +132,6 @@ internal fun NfcScannerLoadingContent() = WalletLayouts.ScrollableColumnWithPict
     stickyStartContent = {
         LoadingIndicator()
     },
-    stickyBottomBackgroundColor = Color.Transparent,
-    stickyBottomContent = null,
 ) {
     Spacer(modifier = Modifier.height(Sizes.s06))
     WalletTexts.TitleScreen(
@@ -155,23 +156,28 @@ private fun NfcScannerContent(
             backgroundColor = WalletTheme.colorScheme.surfaceContainerLow
         )
     },
-    stickyBottomBackgroundColor = Color.Transparent,
     stickyBottomContent = {
-        buttonText?.let {
-            Buttons.FilledPrimary(
-                text = stringResource(buttonText),
-                onClick = onButtonClick,
-                isActive = isButtonActive,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        button2Text?.let {
-            Buttons.TonalSecondary(
-                text = stringResource(button2Text),
-                onClick = onButton2Click,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        AdaptiveBottomButtonBar(
+            buttons = buildList {
+                buttonText?.let {
+                    add {
+                        Buttons.FilledPrimary(
+                            text = stringResource(buttonText),
+                            onClick = onButtonClick,
+                            isActive = isButtonActive,
+                        )
+                    }
+                }
+                button2Text?.let {
+                    add {
+                        Buttons.TonalSecondary(
+                            text = stringResource(button2Text),
+                            onClick = onButton2Click,
+                        )
+                    }
+                }
+            }
+        )
     },
 ) {
     Spacer(modifier = Modifier.height(Sizes.s06))

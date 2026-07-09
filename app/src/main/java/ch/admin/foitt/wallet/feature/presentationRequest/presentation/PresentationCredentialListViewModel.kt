@@ -116,11 +116,13 @@ class PresentationCredentialListViewModel @AssistedInject constructor(
     private suspend fun updateVerifierDisplayData() {
         fetchAndCacheVerifierDisplayData(
             authorizationRequest = presentationRequestWithRaw.authorizationRequest,
+            verificationProcessType = presentationRequestWithRaw.verificationProcessType,
+            verifierAttestationTrusted = presentationRequestWithRaw.verifierAttestationTrusted,
         )
     }
 
     private fun navigateToErrorScreen() {
-        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.GENERIC))
+        navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.Offer.generic()))
     }
 
     fun onBadge(badgeType: BadgeType) {

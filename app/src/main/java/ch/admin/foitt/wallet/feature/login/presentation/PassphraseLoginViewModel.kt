@@ -20,6 +20,7 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersionInfo
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.FetchAppVersionInfo
 import com.github.michaelbull.result.mapBoth
 import dagger.assisted.Assisted
@@ -134,18 +135,23 @@ class PassphraseLoginViewModel @AssistedInject constructor(
         if (passphraseInputFieldState.value is PassphraseInputFieldState.Success) {
             val info = appVersionInfo.value // if it is available now, perfect, otherwise it acts like a time-out
             if (info is AppVersionInfo.Blocked) {
-                navigateToAppVersionBlocked(info.title, info.text)
+                navigateToAppVersionBlocked(info.title, info.text, info.playStoreUrl, info.type)
             } else {
                 handleDeeplink()
             }
         }
     }
 
-    private fun navigateToAppVersionBlocked(title: String?, text: String?) {
+    private fun navigateToAppVersionBlocked(title: String?, text: String?, playStoreLink: String?, enforcedType: EnforcementType) {
         Timber.d("AppVersionBlocked: $title, $text")
         navigationManager.popUpToAndNavigate(
             popToInclusive = Destination.PassphraseLoginScreen::class,
-            destination = Destination.AppVersionBlockedScreen(title = title, text = text)
+            destination = Destination.AppVersionBlockedScreen(
+                title = title,
+                text = text,
+                playStoreUrl = playStoreLink,
+                enforcedType = enforcedType
+            )
         )
     }
 

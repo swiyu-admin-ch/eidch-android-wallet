@@ -18,6 +18,7 @@ import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.trackCompletion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersionInfo
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.FetchAppVersionInfo
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
@@ -94,7 +95,7 @@ class BiometricLoginViewModel @Inject constructor(
                     resetLockout()
                     val info = appVersionInfo.value // if it is available now, perfect, otherwise it acts like a time-out
                     if (info is AppVersionInfo.Blocked) {
-                        navigateToAppVersionBlocked(info.title, info.text)
+                        navigateToAppVersionBlocked(info.title, info.text, info.playStoreUrl, info.type)
                     } else {
                         handleDeeplink(fromOnboarding = false).navigate()
                     }
@@ -112,7 +113,14 @@ class BiometricLoginViewModel @Inject constructor(
         biometricsLocked: Boolean = false
     ) = navManager.replaceCurrentWith(destination = Destination.PassphraseLoginScreen(biometricsLocked = biometricsLocked))
 
-    private fun navigateToAppVersionBlocked(title: String?, text: String?) {
-        navManager.replaceCurrentWith(Destination.AppVersionBlockedScreen(title = title, text = text))
+    private fun navigateToAppVersionBlocked(title: String?, text: String?, playStoreUrl: String?, enforcedType: EnforcementType) {
+        navManager.replaceCurrentWith(
+            Destination.AppVersionBlockedScreen(
+                title = title,
+                text = text,
+                playStoreUrl = playStoreUrl,
+                enforcedType = enforcedType
+            )
+        )
     }
 }

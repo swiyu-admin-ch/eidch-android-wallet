@@ -7,7 +7,6 @@ import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.utils.openLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,9 +18,11 @@ class OnboardingPrivacyPolicyViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     setTopBarState: SetTopBarState,
     private val applyUserPrivacyPolicy: ApplyUserPrivacyPolicy,
-) : ScreenViewModel(setTopBarState) {
+) : OnboardingViewModel(setTopBarState) {
 
-    override val topBarState = TopBarState.Details(onUp = navManager::popBackStack, null)
+    override val topBarState = TopBarState.Details(onUp = navManager::popBackStack, null, onAXDown = {
+        tryEmitFocusEvents()
+    })
 
     fun acceptTracking() {
         applyUserPrivacyPolicy(true)

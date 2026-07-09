@@ -1,6 +1,5 @@
 package ch.admin.foitt.wallet.platform.imageValidation.domain.usecase.implementation
 
-import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.imageValidation.domain.model.ImageValidationError
 import ch.admin.foitt.wallet.platform.imageValidation.domain.model.ValidateImageError
 import ch.admin.foitt.wallet.platform.imageValidation.domain.usecase.ValidateImage
@@ -14,17 +13,11 @@ import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.mapError
 import javax.inject.Inject
 
-internal class ValidateImageImpl @Inject constructor(
-    private val environmentSetupRepository: EnvironmentSetupRepository,
-) : ValidateImage {
+internal class ValidateImageImpl @Inject constructor() : ValidateImage {
     override fun invoke(
         mimeType: String,
         image: String?,
     ): Result<Unit, ValidateImageError> = binding {
-        if (!environmentSetupRepository.isImageValidationEnabled) {
-            return@binding
-        }
-
         val imageType = runSuspendCatching {
             ImageType.getByType(mimeType)
         }.mapError {

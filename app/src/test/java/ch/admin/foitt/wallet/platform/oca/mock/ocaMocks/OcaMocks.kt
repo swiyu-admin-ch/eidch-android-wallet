@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.oca.mock.ocaMocks
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
 import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
 import ch.admin.foitt.wallet.platform.oca.domain.model.AttributeType
 import ch.admin.foitt.wallet.platform.oca.domain.model.CaptureBase1x0
@@ -7,7 +8,6 @@ import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaClaimData
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.CharacterEncodingOverlay1x0
-import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.EntryOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.FormatOverlay1x0
@@ -22,636 +22,6 @@ object OcaMocks {
     val ocaResponse = """
         {
             "oca": "displayData"
-        }
-    """.trimIndent()
-
-    val complexNestedOcaJsonPath = """
-        {
-          "capture_bases":[
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "attributes":{
-                "capture_base_1":"refs:IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-                "array_capture_base":"Array[refs:ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt]",
-                "text_array_claim":"Array[Text]"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "attributes":{
-                "capture_base_1_claim_1":"Text",
-                "capture_base_1_claim_2":"Text",
-                "capture_base_2":"refs:IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "attributes":{
-                "capture_base_2_claim_1":"Text",
-                "capture_base_2_claim_2":"Text",
-                "capture_base_2_claim_3":"Text"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "attributes":{
-                "array_capture_base_claim_1":"Text",
-                "array_capture_base_claim_2":"Text"
-              }
-            }
-          ],
-          "overlays":[
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "array_capture_base":"${'$'}.array_capture_base",
-                "text_array_claim":"${'$'}.textArrayClaim"
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_1_claim_1":"${'$'}.capture_base_1_claim_1",
-                "capture_base_1_claim_2":"${'$'}.capture_base_1_claim_2",
-                "capture_base_2":"${'$'}.capture_base_2"
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_2_claim_1":"${'$'}.capture_base_2.claim_1",
-                "capture_base_2_claim_2":"${'$'}.capture_base_2.claim_2",
-                "capture_base_2_claim_3":"${'$'}.capture_base_2.claim_3"
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "array_capture_base_claim_1":"${'$'}.array_capture_base[*].claim_1",
-                "array_capture_base_claim_2":"${'$'}.array_capture_base[*].claim_2"
-              }
-            },
-            {
-              "type":"aries/overlays/branding/1.1",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"de",
-              "theme":"light",
-              "logo":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg==",
-              "primary_background_color":"#007AFF",
-              "primary_field":"de light: {{capture_base_1.capture_base_1_claim_1}} {{capture_base_1.capture_base_1_claim_2}}",
-              "secondary_field":"de light: {{capture_base_1.capture_base_2.capture_base_2_claim_1}}"
-            },
-            {
-              "type":"aries/overlays/branding/1.1",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"de",
-              "theme":"dark",
-              "logo":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg==",
-              "primary_background_color":"#FF8500",
-              "primary_field":"de dark: {{capture_base_1.capture_base_1_claim_1}} {{capture_base_1.capture_base_1_claim_2}}",
-              "secondary_field":"de dark: {{capture_base_1.capture_base_2.capture_base_2_claim_1}}"
-            },
-            {
-              "type":"aries/overlays/branding/1.1",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"en",
-              "theme":"light",
-              "logo":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg==",
-              "primary_background_color":"#007AEF",
-              "primary_field":"en light: primary_field"
-            },
-            {
-              "type":"spec/overlays/meta/1.0",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"de",
-              "name":"Nested OCA bundle de"
-            },
-            {
-              "type":"spec/overlays/meta/1.0",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"en",
-              "name":"Nested OCA bundle en"
-            },
-            {
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_1":1,
-                "array_capture_base":2,
-                "text_array_claim":3
-              }
-            },
-            {
-              "capture_base":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_2":3,
-                "capture_base_1_claim_2":2,
-                "capture_base_1_claim_1":1
-              }
-            },
-            {
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_2_claim_3":3,
-                "capture_base_2_claim_1":1,
-                "capture_base_2_claim_2":2
-              }
-            },
-            {
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "array_capture_base_claim_1":1,
-                "array_capture_base_claim_2":2
-              }
-            },
-            {
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_1":"capture_base_1 de",
-                "array_capture_base":"array_capture_base de",
-                "text_array_claim":"text_array_claim de"
-              }
-            },
-            {
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "type":"spec/overlays/label/1.0",
-              "language":"en",
-              "attribute_labels":{
-                "capture_base_1":"capture_base_1 en"
-              }
-            },
-            {
-              "capture_base":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_1_claim_1":"capture_base_1_claim_1 de",
-                "capture_base_1_claim_2":"capture_base_1_claim_2 de",
-                "capture_base_2":"capture_base_2 de"
-              }
-            },
-            {
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_2_claim_1":"capture_base_2_claim_1 de",
-                "capture_base_2_claim_2":"capture_base_2_claim_2 de",
-                "capture_base_2_claim_3":"capture_base_2_claim_3 de"
-              }
-            },
-            {
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "type":"spec/overlays/label/1.0",
-              "language":"fr",
-              "attribute_labels":{
-                "capture_base_2_claim_1":"capture_base_2_claim_1 fr",
-                "capture_base_2_claim_2":"capture_base_2_claim_2 fr",
-                "capture_base_2_claim_3":"capture_base_2_claim_3 fr"
-              }
-            },
-            {
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "array_capture_base_claim_1":"array_capture_base_claim_1 de",
-                "array_capture_base_claim_2":"array_capture_base_claim_2 de"
-              }
-            },
-            {
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "type":"spec/overlays/label/1.0",
-              "language":"en",
-              "attribute_labels":{
-                "array_capture_base_claim_1":"array_capture_base_claim_1 en",
-                "array_capture_base_claim_2":"array_capture_base_claim_2 en"
-              }
-            }
-          ]
-        }
-    """.trimIndent()
-
-    val complexNestedOcaClaimsPathPointer = """
-        {
-          "capture_bases":[
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "attributes":{
-                "capture_base_1":"refs:IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-                "array_capture_base":"Array[refs:ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt]",
-                "text_array_claim":"Array[Text]"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "attributes":{
-                "capture_base_1_claim_1":"Text",
-                "capture_base_1_claim_2":"Text",
-                "capture_base_2":"refs:IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "attributes":{
-                "capture_base_2_claim_1":"Text",
-                "capture_base_2_claim_2":"Text",
-                "capture_base_2_claim_3":"Text"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "attributes":{
-                "array_capture_base_claim_1":"Text",
-                "array_capture_base_claim_2":"Text"
-              }
-            }
-          ],
-          "overlays":[
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "array_capture_base":["array_capture_base"],
-                "text_array_claim":["textArrayClaim"]
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_1_claim_1":["capture_base_1_claim_1"],
-                "capture_base_1_claim_2":["capture_base_1_claim_2"],
-                "capture_base_2":["capture_base_2"]
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_2_claim_1":["capture_base_2", "claim_1"],
-                "capture_base_2_claim_2":["capture_base_2", "claim_2"],
-                "capture_base_2_claim_3":["capture_base_2", "claim_3"]
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "array_capture_base_claim_1":["array_capture_base", null, "claim_1"],
-                "array_capture_base_claim_2":["array_capture_base", null, "claim_2"]
-              }
-            },
-            {
-              "type":"aries/overlays/branding/1.1",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"de",
-              "theme":"light",
-              "logo":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg==",
-              "primary_background_color":"#007AFF",
-              "primary_field":"de light: {{capture_base_1.capture_base_1_claim_1}} {{capture_base_1.capture_base_1_claim_2}}",
-              "secondary_field":"de light: {{capture_base_1.capture_base_2.capture_base_2_claim_1}}"
-            },
-            {
-              "type":"aries/overlays/branding/1.1",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"de",
-              "theme":"dark",
-              "logo":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg==",
-              "primary_background_color":"#FF8500",
-              "primary_field":"de dark: {{capture_base_1.capture_base_1_claim_1}} {{capture_base_1.capture_base_1_claim_2}}",
-              "secondary_field":"de dark: {{capture_base_1.capture_base_2.capture_base_2_claim_1}}"
-            },
-            {
-              "type":"aries/overlays/branding/1.1",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"en",
-              "theme":"light",
-              "logo":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg==",
-              "primary_background_color":"#007AEF",
-              "primary_field":"en light: primary_field"
-            },
-            {
-              "type":"spec/overlays/meta/1.0",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"de",
-              "name":"Nested OCA bundle de"
-            },
-            {
-              "type":"spec/overlays/meta/1.0",
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "language":"en",
-              "name":"Nested OCA bundle en"
-            },
-            {
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_1":1,
-                "array_capture_base":2,
-                "text_array_claim":3
-              }
-            },
-            {
-              "capture_base":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_2":3,
-                "capture_base_1_claim_2":2,
-                "capture_base_1_claim_1":1
-              }
-            },
-            {
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_2_claim_3":3,
-                "capture_base_2_claim_1":1,
-                "capture_base_2_claim_2":2
-              }
-            },
-            {
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "array_capture_base_claim_1":1,
-                "array_capture_base_claim_2":2
-              }
-            },
-            {
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_1":"capture_base_1 de",
-                "array_capture_base":"array_capture_base de",
-                "text_array_claim":"text_array_claim de"
-              }
-            },
-            {
-              "capture_base":"IK4ceQ-qvbporNvdFExEAMQrPud9OutHQbB2pc2iXrvW",
-              "type":"spec/overlays/label/1.0",
-              "language":"en",
-              "attribute_labels":{
-                "capture_base_1":"capture_base_1 en"
-              }
-            },
-            {
-              "capture_base":"IACad8m8doJZoyOwmkcSOGD0OKL6JoNtC22I1K4DlFMh",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_1_claim_1":"capture_base_1_claim_1 de",
-                "capture_base_1_claim_2":"capture_base_1_claim_2 de",
-                "capture_base_2":"capture_base_2 de"
-              }
-            },
-            {
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_2_claim_1":"capture_base_2_claim_1 de",
-                "capture_base_2_claim_2":"capture_base_2_claim_2 de",
-                "capture_base_2_claim_3":"capture_base_2_claim_3 de"
-              }
-            },
-            {
-              "capture_base":"IMg6sVkwVROTddb1csCbOI83tufFvbMkwpbwImZ89joJ",
-              "type":"spec/overlays/label/1.0",
-              "language":"fr",
-              "attribute_labels":{
-                "capture_base_2_claim_1":"capture_base_2_claim_1 fr",
-                "capture_base_2_claim_2":"capture_base_2_claim_2 fr",
-                "capture_base_2_claim_3":"capture_base_2_claim_3 fr"
-              }
-            },
-            {
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "array_capture_base_claim_1":"array_capture_base_claim_1 de",
-                "array_capture_base_claim_2":"array_capture_base_claim_2 de"
-              }
-            },
-            {
-              "capture_base":"ICFYTvQNUDNlVfS7_35nv1YpjDHx1EhlNqncFqd7zmyt",
-              "type":"spec/overlays/label/1.0",
-              "language":"en",
-              "attribute_labels":{
-                "array_capture_base_claim_1":"array_capture_base_claim_1 en",
-                "array_capture_base_claim_2":"array_capture_base_claim_2 en"
-              }
-            }
-          ]
-        }
-    """.trimIndent()
-
-    val simpleNestedOcaJsonPath = """
-        {
-          "capture_bases":[
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "attributes":{
-                "capture_base_1":"refs:IJt3I51rFWxKKu1wqDci9R1mpE3b-XJRnqta1NukyTQO",
-                "capture_base_2":"refs:IPxI3Nf9dMzv5Q1_EvWbFN09ro1Bg_tMegPZvvqPmysN",
-                "capture_base_3":"refs:IFuSBD6W7_wIB0PIX8B-_N1S_fSRUzrz2Aq6jjOTdGTa"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IJt3I51rFWxKKu1wqDci9R1mpE3b-XJRnqta1NukyTQO",
-              "attributes":{
-                "capture_base_1_claim_1":"Text"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IPxI3Nf9dMzv5Q1_EvWbFN09ro1Bg_tMegPZvvqPmysN",
-              "attributes":{
-                "capture_base_2_claim_1":"Text"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IFuSBD6W7_wIB0PIX8B-_N1S_fSRUzrz2Aq6jjOTdGTa",
-              "attributes":{
-                "capture_base_3_claim_1":"Text"
-              }
-            }
-          ],
-          "overlays":[
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_3":"${'$'}.capture_base_3",
-                "capture_base_2":"${'$'}.capture_base_2"
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"IJt3I51rFWxKKu1wqDci9R1mpE3b-XJRnqta1NukyTQO",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_1_claim_1":"${'$'}.capture_base_1_claim_1"
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"IPxI3Nf9dMzv5Q1_EvWbFN09ro1Bg_tMegPZvvqPmysN",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_2_claim_1":"${'$'}.capture_base_2_claim_1"
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/1.0",
-              "capture_base":"IFuSBD6W7_wIB0PIX8B-_N1S_fSRUzrz2Aq6jjOTdGTa",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_3_claim_1":"${'$'}.capture_base_3_claim_1"
-              }
-            },
-            {
-              "capture_base":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_1":1,
-                "capture_base_2":2,
-                "capture_base_3":3
-              }
-            },
-            {
-              "capture_base":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_1":"capture_base_1 de",
-                "capture_base_2":"capture_base_2 de",
-                "capture_base_3":"capture_base_3 de"
-              }
-            }
-          ]
-        }
-    """.trimIndent()
-
-    val simpleNestedOcaClaimsPathPointer = """
-        {
-          "capture_bases":[
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "attributes":{
-                "capture_base_1":"refs:IJt3I51rFWxKKu1wqDci9R1mpE3b-XJRnqta1NukyTQO",
-                "capture_base_2":"refs:IPxI3Nf9dMzv5Q1_EvWbFN09ro1Bg_tMegPZvvqPmysN",
-                "capture_base_3":"refs:IFuSBD6W7_wIB0PIX8B-_N1S_fSRUzrz2Aq6jjOTdGTa"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IJt3I51rFWxKKu1wqDci9R1mpE3b-XJRnqta1NukyTQO",
-              "attributes":{
-                "capture_base_1_claim_1":"Text"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IPxI3Nf9dMzv5Q1_EvWbFN09ro1Bg_tMegPZvvqPmysN",
-              "attributes":{
-                "capture_base_2_claim_1":"Text"
-              }
-            },
-            {
-              "type":"spec/capture_base/1.0",
-              "digest":"IFuSBD6W7_wIB0PIX8B-_N1S_fSRUzrz2Aq6jjOTdGTa",
-              "attributes":{
-                "capture_base_3_claim_1":"Text"
-              }
-            }
-          ],
-          "overlays":[
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_3":["capture_base_3"],
-                "capture_base_2":["capture_base_2"]
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"IJt3I51rFWxKKu1wqDci9R1mpE3b-XJRnqta1NukyTQO",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_1_claim_1":["capture_base_1_claim_1"]
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"IPxI3Nf9dMzv5Q1_EvWbFN09ro1Bg_tMegPZvvqPmysN",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_2_claim_1":["capture_base_2_claim_1"]
-              }
-            },
-            {
-              "type":"extend/overlays/data_source/2.0",
-              "capture_base":"IFuSBD6W7_wIB0PIX8B-_N1S_fSRUzrz2Aq6jjOTdGTa",
-              "format":"vc+sd-jwt",
-              "attribute_sources":{
-                "capture_base_3_claim_1":["capture_base_3_claim_1"]
-              }
-            },
-            {
-              "capture_base":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "type":"extend/overlays/order/1.0",
-              "attribute_orders":{
-                "capture_base_1":1,
-                "capture_base_2":2,
-                "capture_base_3":3
-              }
-            },
-            {
-              "capture_base":"IJngsgWBS-8m5IVEdatgnJkLrC5ftqR6nzLKwvcIh0St",
-              "type":"spec/overlays/label/1.0",
-              "language":"de",
-              "attribute_labels":{
-                "capture_base_1":"capture_base_1 de",
-                "capture_base_2":"capture_base_2 de",
-                "capture_base_3":"capture_base_3 de"
-              }
-            }
-          ]
         }
     """.trimIndent()
 
@@ -679,20 +49,14 @@ object OcaMocks {
     private const val VALID_DIGEST_PET = "IKLvtGx1NU0007DUTTmI_6Zw-hnGRFicZ5R4vAxg4j2j"
     const val ATTRIBUTE_KEY_NAME = "name"
     const val ATTRIBUTE_KEY_RACE = "race"
-    private const val JSON_PATH_LASTNAME = "$.lastname"
-    private const val JSON_PATH_ADDRESS_STREET = "$.address.street"
-    private const val JSON_PATH_ADDRESS_CITY = "$.address.city"
-    private const val JSON_PATH_ADDRESS_COUNTRY = "$.address.country"
-    private const val JSON_PATH_PETS = "$.pets"
-    private const val JSON_PATH_PETS_NAME = "$.pets[*].name"
-    private const val JSON_PATH_PETS_RACE = "$.pets[*].race"
     val CLAIMS_PATH_POINTER_LASTNAME = createClaimsPathPointer("lastname")
     val CLAIMS_PATH_POINTER_STRING_LASTNAME = CLAIMS_PATH_POINTER_LASTNAME.toPointerString()
     val CLAIMS_PATH_POINTER_ADDRESS_STREET = createClaimsPathPointer("address", "street")
     val CLAIMS_PATH_POINTER_STRING_ADDRESS_STREET = CLAIMS_PATH_POINTER_ADDRESS_STREET.toPointerString()
     val CLAIMS_PATH_POINTER_ADDRESS_CITY = createClaimsPathPointer("address", "city")
     val CLAIMS_PATH_POINTER_STRING_ADDRESS_CITY = CLAIMS_PATH_POINTER_ADDRESS_CITY.toPointerString()
-    val CLAIMS_PATH_POINTER_STRING_ADDRESS_COUNTRY = createClaimsPathPointer("address", "country").toPointerString()
+    val CLAIMS_PATH_POINTER_ADDRESS_COUNTRY = createClaimsPathPointer("address", "country")
+    val CLAIMS_PATH_POINTER_STRING_ADDRESS_COUNTRY = CLAIMS_PATH_POINTER_ADDRESS_COUNTRY.toPointerString()
     val CLAIMS_PATH_POINTER_PETS = createClaimsPathPointer("pets")
     val CLAIMS_PATH_POINTER_STRING_PETS = CLAIMS_PATH_POINTER_PETS.toPointerString()
     val CLAIMS_PATH_POINTER_PETS_NAME = createClaimsPathPointer("pets", null, "name")
@@ -764,20 +128,6 @@ object OcaMocks {
         )
     )
 
-    val ocaSimpleDataSourceV1 = OcaBundle(
-        captureBases = listOf(simpleCaptureBase),
-        overlays = listOf(
-            DataSourceOverlay1x0(
-                captureBaseDigest = DIGEST,
-                format = CREDENTIAL_FORMAT,
-                attributeSources = mapOf(
-                    ATTRIBUTE_KEY_FIRSTNAME to JSON_PATH_FIRSTNAME,
-                    ATTRIBUTE_KEY_AGE to JSON_PATH_AGE,
-                )
-            )
-        )
-    )
-
     val ocaSimpleDataSourceV2 = OcaBundle(
         captureBases = listOf(simpleCaptureBase),
         overlays = listOf(
@@ -795,14 +145,6 @@ object OcaMocks {
     val ocaSimpleDataSourceMultiVersion = OcaBundle(
         captureBases = listOf(simpleCaptureBase),
         overlays = listOf(
-            DataSourceOverlay1x0(
-                captureBaseDigest = DIGEST,
-                format = CREDENTIAL_FORMAT,
-                attributeSources = mapOf(
-                    ATTRIBUTE_KEY_FIRSTNAME to JSON_PATH_FIRSTNAME,
-                    ATTRIBUTE_KEY_AGE to JSON_PATH_AGE,
-                )
-            ),
             DataSourceOverlay2x0(
                 captureBaseDigest = DIGEST,
                 format = CREDENTIAL_FORMAT,
@@ -959,12 +301,12 @@ object OcaMocks {
                     ATTRIBUTE_KEY_AGE to ATTRIBUTE_LABEL_AGE_DE,
                 )
             ),
-            DataSourceOverlay1x0(
+            DataSourceOverlay2x0(
                 captureBaseDigest = DIGEST,
                 format = CREDENTIAL_FORMAT,
                 attributeSources = mapOf(
-                    ATTRIBUTE_KEY_FIRSTNAME to JSON_PATH_FIRSTNAME,
-                    ATTRIBUTE_KEY_AGE to JSON_PATH_AGE,
+                    ATTRIBUTE_KEY_FIRSTNAME to CLAIMS_PATH_POINTER_FIRSTNAME,
+                    ATTRIBUTE_KEY_AGE to CLAIMS_PATH_POINTER_AGE,
                 )
             )
         ),
@@ -1102,24 +444,24 @@ object OcaMocks {
             )
         ),
         overlays = listOf(
-            DataSourceOverlay1x0(
+            DataSourceOverlay2x0(
                 captureBaseDigest = VALID_DIGEST_HUMAN,
                 format = CREDENTIAL_FORMAT,
-                attributeSources = mapOf(
-                    ATTRIBUTE_KEY_FIRSTNAME to JSON_PATH_FIRSTNAME,
-                    ATTRIBUTE_KEY_LASTNAME to JSON_PATH_LASTNAME,
-                    ATTRIBUTE_KEY_ADDRESS_STREET to JSON_PATH_ADDRESS_STREET,
-                    ATTRIBUTE_KEY_ADDRESS_CITY to JSON_PATH_ADDRESS_CITY,
-                    ATTRIBUTE_KEY_ADDRESS_COUNTRY to JSON_PATH_ADDRESS_COUNTRY,
-                    ATTRIBUTE_KEY_PETS to JSON_PATH_PETS,
+                attributeSources = mapOf<String, ClaimsPathPointer>(
+                    ATTRIBUTE_KEY_FIRSTNAME to CLAIMS_PATH_POINTER_FIRSTNAME,
+                    ATTRIBUTE_KEY_LASTNAME to CLAIMS_PATH_POINTER_LASTNAME,
+                    ATTRIBUTE_KEY_ADDRESS_STREET to CLAIMS_PATH_POINTER_ADDRESS_STREET,
+                    ATTRIBUTE_KEY_ADDRESS_CITY to CLAIMS_PATH_POINTER_ADDRESS_CITY,
+                    ATTRIBUTE_KEY_ADDRESS_COUNTRY to CLAIMS_PATH_POINTER_ADDRESS_COUNTRY,
+                    ATTRIBUTE_KEY_PETS to CLAIMS_PATH_POINTER_PETS,
                 )
             ),
-            DataSourceOverlay1x0(
+            DataSourceOverlay2x0(
                 captureBaseDigest = VALID_DIGEST_PET,
                 format = CREDENTIAL_FORMAT,
                 attributeSources = mapOf(
-                    ATTRIBUTE_KEY_NAME to JSON_PATH_PETS_NAME,
-                    ATTRIBUTE_KEY_RACE to JSON_PATH_PETS_RACE,
+                    ATTRIBUTE_KEY_NAME to CLAIMS_PATH_POINTER_PETS,
+                    ATTRIBUTE_KEY_RACE to CLAIMS_PATH_POINTER_PETS_RACE,
                 )
             ),
             LabelOverlay1x0(
@@ -1294,24 +636,24 @@ object OcaMocks {
             )
         ),
         overlays = listOf(
-            DataSourceOverlay1x0(
+            DataSourceOverlay2x0(
                 captureBaseDigest = VALID_DIGEST_HUMAN,
                 format = CREDENTIAL_FORMAT,
                 attributeSources = mapOf(
-                    ATTRIBUTE_KEY_FIRSTNAME to CLAIMS_PATH_POINTER_STRING_FIRSTNAME,
-                    ATTRIBUTE_KEY_LASTNAME to CLAIMS_PATH_POINTER_STRING_LASTNAME,
-                    ATTRIBUTE_KEY_ADDRESS_STREET to CLAIMS_PATH_POINTER_STRING_ADDRESS_STREET,
-                    ATTRIBUTE_KEY_ADDRESS_CITY to CLAIMS_PATH_POINTER_STRING_ADDRESS_CITY,
-                    ATTRIBUTE_KEY_ADDRESS_COUNTRY to CLAIMS_PATH_POINTER_STRING_ADDRESS_COUNTRY,
-                    ATTRIBUTE_KEY_PETS to CLAIMS_PATH_POINTER_STRING_PETS,
+                    ATTRIBUTE_KEY_FIRSTNAME to CLAIMS_PATH_POINTER_FIRSTNAME,
+                    ATTRIBUTE_KEY_LASTNAME to CLAIMS_PATH_POINTER_LASTNAME,
+                    ATTRIBUTE_KEY_ADDRESS_STREET to CLAIMS_PATH_POINTER_ADDRESS_STREET,
+                    ATTRIBUTE_KEY_ADDRESS_CITY to CLAIMS_PATH_POINTER_ADDRESS_CITY,
+                    ATTRIBUTE_KEY_ADDRESS_COUNTRY to CLAIMS_PATH_POINTER_ADDRESS_COUNTRY,
+                    ATTRIBUTE_KEY_PETS to CLAIMS_PATH_POINTER_PETS,
                 )
             ),
-            DataSourceOverlay1x0(
+            DataSourceOverlay2x0(
                 captureBaseDigest = VALID_DIGEST_PET,
                 format = CREDENTIAL_FORMAT,
                 attributeSources = mapOf(
-                    ATTRIBUTE_KEY_NAME to CLAIMS_PATH_POINTER_STRING_PETS_NAME,
-                    ATTRIBUTE_KEY_RACE to CLAIMS_PATH_POINTER_STRING_PETS_RACE,
+                    ATTRIBUTE_KEY_NAME to CLAIMS_PATH_POINTER_PETS_NAME,
+                    ATTRIBUTE_KEY_RACE to CLAIMS_PATH_POINTER_PETS_RACE,
                 )
             ),
             LabelOverlay1x0(

@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.GenerateDPoPKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyDeferredCredential
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedBatchCredential
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedCredential
@@ -10,11 +11,13 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetVerifiableCreden
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import ch.admin.foitt.openid4vc.domain.usecase.FetchCredentialByConfig
 import ch.admin.foitt.openid4vc.domain.usecase.FetchRawAndParsedIssuerCredentialInfo
+import ch.admin.foitt.openid4vc.domain.usecase.GenerateDPoPKeyPair
 import ch.admin.foitt.openid4vc.domain.usecase.GetVerifiableCredentialParams
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.model.toFetchCredentialError
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.EvaluateBatchSize
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchAndSaveCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetCredentialConfig
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleBatchCredentialResult
@@ -38,12 +41,14 @@ class FetchAndSaveCredentialImpl @Inject constructor(
     private val getPayloadEncryptionType: GetPayloadEncryptionType,
     private val getVerifiableCredentialParams: GetVerifiableCredentialParams,
     private val getCredentialConfig: GetCredentialConfig,
+    private val evaluateBatchSize: EvaluateBatchSize,
     private val generateProofKeyPairs: GenerateProofKeyPairs,
     private val fetchCredentialByConfig: FetchCredentialByConfig,
     private val handleCredentialResult: HandleCredentialResult,
     private val handleBatchCredentialResult: HandleBatchCredentialResult,
     private val handleDeferredCredentialResult: HandleDeferredCredentialResult,
     private val environmentSetupRepository: EnvironmentSetupRepository,
+    private val generateDPoPKeyPair: GenerateDPoPKeyPair,
 ) : FetchAndSaveCredential {
     override suspend fun invoke(
         credentialOffer: CredentialOffer,
@@ -84,8 +89,10 @@ class FetchAndSaveCredentialImpl @Inject constructor(
         val batchSize = if (environmentSetupRepository.batchIssuanceEnabled.not() && verifiableCredentialParams.isBatch) {
             // This is a workaround for the BETA-ID, which is already issued as a batch
             1
+        } else if (verifiableCredentialParams.isBatch) {
+            evaluateBatchSize(issuerInfo).bind()
         } else {
-            issuerInfo.batchCredentialIssuance?.batchSize ?: 1
+            1
         }
         val proofKeyPairs = verifiableCredentialParams.proofTypeConfig?.let { proofTypeConfig ->
             generateProofKeyPairs(batchSize, proofTypeConfig)
@@ -93,10 +100,16 @@ class FetchAndSaveCredentialImpl @Inject constructor(
                 .bind()
         }
 
+        val dpopKeyPair = generateDPoPKeyPair(verifiableCredentialParams)
+            .mapError(GenerateDPoPKeyPairError::toFetchCredentialError)
+            .bind()
+
         val anyCredentialResult = fetchCredentialByConfig(
+            isDPopEnabled = environmentSetupRepository.isDPopEnabled,
             verifiableCredentialParams = verifiableCredentialParams,
             bindingKeyPairs = proofKeyPairs,
             payloadEncryptionType = payloadEncryptionType,
+            dpopKeyPair = dpopKeyPair,
         ).mapError(FetchCredentialByConfigError::toFetchCredentialError).bind()
 
         when (anyCredentialResult) {

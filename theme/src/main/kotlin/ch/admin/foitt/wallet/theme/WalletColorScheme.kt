@@ -55,7 +55,7 @@ data class WalletColorScheme(
     val onLightError: Color,
     val lightOrange: Color,
     val onLightOrange: Color,
-    val surfaceTransparent: Color,
+    val surfaceTransparentFixed: Color,
     val onGradientFixed: Color,
     val primaryBackgroundFixed: Color,
     val primaryFixed: Color,
@@ -80,6 +80,8 @@ data class WalletColorScheme(
     val listItemBackground: Color,
 
     val inactiveOverlay: Color,
+
+    val progressTrackColor: Color,
 ) {
     @Stable
     internal val materialColorScheme: ColorScheme by lazy {
@@ -144,7 +146,7 @@ data class WalletColorScheme(
                 primaryContainer = WalletColors.blue50,
                 onPrimaryContainer = WalletColors.blue90,
                 inversePrimary = WalletColors.blue80,
-                secondary = WalletColors.grey40,
+                secondary = WalletColors.blue45,
                 onSecondary = WalletColors.white,
                 secondaryContainer = WalletColors.grey90,
                 onSecondaryContainer = WalletColors.grey30,
@@ -155,7 +157,7 @@ data class WalletColorScheme(
                 background = WalletColors.white,
                 onBackground = WalletColors.grey10,
                 surface = WalletColors.white,
-                onSurface = WalletColors.grey10,
+                onSurface = WalletColors.blue15,
                 surfaceVariant = Color.Unspecified,
                 onSurfaceVariant = WalletColors.grey30,
                 surfaceTint = Color.Unspecified,
@@ -186,7 +188,7 @@ data class WalletColorScheme(
                 onLightError = WalletColors.red40,
                 lightOrange = WalletColors.orange95,
                 onLightOrange = WalletColors.orange50,
-                surfaceTransparent = WalletColors.transparentWhite02,
+                surfaceTransparentFixed = WalletColors.transparentBlack02,
                 onGradientFixed = WalletColors.white,
                 primaryBackgroundFixed = WalletColors.blue10,
                 primaryFixed = WalletColors.blue15,
@@ -209,6 +211,7 @@ data class WalletColorScheme(
                 sensitiveBadge = WalletColors.purple91,
                 onSensitiveBadge = WalletColors.purple27,
                 inactiveOverlay = WalletColors.transparentWhite03,
+                progressTrackColor = WalletColors.accentPurple,
             )
         }
 
@@ -220,7 +223,7 @@ data class WalletColorScheme(
                 primaryContainer = WalletColors.blue30,
                 onPrimaryContainer = WalletColors.blue70,
                 inversePrimary = WalletColors.blue40,
-                secondary = WalletColors.white,
+                secondary = WalletColors.grey60,
                 onSecondary = WalletColors.grey20,
                 secondaryContainer = WalletColors.grey25,
                 onSecondaryContainer = WalletColors.grey90,
@@ -231,7 +234,7 @@ data class WalletColorScheme(
                 background = WalletColors.grey06,
                 onBackground = WalletColors.grey90,
                 surface = WalletColors.grey06,
-                onSurface = WalletColors.grey90,
+                onSurface = WalletColors.white,
                 surfaceVariant = Color.Unspecified,
                 onSurfaceVariant = WalletColors.grey80,
                 surfaceTint = Color.Unspecified,
@@ -262,7 +265,7 @@ data class WalletColorScheme(
                 onLightError = WalletColors.red80,
                 lightOrange = WalletColors.orange15,
                 onLightOrange = WalletColors.orange80,
-                surfaceTransparent = WalletColors.transparentBlack02,
+                surfaceTransparentFixed = WalletColors.transparentBlack02,
                 onGradientFixed = WalletColors.white,
                 primaryBackgroundFixed = WalletColors.blue10,
                 primaryFixed = WalletColors.blue15,
@@ -285,6 +288,8 @@ data class WalletColorScheme(
                 sensitiveBadge = WalletColors.purple18,
                 onSensitiveBadge = WalletColors.purple91,
                 inactiveOverlay = WalletColors.tansparentBlack03,
+
+                progressTrackColor = WalletColors.accentBlueDark,
             )
         }
     }

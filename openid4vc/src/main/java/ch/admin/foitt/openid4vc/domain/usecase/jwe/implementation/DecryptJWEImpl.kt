@@ -15,7 +15,7 @@ import timber.log.Timber
 import java.security.PrivateKey
 import javax.inject.Inject
 
-class DecryptJWEImpl @Inject constructor() : DecryptJWE {
+internal class DecryptJWEImpl @Inject constructor() : DecryptJWE {
     override fun invoke(
         jweString: String,
         privateKey: PrivateKey,

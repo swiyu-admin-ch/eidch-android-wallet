@@ -6,4 +6,4 @@ data class CredentialClaimText(
     override val order: Int,
     override val isSensitive: Boolean,
     val value: String?,
-) : CredentialClaimItem
+) : CredentialElement

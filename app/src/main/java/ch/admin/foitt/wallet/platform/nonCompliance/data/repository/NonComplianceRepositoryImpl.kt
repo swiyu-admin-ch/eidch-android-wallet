@@ -1,7 +1,7 @@
 
 package ch.admin.foitt.wallet.platform.nonCompliance.data.repository
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationPoP
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository

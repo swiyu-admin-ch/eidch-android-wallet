@@ -64,6 +64,7 @@ class ClientMetaDataSerializerTest {
         val result = safeJson.safeDecodeStringTo<ClientMetaData>(clientMetadataWithNewFieldsString).assertOk()
 
         assertEquals("A128GCM", result.encryptedResponseEncValuesSupported?.first())
+        assertEquals("A256GCM", result.encryptedResponseEncValuesSupported?.get(1))
     }
 
     @Test

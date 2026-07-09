@@ -3,8 +3,9 @@ package ch.admin.foitt.wallet.feature.login.presentation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,7 +15,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.composables.AdaptiveButtonContainer
 import ch.admin.foitt.wallet.platform.composables.Buttons
+import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.centerHorizontallyOnFullscreen
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.ScrollableColumnWithFullscreenGradient
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
@@ -56,8 +59,9 @@ fun BiometricLoginScreenContent(
 ) {
     WalletLayouts.ScrollableColumnWithFullscreenGradient(
         isLoading = isLoading,
-        stickyBottomContent = {
+        stickyBottomContent = { isLarge ->
             BottomButtons(
+                isLarge = isLarge,
                 showBiometricsLoginButton = showBiometricsLoginButton,
                 onLoginWithBiometrics = onLoginWithBiometrics,
                 onLoginWithPassphrase = onLoginWithPassphrase,
@@ -95,21 +99,39 @@ private fun Content() = Column(
 
 @Composable
 private fun BottomButtons(
+    isLarge: Boolean,
     showBiometricsLoginButton: Boolean,
     onLoginWithBiometrics: () -> Unit,
     onLoginWithPassphrase: () -> Unit,
 ) {
-    if (showBiometricsLoginButton) {
-        Buttons.FilledPrimaryFixed(
-            text = stringResource(R.string.tk_global_loginbiometric_primarybutton),
-            startIcon = painterResource(R.drawable.ic_fingerprint),
-            onClick = onLoginWithBiometrics,
-        )
-        Spacer(modifier = Modifier.size(Sizes.s04))
-    }
-    Buttons.FilledSecondaryFixed(
-        text = stringResource(R.string.tk_global_loginpassword_secondarybutton),
-        onClick = onLoginWithPassphrase,
+    AdaptiveButtonContainer(
+        buttons = buildList {
+            if (showBiometricsLoginButton) {
+                add(
+                    {
+                        Buttons.FilledPrimaryFixed(
+                            text = stringResource(R.string.tk_global_loginbiometric_primarybutton),
+                            startIcon = painterResource(R.drawable.ic_fingerprint),
+                            onClick = onLoginWithBiometrics,
+                        )
+                    }
+                )
+            }
+
+            add(
+                {
+                    Buttons.FilledSecondaryFixed(
+                        text = stringResource(R.string.tk_global_loginpassword_secondarybutton),
+                        onClick = onLoginWithPassphrase,
+                    )
+                }
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth(if (isLarge) 0.65f else 1.0f)
+            .bottomSafeDrawing()
+            .padding(Sizes.s04),
+        stacked = false
     )
 }
 

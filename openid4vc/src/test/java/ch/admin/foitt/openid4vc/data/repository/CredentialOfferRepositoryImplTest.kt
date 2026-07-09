@@ -5,6 +5,7 @@ import ch.admin.foitt.openid4vc.data.CredentialOfferRepositoryImpl
 import ch.admin.foitt.openid4vc.data.repository.mock.CredentialOfferRepoMocks.mockSoftwareKeyPair
 import ch.admin.foitt.openid4vc.domain.model.CredentialRequestType
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.JWSKeyPair
@@ -121,6 +122,28 @@ class CredentialOfferRepositoryImplTest {
         val expected = "$BASE_URL$CREDENTIAL_PATH$ISSUER_ACCEPT_LANGUAGE"
 
         assertEquals(expected, result.issuerCredentialInfo.credentialIssuer.toString())
+    }
+
+    @Test
+    fun `Fetching signed issuer metadata returns info`() = runTest {
+        handler = { request ->
+            when {
+                request.isSignedMetadataIssuerResponse() -> respond(
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/jwt"),
+                    content = ISSUER_METADATA_JWT
+                )
+
+                else -> error("Unhandled request: ${request.url} -> add in mockHttpClient")
+            }
+        }
+
+        val url = URI.create(BASE_URL).toURL()
+
+        val result = repo.fetchRawAndParsedIssuerCredentialInformation(issuerEndpoint = url).assertOk()
+
+        assertEquals("$BASE_URL$ISSUER_METADATA_PATH", result.issuerCredentialInfo.credentialIssuer.toString())
+        assertEquals(ISSUER_METADATA_JWT, result.rawIssuerCredentialInfo)
     }
 
     @Test
@@ -438,7 +461,7 @@ class CredentialOfferRepositoryImplTest {
     }
 
     private fun createCredentialJwe(keyPair: KeyPair): String {
-        val jweHeader = JWEHeader.Builder(JWEAlgorithm.ECDH_ES, EncryptionMethod.A128GCM)
+        val jweHeader = JWEHeader.Builder(JWEAlgorithm.ECDH_ES, EncryptionMethod.A256GCM)
             .compressionAlgorithm(CompressionAlgorithm.DEF)
             .build()
         val jwePayload = Payload(verifiableCredentialResponseJson)
@@ -466,6 +489,10 @@ class CredentialOfferRepositoryImplTest {
     private fun HttpRequestData.isAcceptLanguageIssuerResponse() =
         this.method == HttpMethod.Get && this.url.encodedPath == "$ISSUER_METADATA_PATH$ISSUER_ACCEPT_LANGUAGE" &&
             this.headers[HttpHeaders.AcceptLanguage] == "de-CH, en, fr-CH, it-CH, rm"
+
+    private fun HttpRequestData.isSignedMetadataIssuerResponse() = mockResponse(
+        expectedPath = ISSUER_METADATA_PATH,
+    )
 
     private fun HttpRequestData.isMetadataOID4VCIIssuerResponse() = mockResponse(expectedPath = "$ISSUER_METADATA_PATH$ISSUER_OID4VCI")
 
@@ -536,6 +563,9 @@ class CredentialOfferRepositoryImplTest {
         const val ISSUER_OID4VCI = "/issuerOID4VCI"
         const val ISSUER_OIDC = "/issuerOIDC"
 
+        const val ISSUER_METADATA_JWT =
+            "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJjcmVkZW50aWFsX2VuZHBvaW50IjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9jcmVkZW50aWFsL2VuZHBvaW50IiwiY3JlZGVudGlhbF9pc3N1ZXIiOiJodHRwczovL2V4YW1wbGUuY29tLy53ZWxsLWtub3duL29wZW5pZC1jcmVkZW50aWFsLWlzc3VlciIsImNyZWRlbnRpYWxfY29uZmlndXJhdGlvbnNfc3VwcG9ydGVkIjp7ImlkZW50aWZpZXIiOnsiZm9ybWF0IjoidmMrc2Qtand0IiwidmN0IjoidmN0IiwiY3JlZGVudGlhbF9zaWduaW5nX2FsZ192YWx1ZXNfc3VwcG9ydGVkIjpbIkVTMjU2Il0sInByb29mX3R5cGVzX3N1cHBvcnRlZCI6eyJqd3QiOnsicHJvb2Zfc2lnbmluZ19hbGdfdmFsdWVzX3N1cHBvcnRlZCI6WyJFUzI1NiJdfX19fX0.-XLwVl7iiucbJKEMxV7h2yH6CLaTN2eOQn6NF7ZKUSC4_qacAxGqk35SCfovwp1uPUJuwSJ0c1p1Ny-nYBSM2g"
+
         fun createIssuerMetadataJson(issuer: String) = """
             {
                 "credential_endpoint": "https://example.com/credential/endpoint",
@@ -587,7 +617,7 @@ class CredentialOfferRepositoryImplTest {
         val errorUrl = createUrl(ERROR_PATH)
         val tokenResponse = TokenResponse(
             accessToken = "accessToken",
-            tokenType = "bearer",
+            tokenType = TokenType.BEARER,
         )
 
         val verifiableCredentialResponseJson = """

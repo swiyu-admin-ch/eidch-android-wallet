@@ -48,6 +48,14 @@ fun TrustBadge(
 ) = when (trustStatus) {
     TrustStatus.TRUSTED -> TrustBadgeTrusted(onClick = onClick)
     TrustStatus.NOT_TRUSTED -> TrustBadgeNotTrusted(onClick = onClick)
+    TrustStatus.TRUSTED_PROXIMITY_VERIFIER -> TrustBadgeTrusted(
+        badgeType = BadgeType.ActorInfoBadge.VerifiedCheckApp,
+        onClick = onClick,
+    )
+    TrustStatus.NOT_TRUSTED_PROXIMITY_VERIFIER -> TrustBadgeNotTrusted(
+        badgeType = BadgeType.ActorInfoBadge.NotVerifiedCheckApp,
+        onClick = onClick,
+    )
     TrustStatus.EXTERNAL -> TrustBadgeNotInSystem(onClick = onClick)
     TrustStatus.UNKNOWN -> {}
 }
@@ -93,6 +101,7 @@ fun LegitimateActorBadge(
 
 @Composable
 fun TrustBadgeTrusted(
+    badgeType: BadgeType.ActorInfoBadge = BadgeType.ActorInfoBadge.VerifiedTrust,
     onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_trusted,
@@ -101,13 +110,14 @@ fun TrustBadgeTrusted(
     backgroundColor = WalletTheme.colorScheme.lightTertiary,
     onClick = onClick?.let {
         {
-            it.invoke(BadgeType.ActorInfoBadge.VerifiedTrust)
+            it.invoke(badgeType)
         }
     }
 )
 
 @Composable
 fun TrustBadgeNotTrusted(
+    badgeType: BadgeType.ActorInfoBadge = BadgeType.ActorInfoBadge.NotVerifiedTrust,
     onClick: ((BadgeType.ActorInfoBadge) -> Unit)? = null,
 ) = Badge(
     icon = R.drawable.wallet_ic_questionmark_small,
@@ -116,7 +126,7 @@ fun TrustBadgeNotTrusted(
     backgroundColor = WalletTheme.colorScheme.lightPrimary,
     onClick = onClick?.let {
         {
-            it.invoke(BadgeType.ActorInfoBadge.NotVerifiedTrust)
+            it.invoke(badgeType)
         }
     }
 )
@@ -216,7 +226,7 @@ fun SensitiveClaimInfoBadge(
     claimLabel: String,
     onClick: ((BadgeType.ClaimInfoBadge) -> Unit)? = null,
 ) {
-    val textDescription = "${stringResource(R.string.tk_global_sensitive_data)}: $claimLabel"
+    val textDescription = "$claimLabel:${stringResource(R.string.tk_global_sensitive_data_alt)}"
     Badge(
         icon = R.drawable.wallet_ic_warning,
         text = claimLabel,
@@ -240,6 +250,8 @@ fun SensitiveBadge() {
         contentColor = WalletTheme.colorScheme.onSensitiveBadge,
         backgroundColor = WalletTheme.colorScheme.sensitiveBadge,
         onClick = null,
+        textModifier =
+        Modifier.replaceContentDescription(stringResource(R.string.tk_global_sensitive_data_alt))
     )
 }
 
@@ -268,7 +280,7 @@ private fun Badge(
     textModifier: Modifier = if (onClick != null) {
         Modifier.replaceContentDescription(text + "," + stringResource(R.string.tk_accessibility_information_double_tap))
     } else {
-        Modifier.replaceContentDescription(stringResource(R.string.tk_accessibility_information_about) + "," + text)
+        Modifier.replaceContentDescription(text)
     }
 ) = Box(
     modifier = Modifier

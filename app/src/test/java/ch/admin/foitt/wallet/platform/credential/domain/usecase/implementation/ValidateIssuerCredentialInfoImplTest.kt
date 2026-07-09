@@ -5,6 +5,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Credential
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwks
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.EncryptionAlgorithm
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.ValidateIssuerCredentialInfo
 import io.mockk.MockKAnnotations
 import io.mockk.every
@@ -56,7 +57,7 @@ class ValidateIssuerCredentialInfoImplTest {
     }
 
     @Test
-    fun `Config with response encoding but without request encoding returns an error`() = runTest {
+    fun `Config with response encryption but without request encryption returns an error`() = runTest {
         every { mockIssuerCredentialInfo.credentialRequestEncryption } returns null
 
         assertFalse(useCase(mockIssuerCredentialInfo))
@@ -70,8 +71,15 @@ class ValidateIssuerCredentialInfoImplTest {
     }
 
     @Test
-    fun `Response encryption contains unsupported encoding`() = runTest {
-        every { mockResponseEncryption.encValuesSupported } returns listOf(SUPPORTED_ENCODING, OTHER_ENCODING)
+    fun `Response encryption contains supported and unsupported encryption`() = runTest {
+        every { mockResponseEncryption.encValuesSupported } returns listOf(OTHER_ENCRYPTION, SUPPORTED_ENCRYPTION_2)
+
+        assertTrue(useCase(mockIssuerCredentialInfo))
+    }
+
+    @Test
+    fun `Response encryption contains only unsupported encryption`() = runTest {
+        every { mockResponseEncryption.encValuesSupported } returns listOf(OTHER_ENCRYPTION)
 
         assertFalse(useCase(mockIssuerCredentialInfo))
     }
@@ -84,8 +92,15 @@ class ValidateIssuerCredentialInfoImplTest {
     }
 
     @Test
-    fun `Request encryption contains unsupported encoding`() = runTest {
-        every { mockRequestEncryption.encValuesSupported } returns listOf(SUPPORTED_ENCODING, OTHER_ENCODING)
+    fun `Request encryption contains supported and unsupported encryption`() = runTest {
+        every { mockRequestEncryption.encValuesSupported } returns listOf(OTHER_ENCRYPTION, SUPPORTED_ENCRYPTION_2)
+
+        assertTrue(useCase(mockIssuerCredentialInfo))
+    }
+
+    @Test
+    fun `Request encryption contains only unsupported encryption`() = runTest {
+        every { mockRequestEncryption.encValuesSupported } returns listOf(OTHER_ENCRYPTION)
 
         assertFalse(useCase(mockIssuerCredentialInfo))
     }
@@ -116,7 +131,7 @@ class ValidateIssuerCredentialInfoImplTest {
         every { mockIssuerCredentialInfo.credentialResponseEncryption } returns mockResponseEncryption
 
         every { mockRequestEncryption.jwks } returns mockJwks
-        every { mockRequestEncryption.encValuesSupported } returns listOf(SUPPORTED_ENCODING)
+        every { mockRequestEncryption.encValuesSupported } returns listOf(SUPPORTED_ENCRYPTION_1, SUPPORTED_ENCRYPTION_2)
         every { mockRequestEncryption.zipValuesSupported } returns listOf(SUPPORTED_ZIP_VALUE)
 
         every { mockJwks.keys } returns listOf(mockJwk)
@@ -125,15 +140,16 @@ class ValidateIssuerCredentialInfoImplTest {
         every { mockJwk.alg } returns SUPPORTED_ALGORITHM
 
         every { mockResponseEncryption.algValuesSupported } returns listOf(SUPPORTED_ALGORITHM)
-        every { mockResponseEncryption.encValuesSupported } returns listOf(SUPPORTED_ENCODING)
+        every { mockResponseEncryption.encValuesSupported } returns listOf(SUPPORTED_ENCRYPTION_1, SUPPORTED_ENCRYPTION_2)
         every { mockResponseEncryption.zipValuesSupported } returns listOf(SUPPORTED_ZIP_VALUE)
     }
 
     private companion object {
         const val SUPPORTED_ALGORITHM = "ECDH-ES"
         const val OTHER_ALGORITHM = "other algorithm"
-        const val SUPPORTED_ENCODING = "A128GCM"
-        const val OTHER_ENCODING = "other encoding"
+        val SUPPORTED_ENCRYPTION_1 = EncryptionAlgorithm.A128GCM.name
+        val SUPPORTED_ENCRYPTION_2 = EncryptionAlgorithm.A256GCM.name
+        const val OTHER_ENCRYPTION = "other encryption"
         const val SUPPORTED_ZIP_VALUE = "DEF"
         const val OTHER_ZIP_VALUE = "other zip value"
         const val SUPPORTED_CURVE = "P-256"

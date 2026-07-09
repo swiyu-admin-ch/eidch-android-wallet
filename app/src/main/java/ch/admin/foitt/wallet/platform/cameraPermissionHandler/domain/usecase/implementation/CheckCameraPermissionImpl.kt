@@ -2,37 +2,39 @@ package ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.im
 
 import androidx.annotation.CheckResult
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.model.PermissionState
-import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.repository.CameraIntroRepository
 import ch.admin.foitt.wallet.platform.cameraPermissionHandler.domain.usecase.CheckCameraPermission
 import timber.log.Timber
 import javax.inject.Inject
 
-class CheckCameraPermissionImpl @Inject constructor(
-    private val cameraIntroRepository: CameraIntroRepository,
-) : CheckCameraPermission {
+class CheckCameraPermissionImpl @Inject constructor() : CheckCameraPermission {
     @CheckResult
     override suspend fun invoke(
         permissionsAreGranted: Boolean,
         rationaleShouldBeShown: Boolean,
-        promptWasTriggered: Boolean,
+        introPromptWasAccepted: Boolean,
+        autoPromptWasTriggered: Boolean,
+        manualPromptWasTriggered: Boolean,
+        rationaleWasShown: Boolean,
     ): PermissionState {
         Timber.d(
-            "Permission result\n" +
-                "granted: $permissionsAreGranted\n" +
-                "rationale should be shown: $rationaleShouldBeShown\n" +
-                "prompt was Triggered: $promptWasTriggered"
+            """
+                Permission result:
+                :: granted: $permissionsAreGranted
+                :: rationale should be shown: $rationaleShouldBeShown
+                :: introPromptWasAccepted: $introPromptWasAccepted
+                :: auto prompt was triggered: $autoPromptWasTriggered
+                :: manual prompt was triggered: $manualPromptWasTriggered
+                :: rationale was shown: $rationaleWasShown
+            """.trimIndent()
         )
-
-        if (promptWasTriggered) {
-            cameraIntroRepository.setPermissionPromptWasTriggered(true)
-        }
-
-        val cameraIntroPromptTriggered = cameraIntroRepository.getPermissionPromptWasTriggered()
 
         return when {
             permissionsAreGranted -> PermissionState.Granted
             rationaleShouldBeShown -> PermissionState.Rationale
-            !cameraIntroPromptTriggered -> PermissionState.Intro
+            rationaleWasShown -> PermissionState.Blocked
+            !introPromptWasAccepted && !manualPromptWasTriggered -> PermissionState.Intro
+            !autoPromptWasTriggered && !manualPromptWasTriggered -> PermissionState.AutoPrompt
+            !manualPromptWasTriggered -> PermissionState.ManualPrompt
             // Permission were refused after an active prompt
             // but no rationale was asked
             // Can happen for various reasons, like

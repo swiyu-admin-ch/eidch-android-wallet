@@ -152,7 +152,7 @@ class GetAnyCredentialsImplTest {
                 bundleItem = createMockBundleItem(),
                 keyBinding = createMockKeyBinding(keyBindingIdentifier, keyBindingAlgorithm),
             )
-        )
+        ),
     )
 
     private fun createMockBundleItem() = BundleItemEntity(

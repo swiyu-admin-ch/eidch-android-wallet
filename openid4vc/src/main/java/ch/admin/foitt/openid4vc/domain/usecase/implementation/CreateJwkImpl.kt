@@ -11,7 +11,6 @@ import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toErrorIfNull
 import com.nimbusds.jose.jwk.ECKey
-import com.nimbusds.jose.util.Base64
 import java.security.KeyPair
 import java.security.interfaces.ECPublicKey
 import javax.inject.Inject
@@ -20,14 +19,9 @@ internal class CreateJwkImpl @Inject constructor() : CreateJwk {
     override suspend fun invoke(
         keyPair: KeyPair,
         algorithm: SigningAlgorithm,
-        asDid: Boolean
     ): Result<String, CreateJwkError> =
         keyPair.toPublicECKey(algorithm).map { publicKey ->
-            if (asDid) {
-                "did:jwk:${Base64.encode(publicKey.toJSONString())}"
-            } else {
-                publicKey.toJSONString()
-            }
+            publicKey.toJSONString()
         }
 
     private fun KeyPair.toPublicECKey(algorithm: SigningAlgorithm): Result<ECKey, CreateJwkError> = runSuspendCatching {

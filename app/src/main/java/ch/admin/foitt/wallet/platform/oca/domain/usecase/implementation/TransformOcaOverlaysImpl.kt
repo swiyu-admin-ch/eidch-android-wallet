@@ -1,47 +1,86 @@
 package ch.admin.foitt.wallet.platform.oca.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
+import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointerComponent
 import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.toPointerString
+import ch.admin.foitt.wallet.platform.oca.domain.model.CaptureBase
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.BrandingOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay
-import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay1x0
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.DataSourceOverlay2x0
+import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.LabelOverlay1x1
 import ch.admin.foitt.wallet.platform.oca.domain.model.overlays.Overlay
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.TransformOcaOverlays
 import javax.inject.Inject
 
 class TransformOcaOverlaysImpl @Inject constructor() : TransformOcaOverlays {
-    override fun invoke(overlays: List<Overlay>): List<Overlay> {
-        return overlays.resolveBrandingOverlay()
-    }
+    override fun invoke(
+        overlays: List<Overlay>,
+        captureBases: List<CaptureBase>,
+    ): List<Overlay> {
+        val dataSourceOverlays = overlays.filterIsInstance<DataSourceOverlay>()
 
-    private fun List<Overlay>.resolveBrandingOverlay(): List<Overlay> {
-        val dataSourceOverlays = this.filterIsInstance<DataSourceOverlay>()
-
-        return this.map { overlay ->
+        return overlays.map { overlay ->
             when (overlay) {
                 is BrandingOverlay1x1 -> {
                     overlay.copy(
-                        primaryField = resolveFieldTemplate(overlay.captureBaseDigest, overlay.primaryField, dataSourceOverlays),
-                        secondaryField = resolveFieldTemplate(overlay.captureBaseDigest, overlay.secondaryField, dataSourceOverlays)
+                        primaryField = resolveFieldTemplate(
+                            field = overlay.primaryField,
+                            defaultDigest = overlay.captureBaseDigest,
+                            dataSourceOverlays = dataSourceOverlays
+                        ),
+                        secondaryField = resolveFieldTemplate(
+                            field = overlay.secondaryField,
+                            defaultDigest = overlay.captureBaseDigest,
+                            dataSourceOverlays = dataSourceOverlays
+                        )
                     )
                 }
+
+                is LabelOverlay1x1 -> {
+                    overlay.copy(
+                        attributeLabels = overlay.attributeLabels.mapValues { (_, value) ->
+                            resolveFieldTemplate(
+                                field = value,
+                                defaultDigest = overlay.captureBaseDigest,
+                                dataSourceOverlays = dataSourceOverlays
+                            ) ?: ""
+                        },
+                    )
+                }
+
                 else -> overlay
             }
         }
     }
 
-    private fun resolveFieldTemplate(brandingDigest: String, field: String?, dataSourceOverlays: List<DataSourceOverlay>): String? {
+    private fun resolveFieldTemplate(
+        field: String?,
+        defaultDigest: String,
+        dataSourceOverlays: List<DataSourceOverlay>
+    ): String? {
         return field?.let {
-            // matches: 2 groups
-            // 1: digest -> if not null -> reference attribute
-            // 2: anything else -> {{anything}}
-            val bracketRegex = Regex("""\{\{(?:refs:([\w-]+):)?(.+?)\}\}""")
+            val regex = Regex(TEMPLATE_REGEX)
 
-            val resolvedField = bracketRegex.replace(it) { match ->
-                val digest = match.groups[1]?.value ?: brandingDigest
-                val attribute = match.groups[2]?.value ?: ""
+            val resolvedField = regex.replace(it) { match ->
+                val everything = match.groups["everything"]?.value
+                if (everything != null) return@replace ""
 
-                val replacement = getReplacement(dataSourceOverlays, digest, attribute)
+                val digest = match.groups["digest"]?.value ?: defaultDigest
+                val attribute = match.groups["attribute"]?.value ?: ""
+                val index = when (val rawIndex = match.groups["index"]?.value) {
+                    null -> null
+                    "null" -> ClaimsPathPointerComponent.Null
+                    else -> ClaimsPathPointerComponent.Index(rawIndex.toInt())
+                }
+                val join = match.groups["join"]?.value
+
+                val replacement = getReplacement(
+                    dataSourceOverlays = dataSourceOverlays,
+                    digest = digest,
+                    attribute = attribute,
+                    index = index,
+                    join = join,
+                )
 
                 if (replacement.isNotEmpty()) {
                     "{{$replacement}}"
@@ -57,13 +96,37 @@ class TransformOcaOverlaysImpl @Inject constructor() : TransformOcaOverlays {
     private fun getReplacement(
         dataSourceOverlays: List<DataSourceOverlay>,
         digest: String,
-        attribute: String
-    ) = dataSourceOverlays
-        .find { it.captureBaseDigest == digest }
-        ?.let { dataSourceOverlay ->
-            when (dataSourceOverlay) {
-                is DataSourceOverlay2x0 -> dataSourceOverlay.attributeSources[attribute]?.toPointerString() ?: ""
-                is DataSourceOverlay1x0 -> dataSourceOverlay.attributeSources[attribute] ?: ""
+        attribute: String,
+        index: ClaimsPathPointerComponent?,
+        join: String?,
+    ): String = getClaimsPathPointer(dataSourceOverlays, digest, attribute)?.let { claimsPathPointer ->
+        val path = index?.let { index ->
+            val path = if (claimsPathPointer.lastOrNull() is ClaimsPathPointerComponent.Null) {
+                claimsPathPointer.dropLast(1)
+            } else {
+                claimsPathPointer
             }
-        } ?: ""
+            path + index
+        } ?: claimsPathPointer
+        val joinString = join ?: ""
+        path.toPointerString() + joinString
+    } ?: ""
+
+    private fun getClaimsPathPointer(
+        dataSourceOverlays: List<DataSourceOverlay>,
+        digest: String,
+        attribute: String
+    ): ClaimsPathPointer? = dataSourceOverlays.firstNotNullOfOrNull {
+        if (it.captureBaseDigest == digest && it is DataSourceOverlay2x0) {
+            it.attributeSources[attribute]
+        } else {
+            null
+        }
+    }
+
+    private companion object {
+        @Suppress("MaximumLineLength")
+        const val TEMPLATE_REGEX =
+            """\{\{(?:refs:(?<digest>[^:]+):)?(?<attribute>(?:(?!\{\{|\[|\.join\(|\}\}).)*)(?:\[(?<index>\d+|null)\])?(?<join>\.join\((?<q>['"])(?<separator>(?:(?!\k<q>).){0,10})\k<q>\))?\}\}|\{\{(?<everything>.*)?\}\}"""
+    }
 }

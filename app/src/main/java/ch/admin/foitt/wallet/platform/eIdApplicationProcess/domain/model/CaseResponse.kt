@@ -30,3 +30,9 @@ enum class IdentityType {
     SWISS_PASS,
     FOREIGNER_PERMIT,
 }
+
+fun IdentityType.toEIdDocumentType() = when (this) {
+    IdentityType.SWISS_IDK -> EIdUiDocumentType.IDENTITY_CARD
+    IdentityType.FOREIGNER_PERMIT -> EIdUiDocumentType.RESIDENT_PERMIT
+    IdentityType.SWISS_PASS -> EIdUiDocumentType.PASSPORT
+}

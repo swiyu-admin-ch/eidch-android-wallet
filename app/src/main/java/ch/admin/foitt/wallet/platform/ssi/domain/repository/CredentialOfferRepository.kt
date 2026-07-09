@@ -2,6 +2,7 @@
 
 package ch.admin.foitt.wallet.platform.ssi.domain.repository
 
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
@@ -32,10 +33,12 @@ interface CredentialOfferRepository {
     suspend fun saveDeferredCredentialOffer(
         transactionId: String,
         accessToken: String,
+        tokenType: TokenType,
         refreshToken: String?,
         endpoint: URL,
         pollInterval: Int,
         keyBindings: List<KeyBinding>?,
+        dpopKeyBinding: KeyBinding?,
         format: CredentialFormat,
         issuerUrl: URL,
         selectedConfigurationId: String,

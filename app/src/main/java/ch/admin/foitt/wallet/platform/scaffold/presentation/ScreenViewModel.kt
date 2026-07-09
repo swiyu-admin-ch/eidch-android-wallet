@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 abstract class ScreenViewModel(
     private val setTopBarState: SetTopBarState,
     private val areBaseSystemBarsInverted: Boolean = false,
-    private val systemBarsFixedLightColor: Boolean = false,
+    var systemBarsFixedLightColor: Boolean = false,
 ) : ViewModel() {
     protected abstract val topBarState: TopBarState
 

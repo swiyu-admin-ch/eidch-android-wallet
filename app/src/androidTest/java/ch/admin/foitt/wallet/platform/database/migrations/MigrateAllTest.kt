@@ -10,6 +10,8 @@ import ch.admin.foitt.wallet.platform.database.data.migrations.Migration16to17
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration19to20
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration1to2
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration21to22
+import ch.admin.foitt.wallet.platform.database.data.migrations.Migration26to27
+import ch.admin.foitt.wallet.platform.database.data.migrations.Migration27to28
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration2to3
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration5to6
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration6to7
@@ -31,6 +33,8 @@ class MigrateAllTest : BaseDBMigrationTest() {
             Migration16to17,
             Migration19to20,
             Migration21to22,
+            Migration26to27,
+            Migration27to28,
         )
 
     @Test

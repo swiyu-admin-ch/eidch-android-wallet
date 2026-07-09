@@ -2,20 +2,18 @@ package ch.admin.foitt.wallet.feature.presentationRequest.presentation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +21,10 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +34,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
@@ -42,15 +46,18 @@ import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiSt
 import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.badges.presentation.model.ClaimBadgeUiState
+import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
 import ch.admin.foitt.wallet.platform.composables.ConfirmationBottomSheet
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
+import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
+import ch.admin.foitt.wallet.platform.composables.presentation.WalletLinearProgressIndicator
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.LazyColumn
 import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayouts
 import ch.admin.foitt.wallet.platform.composables.presentation.windowWidthClass
 import ch.admin.foitt.wallet.platform.credential.presentation.CredentialCardSmall
-import ch.admin.foitt.wallet.platform.credential.presentation.credentialClaimItems
+import ch.admin.foitt.wallet.platform.credential.presentation.credentialElements
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialInfoWithClaimBadgesWidget
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
@@ -88,8 +95,8 @@ fun PresentationRequestScreen(viewModel: PresentationRequestViewModel) {
     if (showConfirmationBottomSheet) {
         ConfirmationBottomSheet(
             sheetState = confirmationBottomSheetState,
-            title = R.string.tk_present_review_confirmPresentation_primary,
-            body = R.string.tk_present_review_confirmPresentation_secondary,
+            title = viewModel.confirmationBottomSheetTitle,
+            body = viewModel.confirmationBottomSheetBody,
             acceptButtonText = R.string.tk_present_review_confirmPresentation_button_primary,
             declineButtonText = R.string.tk_present_review_confirmPresentation_button_secondary,
             onAccept = viewModel::submit,
@@ -106,6 +113,7 @@ fun PresentationRequestScreen(viewModel: PresentationRequestViewModel) {
         presentationRequestUiState = presentationRequestUiState,
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         isSubmitting = viewModel.isSubmitting.collectAsStateWithLifecycle().value,
+        submissionProgress = viewModel.proximitySubmissionProgress.collectAsStateWithLifecycle().value,
         showDelayReason = viewModel.showDelayReason.collectAsStateWithLifecycle().value,
         onWrongData = viewModel::onReportWrongData,
         onSubmit = viewModel::onAccept,
@@ -120,6 +128,7 @@ private fun PresentationRequestContent(
     presentationRequestUiState: PresentationRequestUiState,
     isLoading: Boolean,
     isSubmitting: Boolean,
+    submissionProgress: Double?,
     showDelayReason: Boolean,
     onWrongData: () -> Unit,
     onSubmit: () -> Unit,
@@ -143,6 +152,7 @@ private fun PresentationRequestContent(
             IsSubmittingContent(
                 verifierUiState = verifierUiState,
                 credentialCardState = presentationRequestUiState.credentialCardState,
+                submissionProgress = submissionProgress,
                 modifier = modifier,
                 showDelayReason = showDelayReason,
                 onBadge = onBadge,
@@ -159,14 +169,18 @@ private fun PresentationRequestContent(
             )
         }
 
-        LoadingOverlay(showOverlay = isLoading)
+        if (submissionProgress == null) {
+            LoadingOverlay(showOverlay = isLoading)
+        }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun IsSubmittingContent(
     verifierUiState: ActorUiState,
     credentialCardState: CredentialCardState,
+    submissionProgress: Double?,
     modifier: Modifier,
     showDelayReason: Boolean,
     onBadge: (BadgeType) -> Unit,
@@ -203,17 +217,42 @@ private fun IsSubmittingContent(
                     },
                 )
 
-                LoadingIndicator(
-                    showDelayReason = showDelayReason,
-                    modifier = Modifier
-                        .constrainAs(loading) {
-                            top.linkTo(credentialCard.bottom)
-                            start.linkTo(parent.start)
-                            end.linkTo(parent.end)
-                            bottom.linkTo(parent.bottom)
-                        }
-                        .padding(top = Sizes.s06)
-                )
+                if (submissionProgress == null) {
+                    LoadingIndicator(
+                        showDelayReason = showDelayReason,
+                        modifier = Modifier
+                            .constrainAs(loading) {
+                                top.linkTo(credentialCard.bottom)
+                                start.linkTo(parent.start)
+                                end.linkTo(parent.end)
+                                bottom.linkTo(parent.bottom)
+                            }
+                            .padding(top = Sizes.s06)
+                    )
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        modifier = Modifier
+                            .padding(Sizes.s06)
+                            .widthIn(max = 240.dp)
+                            .constrainAs(loading) {
+                                start.linkTo(parent.start)
+                                end.linkTo(parent.end)
+                                bottom.linkTo(parent.bottom)
+                            }
+                    ) {
+                        WalletLinearProgressIndicator(
+                            progress = { submissionProgress.toFloat() },
+                            modifier = Modifier
+                                .height(Sizes.s02),
+                        )
+                        WalletTexts.BodyMedium(
+                            "${(submissionProgress * 100).toInt()}%",
+                            modifier = Modifier
+                                .padding(top = Sizes.s01)
+                        )
+                    }
+                }
             }
         }
     }
@@ -228,47 +267,64 @@ private fun ContentList(
     onWrongData: () -> Unit,
     onSubmit: () -> Unit,
     onDecline: () -> Unit,
-) = WalletLayouts.LazyColumn(
-    modifier = modifier,
-    state = rememberLazyListState(),
-    useTopInsets = false,
-    useBottomInsets = true,
 ) {
-    item {
-        Header(
-            verifierUiState = verifierUiState,
-            onBadge = onBadge,
-        )
+    var buttonsHeight by remember { mutableStateOf(0.dp) }
+
+    val windowWidthClass = currentWindowAdaptiveInfo().windowWidthClass()
+    val maxWidth = remember(windowWidthClass) {
+        if (windowWidthClass == WindowWidthClass.COMPACT) 1.0f else 0.8f
     }
-    item { Spacer(modifier = Modifier.height(Sizes.s04)) }
 
-    item {
-        WalletTexts.HeadlineSmallEmphasized(
-            text = stringResource(id = R.string.tk_present_review_credential_dataSection_primary),
-            modifier = Modifier
-                .padding(start = Sizes.s06, end = Sizes.s03, top = Sizes.s02)
-                .semantics { heading() },
-        )
-    }
-    item { Spacer(modifier = Modifier.height(Sizes.s04)) }
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        WalletLayouts.LazyColumn(
+            modifier = modifier,
+            state = rememberLazyListState(),
+            useTopInsets = false,
+            useBottomInsets = false,
+            contentPadding = PaddingValues(
+                bottom = Sizes.s04 + buttonsHeight
+            )
+        ) {
+            item {
+                Header(
+                    verifierUiState = verifierUiState,
+                    onBadge = onBadge,
+                )
+            }
+            item { Spacer(modifier = Modifier.height(Sizes.s04)) }
 
-    credentialInfoWithClaimBadgesWidget(
-        credentialCardState = presentationRequestUiState.credentialCardState,
-        claimBadgesUiStates = presentationRequestUiState.claimBadgesUiStates,
-        onBadge = onBadge
-    )
-    item { Spacer(modifier = Modifier.height(Sizes.s04)) }
+            item {
+                WalletTexts.HeadlineSmallEmphasized(
+                    text = stringResource(id = R.string.tk_present_review_credential_dataSection_primary),
+                    modifier = Modifier
+                        .padding(start = Sizes.s06, end = Sizes.s03, top = Sizes.s02)
+                        .semantics { heading() },
+                )
+            }
+            item { Spacer(modifier = Modifier.height(Sizes.s04)) }
 
-    credentialClaimItems(
-        claimItems = presentationRequestUiState.requestedClaims,
-        onWrongData = onWrongData,
-    )
-    item { Spacer(modifier = Modifier.height(Sizes.s04)) }
+            credentialInfoWithClaimBadgesWidget(
+                credentialCardState = presentationRequestUiState.credentialCardState,
+                claimBadgesUiStates = presentationRequestUiState.claimBadgesUiStates,
+                onBadge = onBadge
+            )
+            item { Spacer(modifier = Modifier.height(Sizes.s04)) }
 
-    item {
+            credentialElements(
+                elements = presentationRequestUiState.requestedClaims,
+                onWrongData = onWrongData,
+            )
+        }
+
         Buttons(
             onDecline = onDecline,
             onAccept = onSubmit,
+            onHeightMeasured = { buttonsHeight = it },
+            modifier = Modifier
+                .fillMaxWidth(maxWidth)
+                .align(Alignment.BottomCenter)
         )
     }
 }
@@ -313,29 +369,33 @@ private fun LoadingIndicator(
 private fun Buttons(
     onDecline: () -> Unit,
     onAccept: () -> Unit,
+    onHeightMeasured: (Dp) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    FlowRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(corner = CornerSize(Sizes.s16)))
-            .background(WalletTheme.colorScheme.background)
-            .padding(vertical = Sizes.s03, horizontal = Sizes.s04)
-            .focusGroup(),
-        horizontalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(Sizes.s02, Alignment.Bottom),
-        maxItemsInEachRow = 2,
+    HeightReportingLayout(
+        modifier = modifier,
+        onContentHeightMeasured = onHeightMeasured
     ) {
-        Buttons.FilledPrimary(
-            modifier = Modifier.testTag(TestTags.DECLINE_BUTTON.name),
-            text = stringResource(id = R.string.tk_present_review_button_decline),
-            startIcon = painterResource(id = R.drawable.wallet_ic_cross),
-            onClick = onDecline,
-        )
-        Buttons.FilledTertiary(
-            modifier = Modifier.testTag(TestTags.ACCEPT_BUTTON.name),
-            text = stringResource(id = R.string.tk_present_review_button_accept),
-            startIcon = painterResource(id = R.drawable.wallet_ic_checkmark),
-            onClick = onAccept,
+        AdaptiveBottomButtonBar(
+            buttons = listOf(
+                {
+                    Buttons.FilledTertiary(
+                        modifier = Modifier.testTag(TestTags.ACCEPT_BUTTON.name),
+                        text = stringResource(id = R.string.tk_present_review_button_accept),
+                        startIcon = painterResource(id = R.drawable.wallet_ic_checkmark),
+                        onClick = onAccept,
+                    )
+                },
+                {
+                    Buttons.FilledPrimary(
+                        modifier = Modifier.testTag(TestTags.DECLINE_BUTTON.name),
+                        text = stringResource(id = R.string.tk_present_review_button_decline),
+                        startIcon = painterResource(id = R.drawable.wallet_ic_cross),
+                        onClick = onDecline,
+                    )
+                }
+            ),
+            stacked = false
         )
     }
 }
@@ -379,6 +439,7 @@ private fun PresentationRequestScreenPreview() {
             ),
             isLoading = false,
             isSubmitting = false,
+            submissionProgress = 0.5,
             showDelayReason = false,
             onWrongData = {},
             onSubmit = {},

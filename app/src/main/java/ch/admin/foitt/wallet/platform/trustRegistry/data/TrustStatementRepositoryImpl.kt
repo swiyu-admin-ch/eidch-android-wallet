@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.platform.trustRegistry.data
 
-import ch.admin.foitt.openid4vc.di.ExternalOpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatementRepositoryError
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.toTrustStatementRepositoryError
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.repository.TrustStatementRepository

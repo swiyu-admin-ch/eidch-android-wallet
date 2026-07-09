@@ -7,6 +7,7 @@ import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialDisplayStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.preview.ComposableWrapper
 import ch.admin.foitt.wallet.theme.WalletTheme
 
@@ -14,7 +15,7 @@ object CredentialCardMocks {
 
     private val state1 @Composable get() = CredentialCardState(
         credentialId = 1L,
-        title = "Lernfahrausweis B",
+        title = "Lernfahrausweis Beta",
         subtitle = "Max Mustermann",
         status = CredentialDisplayStatus.Valid,
         logo = painterResource(id = R.drawable.wallet_ic_shield_cross),
@@ -22,6 +23,7 @@ object CredentialCardMocks {
         contentColor = WalletTheme.colorScheme.onPrimaryContainer,
         borderColor = WalletTheme.colorScheme.primaryContainer,
         isCredentialFromBetaIssuer = true,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     private val state2 @Composable get() = CredentialCardState(
@@ -36,6 +38,7 @@ object CredentialCardMocks {
         contentColor = WalletTheme.colorScheme.onPrimaryContainer,
         borderColor = WalletTheme.colorScheme.primaryContainer,
         isCredentialFromBetaIssuer = false,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     private val state3 @Composable get() = CredentialCardState(
@@ -48,6 +51,7 @@ object CredentialCardMocks {
         contentColor = WalletTheme.colorScheme.onPrimaryContainer,
         borderColor = WalletTheme.colorScheme.primaryContainer,
         isCredentialFromBetaIssuer = false,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     private val state4 @Composable get() = CredentialCardState(
@@ -60,6 +64,7 @@ object CredentialCardMocks {
         contentColor = WalletTheme.colorScheme.onPrimaryContainer,
         borderColor = WalletTheme.colorScheme.primaryContainer,
         isCredentialFromBetaIssuer = false,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     private val state5 @Composable get() = CredentialCardState(
@@ -72,11 +77,12 @@ object CredentialCardMocks {
         contentColor = WalletTheme.colorScheme.onPrimaryContainer,
         borderColor = WalletTheme.colorScheme.primaryContainer,
         isCredentialFromBetaIssuer = false,
+        progressionState = VerifiableProgressionState.ACCEPTED,
     )
 
     private val state6 @Composable get() = CredentialCardState(
         credentialId = 6L,
-        title = "Credential name",
+        title = "Beta Deferred Credential",
         subtitle = null,
         status = CredentialDisplayStatus.Valid,
         logo = null,
@@ -84,6 +90,7 @@ object CredentialCardMocks {
         contentColor = Color.Black,
         borderColor = CredentialCardState.defaultCardColor,
         isCredentialFromBetaIssuer = true,
+        progressionState = VerifiableProgressionState.UNACCEPTED,
     )
 
     val state7 @Composable get() = CredentialCardState(

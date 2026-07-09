@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.AnyCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
@@ -16,8 +17,10 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDispl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveCredentialFromDeferred
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationWithDpopBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithKeyBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithAuthenticationAndKeyBinding
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
@@ -119,7 +122,7 @@ class SaveCredentialFromDeferredImplTest {
 
     private fun setupDefaultMocks() {
         coEvery {
-            mockVerifyVcSdJwtSignature(any(), any())
+            mockVerifyVcSdJwtSignature(any(), any(), any())
         } returns Ok(mockVcSdJwtCredential)
 
         coEvery {
@@ -173,6 +176,7 @@ class SaveCredentialFromDeferredImplTest {
             mockVerifyVcSdJwtSignature(
                 keyBinding = null,
                 payload = vcPayload01,
+                format = deferredCredentialWithBinding01.credential.format,
             )
             mockFetchVcMetadataByFormat(mockVcSdJwtCredential)
             mockFetchTrustForIssuance(issuerDid = vcIssuer01, vcSchemaId = vcSchemaId01)
@@ -181,7 +185,7 @@ class SaveCredentialFromDeferredImplTest {
                 anyCredential = mockVcSdJwtCredential,
                 issuerInfo = mockIssuerCredentialInfo,
                 trustStatement = null,
-                metadata = any(),
+                credentialConfiguration = any(),
                 ocaBundle = mockOcaBundle,
             )
             mockCredentialOfferRepository.saveCredentialFromDeferred(
@@ -200,7 +204,7 @@ class SaveCredentialFromDeferredImplTest {
 
     @Test
     fun `A credential signature verification error is handled`() = runTest {
-        coEvery { mockVerifyVcSdJwtSignature(any(), any()) } returns Err(VcSdJwtError.InvalidJwt)
+        coEvery { mockVerifyVcSdJwtSignature(any(), any(), any()) } returns Err(VcSdJwtError.InvalidJwt)
 
         useCase(
             deferredCredentialEntity = deferredCredentialWithBinding01,
@@ -244,6 +248,8 @@ class SaveCredentialFromDeferredImplTest {
     @Suppress("MayBeConstant")
     private companion object {
         private val transactionId01 = "transactionId01"
+        private val ACCESS_TOKEN = "access-token"
+        private val REFRESH_TOKEN = "refresh-token"
         private val vcIssuer01 = "vcIssuer01"
         private val vcPayload01 = "vcPayload01"
         private val vcSchemaId01 = "vcSchemaId01"
@@ -256,8 +262,6 @@ class SaveCredentialFromDeferredImplTest {
             credentialId = 1L,
             progressionState = DeferredProgressionState.IN_PROGRESS,
             transactionId = transactionId01,
-            accessToken = "accessToken01",
-            refreshToken = "refreshToken01",
             endpoint = "https://example",
             pollInterval = 10,
             createdAt = 4L,
@@ -272,10 +276,21 @@ class SaveCredentialFromDeferredImplTest {
             issuerUrl = URL(issuer01_url)
         )
 
-        private val deferredCredentialWithBinding01 = DeferredCredentialWithKeyBinding(
+        private val credentialAuthenticationWithDpopBinding = CredentialAuthenticationWithDpopBinding(
+            credentialAuthentication = CredentialAuthenticationEntity(
+                credentialId = credentialEntity01.id,
+                tokenType = TokenType.BEARER,
+                accessToken = ACCESS_TOKEN,
+                refreshToken = REFRESH_TOKEN,
+            ),
+            dpopBinding = null,
+        )
+
+        private val deferredCredentialWithBinding01 = DeferredCredentialWithAuthenticationAndKeyBinding(
             deferredCredential = deferredCredentialEntity01,
             credential = credentialEntity01,
             keyBindings = listOf(),
+            authentication = credentialAuthenticationWithDpopBinding,
         )
 
         private val credential = CredentialResponse.Credential(vcPayload01)

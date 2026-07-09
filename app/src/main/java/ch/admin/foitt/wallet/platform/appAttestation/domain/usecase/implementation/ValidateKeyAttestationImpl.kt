@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.implementation
 
+import ch.admin.foitt.didResolver.domain.DidResolverHelper
 import ch.admin.foitt.openid4vc.domain.model.KeyStorageSecurityLevel
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.jwk.hasSameCurveAs
@@ -14,6 +15,7 @@ import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.Environ
 import ch.admin.foitt.wallet.platform.utils.JsonError
 import ch.admin.foitt.wallet.platform.utils.SafeJson
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.getOrThrow
 import com.github.michaelbull.result.mapError
@@ -24,6 +26,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 internal class ValidateKeyAttestationImpl @Inject constructor(
+    private val didResolverHelper: DidResolverHelper,
     private val environmentSetupRepo: EnvironmentSetupRepository,
     private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
     private val safeJson: SafeJson,
@@ -31,67 +34,66 @@ internal class ValidateKeyAttestationImpl @Inject constructor(
     override suspend fun invoke(
         originalJwk: Jwk,
         keyAttestationJwt: KeyAttestationJwt,
-    ): Result<Jwt, ValidateKeyAttestationError> = runSuspendCatching {
-        val attestation = Jwt(keyAttestationJwt.value)
+    ): Result<Jwt, ValidateKeyAttestationError> = coroutineBinding {
+        runSuspendCatching {
+            val attestation = Jwt(keyAttestationJwt.value)
+            val keyId = checkNotNull(attestation.keyId) { "kid is missing" }
 
-        val issuer = checkNotNull(attestation.iss) { "issuer did is null" }
-        check(issuer in environmentSetupRepo.attestationsServiceTrustedDids) {
-            "issuer did is not from the trusted attestations service"
-        }
+            val did = didResolverHelper.getDidStringFromAbsoluteKeyId(keyId)
+                .mapError { throwable ->
+                    Timber.w(t = throwable, message = "Key attestation validation failed")
+                    AttestationError.ValidationError(throwable.message)
+                }.bind()
 
-        val keyId = checkNotNull(attestation.keyId) {
-            "kid is missing"
-        }
+            check(did in environmentSetupRepo.attestationsServiceTrustedDids)
 
-        checkKidDid(keyId)
-
-        check(attestation.type == SUPPORTED_ATTESTATION_TYPE) {
-            "type is unsupported"
-        }
-
-        val attestationSignatureAlgorithm = AttestationAlgorithm.fromJwt(attestation)
-
-        checkNotNull(attestationSignatureAlgorithm) {
-            "algorithm is unsupported"
-        }
-
-        val verificationResult = verifyJwtSignatureFromDid(
-            did = issuer,
-            kid = keyId,
-            jwt = attestation,
-        )
-
-        check(verificationResult.isOk) {
-            "signature verification failed"
-        }
-
-        checkNotNull(attestation.issuedAt) { "iat is missing" }
-        val expiredAt = checkNotNull(attestation.expInstant) { "exp is missing" }
-        check(Instant.now().isBefore(expiredAt)) {
-            "attestation is expired"
-        }
-
-        val attestedKeys: JsonArray = checkNotNull(attestation.payloadJson[KEY_ATTESTED_KEYS] as? JsonArray) {
-            "attested key is missing"
-        }
-
-        val attestedJwk = safeJson.safeDecodeElementTo<Jwk>(attestedKeys.first())
-            .getOrThrow {
-                when (it) {
-                    is JsonError.Unexpected -> it.throwable
-                }
+            check(attestation.type == SUPPORTED_ATTESTATION_TYPE) {
+                "type is unsupported"
             }
 
-        check(attestedJwk.hasSameCurveAs(originalJwk)) {
-            "attested key is not the same as the original"
-        }
+            val attestationSignatureAlgorithm = AttestationAlgorithm.fromJwt(attestation)
 
-        attestation.checkKeyStorageValues()
+            checkNotNull(attestationSignatureAlgorithm) {
+                "algorithm is unsupported"
+            }
 
-        attestation
-    }.mapError { throwable ->
-        Timber.w(t = throwable, message = "Key attestation validation failed")
-        AttestationError.ValidationError(throwable.message)
+            val verificationResult = verifyJwtSignatureFromDid(
+                kid = keyId,
+                jwt = attestation,
+            )
+
+            check(verificationResult.isOk) {
+                "signature verification failed"
+            }
+
+            checkNotNull(attestation.issuedAt) { "iat is missing" }
+            val expiredAt = checkNotNull(attestation.expInstant) { "exp is missing" }
+            check(Instant.now().isBefore(expiredAt)) {
+                "attestation is expired"
+            }
+
+            val attestedKeys: JsonArray = checkNotNull(attestation.payloadJson[KEY_ATTESTED_KEYS] as? JsonArray) {
+                "attested key is missing"
+            }
+
+            val attestedJwk = safeJson.safeDecodeElementTo<Jwk>(attestedKeys.first())
+                .getOrThrow {
+                    when (it) {
+                        is JsonError.Unexpected -> it.throwable
+                    }
+                }
+
+            check(attestedJwk.hasSameCurveAs(originalJwk)) {
+                "attested key is not the same as the original"
+            }
+
+            attestation.checkKeyStorageValues()
+
+            attestation
+        }.mapError { throwable ->
+            Timber.w(t = throwable, message = "Key attestation validation failed")
+            AttestationError.ValidationError(throwable.message)
+        }.bind()
     }
 
     private fun Jwt.checkKeyStorageValues() {
@@ -103,14 +105,6 @@ internal class ValidateKeyAttestationImpl @Inject constructor(
             checkNotNull(KeyStorageSecurityLevel.get(value.jsonPrimitive.content)) {
                 "key storage value is unsupported"
             }
-        }
-    }
-
-    private fun checkKidDid(kid: String) {
-        val did = kid.split("#").first()
-
-        check(did in environmentSetupRepo.attestationsServiceTrustedDids) {
-            "kid did is not from the trusted attestations service"
         }
     }
 

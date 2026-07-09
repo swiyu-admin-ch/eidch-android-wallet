@@ -5,5 +5,5 @@ import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.ResolvePublicKeyError
 import com.github.michaelbull.result.Result
 
 interface ResolvePublicKey {
-    suspend operator fun invoke(did: String, kid: String): Result<Jwk, ResolvePublicKeyError>
+    suspend operator fun invoke(kid: String): Result<Jwk, ResolvePublicKeyError>
 }

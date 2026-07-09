@@ -1,8 +1,10 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
+import ch.admin.foitt.openid4vc.domain.usecase.ValidateIssuerMetadataJwt
 import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
@@ -13,7 +15,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
@@ -26,13 +27,16 @@ class ValidateIssuerMetadataJwtImplTest {
     @MockK
     private lateinit var mockVerifyJwtSignatureFromDid: VerifyJwtSignatureFromDid
 
-    private lateinit var useCase: ValidateIssuerMetadataJwtImpl
+    @MockK
+    private lateinit var jwt: Jwt
+
+    private lateinit var useCase: ValidateIssuerMetadataJwt
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
         useCase = ValidateIssuerMetadataJwtImpl(mockVerifyJwtSignatureFromDid)
-        success()
+        setupDefaultMocks()
     }
 
     @AfterEach
@@ -42,145 +46,101 @@ class ValidateIssuerMetadataJwtImplTest {
 
     @Test
     fun `UseCase should just run for a valid jwt`() = runTest {
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
+        useCase(ISSUER, jwt, TYPE).assertOk()
 
-        result.assertOk()
-    }
-
-    @Test
-    fun `UseCase should just run for a valid jwt without issuer`() = runTest {
-        every { MOCK_JWT.iss } returns null
-
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertOk()
+        coVerify(exactly = 1) {
+            mockVerifyJwtSignatureFromDid(KEY_ID, jwt)
+        }
     }
 
     @Test
     fun `UseCase should just run for a valid jwt without specifying type`() = runTest {
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, null)
-
-        result.assertOk()
-    }
-
-    @Test
-    fun `UseCase should call jwt signature verification`() = runTest {
-        useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
+        useCase(ISSUER, jwt, null).assertOk()
 
         coVerify(exactly = 1) {
-            mockVerifyJwtSignatureFromDid(MOCK_DID, MOCK_KEY_IDENTIFIER, MOCK_JWT)
+            mockVerifyJwtSignatureFromDid(KEY_ID, jwt)
         }
     }
 
     @Test
     fun `UseCase should return an error when algorithm is unsupported`() = runTest {
-        every { MOCK_JWT.algorithm } returns "unsupported"
+        every { jwt.algorithm } returns "unsupported"
 
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
     @Test
     fun `UseCase should return an error when type is wrong`() = runTest {
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, "other")
+        useCase(ISSUER, jwt, "otherType").assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
 
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        every { jwt.type } returns "otherType"
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
     @Test
     fun `UseCase should return an error when issuedAt is missing`() = runTest {
-        every { MOCK_JWT.issuedAt } returns null
+        every { jwt.issuedAt } returns null
 
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
     @Test
     fun `UseCase should return an error when subject is missing`() = runTest {
-        every { MOCK_JWT.subject } returns null
+        every { jwt.subject } returns null
 
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
     @Test
     fun `UseCase should return an error when subject is not matching credential issuer identifier`() = runTest {
-        val result = useCase("other", MOCK_JWT, MOCK_TYPE)
+        useCase("otherIssuer", jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
 
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        every { jwt.subject } returns "otherSubject"
+
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
     @Test
-    fun `UseCase should return an error when issuedAt is in future`() = runTest {
-        every { MOCK_JWT.issuedAt } returns Instant.now().plusSeconds(20)
+    fun `UseCase should return an error when jwt is not valid`() = runTest {
+        every { jwt.jwtValidity } returns Validity.Expired(Instant.now())
 
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
-    }
-
-    @Test
-    fun `UseCase should return an error when expired`() = runTest {
-        every { MOCK_JWT.expInstant } returns Instant.now().minusSeconds(20)
-
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
-    }
-
-    @Test
-    fun `UseCase should return an error when no issuer and no did in key identifier`() = runTest {
-        every { MOCK_JWT.iss } returns null
-        every { MOCK_JWT.keyId } returns "unsupported"
-
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
     @Test
     fun `UseCase should return an error when key identifier is missing`() = runTest {
-        every { MOCK_JWT.keyId } returns null
+        every { jwt.keyId } returns null
 
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
     @Test
     fun `UseCase should return an error when jwt signature verification fails`() = runTest {
         coEvery {
-            mockVerifyJwtSignatureFromDid(did = MOCK_DID, kid = MOCK_KEY_IDENTIFIER, jwt = MOCK_JWT)
+            mockVerifyJwtSignatureFromDid(kid = KEY_ID, jwt = jwt)
         } returns Err(JwtError.InvalidJwt)
 
-        val result = useCase(MOCK_ISSUER, MOCK_JWT, MOCK_TYPE)
-
-        result.assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
+        useCase(ISSUER, jwt, TYPE).assertErrorType(CredentialOfferError.InvalidSignedMetadata::class)
     }
 
-    private fun success() {
-        every { MOCK_JWT.algorithm } returns "ES256"
-        every { MOCK_JWT.type } returns MOCK_TYPE
-        every { MOCK_JWT.issuedAt } returns MOCK_INSTANT
-        every { MOCK_JWT.subject } returns MOCK_ISSUER
-        every { MOCK_JWT.expInstant } returns MOCK_INSTANT.plusSeconds(2)
-        every { MOCK_JWT.iss } returns MOCK_DID
-        every { MOCK_JWT.keyId } returns MOCK_KEY_IDENTIFIER
+    private fun setupDefaultMocks() {
+        every { jwt.algorithm } returns "ES256"
+        every { jwt.type } returns TYPE
+        every { jwt.issuedAt } returns MOCK_INSTANT
+        every { jwt.subject } returns ISSUER
+        every { jwt.expInstant } returns MOCK_INSTANT.plusSeconds(2)
+        every { jwt.keyId } returns KEY_ID
+        every { jwt.jwtValidity } returns Validity.Valid
 
         coEvery {
-            mockVerifyJwtSignatureFromDid(did = MOCK_DID, kid = MOCK_KEY_IDENTIFIER, jwt = MOCK_JWT)
+            mockVerifyJwtSignatureFromDid(kid = KEY_ID, jwt = jwt)
         } returns Ok(Unit)
     }
 
     private companion object {
-        const val MOCK_ISSUER = "issuer"
-        const val MOCK_DID = "did"
-        const val MOCK_KEY_IDENTIFIER = "${MOCK_DID}#keyIdentifier"
-        const val MOCK_TYPE = "type"
-        val MOCK_JWT = mockk<Jwt>()
+        const val ISSUER = "issuer"
+        const val KEY_ID = "$ISSUER#key-01"
+        const val TYPE = "type"
         val MOCK_INSTANT: Instant = Instant.now()
     }
 }

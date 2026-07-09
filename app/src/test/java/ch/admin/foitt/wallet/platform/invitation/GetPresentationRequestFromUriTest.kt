@@ -6,6 +6,7 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.RequestObject
 import ch.admin.foitt.openid4vc.domain.usecase.FetchPresentationRequest
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CredentialPresentationError
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
+import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.VerificationProcessType
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ValidatePresentationRequest
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationError
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetPresentationRequestFromUri
@@ -72,7 +73,10 @@ class GetPresentationRequestFromUriTest {
             mockFetchPresentationRequest(url = validHttpsRequestUrl)
         } returns Ok(mockJwt)
         coEvery {
-            mockValidatePresentationRequest(RequestObject(mockJwt, null, null))
+            mockValidatePresentationRequest(
+                verificationProcessType = VerificationProcessType.NETWORK,
+                requestObject = RequestObject(mockJwt, null, null)
+            )
         } returns Ok(mockPresentationRequestWithRaw)
 
         val result = getPresentationRequestFromUri(validPresentationUri).assertOk()
@@ -87,7 +91,10 @@ class GetPresentationRequestFromUriTest {
             mockFetchPresentationRequest(url = input.second)
         } returns Ok(mockJwt)
         coEvery {
-            mockValidatePresentationRequest(RequestObject(mockJwt, CLIENT_ID, REDIRECT_URI))
+            mockValidatePresentationRequest(
+                verificationProcessType = VerificationProcessType.NETWORK,
+                requestObject = RequestObject(mockJwt, CLIENT_ID, REDIRECT_URI)
+            )
         } returns Ok(mockPresentationRequestWithRaw)
 
         val result = getPresentationRequestFromUri(input.first).assertOk()
@@ -151,7 +158,10 @@ class GetPresentationRequestFromUriTest {
             mockFetchPresentationRequest(url = validSwiyuDecodedRequestUrl)
         } returns Ok(mockJwt)
         coEvery {
-            mockValidatePresentationRequest(any())
+            mockValidatePresentationRequest(
+                verificationProcessType = VerificationProcessType.NETWORK,
+                requestObject = any()
+            )
         } returns Err(CredentialPresentationError.Unexpected(IllegalStateException("validation error")))
 
         getPresentationRequestFromUri(validSwiyuUri).assertErrorType(InvitationError.Unexpected::class)

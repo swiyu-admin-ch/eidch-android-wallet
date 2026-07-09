@@ -8,16 +8,18 @@ import ch.admin.foitt.wallet.platform.database.domain.repository.DatabaseReposit
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.UpdateAllSIdStatuses
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.login.domain.usecase.AfterLoginWork
+import ch.admin.foitt.wallet.platform.pushNotification.domain.usecase.UpdatePushToken
 import timber.log.Timber
 import javax.inject.Inject
 
 class AfterLoginWorkImpl @Inject constructor(
     private val databaseRepository: DatabaseRepository,
+    private val environmentSetupRepository: EnvironmentSetupRepository,
     private val updateAllCredentialStatuses: UpdateAllCredentialStatuses,
     private val updateAllSIdStatuses: UpdateAllSIdStatuses,
     private val refreshDeferredCredentials: RefreshDeferredCredentials,
     private val refreshBatchCredentials: RefreshBatchCredentials,
-    private val environmentSetupRepository: EnvironmentSetupRepository,
+    private val updatePushToken: UpdatePushToken
 ) : AfterLoginWork {
     override suspend fun invoke() {
         databaseRepository.databaseState.collect { dbState ->
@@ -31,6 +33,8 @@ class AfterLoginWorkImpl @Inject constructor(
                     }
                     Timber.d("After login work: Start updating SId statuses")
                     updateAllSIdStatuses()
+                    Timber.d("After login work: updating the push token...")
+                    updatePushToken()
                     Timber.d("After login work: updating the credentials statuses...")
                     updateAllCredentialStatuses()
                 }

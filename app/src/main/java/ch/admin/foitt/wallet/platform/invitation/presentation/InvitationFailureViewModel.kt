@@ -5,6 +5,7 @@ import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRe
 import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationErrorScreenState
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
+import ch.admin.foitt.wallet.platform.proximity.domain.usecase.GetProximityRepositoryForScope
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 class InvitationFailureViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
     private val declinePresentation: DeclinePresentation,
+    private val getProximityRepositoryForScope: GetProximityRepositoryForScope,
     setTopBarState: SetTopBarState,
     @Assisted val invitationErrorScreenState: InvitationErrorScreenState,
     @Assisted private val uri: String?
@@ -37,7 +39,9 @@ class InvitationFailureViewModel @AssistedInject constructor(
             InvitationErrorScreenState.EMPTY_WALLET,
             InvitationErrorScreenState.NO_COMPATIBLE_CREDENTIAL -> {
                 if (uri != null) {
-                    declinePresentation(url = uri, reason = AuthorizationResponseErrorBody.ErrorType.CLIENT_REJECTED)
+                    declinePresentation(url = uri, reason = AuthorizationResponseErrorBody.ErrorType.ACCESS_DENIED)
+                } else {
+                    getProximityRepositoryForScope().decline()
                 }
             }
             else -> {}

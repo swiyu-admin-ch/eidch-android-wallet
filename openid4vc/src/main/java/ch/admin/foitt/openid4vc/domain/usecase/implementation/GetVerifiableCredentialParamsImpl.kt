@@ -1,5 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
+import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.VerifiableCredentialParams
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
@@ -9,6 +10,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetVerifiableCreden
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.AnyCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.ProofType
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.supportsDpop
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toGetVerifiableCredentialParamsError
 import ch.admin.foitt.openid4vc.domain.repository.CredentialOfferRepository
 import ch.admin.foitt.openid4vc.domain.usecase.FetchIssuerConfiguration
@@ -62,6 +64,9 @@ internal class GetVerifiableCredentialParamsImpl @Inject constructor(
         VerifiableCredentialParams(
             proofTypeConfig = proofTypeConfig,
             tokenEndpoint = issuerConfig.tokenEndpoint,
+            dpopSigningAlgValuesSupported = issuerConfig.dpopSigningAlgValuesSupported?.takeIf {
+                issuerConfig.supportsDpop(listOf(SigningAlgorithm.ES256))
+            },
             grants = credentialOffer.grants,
             issuerEndpoint = issuerInfo.credentialIssuer,
             credentialEndpoint = issuerInfo.credentialEndpoint,
@@ -73,6 +78,6 @@ internal class GetVerifiableCredentialParamsImpl @Inject constructor(
     }
 
     companion object {
-        private val supportedBindingMethods = listOf("jwk", "did:jwk")
+        private val supportedBindingMethods = listOf("jwk")
     }
 }

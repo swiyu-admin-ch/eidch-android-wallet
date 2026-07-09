@@ -5,8 +5,8 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Credential
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.VcSdJwtCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.FetchTypeMetadataError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.FetchVcSchemaError
-import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.Rendering
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSchema
+import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.getFirstRendering
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.FetchTypeMetadata
 import ch.admin.foitt.openid4vc.domain.usecase.vcSdJwt.FetchVcSchema
 import ch.admin.foitt.openid4vc.utils.SafeGetUrlError
@@ -38,7 +38,7 @@ internal class FetchDeferredVcMetadataByFormatImpl @Inject constructor(
         credentialConfig: AnyCredentialConfiguration,
     ): Result<VcMetadata, FetchVcMetadataByFormatError> = coroutineBinding {
         when (credentialConfig.format) {
-            CredentialFormat.VC_SD_JWT -> fetchVcMetadataForVcSdJwt(
+            CredentialFormat.DC_SD_JWT, CredentialFormat.VC_SD_JWT -> fetchVcMetadataForVcSdJwt(
                 credentialConfig as VcSdJwtCredentialConfiguration
             ).bind()
             else -> Err(OcaError.UnsupportedCredentialFormat).bind()
@@ -73,9 +73,7 @@ internal class FetchDeferredVcMetadataByFormatImpl @Inject constructor(
                     .bind()
             }
 
-            val vcSdJwtOcaRendering = typeMetadata.displays
-                ?.flatMap { it.renderings ?: emptyList() }
-                ?.firstNotNullOfOrNull { it as? Rendering.VcSdJwtOcaRendering }
+            val vcSdJwtOcaRendering = typeMetadata.displays?.getFirstRendering()
 
             rawOcaBundle = vcSdJwtOcaRendering?.uri?.let { uri ->
                 fetchOcaBundle(uri = uri, integrity = vcSdJwtOcaRendering.uriIntegrity)

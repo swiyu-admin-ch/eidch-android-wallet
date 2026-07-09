@@ -12,6 +12,7 @@ import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.NavigationAction
 import ch.admin.foitt.wallet.platform.navigation.domain.model.canTriggerAutoLogout
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.StateFlow
@@ -46,7 +47,11 @@ internal class LockTriggerImpl @Inject constructor(
 
                 !currentDestination.canTriggerAutoLogout() -> {
                     Timber.d("!currentDestination.canTriggerAutoLogout: ${currentDestination::class.simpleName}")
-                    closeAppDatabase()
+                    val isSuggestedUpdate = currentDestination is Destination.AppVersionBlockedScreen &&
+                        currentDestination.enforcedType == EnforcementType.UPDATE_SUGGESTED
+                    if (!isSuggestedUpdate) {
+                        closeAppDatabase()
+                    }
                     NavigationAction {}
                 }
 

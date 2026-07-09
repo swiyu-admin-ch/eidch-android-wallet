@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.platform.composables
 
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.ColorUtils
+import androidx.test.core.app.ApplicationProvider
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.implementation.GetColorImpl
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.implementation.GetContrastedColorImpl
 import io.mockk.MockKAnnotations
@@ -22,9 +23,11 @@ class GetContrastedColorImplTest {
         MockKAnnotations.init(this)
 
         val getColor = GetColorImpl()
-        getColor(Color.Companion.Black.toString())
+        getColor(Color.Black.toString())
 
-        getContrastedColors = GetContrastedColorImpl()
+        getContrastedColors = GetContrastedColorImpl(
+            appContext = ApplicationProvider.getApplicationContext(),
+        )
     }
 
     @After

@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model
 
+import ch.admin.foitt.openid4vc.domain.model.GenerateDPoPKeyPairError
 import timber.log.Timber
 
 interface KeyPairError {
@@ -23,4 +24,10 @@ fun CreateKeyGenSpecError.toCreateJWSKeyPairError(): CreateJWSKeyPairError = whe
 fun Throwable.toCreateJWSKeyPairError(message: String): CreateJWSKeyPairError {
     Timber.e(this, message)
     return KeyPairError.Unexpected(this)
+}
+
+internal fun CreateJWSKeyPairError.toGenerateDPoPKeyPairError(): GenerateDPoPKeyPairError = when (this) {
+    is KeyPairError.UnsupportedProofKeyStorageSecurityLevel -> GenerateDPoPKeyPairError.UnsupportedKeyStorageSecurityLevel
+    is KeyPairError.IncompatibleDeviceProofKeyStorage -> GenerateDPoPKeyPairError.IncompatibleDeviceProofKeyStorage
+    is KeyPairError.Unexpected -> GenerateDPoPKeyPairError.Unexpected(throwable)
 }

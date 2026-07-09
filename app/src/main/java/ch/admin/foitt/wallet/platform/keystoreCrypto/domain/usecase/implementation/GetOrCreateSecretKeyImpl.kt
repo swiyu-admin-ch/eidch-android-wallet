@@ -10,7 +10,10 @@ import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.KeystoreKeyCon
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.GetOrCreateSecretKey
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.getOrThrow
 import com.github.michaelbull.result.mapError
+import com.github.michaelbull.result.onFailure
+import com.github.michaelbull.result.recoverCatching
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import java.security.KeyStore
@@ -31,13 +34,24 @@ internal class GetOrCreateSecretKeyImpl @Inject constructor(
         }
 
         // Key not found, we create it
-        val secretKey = createSecretKey(keystoreKeyConfig)
+        val secretKey = runSuspendCatching {
+            createSecretKey(keystoreKeyConfig, tryUseStrongBox = true)
+        }.recoverCatching {
+            Timber.w("Key generation: Strongbox of device not compatible with key ${keystoreKeyConfig.encryptionKeyAlias}")
+            createSecretKey(keystoreKeyConfig, tryUseStrongBox = false)
+        }.onFailure {
+            Timber.w("Key generation: Fallback to TEE still failed with key ${keystoreKeyConfig.encryptionKeyAlias} ")
+        }.getOrThrow()
+
         secretKey
     }.mapError { throwable ->
         GetOrCreateSecretKeyError.Unexpected(throwable)
     }
 
-    private fun createSecretKey(keystoreKeyConfig: KeystoreKeyConfig): SecretKey {
+    private fun createSecretKey(
+        keystoreKeyConfig: KeystoreKeyConfig,
+        tryUseStrongBox: Boolean,
+    ): SecretKey {
         val secretKeyParams = KeyGenParameterSpec.Builder(
             keystoreKeyConfig.encryptionKeyAlias,
             keystoreKeyConfig.encryptionKeyPurpose,
@@ -54,7 +68,7 @@ internal class GetOrCreateSecretKeyImpl @Inject constructor(
             setRandomizedEncryptionRequired(keystoreKeyConfig.randomizedEncryptionRequired)
 
             if (isStrongBoxAvailable()) {
-                setIsStrongBoxBacked(true)
+                setIsStrongBoxBacked(tryUseStrongBox)
             } else {
                 Timber.w("Strongbox unavailable on device")
             }

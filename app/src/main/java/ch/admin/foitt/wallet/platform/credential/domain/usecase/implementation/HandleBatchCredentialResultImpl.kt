@@ -40,7 +40,9 @@ class HandleBatchCredentialResultImpl @Inject constructor(
             batchRefreshDataRepository.saveBatchRefreshData(
                 credentialId = savedCredentialId,
                 batchSize = batchSize,
-                refreshToken = refreshToken
+                accessToken = anyVerifiedBatchCredential.accessToken,
+                refreshToken = refreshToken,
+                dpopKeyBinding = anyVerifiedBatchCredential.dpopKeyBinding,
             ).mapError(BatchRefreshDataRepositoryError::toFetchCredentialError).bind()
         }
         FetchCredentialResult.Credential(savedCredentialId)

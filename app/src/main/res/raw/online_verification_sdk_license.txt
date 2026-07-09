@@ -1,0 +1,31 @@
+DE: SDK Online-Verifikation
+
+Die Software für die Online-Verifikation wurde im Rahmen des öffentlichen Beschaffungsverfahrens «(24028) 403 Online-Verifikation für die E-ID» vom 22.02.2024 durch die Beschaffungsstelle Bundesamt für Bauten und Logistik BBL, Fellerstrasse 21, 3003 Bern, Schweiz für die Bedarfsstelle Bundesamt für Polizei (fedpol) erworben und von der Zuschlagsempfängerin für die Bedarfsstelle bereitgestellt und lizenziert.
+
+Die Nutzung ist ausschliesslich für die in der Ausschreibung definierten Zwecke lizenziert und auf diesen Vertragsrahmen beschränkt. Nutzer der App sind berechtigt, die in der swiyu Wallet implementierten Funktionen aus dem Softwareentwicklungs-Kit (Software Development Kit SDK) Online-Verifikation einzig für die vorgesehene Beantragung zu verwenden. Eine anderweitige Nutzung der Software oder einzelner Komponenten ist unzulässig. Jeglicher Zugriff, jede Nutzung, jede Rekonstruktion des Quellcodes sowie jede Form der Weitergabe oder Weiterverbreitung durch unberechtigte Dritte ist untersagt und wird rechtlich verfolgt.
+
+
+
+EN: SDK online-verification
+
+The software for online-verification was procured through the public procurement procedure “(24028) 403 Online-Verifikation für die E-ID” dated 22 February 2024 by the procurement agency Federal Office for Buildings and Logistics FBL, Fellerstrasse 21, 3003 Bern, Switzerland, for the Federal Office of Police (fedpol) and provided and licensed by the successful tenderer for the requesting agency.
+
+Use is licensed exclusively for the purposes defined in the tender and is limited to this contractual framework. Users of the app are entitled to use the functions implemented in the swiyu Wallet from the Software Development Kit (SDK) online-verification solely for the intended application. Any other use of the software or individual components is not permitted. Any access, use, reconstruction of the source code, or any form of transfer or redistribution by unauthorised third parties is prohibited and will be prosecuted.
+
+
+
+FR: SDK vérification en ligne
+
+Le logiciel de vérification en ligne a été acquis dans le cadre de la procédure d'achat public « (24028) 403 Online-Verifikation für die E-ID » du 22 février 2024 par le service d'achat de l’Office fédéral des constructions et de la logistique OFCL, Fellerstrasse 21, 3003 Berne, Suisse, pour le demandeur, l’Office fédéral de la police (fedpol), et a été mis à disposition et concédé sous licence par le soumissionnaire retenu par le demandeur.
+
+L'utilisation est concédée sous licence exclusivement aux fins définies dans l'appel d'offres et limitée au cadre du présent contrat. Les utilisateurs de l'application sont autorisés à utiliser les fonctions implémentées dans l’application mobile swiyu à partir du kit de développement logiciel (Software Development Kit SDK) de vérification en ligne uniquement pour la demande prévue. Toute autre utilisation du logiciel ou de composants individuels est interdite. Tout accès, toute utilisation, toute reconstruction du code source ainsi que toute forme de transmission ou de diffusion par des tiers non autorisés est interdit et fera l'objet de poursuites judiciaires.
+
+
+
+IT: SDK verifica online
+
+Il software di verifica online è stato acquistato nell'ambito della procedura di appalto pubblico «(24028) 403 Online-Verifikation für die E-ID" del 22 febbraio 2024 dal servizio acquisti Ufficio federale delle costruzioni e della logistica UFCL, Fellerstrasse 21, 3003 Berna, Svizzera, per conto del richiedente Ufficio federale di polizia (fedpol), ed è stato messo a disposizione e concesso in licenza dall'offerente selezionato per conto del richiedente.
+
+L'utilizzo è concesso in licenza esclusivamente per gli scopi definiti nel bando di gara ed è limitato all'ambito del presente contratto. Gli utenti dell'applicazione sono autorizzati a utilizzare le funzioni implementate nell’applicazione mobile swiyu a partire dall'kit di sviluppo software (Software Development Kit SDK) di verifica online solo per la richiesta prevista. È vietato qualsiasi altro utilizzo del software o dei singoli componenti. Qualsiasi accesso, utilizzo, ricostruzione del codice sorgente e qualsiasi forma di trasmissione o diffusione da parte di terzi non autorizzati è vietato e sarà perseguito legalmente.
+
+

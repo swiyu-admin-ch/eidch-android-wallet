@@ -1,15 +1,14 @@
 package ch.admin.foitt.wallet.platform.credential.domain.usecase
 
-import ch.admin.foitt.openid4vc.domain.model.claimsPathPointer.ClaimsPathPointer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.AnyCredentialConfiguration
 import ch.admin.foitt.wallet.platform.credential.domain.model.GenerateMetadataDisplaysError
-import ch.admin.foitt.wallet.platform.credential.domain.model.MetadataDisplays
+import ch.admin.foitt.wallet.platform.oca.domain.model.MetaDisplays
 import com.github.michaelbull.result.Result
-import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 interface GenerateMetadataDisplays {
     suspend operator fun invoke(
-        claimsWithPointers: Map<ClaimsPathPointer, JsonElement>,
-        metadata: AnyCredentialConfiguration,
-    ): Result<MetadataDisplays, GenerateMetadataDisplaysError>
+        jsonObject: JsonObject?,
+        credentialConfiguration: AnyCredentialConfiguration,
+    ): Result<MetaDisplays, GenerateMetadataDisplaysError>
 }

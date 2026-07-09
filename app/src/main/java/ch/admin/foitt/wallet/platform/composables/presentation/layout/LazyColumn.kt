@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
@@ -24,12 +25,14 @@ fun WalletLayouts.LazyColumn(
         bottom = paddingContentBottom,
     ),
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    horizontalAlgnment: Alignment.Horizontal = Alignment.Start,
     lazyListContent: LazyListScope.() -> Unit,
 ) = androidx.compose.foundation.lazy.LazyColumn(
     modifier = modifier,
     state = state,
     contentPadding = contentPadding,
     verticalArrangement = verticalArrangement,
+    horizontalAlignment = horizontalAlgnment
 ) {
     if (useTopInsets) {
         item {

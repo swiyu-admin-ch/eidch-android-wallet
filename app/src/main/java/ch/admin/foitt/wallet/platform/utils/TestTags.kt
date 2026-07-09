@@ -12,8 +12,6 @@ enum class TestTags {
     NO_BIOMETRICS_BUTTON,
     MENU_BUTTON,
     LOADING_ICON,
-    STICKY_ACCEPT_BUTTON,
-    STICKY_DECLINE_BUTTON,
 
     // Onboarding Icons
     INTRO_ICON,

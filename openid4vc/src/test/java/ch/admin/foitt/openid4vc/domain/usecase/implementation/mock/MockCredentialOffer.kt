@@ -2,12 +2,14 @@ package ch.admin.foitt.openid4vc.domain.usecase.implementation.mock
 
 import ch.admin.foitt.openid4vc.domain.model.DeferredCredential
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
+import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.VerifiableCredential
 import ch.admin.foitt.openid4vc.domain.model.VerifiableCredentialParams
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOffer
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialRequestProofsJwt
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.Grant
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.IssuerNonce
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.PreAuthorizedContent
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.TokenResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
@@ -39,8 +41,9 @@ internal object MockCredentialOffer {
     private const val ACCESS_TOKEN = "accessToken"
     private const val REFRESH_TOKEN = "refreshToken"
     const val C_NONCE = "cNonce"
+    const val DPOP_NONCE = "dpopNonce"
     private const val EXPIRES_IN = 2
-    private const val TOKEN_TYPE = "tokenType"
+    private val TOKEN_TYPE = TokenType.BEARER
     private const val POLLING_INTERVAL = 1
     val validTokenResponse = TokenResponse(
         accessToken = ACCESS_TOKEN,
@@ -55,7 +58,11 @@ internal object MockCredentialOffer {
     private val TOKEN_ENDPOINT = URL("$CREDENTIAL_ISSUER/token")
     val validIssuerConfig = IssuerConfiguration(
         issuer = CREDENTIAL_ISSUER,
-        tokenEndpoint = TOKEN_ENDPOINT
+        tokenEndpoint = TOKEN_ENDPOINT,
+        dpopSigningAlgValuesSupported = null,
+    )
+    val validIssuerConfigWithDpop = validIssuerConfig.copy(
+        dpopSigningAlgValuesSupported = listOf(SigningAlgorithm.ES256),
     )
 
     private val CREDENTIAL_ENDPOINT = URL("$CREDENTIAL_ISSUER/credential")
@@ -71,6 +78,10 @@ internal object MockCredentialOffer {
         display = listOf(),
         deferredCredentialEndpoint = DEFERRED_CREDENTIAL_ENDPOINT,
         nonceEndpoint = NONCE_ENDPOINT,
+    )
+    val validIssuerNonce = IssuerNonce(
+        cNonce = C_NONCE,
+        dpopNonce = DPOP_NONCE,
     )
 
     const val KEY_ID = "keyId"
@@ -108,14 +119,17 @@ internal object MockCredentialOffer {
         keyBindings = listOf(keyBinding),
         transactionId = TRANSACTION_ID,
         accessToken = ACCESS_TOKEN,
+        tokenType = TOKEN_TYPE,
         refreshToken = REFRESH_TOKEN,
         endpoint = DEFERRED_CREDENTIAL_ENDPOINT,
         pollInterval = POLLING_INTERVAL,
+        dpopKeyBinding = null,
     )
 
     val verifiableCredentialParamsSoftwareBinding = VerifiableCredentialParams(
         proofTypeConfig = proofTypeConfigSoftwareBinding,
         tokenEndpoint = validIssuerConfig.tokenEndpoint,
+        dpopSigningAlgValuesSupported = null,
         grants = offerWithPreAuthorizedCode.grants,
         issuerEndpoint = offerWithPreAuthorizedCode.credentialIssuer,
         credentialEndpoint = validIssuerCredentialInfo.credentialEndpoint,
@@ -128,6 +142,7 @@ internal object MockCredentialOffer {
     val verifiableCredentialParamsHardwareBinding = VerifiableCredentialParams(
         proofTypeConfig = proofTypeConfigHardwareBinding,
         tokenEndpoint = validIssuerConfig.tokenEndpoint,
+        dpopSigningAlgValuesSupported = null,
         grants = offerWithPreAuthorizedCode.grants,
         issuerEndpoint = offerWithPreAuthorizedCode.credentialIssuer,
         credentialEndpoint = validIssuerCredentialInfo.credentialEndpoint,
@@ -140,6 +155,7 @@ internal object MockCredentialOffer {
     val verifiableCredentialParamsWithoutBinding = VerifiableCredentialParams(
         proofTypeConfig = null,
         tokenEndpoint = validIssuerConfig.tokenEndpoint,
+        dpopSigningAlgValuesSupported = null,
         grants = offerWithPreAuthorizedCode.grants,
         issuerEndpoint = offerWithPreAuthorizedCode.credentialIssuer,
         credentialEndpoint = validIssuerCredentialInfo.credentialEndpoint,
@@ -152,6 +168,7 @@ internal object MockCredentialOffer {
     val verifiableDeferredCredentialParamsHardwareBinding = VerifiableCredentialParams(
         proofTypeConfig = proofTypeConfigHardwareBinding,
         tokenEndpoint = validIssuerConfig.tokenEndpoint,
+        dpopSigningAlgValuesSupported = null,
         grants = offerWithPreAuthorizedCode.grants,
         issuerEndpoint = offerWithPreAuthorizedCode.credentialIssuer,
         credentialEndpoint = validIssuerCredentialInfo.credentialEndpoint,
@@ -159,5 +176,11 @@ internal object MockCredentialOffer {
         credentialConfiguration = vcSdJwtCredentialConfiguration,
         nonceEndpoint = NONCE_ENDPOINT,
         isBatch = false,
+    )
+
+    val verifiableCredentialParamsWithoutBindingWithDpop = verifiableCredentialParamsWithoutBinding.copy(
+        tokenEndpoint = validIssuerConfigWithDpop.tokenEndpoint,
+        dpopSigningAlgValuesSupported = validIssuerConfigWithDpop.dpopSigningAlgValuesSupported,
+        nonceEndpoint = NONCE_ENDPOINT,
     )
 }

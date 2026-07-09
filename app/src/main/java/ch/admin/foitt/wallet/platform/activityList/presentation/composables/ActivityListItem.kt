@@ -11,6 +11,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -161,6 +163,7 @@ fun EmptyHistoryActivityListItem() = ActivityListItem(
 
 fun LazyListScope.entireHistoryButton(
     paddingValues: PaddingValues,
+    credentialHistoryFocusRequester: FocusRequester? = null,
     onClick: () -> Unit
 ) = clusterLazyListItem(
     isFirstItem = false,
@@ -168,15 +171,24 @@ fun LazyListScope.entireHistoryButton(
     paddingValues = paddingValues,
 ) {
     EntireHistoryButton(
+        credentialHistoryFocusRequester = credentialHistoryFocusRequester,
         onClick = onClick,
     )
 }
 
 @Composable
 private fun EntireHistoryButton(
+    credentialHistoryFocusRequester: FocusRequester? = null,
     onClick: () -> Unit,
 ) = ListItem(
     modifier = Modifier
+        .run {
+            if (credentialHistoryFocusRequester != null) {
+                focusRequester(credentialHistoryFocusRequester)
+            } else {
+                this@run
+            }
+        }
         .clickable(onClick = onClick)
         .spaceBarKeyClickable(onClick)
         .semantics {

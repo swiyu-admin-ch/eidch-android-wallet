@@ -7,7 +7,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.GenerateMetadataDisplaysError
 import ch.admin.foitt.wallet.platform.credential.domain.model.toGenerateMetadataDisplaysError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataClaimDisplays
-import ch.admin.foitt.wallet.platform.credential.domain.util.addFallbackLanguageIfNecessary
+import ch.admin.foitt.wallet.platform.credential.domain.util.addFallbackLanguage
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.imageValidation.domain.model.ValidateImageError
@@ -19,15 +19,9 @@ import ch.admin.foitt.wallet.platform.ssi.domain.model.ValueType
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 internal class GenerateMetadataClaimDisplaysImpl @Inject constructor(
@@ -35,18 +29,13 @@ internal class GenerateMetadataClaimDisplaysImpl @Inject constructor(
 ) : GenerateMetadataClaimDisplays {
     override suspend fun invoke(
         claimsPathPointer: ClaimsPathPointer,
-        claimValueJson: JsonElement,
+        jsonPrimitive: JsonPrimitive,
         metadataClaim: Claim?,
         order: Int,
     ): Result<Pair<CredentialClaim, List<AnyClaimDisplay>>, GenerateMetadataDisplaysError> = coroutineBinding {
-        val (claimValue, valueType) = when (claimValueJson) {
-            is JsonPrimitive -> getClaimValueWithType(claimValueJson.jsonPrimitive).bind()
-            is JsonArray -> claimValueJson.jsonArray.toString() to ValueType.STRING.value
-            is JsonObject -> claimValueJson.jsonObject.toString() to ValueType.STRING.value
-        }
-
+        val (claimValue, valueType) = getClaimValueWithType(jsonPrimitive).bind()
         val credentialClaim = CredentialClaim(
-            clusterId = UNKNOWN_CLUSTER_DISPLAY_ID,
+            clusterId = UNKNOWN_CLUSTER_ID,
             path = claimsPathPointer.toPointerString(),
             value = claimValue,
             valueType = valueType,
@@ -57,7 +46,7 @@ internal class GenerateMetadataClaimDisplaysImpl @Inject constructor(
                 locale = it.locale,
                 name = it.name,
             )
-        }.addFallbackLanguageIfNecessary {
+        }.addFallbackLanguage {
             AnyClaimDisplay(name = claimsPathPointer.toPointerString(), locale = DisplayLanguage.FALLBACK)
         }
 
@@ -122,6 +111,6 @@ internal class GenerateMetadataClaimDisplaysImpl @Inject constructor(
 
     companion object {
         private val DEFAULT_VALUE_TYPE = ValueType.STRING
-        private const val UNKNOWN_CLUSTER_DISPLAY_ID = -1L
+        private const val UNKNOWN_CLUSTER_ID = -1L
     }
 }

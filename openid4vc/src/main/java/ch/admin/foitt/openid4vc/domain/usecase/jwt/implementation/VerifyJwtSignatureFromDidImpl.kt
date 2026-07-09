@@ -13,13 +13,12 @@ import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
 import javax.inject.Inject
 
-class VerifyJwtSignatureFromDidImpl @Inject constructor(
+internal class VerifyJwtSignatureFromDidImpl @Inject constructor(
     private val resolvePublicKey: ResolvePublicKey,
     private val verifyJwtSignature: VerifyJwtSignature,
 ) : VerifyJwtSignatureFromDid {
-    override suspend fun invoke(did: String, kid: String, jwt: Jwt): Result<Unit, VerifyJwtSignatureFromDidError> = coroutineBinding {
+    override suspend fun invoke(kid: String, jwt: Jwt): Result<Unit, VerifyJwtSignatureFromDidError> = coroutineBinding {
         val publicKey = resolvePublicKey(
-            did = did,
             kid = kid,
         ).mapError(ResolvePublicKeyError::toVerifyJwtSignatureFromDidError)
             .bind()

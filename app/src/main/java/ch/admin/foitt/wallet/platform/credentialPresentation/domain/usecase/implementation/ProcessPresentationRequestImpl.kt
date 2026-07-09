@@ -44,7 +44,7 @@ class ProcessPresentationRequestImpl @Inject constructor(
         }
     }
 
-    private suspend fun checkIfWalletIsEmpty(uri: String): Result<Unit, ProcessPresentationRequestError> = coroutineBinding {
+    private suspend fun checkIfWalletIsEmpty(uri: String?): Result<Unit, ProcessPresentationRequestError> = coroutineBinding {
         val credentials = verifiableCredentialRepository.getAllIds()
             .mapError(VerifiableCredentialRepositoryError::toProcessPresentationRequestError)
             .bind()

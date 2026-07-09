@@ -22,7 +22,6 @@ class HandleInvitationProcessingSuccessImpl @Inject constructor(
             is ProcessInvitationResult.PresentationRequestCredentialList -> NavigationAction {
                 navigateToPresentationCredentialList(successResult)
             }
-
             is ProcessInvitationResult.DeferredCredential -> {
                 NavigationAction { navigateToHome() }
             }
@@ -54,6 +53,6 @@ class HandleInvitationProcessingSuccessImpl @Inject constructor(
 
     private fun navigateToHome() {
         credentialOfferEventRepository.setEvent(CredentialOfferEvent.ACCEPTED)
-        navManager.navigateBackToHomeScreen(popUntil = Destination.QrScannerScreen::class)
+        navManager.navigateBackToHomeScreen(popUntil = Destination.ShowOrScanQrCodeScreen::class)
     }
 }

@@ -79,7 +79,9 @@ class MainViewModel @Inject constructor(
 
     private fun String?.isOfferScheme() = this == BuildConfig.SCHEME_CREDENTIAL_OFFER || this == BuildConfig.SCHEME_CREDENTIAL_OFFER_SWIYU
     private fun String?.isPresentationScheme() = this == BuildConfig.SCHEME_PRESENTATION_REQUEST ||
-        this == BuildConfig.SCHEME_PRESENTATION_REQUEST_SWIYU || this == BuildConfig.SCHEME_PRESENTATION_REQUEST_OID
+        this == BuildConfig.SCHEME_PRESENTATION_REQUEST_SWIYU ||
+        this == BuildConfig.SCHEME_PRESENTATION_REQUEST_OID ||
+        this == BuildConfig.SCHEME_PRESENTATION_REQUEST_PROXIMITY
 
     init {
         Timber.d("MainViewModel initialized")

@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess
 
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.di.EidApplicationProcessEntryPoint
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdDocumentType
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdUiDocumentType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.repository.EidApplicationProcessRepository
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation.GetDocumentTypeImpl
 import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManager
@@ -28,14 +28,14 @@ class GetDocumentTypeTest {
     @MockK
     private lateinit var mockEidApplicationProcessEntryPoint: EidApplicationProcessEntryPoint
 
-    private lateinit var mockFlow: MutableStateFlow<EIdDocumentType>
+    private lateinit var mockFlow: MutableStateFlow<EIdUiDocumentType>
 
     private lateinit var useCase: GetDocumentTypeImpl
 
     @BeforeEach
     fun setup() {
         MockKAnnotations.init(this)
-        mockFlow = MutableStateFlow(EIdDocumentType.IDENTITY_CARD)
+        mockFlow = MutableStateFlow(EIdUiDocumentType.IDENTITY_CARD)
 
         useCase = GetDocumentTypeImpl(
             destinationScopedComponentManager = mockDestinationScopedComponentManager,
@@ -63,8 +63,8 @@ class GetDocumentTypeTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = EIdDocumentType::class)
-    fun `DocumentType is getting the proper value from the repository`(documentType: EIdDocumentType): Unit =
+    @EnumSource(value = EIdUiDocumentType::class)
+    fun `DocumentType is getting the proper value from the repository`(documentType: EIdUiDocumentType): Unit =
         runTest {
             mockFlow.value = documentType
 

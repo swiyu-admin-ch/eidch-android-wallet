@@ -48,7 +48,7 @@ class CreateCredentialRequestProofsJwtImplTest {
         MockKAnnotations.init(this)
 
         coEvery {
-            mockCreateJwk(any(), any(), false)
+            mockCreateJwk(any(), any())
         } returns Ok(jwk)
 
         every { mockKeyAttestationJwt.rawJwt } returns MockCredentialOffer.KEY_ATTESTATION_JWT
@@ -127,7 +127,7 @@ class CreateCredentialRequestProofsJwtImplTest {
     @Test
     fun `should return an unexpected error when header jwk creation fails`() = runTest(testDispatcher) {
         coEvery {
-            mockCreateJwk(any(), any(), false)
+            mockCreateJwk(any(), any())
         } returns Err(JwkError.Unexpected(null))
 
         val proofJwt = createCredentialRequestProofsJwtUseCase(

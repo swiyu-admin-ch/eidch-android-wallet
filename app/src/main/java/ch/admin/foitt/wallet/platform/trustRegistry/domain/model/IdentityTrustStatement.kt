@@ -8,7 +8,6 @@ interface IdentityTrustStatement : TrustStatement
 @Serializable
 data class IdentityV1TrustStatement(
     override val vct: String,
-    override val iss: String,
     override val sub: String,
     override val iat: Long,
     override val status: TrustStatementStatus?,

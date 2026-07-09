@@ -17,6 +17,8 @@ import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdGuard
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdGuardianshipViewModel
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdIntroScreen
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdIntroViewModel
+import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdNotSupportedDeviceScreen
+import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdNotSupportedDeviceViewModel
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdPrivacyPolicyScreen
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdPrivacyPolicyViewModel
 import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.EIdProcessDataConfirmationScreen
@@ -202,6 +204,13 @@ object EntryProviderInstallerModule {
             val viewModel = hiltViewModel<EIdProcessDataConfirmationViewModel>()
             SyncedScaffoldScreen(viewModel = viewModel) {
                 EIdProcessDataConfirmationScreen(viewModel = viewModel)
+            }
+        }
+
+        entry<Destination.EIdNotSupportedDeviceScreen> {
+            val viewModel = hiltViewModel<EIdNotSupportedDeviceViewModel>()
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                EIdNotSupportedDeviceScreen(viewModel = viewModel)
             }
         }
     }
