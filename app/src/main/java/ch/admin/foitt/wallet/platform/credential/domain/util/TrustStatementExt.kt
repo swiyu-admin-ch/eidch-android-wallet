@@ -4,6 +4,6 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1Trust
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatement
 
 fun TrustStatement.entityNames(): Map<String, String>? = when (this) {
-    is IdentityV1TrustStatement -> entityName
+    is IdentityV1TrustStatement -> entityName.filterKeys { it.isNotBlank() }
     else -> null
 }

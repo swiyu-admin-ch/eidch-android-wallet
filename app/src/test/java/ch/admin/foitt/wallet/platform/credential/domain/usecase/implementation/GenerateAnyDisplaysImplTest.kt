@@ -11,7 +11,6 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.AnyIssuerDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
-import ch.admin.foitt.wallet.platform.credential.domain.util.entityNames
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
@@ -210,7 +209,7 @@ class GenerateAnyDisplaysImplTest {
 
         every { mockIssuerInfo.display } returns listOf(issuerDisplay)
 
-        every { mockTrustStatement.entityNames() } returns trustIssuerNames
+        every { mockTrustStatement.entityName } returns trustIssuerNames
 
         every { mockCredentialConfiguration.format } returns CREDENTIAL_FORMAT
 

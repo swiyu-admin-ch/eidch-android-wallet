@@ -11,7 +11,6 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.FetchTrustForIssuance
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentialsByCredentialId
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockNonComplianceData
-import ch.admin.foitt.wallet.platform.credential.domain.util.entityNames
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
@@ -119,7 +118,7 @@ class FetchAndCacheIssuerDisplayDataImplTest {
         } just Runs
 
         every { mockTrustedTrustCheckResult.actorTrustStatement } returns mockIdentityTrustStatement
-        every { mockIdentityTrustStatement.entityNames() } returns TRUST_ISSUER_NAMES
+        every { mockIdentityTrustStatement.entityName } returns TRUST_ISSUER_NAMES
 
         // anyCredential setup
         every { mockAnyCredential.id } returns CREDENTIAL_ID
@@ -143,7 +142,7 @@ class FetchAndCacheIssuerDisplayDataImplTest {
                 vcSchemaId = VC_SCHEMA_ID,
             )
             mockCredentialIssuerDisplayRepo.getIssuerDisplays(credentialId = CREDENTIAL_ID)
-            mockIdentityTrustStatement.entityNames()
+            mockIdentityTrustStatement.entityName
             mockGetLocalizedDisplay(listOf(issuerDisplayData1), DISPLAY_LOCALE1)
             mockGetLocalizedDisplay(listOf(issuerDisplayData1), DISPLAY_LOCALE2)
             mockFetchNonComplianceData(actorDid = ISSUER_DID)
