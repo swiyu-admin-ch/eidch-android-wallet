@@ -24,7 +24,16 @@ data class ClientIdentifier(
             val clientId = payloadJson.jsonObject["client_id"]?.jsonPrimitive?.content
                 ?: error("authorization request jwt client_id missing")
 
-            if (clientId.hasValidPrefix()) {
+            getClientIdentifier(clientId)
+        }
+
+        fun fromAuthorizationRequest(authorizationRequest: AuthorizationRequest): Result<ClientIdentifier, Throwable> = runCatching {
+            val clientId = authorizationRequest.clientId
+            getClientIdentifier(clientId)
+        }
+
+        private fun getClientIdentifier(clientId: String): ClientIdentifier {
+            return if (clientId.hasValidPrefix()) {
                 val split = clientId.split(":", limit = 2)
                 if (split[1].isEmpty()) {
                     error("authorization request jwt contains invalid client_id")

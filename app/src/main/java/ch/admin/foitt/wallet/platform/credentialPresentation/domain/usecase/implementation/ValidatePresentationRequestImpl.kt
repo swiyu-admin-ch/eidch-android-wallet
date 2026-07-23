@@ -62,7 +62,7 @@ class ValidatePresentationRequestImpl @Inject constructor(
             runSuspendCatching {
                 val authorizationRequestClientId = jwt.payloadJson["client_id"]?.jsonPrimitive?.content
                 checkNotNull(authorizationRequestClientId)
-                check(requestObject.clientId == authorizationRequestClientId)
+                check(it.removePrefix() == authorizationRequestClientId.removePrefix())
             }.mapError { throwable ->
                 CredentialPresentationError.Unexpected(throwable)
             }.bind()
@@ -175,6 +175,8 @@ class ValidatePresentationRequestImpl @Inject constructor(
         } ?: false
         return hasCredentialWithoutBinding && state == null
     }
+
+    private fun String.removePrefix() = removePrefix(ClientIdentifier.ClientIdPrefix.DecentralizedIdentifier.value + ":")
 
     private companion object {
         const val JWT_HEADER_TYP = "oauth-authz-req+jwt"

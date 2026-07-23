@@ -13,6 +13,7 @@ import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.Verifi
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.usecase.ValidatePresentationRequest
 import ch.admin.foitt.wallet.platform.credentialPresentation.mock.MockPresentationRequest
 import ch.admin.foitt.wallet.platform.credentialPresentation.mock.MockPresentationRequest.CLIENT_ID
+import ch.admin.foitt.wallet.platform.credentialPresentation.mock.MockPresentationRequest.CLIENT_ID_WITH_PREFIX
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
@@ -75,6 +76,30 @@ class ValidatePresentationRequestImplTest {
 
     @Test
     fun `A valid jwt presentation request returns Ok`() = runTest {
+        useCase(VerificationProcessType.NETWORK, mockRequestObject).assertOk()
+    }
+
+    @Test
+    fun `A valid jwt presentation request with client ID prefix on request object returns Ok`() = runTest {
+        every { mockRequestObject.clientId } returns CLIENT_ID_WITH_PREFIX
+
+        useCase(VerificationProcessType.NETWORK, mockRequestObject).assertOk()
+    }
+
+    @Test
+    fun `A valid jwt presentation request with client ID prefix on authorization request returns Ok`() = runTest {
+        every { mockPresentationJwt.payloadJson } returns
+            MockPresentationRequest.authorizationRequest.copy(clientId = CLIENT_ID_WITH_PREFIX).toJsonObject()
+
+        useCase(VerificationProcessType.NETWORK, mockRequestObject).assertOk()
+    }
+
+    @Test
+    fun `A valid jwt presentation request with client ID prefix everywhere returns Ok`() = runTest {
+        every { mockRequestObject.clientId } returns CLIENT_ID_WITH_PREFIX
+        every { mockPresentationJwt.payloadJson } returns
+            MockPresentationRequest.authorizationRequest.copy(clientId = CLIENT_ID_WITH_PREFIX).toJsonObject()
+
         useCase(VerificationProcessType.NETWORK, mockRequestObject).assertOk()
     }
 

@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientIdentifier
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientMetaData
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
@@ -50,8 +51,8 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
             )
             return
         }
-
-        val trustCheckResult = fetchTrustForVerification(authorizationRequest)
+        val verifierDid = ClientIdentifier.fromAuthorizationRequest(authorizationRequest).get()?.clientId ?: authorizationRequest.clientId
+        val trustCheckResult = fetchTrustForVerification(authorizationRequest, verifierDid)
 
         val trustStatement = trustCheckResult.actorTrustStatement
 
@@ -68,7 +69,7 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
         }
         val verifierTrustLogoDisplay: List<ActorField<String>>? = verifierLogoDisplay
 
-        val nonComplianceData = fetchNonComplianceData(actorDid = authorizationRequest.clientId)
+        val nonComplianceData = fetchNonComplianceData(actorDid = verifierDid)
         val nonComplianceReason: List<ActorField<String>>? = nonComplianceData.reasonDisplays?.toNonComplianceReason()
 
         val presentationVerifierDisplay = ActorDisplayData(
@@ -134,8 +135,7 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
         )
     }
 
-    private suspend fun fetchTrustForVerification(authorizationRequest: AuthorizationRequest): TrustCheckResult {
-        val verifierDid = authorizationRequest.clientId
+    private suspend fun fetchTrustForVerification(authorizationRequest: AuthorizationRequest, verifierDid: String): TrustCheckResult {
         val environment = getActorEnvironment(verifierDid)
 
         val identityTrustStatement = when (environment) {

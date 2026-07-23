@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.actorMetadata
 
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationRequest
+import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientIdentifier
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientMetaData
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.ClientName
 import ch.admin.foitt.openid4vc.domain.model.presentationRequest.LogoUri
@@ -93,6 +94,36 @@ class FetchAndCacheVerifierDisplayDataImplTest {
 
     @Test
     fun `Fetching and caching the verifier display data is following specific steps`(): Unit = runTest {
+        useCase(
+            authorizationRequest = mockAuthorizationRequest,
+            verificationProcessType = VerificationProcessType.NETWORK,
+            null
+        )
+
+        val expectedActorDisplayData = ActorDisplayData(
+            name = mockTrustedNamesDisplay,
+            image = mockMetadataLogoDisplays,
+            trustStatus = TrustStatus.TRUSTED,
+            vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
+            preferredLanguage = null,
+            actorType = ActorType.VERIFIER,
+            actorComplianceState = actorComplianceState,
+            nonComplianceReason = nonComplianceReasons,
+        )
+
+        coVerifyOrder {
+            mockProcessIdentityV1TrustStatement(clientId)
+            mockFetchVcSchemaTrustStatus(TrustStatementActor.VERIFIER, clientId, vcSchemaId)
+            mockInitializeActorForScope(expectedActorDisplayData, componentScope = ComponentScope.Verifier)
+        }
+    }
+
+    @Test
+    fun `Fetching and caching the verifier display data with client id prefix is following specific steps`(): Unit = runTest {
+        every {
+            mockAuthorizationRequest.clientId
+        } returns ClientIdentifier.ClientIdPrefix.DecentralizedIdentifier.value + ":" + clientId
+
         useCase(
             authorizationRequest = mockAuthorizationRequest,
             verificationProcessType = VerificationProcessType.NETWORK,
