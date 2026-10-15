@@ -77,7 +77,6 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.mapError
 import net.zetetic.database.sqlcipher.SQLiteDatabase
-import timber.log.Timber
 
 @Database(
     entities = [
@@ -187,22 +186,18 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun decryptionTestDao(): DecryptionTestDao
 
-    fun changePassword(newPassword: ByteArray): Result<Unit, DatabaseError.ReKeyFailed> =
-        runSuspendCatching {
-            val database = openHelper.writableDatabase as SQLiteDatabase
-            database.changePassword(newPassword)
-        }.mapError { throwable ->
-            DatabaseError.ReKeyFailed(throwable)
-        }
+    fun changePassword(newPassword: ByteArray): Result<Unit, DatabaseError.ReKeyFailed> = runSuspendCatching {
+        val database = openHelper.writableDatabase as SQLiteDatabase
+        database.changePassword(newPassword)
+    }.mapError { throwable ->
+        DatabaseError.createReKeyFailed(throwable)
+    }
 
-    suspend fun tryDecrypt(): Result<Unit, DatabaseError.WrongPassphrase> {
-        return runSuspendCatching {
-            decryptionTestDao().test()
-            Unit
-        }.mapError { throwable ->
-            Timber.d(t = throwable, message = "error")
-            DatabaseError.WrongPassphrase(throwable)
-        }
+    suspend fun tryDecrypt(): Result<Unit, DatabaseError.WrongPassphrase> = runSuspendCatching {
+        decryptionTestDao().test()
+        Unit
+    }.mapError { throwable ->
+        DatabaseError.createWrongPassphraseError(throwable)
     }
 
     @Dao
@@ -214,6 +209,6 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     companion object {
-        internal const val DATABASE_VERSION = 31
+        internal const val DATABASE_VERSION = 32
     }
 }

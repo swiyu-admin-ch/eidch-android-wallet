@@ -77,7 +77,7 @@ class CanUseBiometricsForLoginImplTest {
 
     @Test
     fun `Calling CanUseBiometricsForLogin when the biometrics cypher is not usable returns Changed`() = runTest(testDispatcher) {
-        val error = BiometricsError.Unexpected(Exception())
+        val error = BiometricsError.createGeneralError()
         coEvery { mockGetBiometricsCipher() } returns Err(error)
 
         assertEquals(CanUseBiometricsForLoginResult.Changed, useCase())

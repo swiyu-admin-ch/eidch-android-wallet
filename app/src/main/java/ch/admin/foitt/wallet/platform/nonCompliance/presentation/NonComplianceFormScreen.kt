@@ -33,6 +33,7 @@ import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.Avatar
 import ch.admin.foitt.wallet.platform.composables.AvatarSize
 import ch.admin.foitt.wallet.platform.composables.Buttons
+import ch.admin.foitt.wallet.platform.composables.Callouts
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.clusterLazyListItem
@@ -42,7 +43,10 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayo
 import ch.admin.foitt.wallet.platform.composables.presentation.verticalSafeDrawing
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceInputFieldState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceInputFieldType
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceIssuerReportReason
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceValidationState
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceVerifierReportReason
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.model.NonComplianceActorUiState
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.model.NonComplianceFormUiState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
@@ -50,6 +54,7 @@ import ch.admin.foitt.wallet.platform.scaffold.presentation.LocalScaffoldPadding
 import ch.admin.foitt.wallet.platform.utils.OnResumeEventHandler
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
+import ch.admin.foitt.wallet.theme.WalletTexts.TitleMediumEmphasized
 import ch.admin.foitt.wallet.theme.WalletTheme
 
 @Composable
@@ -62,6 +67,7 @@ fun NonComplianceFormScreen(viewModel: NonComplianceFormViewModel) {
         nonComplianceActorUiState = viewModel.nonComplianceActorUiState.collectAsStateWithLifecycle().value,
         nonComplianceFormUiState = viewModel.nonComplianceFormUiState.collectAsStateWithLifecycle().value,
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
+        reportReason = viewModel.reportReason,
         onTextInputField = viewModel::onTextInputField,
         onClear = viewModel::onClearInput,
         onSend = viewModel::onSend,
@@ -73,6 +79,7 @@ private fun NonComplianceFormScreenContent(
     nonComplianceActorUiState: NonComplianceActorUiState,
     nonComplianceFormUiState: NonComplianceFormUiState,
     isLoading: Boolean,
+    reportReason: NonComplianceReportReason,
     onTextInputField: (NonComplianceInputFieldType) -> Unit,
     onClear: (NonComplianceInputFieldType) -> Unit,
     onSend: () -> Unit,
@@ -105,9 +112,15 @@ private fun NonComplianceFormScreenContent(
 
         item { Spacer(modifier = Modifier.height(Sizes.s06)) }
 
+        if (reportReason == NonComplianceIssuerReportReason.ILLEGAL_CONTENT_OR_PURPOSE) {
+            item { InfoSection() }
+            item { Spacer(modifier = Modifier.height(Sizes.s06)) }
+        }
+
         reportSection(
             nonComplianceFormUiState = nonComplianceFormUiState,
             onTextInputField = onTextInputField,
+            reportReason = reportReason,
             onClear = onClear,
         )
 
@@ -136,6 +149,14 @@ private fun NonComplianceFormScreenContent(
     }
 
     LoadingOverlay(isLoading)
+}
+
+@Composable
+private fun InfoSection() {
+    Callouts.UnregisteredRequest(
+        label = R.string.nonCompliance_reportForm_sensitiveDataWarning_body,
+        leadingIcon = painterResource(R.drawable.wallet_ic_info),
+    )
 }
 
 private fun LazyListScope.nonComplianceActor(
@@ -176,20 +197,20 @@ private fun Actor(nonComplianceActorUiState: NonComplianceActorUiState) {
 
 private fun LazyListScope.reportSection(
     nonComplianceFormUiState: NonComplianceFormUiState,
+    reportReason: NonComplianceReportReason,
     onTextInputField: (NonComplianceInputFieldType) -> Unit,
     onClear: (NonComplianceInputFieldType) -> Unit,
 ) {
     item {
-        WalletTexts.HeadlineSmallEmphasized(
+        TitleMediumEmphasized(
+            text = stringResource(R.string.tk_nonCompliance_report_form_reportSection_title),
             modifier = Modifier
-                .semantics {
-                    heading()
-                }
-                .padding(horizontal = Sizes.s04),
-            text = stringResource(R.string.tk_nonCompliance_report_form_reportSection_title)
+                .padding(PaddingValues(start = Sizes.s04, end = Sizes.s04, bottom = Sizes.s02))
+                .semantics { heading() },
+            color = WalletTheme.colorScheme.secondary,
         )
-        Spacer(modifier = Modifier.height(Sizes.s02))
     }
+
     textInput(
         nonComplianceInputFieldState = nonComplianceFormUiState.descriptionInputFieldState,
         nonComplianceInputFieldType = NonComplianceInputFieldType.DESCRIPTION,
@@ -209,6 +230,29 @@ private fun LazyListScope.reportSection(
         onTextInputField = onTextInputField,
         onClear = onClear,
     )
+
+    if (reportReason != NonComplianceVerifierReportReason.VERIFICATION_NOT_REGISTERED) {
+        textInput(
+            nonComplianceInputFieldState = nonComplianceFormUiState.contextInputFieldState,
+            nonComplianceInputFieldType = NonComplianceInputFieldType.CONTEXT,
+            isFirstItem = false,
+            isLastItem = false,
+            title = R.string.nonCompliance_reportForm_reference_cellTitle,
+            titleAltText = R.string.nonCompliance_reportForm_reference_cellTitle,
+            placeholder = R.string.nonCompliance_reportForm_reference_cellBody,
+            supportingText = when (nonComplianceFormUiState.isDescriptionValid) {
+                NonComplianceValidationState.Valid -> R.string.tk_nonCompliance_report_form_description_footer
+                NonComplianceValidationState.TooShort -> R.string.tk_nonCompliance_report_form_description_footer
+                NonComplianceValidationState.TooLong -> R.string.tk_nonCompliance_report_form_description_maxCharacter_footer
+            },
+            isInputValid = nonComplianceFormUiState.isContextValid is NonComplianceValidationState.Valid,
+            textInputValue = nonComplianceFormUiState.context,
+            maxInputLength = nonComplianceFormUiState.contextMaxInputLength,
+            onTextInputField = onTextInputField,
+            onClear = onClear,
+        )
+    }
+
     textInput(
         nonComplianceInputFieldState = nonComplianceFormUiState.emailInputFieldState,
         nonComplianceInputFieldType = NonComplianceInputFieldType.EMAIL,
@@ -299,15 +343,20 @@ private fun NonComplianceFormScreenPreview() {
             nonComplianceFormUiState = NonComplianceFormUiState(
                 description = TextFieldValue(""),
                 email = TextFieldValue(""),
+                context = TextFieldValue(""),
                 isDescriptionValid = NonComplianceValidationState.Valid,
                 isEmailValid = NonComplianceValidationState.Valid,
                 descriptionMaxInputLength = 500,
                 descriptionInputFieldState = NonComplianceInputFieldState.Edited,
                 emailInputFieldState = NonComplianceInputFieldState.Edited,
+                contextInputFieldState = NonComplianceInputFieldState.Edited,
+                isContextValid = NonComplianceValidationState.Valid,
+                contextMaxInputLength = 500,
             ),
             onTextInputField = {},
             onClear = {},
             onSend = {},
+            reportReason = NonComplianceIssuerReportReason.ILLEGAL_CONTENT_OR_PURPOSE,
         )
     }
 }

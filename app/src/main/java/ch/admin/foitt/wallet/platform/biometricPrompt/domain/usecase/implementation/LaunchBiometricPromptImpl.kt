@@ -8,7 +8,6 @@ import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.BiometricsS
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.LaunchBiometricPrompt
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
-import java.lang.IllegalStateException
 import javax.crypto.Cipher
 import javax.inject.Inject
 
@@ -21,7 +20,7 @@ class LaunchBiometricPromptImpl @Inject constructor(
         cipher: Cipher,
     ): Result<Cipher, BiometricAuthenticationError> {
         if (biometricsStatus() != BiometricManagerResult.Available) {
-            return Err(BiometricAuthenticationError.Unexpected(IllegalStateException("Cannot use biometrics")))
+            return Err(BiometricAuthenticationError.createGeneralError(("Cannot use biometrics")))
         }
         return promptWrapper.launchPrompt(
             cipher = cipher,

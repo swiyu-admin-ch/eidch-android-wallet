@@ -74,7 +74,7 @@ class SaveVcSdJwtCredentialsImpl @Inject constructor(
 
         credentialOfferRepository.saveCredentialOffer(
             credentialId = credentialId,
-            keyBindings = vcSdJwtCredentials.map { it.keyBinding },
+            keyBindings = vcSdJwtCredentials.mapNotNull { it.keyBinding }.ifEmpty { null },
             payloads = vcSdJwtCredentials.map { it.payload },
             format = vcSdJwtCredential.format,
             validFrom = vcSdJwtCredential.validFromInstant?.epochSecond,

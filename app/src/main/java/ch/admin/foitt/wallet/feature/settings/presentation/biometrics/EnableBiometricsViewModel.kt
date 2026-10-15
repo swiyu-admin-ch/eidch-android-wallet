@@ -3,13 +3,15 @@ package ch.admin.foitt.wallet.feature.settings.presentation.biometrics
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.errorhandling.domain.model.ViewmodelPrefixes
+import ch.admin.foitt.errorhandling.domain.model.util.log
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricManagerResult
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricPromptType
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.BiometricsStatus
 import ch.admin.foitt.wallet.platform.biometricPrompt.presentation.AndroidBiometricPrompt
 import ch.admin.foitt.wallet.platform.biometrics.domain.model.BiometricsError
-import ch.admin.foitt.wallet.platform.biometrics.domain.model.toEnableBiometricsError
+import ch.admin.foitt.wallet.platform.biometrics.domain.model.toInitializeCipherWithBiometricsError
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.InitializeCipherWithBiometrics
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.SaveUseBiometricLogin
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -45,13 +47,13 @@ class EnableBiometricsViewModel @AssistedInject constructor(
     private val saveUseBiometricLogin: SaveUseBiometricLogin,
     private val navManager: NavigationManager,
     setTopBarState: SetTopBarState,
-    @Assisted private val pin: String,
+    @Assisted private val passphrase: String,
     @param:ApplicationContext private val appContext: Context,
 ) : ScreenViewModel(setTopBarState) {
 
     @AssistedFactory
     interface Factory {
-        fun create(pin: String): EnableBiometricsViewModel
+        fun create(passphrase: String): EnableBiometricsViewModel
     }
 
     override val topBarState = TopBarState.Details(::close, R.string.change_biometrics_title)
@@ -84,11 +86,11 @@ class EnableBiometricsViewModel @AssistedInject constructor(
 
     fun enableBiometricsLogin(activity: FragmentActivity) {
         viewModelScope.launch {
-            enableBiometricsLogin(activity, pin)
+            enableBiometricsLogin(activity, passphrase)
         }.trackCompletion(_initializationInProgress)
     }
 
-    private suspend fun enableBiometricsLogin(activity: FragmentActivity, pin: String) {
+    private suspend fun enableBiometricsLogin(activity: FragmentActivity, passphrase: String) {
         Timber.d("Passphrase: Showing biometric dialog")
         val biometricPromptWrapper = AndroidBiometricPrompt(
             activity = activity,
@@ -97,28 +99,30 @@ class EnableBiometricsViewModel @AssistedInject constructor(
 
         initializeCipherWithBiometrics(biometricPromptWrapper)
             .andThen { initializedEncryptionCipher ->
-                storePassphrase(pin, initializedEncryptionCipher)
-                    .mapError(StorePassphraseError::toEnableBiometricsError)
+                storePassphrase(passphrase, initializedEncryptionCipher)
+                    .mapError(StorePassphraseError::toInitializeCipherWithBiometricsError)
             }.andThen {
                 saveUseBiometricLogin(true)
                 Ok(Unit)
-            }
-            .onOk {
+            }.onOk {
                 close()
-            }
-            .onErr { enableBiometricsError ->
+            }.onErr { enableBiometricsError ->
                 when (enableBiometricsError) {
-                    BiometricsError.Locked -> {
-                        Timber.w("Enable biometric error: Lockout")
-                        navManager.replaceCurrentWith(Destination.EnableBiometricsLockoutScreen)
+                    is BiometricsError.Locked -> {
+                        enableBiometricsError.log(ViewmodelPrefixes.ENABLE_BIOMETRICS)
+                        navManager.replaceCurrentWith(
+                            Destination.EnableBiometricsLockoutScreen(enableBiometricsError.errorOccurrence.errorCode.value)
+                        )
                     }
 
-                    is BiometricsError.Unexpected -> {
-                        Timber.e(enableBiometricsError.cause, "Enable biometric error")
-                        navManager.replaceCurrentWith(Destination.EnableBiometricsErrorScreen)
+                    is BiometricsError.General -> {
+                        enableBiometricsError.log(ViewmodelPrefixes.ENABLE_BIOMETRICS)
+                        navManager.replaceCurrentWith(
+                            Destination.EnableBiometricsErrorScreen(enableBiometricsError.errorOccurrence.errorCode.value)
+                        )
                     }
 
-                    BiometricsError.Cancelled -> {}
+                    is BiometricsError.Cancelled -> {}
                 }
             }
     }

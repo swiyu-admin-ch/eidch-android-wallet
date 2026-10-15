@@ -13,6 +13,7 @@ import ch.admin.foitt.wallet.platform.database.data.migrations.Migration26to27
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration27to28
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration2to3
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration30to31
+import ch.admin.foitt.wallet.platform.database.data.migrations.Migration31to32
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration5to6
 import ch.admin.foitt.wallet.platform.database.data.migrations.Migration6to7
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
@@ -47,11 +48,12 @@ class SqlCipherDatabaseInitializer @Inject constructor(
                     Migration21to22,
                     Migration26to27,
                     Migration27to28,
-                    Migration30to31
+                    Migration30to31,
+                    Migration31to32
                 )
                 .build()
         }.mapError { throwable ->
-            DatabaseError.SetupFailed(throwable)
+            DatabaseError.createSetupFailedError(throwable)
         }
 
     companion object {

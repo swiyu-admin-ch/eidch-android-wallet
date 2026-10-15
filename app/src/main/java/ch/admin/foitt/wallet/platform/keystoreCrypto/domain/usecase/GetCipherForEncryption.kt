@@ -8,7 +8,7 @@ import javax.crypto.Cipher
 
 fun interface GetCipherForEncryption {
     @CheckResult
-    operator fun invoke(
+    suspend operator fun invoke(
         keystoreKeyConfig: KeystoreKeyConfig,
         initializationVector: ByteArray?,
     ): Result<Cipher, GetCipherForEncryptionError>

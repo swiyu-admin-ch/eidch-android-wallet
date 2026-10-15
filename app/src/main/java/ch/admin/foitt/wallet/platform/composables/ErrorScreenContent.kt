@@ -30,6 +30,7 @@ internal fun ErrorScreenContent(
     @DrawableRes iconRes: Int,
     title: String,
     body: String,
+    errorCode: String? = null,
     primaryButton: String,
     onPrimaryClick: () -> Unit,
     secondaryButton: String? = null,
@@ -46,6 +47,7 @@ internal fun ErrorScreenContent(
                     iconRes = iconRes,
                     title = title,
                     body = body,
+                    errorCode = errorCode,
                 )
             },
             stickyBottomContent = {
@@ -72,6 +74,7 @@ internal fun ErrorScreenContent(
                     iconRes = iconRes,
                     title = title,
                     body = body,
+                    errorCode = errorCode,
                 )
             },
         )
@@ -83,6 +86,7 @@ private fun MainContent(
     @DrawableRes iconRes: Int,
     title: String,
     body: String,
+    errorCode: String?,
 ) {
     Column(
         modifier = Modifier
@@ -106,6 +110,13 @@ private fun MainContent(
             color = WalletTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        errorCode?.let {
+            WalletTexts.BodyLarge(
+                text = it,
+                color = WalletTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -151,6 +162,7 @@ private fun ResultScreenPreview() {
             iconRes = R.drawable.wallet_ic_shield_cross,
             title = "Title text",
             body = longText.repeat(2),
+            errorCode = "XY-123-1234",
             primaryButton = "Primary button text",
             onPrimaryClick = {},
             secondaryButton = "Secondary button",

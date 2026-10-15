@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel(assistedFactory = ActivityDetailViewModel.Factory::class)
 class ActivityDetailViewModel @AssistedInject constructor(
@@ -109,12 +110,13 @@ class ActivityDetailViewModel @AssistedInject constructor(
         viewModelScope.launch {
             nonComplianceEventRepository.event.collect { event ->
                 when (event) {
-                    NonComplianceEvent.NONE -> _isSnackbarVisible.value = false
-                    NonComplianceEvent.REPORT_SENT -> {
+                    NonComplianceEvent.None -> _isSnackbarVisible.value = false
+                    NonComplianceEvent.ReportSent -> {
                         _isSnackbarVisible.value = true
-                        delay(4000L)
+                        delay(TOAST_DISPLAY_TIME_MILLIS.milliseconds)
                         nonComplianceEventRepository.resetEvent()
                     }
+                    NonComplianceEvent.ReportSentHome -> {}
                 }
             }
         }
@@ -210,5 +212,9 @@ class ActivityDetailViewModel @AssistedInject constructor(
 
     private fun navigateToErrorScreen() {
         navManager.replaceCurrentWith(Destination.GenericErrorScreen(GenericErrorScreenState.generic()))
+    }
+
+    companion object {
+        private const val TOAST_DISPLAY_TIME_MILLIS = 4000L
     }
 }

@@ -16,6 +16,7 @@ internal fun BiometricsContent(
     @StringRes title: Int,
     @StringRes description: Int,
     @StringRes infoText: Int?,
+    errorCode: String? = null,
 ) {
     Spacer(modifier = Modifier.height(Sizes.s04))
     WalletTexts.TitleScreen(text = stringResource(id = title))
@@ -27,12 +28,15 @@ internal fun BiometricsContent(
         color = WalletTheme.colorScheme.secondary,
     )
     infoText?.let {
-        Spacer(
-            modifier = Modifier
-                .height(Sizes.s04)
-        )
+        Spacer(modifier = Modifier.height(Sizes.s04))
         WalletTexts.LabelSmall(
             text = stringResource(id = infoText)
+        )
+    }
+    errorCode?.let {
+        Spacer(modifier = Modifier.height(Sizes.s04))
+        WalletTexts.LabelSmall(
+            text = it
         )
     }
 }

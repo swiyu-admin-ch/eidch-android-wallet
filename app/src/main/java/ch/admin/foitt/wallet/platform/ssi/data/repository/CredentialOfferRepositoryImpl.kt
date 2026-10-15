@@ -90,7 +90,7 @@ class CredentialOfferRepositoryImpl @Inject constructor(
 
     override suspend fun saveCredentialOffer(
         credentialId: Long,
-        keyBindings: List<KeyBinding?>,
+        keyBindings: List<KeyBinding>?,
         payloads: List<String>,
         format: CredentialFormat,
         selectedConfigurationId: String,
@@ -142,13 +142,14 @@ class CredentialOfferRepositoryImpl @Inject constructor(
                     )
                 }
 
-                val keyBinding = matchKeyBindingToPayloadCnf(
-                    keyBindings = keyBindings,
-                    payload = payload
-                ).getOrThrow { IllegalStateException("No payload found for keyBinding") }
-
-                createCredentialKeyBinding(credentialId, keyBinding, bundleItemId)?.let {
-                    credentialKeyBindingDao().insert(it)
+                keyBindings?.let {
+                    val keyBindingEntity = getKeyBindingEntity(
+                        keyBindings = it,
+                        payload = payload,
+                        credentialId = credentialId,
+                        bundleItemId = bundleItemId,
+                    )
+                    credentialKeyBindingDao().insert(keyBindingEntity)
                 }
             }
 
@@ -166,6 +167,20 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         }.mapError { throwable ->
             throwable.toCredentialOfferRepositoryError("saveCredentialOffer error")
         }.bind()
+    }
+
+    private suspend fun getKeyBindingEntity(
+        keyBindings: List<KeyBinding>,
+        payload: String,
+        credentialId: Long,
+        bundleItemId: Long,
+    ): CredentialKeyBindingEntity {
+        val keyBinding = matchKeyBindingToPayloadCnf(
+            keyBindings = keyBindings,
+            payload = payload
+        ).getOrThrow { IllegalStateException("No payload found for keyBinding") }
+
+        return createCredentialKeyBinding(credentialId, keyBinding, bundleItemId)
     }
 
     override suspend fun saveDeferredCredentialOffer(
@@ -192,9 +207,8 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         rawCredentialData = rawCredentialData,
     ) { credentialId ->
         keyBindings?.forEach { keyBinding ->
-            createCredentialKeyBinding(credentialId, keyBinding)?.let {
-                credentialKeyBindingDao().insert(it)
-            }
+            val keyBindingEntity = createCredentialKeyBinding(credentialId, keyBinding)
+            credentialKeyBindingDao().insert(keyBindingEntity)
         }
         deferredCredentialDao().insert(
             DeferredCredentialEntity(
@@ -286,9 +300,10 @@ class CredentialOfferRepositoryImpl @Inject constructor(
 
                 deferredCredentialDao().deleteById(credentialId)
 
+                // if this is empty (and therefore null) it was a deferred credential without holder binding
                 val keyBindings = credentialKeyBindingDao().getByCredentialId(credentialId).map {
                     it.toKeyBinding()
-                }
+                }.ifEmpty { null }
 
                 val verifiableCredential = VerifiableCredentialEntity(
                     credentialId = credentialId,
@@ -310,12 +325,13 @@ class CredentialOfferRepositoryImpl @Inject constructor(
                         )
                     }
 
-                    val keyBinding = matchKeyBindingToPayloadCnf(
-                        keyBindings = keyBindings,
-                        payload = payload,
-                    ).getOrThrow { IllegalStateException("No payload found for keyBinding") }
-
-                    createCredentialKeyBinding(credentialId, keyBinding, bundleItemId)?.let { keyBindingEntity ->
+                    keyBindings?.let {
+                        val keyBindingEntity = getKeyBindingEntity(
+                            keyBindings = it,
+                            payload = payload,
+                            credentialId = credentialId,
+                            bundleItemId = bundleItemId,
+                        )
                         credentialKeyBindingDao().update(keyBindingEntity)
                     }
                 }
@@ -604,19 +620,17 @@ class CredentialOfferRepositoryImpl @Inject constructor(
 
     private fun createCredentialKeyBinding(
         credentialId: Long,
-        keyBinding: KeyBinding?,
+        keyBinding: KeyBinding,
         bundleItemId: Long? = null
-    ) = keyBinding?.let {
-        CredentialKeyBindingEntity(
-            id = it.identifier,
-            credentialId = credentialId,
-            bundleItemId = bundleItemId,
-            algorithm = it.algorithm.stdName,
-            bindingType = it.bindingType,
-            publicKey = it.publicKey,
-            privateKey = it.privateKey,
-        )
-    }
+    ) = CredentialKeyBindingEntity(
+        id = keyBinding.identifier,
+        credentialId = credentialId,
+        bundleItemId = bundleItemId,
+        algorithm = keyBinding.algorithm.stdName,
+        bindingType = keyBinding.bindingType,
+        publicKey = keyBinding.publicKey,
+        privateKey = keyBinding.privateKey,
+    )
 
     private fun CredentialKeyBindingEntity.toKeyBinding(): KeyBinding = KeyBinding(
         identifier = id,

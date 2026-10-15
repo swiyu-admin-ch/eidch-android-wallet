@@ -284,11 +284,12 @@ private fun AuxiliaryContent(
     showPassphraseErrorToast: Boolean,
     onClosePassphraseError: () -> Unit,
 ) {
-    if (passphraseInputFieldState == PassphraseInputFieldState.Error && showPassphraseErrorToast) {
+    if (passphraseInputFieldState is PassphraseInputFieldState.Error && showPassphraseErrorToast) {
         PassphraseValidationErrorToastFixed(
             modifier = Modifier
                 .padding(start = Sizes.s08, end = Sizes.s08, bottom = Sizes.s06),
             text = R.string.tk_onboarding_nopasswordmismatch_notification,
+            errorCode = passphraseInputFieldState.errorCode,
             onIconEnd = onClosePassphraseError,
         )
     }
@@ -348,7 +349,7 @@ private fun OnboardingConfirmPassphraseScreenPreview() {
         OnboardingConfirmPassphraseScreenContent(
             textFieldValue = TextFieldValue("abc123"),
             attemptsLeft = 4,
-            passphraseInputFieldState = PassphraseInputFieldState.Error,
+            passphraseInputFieldState = PassphraseInputFieldState.Error("XY123-1234"),
             showSupportText = true,
             showPassphraseErrorToast = true,
             isPassphraseValid = true,

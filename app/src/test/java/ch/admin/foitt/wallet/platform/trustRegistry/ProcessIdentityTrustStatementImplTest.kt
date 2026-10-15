@@ -1,6 +1,8 @@
 package ch.admin.foitt.wallet.platform.trustRegistry
 
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
+import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
+import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV2TrustStatement
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 
 class ProcessIdentityTrustStatementImplTest {
     @MockK
@@ -32,6 +36,9 @@ class ProcessIdentityTrustStatementImplTest {
 
     @MockK
     private lateinit var mockEnvironmentSetupRepository: EnvironmentSetupRepository
+
+    @MockK
+    private lateinit var mockGetActorEnvironment: GetActorEnvironment
 
     @MockK
     private lateinit var mockProcessIdentityV1TrustStatement: ProcessIdentityV1TrustStatement
@@ -54,6 +61,7 @@ class ProcessIdentityTrustStatementImplTest {
         useCase = ProcessIdentityTrustStatementImpl(
             validateIdentityTrustStatement = mockValidateIdentityTrustStatement,
             environmentSetupRepository = mockEnvironmentSetupRepository,
+            getActorEnvironment = mockGetActorEnvironment,
             processIdentityV1TrustStatement = mockProcessIdentityV1TrustStatement,
         )
 
@@ -65,6 +73,8 @@ class ProcessIdentityTrustStatementImplTest {
         } returns Ok(mockIdentityV2TrustStatement)
 
         coEvery { mockEnvironmentSetupRepository.terminateOnInvalidIdTSEnabled } returns true
+
+        coEvery { mockGetActorEnvironment(ACTOR_DID) } returns ActorEnvironment.PRODUCTION
 
         coEvery {
             mockProcessIdentityV1TrustStatement(did = ACTOR_DID)
@@ -125,6 +135,19 @@ class ProcessIdentityTrustStatementImplTest {
         coVerify { mockProcessIdentityV1TrustStatement(did = ACTOR_DID) }
     }
 
+    @ParameterizedTest
+    @EnumSource(ActorEnvironment::class, names = ["PRODUCTION", "BETA"])
+    fun `Without a v2 identity statement, v1 is only checked for PROD and BETA envs`(input: ActorEnvironment) = runTest {
+        coEvery { mockGetActorEnvironment(ACTOR_DID) } returns input
+
+        useCase(
+            identityTrustStatementJwt = null,
+            actorDid = ACTOR_DID,
+        ).assertOkNullable()
+
+        coVerify { mockProcessIdentityV1TrustStatement(any()) }
+    }
+
     @Test
     fun `Without a v2 identity statement, and error during v1 returns an error`() = runTest {
         val exception = IllegalStateException("trust error")
@@ -134,6 +157,18 @@ class ProcessIdentityTrustStatementImplTest {
             identityTrustStatementJwt = null,
             actorDid = ACTOR_DID,
         ).assertErrorType(TrustRegistryError.Unexpected::class)
+    }
+
+    @Test
+    fun `Without a v2 identity statement, v1 is not checked for EXTERNAL and returns an error`() = runTest {
+        coEvery { mockGetActorEnvironment(ACTOR_DID) } returns ActorEnvironment.EXTERNAL
+
+        useCase(
+            identityTrustStatementJwt = null,
+            actorDid = ACTOR_DID,
+        ).assertErrorType(TrustRegistryError.UnknownRegistry::class)
+
+        coVerify(exactly = 0) { mockProcessIdentityV1TrustStatement(any()) }
     }
 
     private companion object Companion {

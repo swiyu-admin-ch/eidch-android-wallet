@@ -24,3 +24,4 @@ rootProject.name = "SwiyuWallet"
 include(":app")
 include(":theme")
 include(":openid4vc")
+include(":errorhandling")

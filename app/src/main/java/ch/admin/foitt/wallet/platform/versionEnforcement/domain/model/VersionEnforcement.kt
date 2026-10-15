@@ -25,6 +25,8 @@ data class VersionEnforcement(
     val storeUrl: String,
     @SerialName("versions")
     val versions: List<Versions>,
+    @SerialName("swiss_profile_lifecycle")
+    val swissProfileLifecycle: SwissProfileLifecycle? = null,
 ) {
     enum class Platform {
         @SerialName("android")
@@ -57,5 +59,23 @@ data class VersionEnforcement(
         @Serializable(with = AppVersionSerializer::class)
         @SerialName("version")
         val version: AppVersion
+    )
+
+    @Serializable
+    data class SwissProfileLifecycle(
+        @SerialName("swiss_profile_anchor")
+        val anchor: List<SwissProfile> = emptyList(),
+        @SerialName("swiss_profile_issuance")
+        val issuance: List<SwissProfile> = emptyList(),
+        @SerialName("swiss_profile_portability")
+        val portability: List<SwissProfile> = emptyList(),
+        @SerialName("swiss_profile_proximity")
+        val proximity: List<SwissProfile> = emptyList(),
+        @SerialName("swiss_profile_trust")
+        val trust: List<SwissProfile> = emptyList(),
+        @SerialName("swiss_profile_vc")
+        val vc: List<SwissProfile> = emptyList(),
+        @SerialName("swiss_profile_verification")
+        val verification: List<SwissProfile> = emptyList(),
     )
 }

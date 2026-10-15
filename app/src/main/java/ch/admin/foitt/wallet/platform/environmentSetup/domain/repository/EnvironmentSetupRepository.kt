@@ -30,5 +30,6 @@ interface EnvironmentSetupRepository {
     val devsSettingsEnabled: Boolean
     val isProximityEngagementEnabled: Boolean
     val isVersionEnforcementEnabled: Boolean
+    val versionEnforcementTrustedDids: List<String>
     val terminateOnInvalidIdTSEnabled: Boolean
 }

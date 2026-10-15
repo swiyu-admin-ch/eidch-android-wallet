@@ -5,6 +5,7 @@ import ch.admin.foitt.wallet.platform.biometrics.domain.model.ResetBiometricsErr
 import ch.admin.foitt.wallet.platform.biometrics.domain.model.toResetBiometricsError
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.ResetBiometrics
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.DeleteSecretKeyError
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.PassphraseRepository
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.DeleteSecretKey
 import com.github.michaelbull.result.Result
@@ -24,10 +25,10 @@ class ResetBiometricsImpl @Inject constructor(
     override suspend fun invoke(): Result<Unit, ResetBiometricsError> = withContext(ioDispatcher) {
         passphraseRepository.deletePassphrase()
         useBiometricLoginRepository.saveUseBiometricLogin(isEnabled = false)
-        return@withContext deleteSecretKey().mapError {
-            it.toResetBiometricsError()
-        }.onOk {
-            Timber.d("Deletion succeeded")
-        }
+        return@withContext deleteSecretKey()
+            .mapError(DeleteSecretKeyError::toResetBiometricsError)
+            .onOk {
+                Timber.d("Deletion succeeded")
+            }
     }
 }

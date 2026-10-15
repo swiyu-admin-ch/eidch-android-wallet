@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.database.data
 
 import androidx.room.withTransaction
+import ch.admin.foitt.errorhandling.domain.model.mapTo
 import ch.admin.foitt.wallet.platform.database.data.dao.ActivityActorDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.ActivityActorDisplayWithImageDao
 import ch.admin.foitt.wallet.platform.database.data.dao.ActivityClaimEntityDao
@@ -38,7 +39,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWith
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWithBundleItemsWithKeyBindingDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialWithDisplaysAndClustersDao
 import ch.admin.foitt.wallet.platform.database.domain.model.ChangeDatabasePassphraseError
-import ch.admin.foitt.wallet.platform.database.domain.model.CreateDatabaseError
+import ch.admin.foitt.wallet.platform.database.domain.model.CreateAppDatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseState
 import ch.admin.foitt.wallet.platform.database.domain.model.OpenDatabaseError
@@ -92,14 +93,14 @@ internal class DatabaseWrapper @Inject constructor(
 
     override suspend fun createDatabase(
         passphrase: ByteArray,
-    ): Result<Unit, CreateDatabaseError> = withContext(ioDispatcher) {
+    ): Result<Unit, CreateAppDatabaseError> = withContext(ioDispatcher) {
         databaseMutex.withLock(mutexOwner) {
             coroutineBinding {
                 val createdDatabase = databaseInitializer.create(passphrase).bind()
                 // The database is not actually written as long as we don't do anything with it.
                 createdDatabase.tryDecrypt().mapError { error ->
                     createdDatabase.close()
-                    DatabaseError.SetupFailed(error.throwable)
+                    error.mapTo(DatabaseError::SetupFailed)
                 }.bind()
 
                 database.update { createdDatabase }
@@ -121,7 +122,7 @@ internal class DatabaseWrapper @Inject constructor(
         databaseMutex.withLock(mutexOwner) {
             Timber.d("Try to open database")
             coroutineBinding {
-                if (database.value != null) Err(DatabaseError.AlreadyOpen).bind<OpenDatabaseError>()
+                if (database.value != null) Err(DatabaseError.createAlreadyOpenError()).bind<Unit>()
                 val createdDatabase = databaseInitializer.create(passphrase).bind()
 
                 createdDatabase.tryDecrypt()
@@ -141,11 +142,7 @@ internal class DatabaseWrapper @Inject constructor(
         databaseMutex.withLock(mutexOwner) {
             coroutineBinding {
                 val createdDatabase = databaseInitializer.create(passphrase).bind()
-                createdDatabase.tryDecrypt()
-                    .onErr {
-                        // do not close the current instance at this point
-                        Timber.d("wrong passphrase")
-                    }.bind()
+                createdDatabase.tryDecrypt().bind()
                 createdDatabase.close()
             }
         }
@@ -155,7 +152,7 @@ internal class DatabaseWrapper @Inject constructor(
         withContext(ioDispatcher) {
             databaseMutex.withLock(mutexOwner) {
                 database.value?.changePassword(newPassphrase)
-                    ?: Err(DatabaseError.ReKeyFailed(IllegalStateException("Database is not open")))
+                    ?: Err(DatabaseError.createReKeyFailed("Database is not open"))
             }
         }
 

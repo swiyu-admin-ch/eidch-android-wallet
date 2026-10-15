@@ -7,15 +7,16 @@ import ch.admin.foitt.openid4vc.util.assertErr
 import ch.admin.foitt.openid4vc.util.assertOk
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.crypto.Ed25519Signer
 import com.nimbusds.jose.jwk.Curve
+import com.nimbusds.jose.jwk.ECKey
 import com.nimbusds.jose.jwk.OctetKeyPair
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import io.mockk.MockKAnnotations
-import io.mockk.every
-import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
@@ -24,28 +25,11 @@ import org.junit.jupiter.api.Test
 
 class VerifyJwtSignatureImplTest {
 
-    @MockK
-    private lateinit var mockPublicKey: Jwk
-
-    @MockK
-    private lateinit var mockJwt: Jwt
-
-    @MockK
-    private lateinit var mockSignedJwt: SignedJWT
-
     private lateinit var useCase: VerifyJwtSignature
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-
-        every { mockPublicKey.kty } returns KEY_TYPE_EC
-        every { mockPublicKey.crv } returns CURVE
-        every { mockPublicKey.x } returns X_VALUE
-        every { mockPublicKey.y } returns Y_VALUE
-        every { mockJwt.signedJwt } returns mockSignedJwt
-        every { mockSignedJwt.verify(any()) } returns true
-
         useCase = VerifyJwtSignatureImpl()
     }
 
@@ -55,44 +39,49 @@ class VerifyJwtSignatureImplTest {
     }
 
     @Test
-    fun `Successfully verifying a public key returns Ok`() = runTest {
-        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertOk()
+    fun `Successfully verifying an EC public key returns Ok`() = runTest {
+        val ecKey = ECKeyGenerator(Curve.P_256).generate()
+        val jwt = createEcSignedJwt(ecKey)
+        val publicKey = ecKey.toPublicJwk()
+
+        useCase(publicKey = publicKey, jwt = jwt).assertOk()
     }
 
     @Test
-    fun `Verifying a signature that does not match returns an error`() = runTest {
-        every { mockSignedJwt.verify(any()) } returns false
+    fun `Verifying an EC signature that does not match returns an error`() = runTest {
+        val ecKey = ECKeyGenerator(Curve.P_256).generate()
+        val otherEcKey = ECKeyGenerator(Curve.P_256).generate()
+        val jwt = createEcSignedJwt(ecKey)
+        val publicKey = otherEcKey.toPublicJwk()
 
-        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
+        useCase(publicKey = publicKey, jwt = jwt).assertErr()
     }
 
     @Test
     fun `Error during curve creation returns an error`() = runTest {
-        every { mockPublicKey.crv } returns "something"
+        val ecKey = ECKeyGenerator(Curve.P_256).generate()
+        val jwt = createEcSignedJwt(ecKey)
+        val publicKey = ecKey.toPublicJwk().copy(crv = "something")
 
-        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
-    }
-
-    @Test
-    fun `Error during key creation returns an error`() = runTest {
-        every { mockPublicKey.x } returns "xValue"
-        every { mockPublicKey.y } returns "yValue"
-
-        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
+        useCase(publicKey = publicKey, jwt = jwt).assertErr()
     }
 
     @Test
     fun `EC public key without y coordinate returns an error`() = runTest {
-        every { mockPublicKey.y } returns null
+        val ecKey = ECKeyGenerator(Curve.P_256).generate()
+        val jwt = createEcSignedJwt(ecKey)
+        val publicKey = ecKey.toPublicJwk().copy(y = null)
 
-        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
+        useCase(publicKey = publicKey, jwt = jwt).assertErr()
     }
 
     @Test
     fun `Unsupported key type returns an error`() = runTest {
-        every { mockPublicKey.kty } returns "RSA"
+        val ecKey = ECKeyGenerator(Curve.P_256).generate()
+        val jwt = createEcSignedJwt(ecKey)
+        val publicKey = ecKey.toPublicJwk().copy(kty = "RSA")
 
-        useCase(publicKey = mockPublicKey, jwt = mockJwt).assertErr()
+        useCase(publicKey = publicKey, jwt = jwt).assertErr()
     }
 
     @Test
@@ -126,9 +115,20 @@ class VerifyJwtSignatureImplTest {
     @Test
     fun `Verifying an Ed25519 signed jwt with an EC public key returns an error`() = runTest {
         val keyPair = OctetKeyPairGenerator(Curve.Ed25519).generate()
+        val ecKey = ECKeyGenerator(Curve.P_256).generate()
         val jwt = createEd25519SignedJwt(keyPair)
+        val publicKey = ecKey.toPublicJwk()
 
-        useCase(publicKey = mockPublicKey, jwt = jwt).assertErr()
+        useCase(publicKey = publicKey, jwt = jwt).assertErr()
+    }
+
+    private fun createEcSignedJwt(ecKey: ECKey): Jwt {
+        val signedJwt = SignedJWT(
+            JWSHeader.Builder(JWSAlgorithm.ES256).build(),
+            JWTClaimsSet.Builder().subject("subject").build(),
+        )
+        signedJwt.sign(ECDSASigner(ecKey))
+        return Jwt(signedJwt.serialize())
     }
 
     private fun createEd25519SignedJwt(keyPair: OctetKeyPair, algorithm: JWSAlgorithm = JWSAlgorithm.EdDSA): Jwt {
@@ -140,17 +140,17 @@ class VerifyJwtSignatureImplTest {
         return Jwt(signedJwt.serialize())
     }
 
+    private fun ECKey.toPublicJwk() = Jwk(
+        x = x.toString(),
+        y = y.toString(),
+        crv = curve.name,
+        kty = keyType.value,
+    )
+
     private fun OctetKeyPair.toOkpJwk() = Jwk(
         x = x.toString(),
         y = null,
         crv = curve.name,
         kty = keyType.value,
     )
-
-    private companion object Companion {
-        const val KEY_TYPE_EC = "EC"
-        const val CURVE = "P-256"
-        const val X_VALUE = "_AJp5rIScnVgfu7QPOPYb3dAX9qdUjZ4BDWlIuaQhmA"
-        const val Y_VALUE = "RMk5JZx7riq5r54j96Mtje4NSR1tjP4XhedswL2MQfs"
-    }
 }

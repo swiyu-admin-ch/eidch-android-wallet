@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation
 
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.CiphertextWrapper
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.EncryptAndSavePassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.PassphraseRepository
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.EncryptAndSavePassphrase
 import com.github.michaelbull.result.Result
@@ -24,6 +25,6 @@ internal class EncryptAndSavePassphraseImpl @Inject constructor(
         )
         passphraseRepository.savePassphrase(cipherTextWrapper)
     }.mapError { throwable ->
-        EncryptAndSavePassphraseError.Unexpected(throwable)
+        PassphraseError.createGeneralError(throwable)
     }
 }

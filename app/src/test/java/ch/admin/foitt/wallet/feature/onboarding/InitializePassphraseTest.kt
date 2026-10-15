@@ -1,22 +1,22 @@
 package ch.admin.foitt.wallet.feature.onboarding
 
 import android.annotation.SuppressLint
-import ch.admin.foitt.wallet.platform.crypto.domain.model.HashDataError
 import ch.admin.foitt.wallet.platform.crypto.domain.model.HashedData
+import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.usecase.CreateAppDatabase
-import ch.admin.foitt.wallet.platform.passphrase.domain.model.EncryptAndSavePassphraseError
-import ch.admin.foitt.wallet.platform.passphrase.domain.model.InitializePassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperedData
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.PepperIvRepository
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.SaltRepository
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.EncryptAndSavePassphrase
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.HashPassphrase
+import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.InitializePassphrase
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.PepperPassphrase
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation.InitializePassphraseImpl
+import ch.admin.foitt.wallet.util.assertErrorType
+import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
-import com.github.michaelbull.result.get
-import com.github.michaelbull.result.getError
 import io.mockk.MockKAnnotations
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -28,8 +28,6 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import javax.crypto.Cipher
@@ -62,13 +60,13 @@ internal class InitializePassphraseTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
-    private lateinit var passPhraseInitUseCase: InitializePassphraseImpl
+    private lateinit var useCase: InitializePassphrase
 
     @BeforeEach
     fun setup() {
         MockKAnnotations.init(this)
 
-        passPhraseInitUseCase = InitializePassphraseImpl(
+        useCase = InitializePassphraseImpl(
             ioDispatcher = testDispatcher,
             encryptAndSavePassphrase = mockEncryptAndSavePassphrase,
             createAppDatabase = mockCreateAppDatabase,
@@ -78,10 +76,10 @@ internal class InitializePassphraseTest {
             pepperIvRepository = mockPepperIvRepository,
         )
 
-        coEvery { mockEncryptAndSavePassphrase.invoke(any(), any()) } returns Ok(Unit)
-        coEvery { mockCreateAppDatabase.invoke(any()) } returns Ok(Unit)
-        coEvery { mockHashPassphrase.invoke(any(), any()) } returns Ok(hashedData)
-        coEvery { mockPepperPassphrase.invoke(any(), any()) } returns Ok(pepperedData)
+        coEvery { mockEncryptAndSavePassphrase(any(), any()) } returns Ok(Unit)
+        coEvery { mockCreateAppDatabase(any()) } returns Ok(Unit)
+        coEvery { mockHashPassphrase(any(), any()) } returns Ok(hashedData)
+        coEvery { mockPepperPassphrase(any(), any()) } returns Ok(pepperedData)
         coEvery { mockSaltRepository.save(any()) } just Runs
         coEvery { mockPepperIvRepository.save(any()) } just Runs
     }
@@ -94,16 +92,15 @@ internal class InitializePassphraseTest {
     @SuppressLint("CheckResult")
     @Test
     fun `A successful init without cipher should follow specific steps`() = runTest(testDispatcher) {
-        val result = passPhraseInitUseCase(pin = "0", null)
-        assertNotNull(result.get())
+        useCase(passphrase = "0", null).assertOk()
 
         coVerify(exactly = 0) {
-            mockEncryptAndSavePassphrase.invoke(any(), any())
+            mockEncryptAndSavePassphrase(any(), any())
         }
 
         coVerifyOrder {
-            mockHashPassphrase.invoke(any(), any())
-            mockPepperPassphrase.invoke(any(), any())
+            mockHashPassphrase(any(), any())
+            mockPepperPassphrase(any(), any())
             mockCreateAppDatabase(any())
             mockSaltRepository.save(any())
             mockPepperIvRepository.save(any())
@@ -113,12 +110,11 @@ internal class InitializePassphraseTest {
     @SuppressLint("CheckResult")
     @Test
     fun `A successful init with cipher should follow specific steps`() = runTest(testDispatcher) {
-        val result = passPhraseInitUseCase(pin = "0", mockCipher)
-        assertNotNull(result.get())
+        useCase(passphrase = "0", mockCipher).assertOk()
 
         coVerifyOrder {
-            mockHashPassphrase.invoke(any(), any())
-            mockPepperPassphrase.invoke(any(), any())
+            mockHashPassphrase(any(), any())
+            mockPepperPassphrase(any(), any())
             mockCreateAppDatabase(any())
             mockSaltRepository.save(any())
             mockPepperIvRepository.save(any())
@@ -129,7 +125,7 @@ internal class InitializePassphraseTest {
     @SuppressLint("CheckResult")
     @Test
     fun `A successful init should save the results in repositories`() = runTest(testDispatcher) {
-        passPhraseInitUseCase(pin = "0", null)
+        useCase(passphrase = "0", null)
 
         coVerifyOrder {
             mockSaltRepository.save(hashedData.salt)
@@ -140,30 +136,58 @@ internal class InitializePassphraseTest {
     @SuppressLint("CheckResult")
     @Test
     fun `A failed hash should fail the passphrase init`() = runTest(testDispatcher) {
-        val error = HashDataError.Unexpected(Exception())
-        coEvery { mockHashPassphrase.invoke(any(), any()) } returns Err(error)
+        val error = PassphraseError.createGeneralError(Exception())
+        coEvery { mockHashPassphrase(any(), any()) } returns Err(error)
 
-        val result = passPhraseInitUseCase(pin = "0", null)
-        assertTrue(result.getError() is InitializePassphraseError.Unexpected)
+        useCase(passphrase = "0", null).assertErrorType(PassphraseError.General::class)
 
         coVerify(exactly = 0) {
-            mockPepperPassphrase.invoke(any(), any())
-            mockCreateAppDatabase.invoke(any())
+            mockPepperPassphrase(any(), any())
+            mockCreateAppDatabase(any())
             mockSaltRepository.save(any())
             mockPepperIvRepository.save(any())
-            mockEncryptAndSavePassphrase.invoke(any(), any())
+            mockEncryptAndSavePassphrase(any(), any())
+        }
+    }
+
+    @SuppressLint("CheckResult")
+    @Test
+    fun `Failed peppering should fail the passphrase init`() = runTest(testDispatcher) {
+        val error = PassphraseError.createGeneralError(Exception())
+        coEvery { mockPepperPassphrase(any(), any()) } returns Err(error)
+
+        useCase(passphrase = "0", null).assertErrorType(PassphraseError.General::class)
+
+        coVerify(exactly = 0) {
+            mockCreateAppDatabase(any())
+            mockSaltRepository.save(any())
+            mockPepperIvRepository.save(any())
+            mockEncryptAndSavePassphrase(any(), any())
+        }
+    }
+
+    @Test
+    fun `Failed db creation should fail the passphrase init`() = runTest(testDispatcher) {
+        val error = DatabaseError.createSetupFailedError(Exception())
+        coEvery { mockCreateAppDatabase(any()) } returns Err(error)
+
+        useCase(passphrase = "0", null).assertErrorType(PassphraseError.DatabaseSetupFailed::class)
+
+        coVerify(exactly = 0) {
+            mockSaltRepository.save(any())
+            mockPepperIvRepository.save(any())
+            mockEncryptAndSavePassphrase(any(), any())
         }
     }
 
     @Test
     fun `A failed passphrase encryption should return an error`() = runTest(testDispatcher) {
-        val encryptError = EncryptAndSavePassphraseError.Unexpected(Exception("EncryptionException"))
+        val encryptError = PassphraseError.createGeneralError(Exception("EncryptionException"))
 
         coEvery { mockEncryptAndSavePassphrase(any(), any()) } returns Err(encryptError)
 
-        val result = passPhraseInitUseCase(pin = "pin", mockCipher)
+        useCase(passphrase = "pin", mockCipher).assertErrorType(PassphraseError.General::class)
 
-        assertTrue(result.getError() is InitializePassphraseError.Unexpected)
         coVerify {
             mockEncryptAndSavePassphrase(any(), any())
         }

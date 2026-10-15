@@ -16,25 +16,20 @@ import kotlinx.serialization.Serializable
 typealias EntryProviderInstaller = EntryProviderScope<NavKey>.() -> Unit
 
 /**
- * Destinations implementing [NoAutoLogout] do not trigger a session timeout/a lock screen
- */
-sealed interface NoAutoLogout
-
-/**
  * Navigation destinations. Must be @Serializable.
  * Use `data objects` for destinations without arguments and `data class` for destinations with arguments
  *
  * Destinations can implement more interfaces:
- * - [NoAutoLogout] to disable auto-logout on this destination
  * - sealed interfaces in [ScopedComponentGroup] to group destinations for a composition scope, e.g. [ScopedComponentGroup.CredentialIssuer]
- * - sealed interfaces in [DestinationGroup] to create a destinations scope used [ch.admin.foitt.wallet.platform.navigation.NavigationManager.navigateOutOf]
  */
-sealed interface Destination : NavKey {
+sealed interface Destination : NavKey, AutoLogout, DestinationGroups {
 
     // region app
 
     @Serializable
-    data object StartScreen : Destination, NoAutoLogout
+    data object StartScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+    }
 
     // endregion app
     // region feature/changeLogin
@@ -79,10 +74,10 @@ sealed interface Destination : NavKey {
     data class AuthWithPassphraseScreen(val enableBiometrics: Boolean) : Destination
 
     @Serializable
-    data class EnableBiometricsScreen(val pin: String) : Destination
+    data class EnableBiometricsScreen(val passphrase: String) : Destination
 
     @Serializable
-    data object EnableBiometricsErrorScreen : Destination
+    data class EnableBiometricsErrorScreen(val errorCode: String) : Destination
 
     @Serializable
     data object ImpressumScreen : Destination
@@ -100,7 +95,7 @@ sealed interface Destination : NavKey {
     data object LicencesScreen : Destination
 
     @Serializable
-    data object EnableBiometricsLockoutScreen : Destination
+    data class EnableBiometricsLockoutScreen(val errorCode: String) : Destination
 
     @Serializable
     data object SecuritySettingsScreen : Destination
@@ -115,40 +110,74 @@ sealed interface Destination : NavKey {
     // region feature/onboarding
 
     @Serializable
-    data object OnboardingIntroScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingIntroScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data object OnboardingLocalDataScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingLocalDataScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data object OnboardingActivityScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingActivityScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data object OnboardingPresentScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingPresentScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data object OnboardingPrivacyPolicyScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingPrivacyPolicyScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data object OnboardingPassphraseExplanationScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingPassphraseExplanationScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data object OnboardingSetupPassphraseScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingSetupPassphraseScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data class OnboardingConfirmPassphraseScreen(val passphrase: String) : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data class OnboardingConfirmPassphraseScreen(val passphrase: String) : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data object OnboardingConfirmPassphraseFailureScreen : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data object OnboardingConfirmPassphraseFailureScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
-    data class OnboardingRegisterBiometricsScreen(val passphrase: String) : Destination, DestinationGroup.Onboarding, NoAutoLogout
+    data class OnboardingRegisterBiometricsScreen(val passphrase: String) : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     @Serializable
     data class OnboardingFatalErrorScreen(
         val primaryTextRes: Int,
         val secondaryTextRes: Int,
-    ) : Destination, DestinationGroup.Onboarding, NoAutoLogout
+        val errorCode: String,
+    ) : Destination {
+        override fun canTriggerAutoLogout() = false
+        override fun destinationGroups() = setOf(DestinationGroup.ONBOARDING)
+    }
 
     // OnboardingSuccessScreen is outside of the NavigationScope.Onboarding.
     @Serializable
@@ -158,21 +187,31 @@ sealed interface Destination : NavKey {
     // region feature/login
 
     @Serializable
-    data object BiometricLoginScreen : Destination, NoAutoLogout, ScopedComponentGroup.CredentialIssuer, ScopedComponentGroup.Verifier
+    data object BiometricLoginScreen : Destination, ScopedComponentGroup.CredentialIssuer, ScopedComponentGroup.Verifier {
+        override fun canTriggerAutoLogout() = false
+    }
 
     @Serializable
-    data object LockScreen : Destination, NoAutoLogout
+    data object LockScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+    }
 
     @Serializable
-    data object LockoutScreen : Destination, NoAutoLogout
+    data object LockoutScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+    }
 
     @Serializable
     data class PassphraseLoginScreen(
         val biometricsLocked: Boolean
-    ) : Destination, NoAutoLogout, ScopedComponentGroup.CredentialIssuer, ScopedComponentGroup.Verifier
+    ) : Destination, ScopedComponentGroup.CredentialIssuer, ScopedComponentGroup.Verifier {
+        override fun canTriggerAutoLogout() = false
+    }
 
     @Serializable
-    data object UnsecuredDeviceScreen : Destination, NoAutoLogout
+    data object UnsecuredDeviceScreen : Destination {
+        override fun canTriggerAutoLogout() = false
+    }
 
     // endregion feature/login
     // region feature/home
@@ -187,82 +226,109 @@ sealed interface Destination : NavKey {
     // region feature/eIdApplicationProcess
 
     @Serializable
-    data object EIdIntroScreen : Destination, DestinationGroup.EIdApplicationProcess
+    data object EIdIntroScreen : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data object EIdAttestationScreen :
         Destination,
-        ScopedComponentGroup.AvBeamSdkSession,
-        DestinationGroup.EIdApplicationProcess
+        ScopedComponentGroup.AvBeamSdkSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data object EIdDocumentSelectionScreen :
         Destination,
         ScopedComponentGroup.EidApplicationProcess,
-        ScopedComponentGroup.AvBeamSdkSession,
-        DestinationGroup.EIdApplicationProcess
+        ScopedComponentGroup.AvBeamSdkSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class EIdGuardianConsentResultScreen(
         val rawDeadline: String?,
         val screenState: GuardianConsentResultState,
-    ) : Destination, DestinationGroup.EIdApplicationProcess
+    ) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
-    data class EIdGuardianConsentScreen(val caseId: String) : Destination, DestinationGroup.EIdApplicationProcess
+    data class EIdGuardianConsentScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
-    data class EIdGuardianSelectionScreen(val caseId: String) : Destination, DestinationGroup.EIdApplicationProcess
+    data class EIdGuardianSelectionScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data object EIdGuardianshipScreen :
         Destination,
         ScopedComponentGroup.EidApplicationProcess,
-        ScopedComponentGroup.AvBeamSdkSession,
-        DestinationGroup.EIdApplicationProcess
+        ScopedComponentGroup.AvBeamSdkSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
-    data class EIdGuardianVerificationScreen(val caseId: String) : Destination, DestinationGroup.EIdApplicationProcess
+    data class EIdGuardianVerificationScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data object EIdPrivacyPolicyScreen :
         Destination,
-        ScopedComponentGroup.AvBeamSdkSession,
-        DestinationGroup.EIdApplicationProcess
+        ScopedComponentGroup.AvBeamSdkSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class EIdProcessDataScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.EidOnlineSession,
-        ScopedComponentGroup.AvBeamSdkSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.AvBeamSdkSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
-    data class EIdQueueScreen(val rawDeadline: String?) : Destination, DestinationGroup.EIdApplicationProcess
+    data class EIdQueueScreen(val rawDeadline: String?) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
-    data object EIdReadyForAvScreen : Destination, DestinationGroup.EIdRequestVerification
+    data object EIdReadyForAvScreen : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
-    data class EIdStartAvSessionScreen(val caseId: String) : Destination, DestinationGroup.EIdRequestVerification
+    data class EIdStartAvSessionScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
     data class EIdStartSelfieVideoScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.EidOnlineSession,
-        ScopedComponentGroup.AvBeamSdkSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.AvBeamSdkSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
     data object EIdProcessDataConfirmationScreen :
-        Destination,
-        DestinationGroup.EIdRequestVerification
+        Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
-    data object EIdNotSupportedDeviceScreen : Destination, DestinationGroup.EIdApplicationProcess
+    data object EIdNotSupportedDeviceScreen : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
-    data object EIdExternalDeviceDetectedScreen : Destination, DestinationGroup.EIdApplicationProcess
+    data object EIdExternalDeviceDetectedScreen : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
     // endregion feature/eIdApplicationProcess
     // region feature/eIDRequestVerification
 
@@ -270,8 +336,9 @@ sealed interface Destination : NavKey {
     data class EIdDocumentRecordingScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.AvBeamSdkSession,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
     data class EIdDocumentScannerScreen(val caseId: String) :
@@ -279,9 +346,9 @@ sealed interface Destination : NavKey {
         ScopedComponentGroup.EidApplicationProcess,
         ScopedComponentGroup.AvBeamSdkSession,
         ScopedComponentGroup.EidDocumentScan,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdApplicationProcess,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION, DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class EIdDocumentScanSummaryScreen(
@@ -291,39 +358,42 @@ sealed interface Destination : NavKey {
         ScopedComponentGroup.EidApplicationProcess,
         ScopedComponentGroup.AvBeamSdkSession,
         ScopedComponentGroup.EidDocumentScan,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdApplicationProcess,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION, DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class EIdDocumentScannerInfoScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.AvBeamSdkSession,
         ScopedComponentGroup.EidOnlineSession,
-        ScopedComponentGroup.EidApplicationProcess,
-        DestinationGroup.EIdApplicationProcess,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidApplicationProcess {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION, DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class EIdDocumentRecordingInfoScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.AvBeamSdkSession,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
     data class EIdFaceScannerScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.AvBeamSdkSession,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
     data class EIdNfcScannerScreen(val caseId: String) :
         Destination,
         ScopedComponentGroup.AvBeamSdkSession,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Suppress("ArrayInDataClass")
     @Serializable
@@ -336,22 +406,25 @@ sealed interface Destination : NavKey {
         val expiryDate: String,
     ) : Destination,
         ScopedComponentGroup.AvBeamSdkSession,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
     data class EIdStartAutoVerificationScreen(val caseId: String) :
         Destination,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
     data object MrzChooserScreen :
         Destination,
         ScopedComponentGroup.EidApplicationProcess,
         ScopedComponentGroup.AvBeamSdkSession,
-        ScopedComponentGroup.EidDocumentScan,
-        DestinationGroup.EIdApplicationProcess
+        ScopedComponentGroup.EidDocumentScan {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class MrzSubmissionScreen(val mrzLines: List<String>) :
@@ -359,27 +432,37 @@ sealed interface Destination : NavKey {
         ScopedComponentGroup.EidApplicationProcess,
         ScopedComponentGroup.AvBeamSdkSession,
         ScopedComponentGroup.EidDocumentScan,
-        ScopedComponentGroup.EidOnlineSession,
-        DestinationGroup.EIdApplicationProcess,
-        DestinationGroup.EIdRequestVerification
+        ScopedComponentGroup.EidOnlineSession {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION, DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
-    data class EIdPushNotificationScreen(val caseId: String) : Destination, DestinationGroup.EIdApplicationProcess
+    data class EIdPushNotificationScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     // endregion feature/eIDRequestVerification
     // region feature/walletPairing
 
     @Serializable
-    data class EIdPairingOverviewScreen(val caseId: String) : Destination, DestinationGroup.EIdRequestVerification
+    data class EIdPairingOverviewScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
-    data class EIdWalletPairingQrCodeScreen(val caseId: String) : Destination, DestinationGroup.EIdRequestVerification
+    data class EIdWalletPairingQrCodeScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
-    data class EIdWalletPairingScreen(val caseId: String) : Destination, DestinationGroup.EIdRequestVerification
+    data class EIdWalletPairingScreen(val caseId: String) : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     @Serializable
-    data object EIdWalletPairingTimeoutScreen : Destination, DestinationGroup.EIdRequestVerification
+    data object EIdWalletPairingTimeoutScreen : Destination {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_REQUEST_VERIFICATION)
+    }
 
     // endregion feature/walletPairing
     // region feature/qrscan
@@ -398,12 +481,16 @@ sealed interface Destination : NavKey {
     @Serializable
     data class CredentialOfferScreen(
         val credentialId: Long,
-    ) : Destination, ScopedComponentGroup.CredentialIssuer, DestinationGroup.CredentialOffer
+    ) : Destination, ScopedComponentGroup.CredentialIssuer {
+        override fun destinationGroups() = setOf(DestinationGroup.CREDENTIAL_OFFER)
+    }
 
     @Serializable
     data class DeclineCredentialOfferScreen(
         val credentialId: Long,
-    ) : Destination, ScopedComponentGroup.CredentialIssuer, DestinationGroup.CredentialOffer
+    ) : Destination, ScopedComponentGroup.CredentialIssuer {
+        override fun destinationGroups() = setOf(DestinationGroup.CREDENTIAL_OFFER)
+    }
 
     // endregion feature/credentialOffer
     // region feature/presentationRequest
@@ -412,45 +499,62 @@ sealed interface Destination : NavKey {
     data class PresentationCredentialListScreen(
         val compatibleCredentials: Set<CompatibleCredential>,
         val presentationRequestWithRaw: PresentationRequestWithRaw,
-    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+    ) : Destination, ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class PresentationDeclinedScreen(
         val redirectUri: String?,
         val credentialId: Long,
-    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+        val activityId: Long?,
+
+    ) : Destination, ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class PresentationFailureScreen(
         val compatibleCredential: CompatibleCredential,
         val presentationRequestWithRaw: PresentationRequestWithRaw,
-    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+    ) : Destination, ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class PresentationRequestScreen(
         val compatibleCredential: CompatibleCredential,
         val presentationRequestWithRaw: PresentationRequestWithRaw,
-    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+    ) : Destination, ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class PresentationRequestReviewScreen(
         val compatibleCredentials: Set<CompatibleCredential>,
         val presentationRequestWithRaw: PresentationRequestWithRaw,
-    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+    ) : Destination, ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data class PresentationSuccessScreen(
         val redirectUri: String?,
-    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+    ) : Destination, ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
-    data object PresentationRequestBlockedScreen : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+    data object PresentationRequestBlockedScreen : Destination, ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     @Serializable
     data object PresentationVerificationErrorScreen :
         Destination,
-        ScopedComponentGroup.Verifier,
-        DestinationGroup.EIdApplicationProcess
+        ScopedComponentGroup.Verifier {
+        override fun destinationGroups() = setOf(DestinationGroup.EID_APPLICATION_PROCESS)
+    }
 
     // endregion feature/presentationRequest
     // region platform/activityList
@@ -470,21 +574,20 @@ sealed interface Destination : NavKey {
     data object NonComplianceEmailInputScreen : Destination, ScopedComponentGroup.NonComplianceFormInput
 
     @Serializable
-    data class NonComplianceFormScreen(
-        val activityId: Long,
-        val titleId: Int?,
-        val reportReason: NonComplianceReportReason
-    ) : Destination, ScopedComponentGroup.NonComplianceFormInput
+    data object NonComplianceContextInputScreen : Destination, ScopedComponentGroup.NonComplianceFormInput
 
     @Serializable
-    data class NonComplianceInfoScreen(
-        val activityId: Long,
-        val reportReason: NonComplianceReportReason
-    ) : Destination
+    data class NonComplianceFormScreen(
+        val reportingData: NonComplianceReportingData,
+        val titleId: Int?,
+        val reportReason: NonComplianceReportReason,
+        val goBackToRoot: Boolean,
+    ) : Destination, ScopedComponentGroup.NonComplianceFormInput
 
     @Serializable
     data class NonComplianceListScreen(
         val reportingData: NonComplianceReportingData,
+        val goBackToRoot: Boolean = false,
     ) : Destination
 
     // endregion platform/nonCompliance
@@ -511,7 +614,9 @@ sealed interface Destination : NavKey {
         val text: String?,
         val playStoreUrl: String,
         val enforcedType: EnforcementType
-    ) : Destination, NoAutoLogout
+    ) : Destination {
+        override fun canTriggerAutoLogout() = false
+    }
 
     // endregion platform/versionEnforcement
     // region platform/otp
@@ -529,11 +634,4 @@ sealed interface Destination : NavKey {
     data object OtpCodeInputScreen : Destination, ScopedComponentGroup.Otp
 
     // endregion platform/otp
-}
-
-fun Destination?.canTriggerAutoLogout(): Boolean {
-    return when (this) {
-        is NoAutoLogout -> false
-        else -> true
-    }
 }

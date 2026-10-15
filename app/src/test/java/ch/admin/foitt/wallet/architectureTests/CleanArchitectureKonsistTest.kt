@@ -182,7 +182,6 @@ class CleanArchitectureKonsistTest {
     private val useCasesWithoutCompleteCoverage = Konsist.scopeFromProduction()
         .classes()
         .withPackage(
-            "..feature/changeLogin/domain/usecase..",
             "..feature/credentialDetail/domain/usecase..",
             "..feature/credentialOffer/domain/usecase..",
             "..feature/eIdRequestVerification/domain/usecase..",

@@ -3,14 +3,14 @@ package ch.admin.foitt.wallet.platform.nonCompliance.di
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
+import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceContextInputScreen
+import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceContextInputViewModel
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceDescriptionInputScreen
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceDescriptionInputViewModel
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceEmailInputScreen
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceEmailInputViewModel
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceFormScreen
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceFormViewModel
-import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceInfoScreen
-import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceInfoViewModel
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceListScreen
 import ch.admin.foitt.wallet.platform.nonCompliance.presentation.NonComplianceListViewModel
 import ch.admin.foitt.wallet.platform.scaffold.presentation.SyncedScaffoldScreen
@@ -41,34 +41,27 @@ object EntryProviderInstallerModule {
             }
         }
 
+        entry<Destination.NonComplianceContextInputScreen> {
+            val viewModel = hiltViewModel<NonComplianceContextInputViewModel>()
+            SyncedScaffoldScreen(viewModel = viewModel) {
+                NonComplianceContextInputScreen(viewModel = viewModel)
+            }
+        }
+
         entry<Destination.NonComplianceFormScreen> { navKey ->
             val viewModel =
                 hiltViewModel<NonComplianceFormViewModel, NonComplianceFormViewModel.Factory>(
                     creationCallback = { factory ->
                         factory.create(
-                            activityId = navKey.activityId,
+                            reportingData = navKey.reportingData,
                             titleId = navKey.titleId,
-                            reportReason = navKey.reportReason
+                            reportReason = navKey.reportReason,
+                            goBackToRoot = navKey.goBackToRoot,
                         )
                     }
                 )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 NonComplianceFormScreen(viewModel = viewModel)
-            }
-        }
-
-        entry<Destination.NonComplianceInfoScreen> { navKey ->
-            val viewModel =
-                hiltViewModel<NonComplianceInfoViewModel, NonComplianceInfoViewModel.Factory>(
-                    creationCallback = { factory ->
-                        factory.create(
-                            activityId = navKey.activityId,
-                            reportReason = navKey.reportReason
-                        )
-                    }
-                )
-            SyncedScaffoldScreen(viewModel = viewModel) {
-                NonComplianceInfoScreen(viewModel = viewModel)
             }
         }
 
@@ -78,6 +71,7 @@ object EntryProviderInstallerModule {
                     creationCallback = { factory ->
                         factory.create(
                             reportingData = navKey.reportingData,
+                            goBackToRoot = navKey.goBackToRoot,
                         )
                     }
                 )

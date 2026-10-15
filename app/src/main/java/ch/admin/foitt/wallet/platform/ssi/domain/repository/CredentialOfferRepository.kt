@@ -16,7 +16,7 @@ import java.net.URL
 interface CredentialOfferRepository {
     suspend fun saveCredentialOffer(
         credentialId: Long = 0L,
-        keyBindings: List<KeyBinding?>,
+        keyBindings: List<KeyBinding>?,
         payloads: List<String>,
         format: CredentialFormat,
         selectedConfigurationId: String,

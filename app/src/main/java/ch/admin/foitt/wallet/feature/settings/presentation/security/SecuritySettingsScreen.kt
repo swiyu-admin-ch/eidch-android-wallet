@@ -44,7 +44,7 @@ fun SecuritySettingsScreen(
         shareAnalysisEnabled = viewModel.shareAnalysisEnabled.collectAsStateWithLifecycle().value,
         showPassphraseDeletionMessage = viewModel.showPassphraseDeletionMessage.collectAsStateWithLifecycle(false).value,
         isToastVisible = viewModel.isToastVisible.collectAsStateWithLifecycle(false).value,
-        onChangePin = viewModel::onChangePassphrase,
+        onChangePassphrase = viewModel::onChangePassphrase,
         onChangeBiometrics = viewModel::onChangeBiometrics,
         onDataProtection = viewModel::onDataProtection,
         onShareAnalysisChange = viewModel::onShareAnalysisChange,
@@ -60,7 +60,7 @@ private fun SecuritySettingsScreenContent(
     shareAnalysisEnabled: Boolean,
     showPassphraseDeletionMessage: Boolean,
     isToastVisible: Boolean,
-    onChangePin: () -> Unit,
+    onChangePassphrase: () -> Unit,
     onChangeBiometrics: () -> Unit,
     onDataProtection: () -> Unit,
     onShareAnalysisChange: (Boolean) -> Unit,
@@ -86,7 +86,7 @@ private fun SecuritySettingsScreenContent(
             biometricsAvailableThroughDeviceSettings = biometricsHardwareIsAvailable,
             biometricsEnabled = biometricsEnabled,
             showPassphraseDeletionMessage = showPassphraseDeletionMessage,
-            onChangePin = onChangePin,
+            onChangePassphrase = onChangePassphrase,
             onChangeBiometrics = onChangeBiometrics,
         )
         Spacer(modifier = Modifier.height(Sizes.s06))
@@ -111,14 +111,14 @@ private fun SecuritySection(
     biometricsAvailableThroughDeviceSettings: Boolean,
     biometricsEnabled: Boolean,
     showPassphraseDeletionMessage: Boolean,
-    onChangePin: () -> Unit,
+    onChangePassphrase: () -> Unit,
     onChangeBiometrics: () -> Unit
 ) = SettingsSection(
     title = stringResource(R.string.tk_settings_securityPrivacy_security_sectionTitle)
 ) {
     WalletListItems.ClickableTextSettingsItem(
         title = stringResource(R.string.tk_settings_securityPrivacy_security_changePassword),
-        onClick = onChangePin,
+        onClick = onChangePassphrase,
     )
     WalletListItems.Divider()
     WalletListItems.SwitchSettingsItem(
@@ -196,7 +196,7 @@ private fun SecuritySettingsScreenPreview(
             shareAnalysisEnabled = true,
             isToastVisible = false,
             onChangeBiometrics = {},
-            onChangePin = {},
+            onChangePassphrase = {},
             onDataProtection = {},
             onShareAnalysisChange = {},
             onActivityList = {},

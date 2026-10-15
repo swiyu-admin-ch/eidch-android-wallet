@@ -100,6 +100,14 @@ class MainEnvironmentSetupRepositoryImpl @Inject constructor() : EnvironmentSetu
     )
     // ---------------------------- end trust protocol V2 ----------------------------
 
+    @Suppress("MaximumLineLength")
+    private val prodMobileVersioningServiceIssuerV2 =
+        "did:webvh:QmdQUxfqpECnuHK5b3wNmHiF6zUH41nRx9RVCzEpcKZwCE:identifier-reg.trust-infra.swiyu.admin.ch:api:v1:did:c6e1fa56-248d-45c8-bfc7-42f681539f10"
+
+    @Suppress("MaximumLineLength")
+    private val prodMobileVersioningServiceIssuerV1 =
+        "did:tdw:Qmet5dXTKHmvArLVJTxrg1e9rfgQmMFxgBtf2zp4B7YTGq:identifier-reg.trust-infra.swiyu.admin.ch:api:v1:did:da06c198-8544-44eb-a558-1ac87fd89f21"
+
     override val trustEnvironmentDidRegex: String = "^did:(?:tdw|webvh):[^:]+:identifier-reg\\.trust-infra\\.swiyu\\.admin\\.ch:.*"
 
     @Suppress("MaximumLineLength")
@@ -140,6 +148,11 @@ class MainEnvironmentSetupRepositoryImpl @Inject constructor() : EnvironmentSetu
     override val isProximityEngagementEnabled: Boolean = false
 
     override val isVersionEnforcementEnabled: Boolean = true
+
+    override val versionEnforcementTrustedDids: List<String> = listOf(
+        prodMobileVersioningServiceIssuerV1,
+        prodMobileVersioningServiceIssuerV2
+    )
 
     override val terminateOnInvalidIdTSEnabled: Boolean = false
 }

@@ -57,7 +57,7 @@ internal class EIdDocumentScannerInfoViewModel @AssistedInject constructor(
     private fun onBack() = navManager.popBackStack()
 
     private fun onClose() = when {
-        caseId.isEmpty() -> navManager.navigateOutOf(DestinationGroup.EIdApplicationProcess::class)
-        else -> navManager.navigateOutOf(DestinationGroup.EIdRequestVerification::class)
+        caseId.isEmpty() -> navManager.navigateOutOf(DestinationGroup.EID_APPLICATION_PROCESS)
+        else -> navManager.navigateOutOf(DestinationGroup.EID_REQUEST_VERIFICATION)
     }
 }

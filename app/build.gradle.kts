@@ -173,6 +173,7 @@ aboutLibraries {
 dependencies {
     implementation(project(":theme"))
     implementation(project(":openid4vc"))
+    implementation(project(":errorhandling"))
 
     // AvWrapper
     implementation(libs.av.wrapper)
@@ -228,6 +229,7 @@ dependencies {
     debugImplementation(libs.slf4j.android)
     releaseImplementation(libs.slf4j.nop)
     implementation(libs.bundles.ktor)
+    testImplementation(libs.ktor.client.mock)
 
     // JSON / JWT
     implementation(libs.nimbus.jose.jwt)
@@ -271,7 +273,6 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.konsist)
     testImplementation(libs.mockk)
-    testImplementation(libs.kotlin.reflect)
 
     val junitBom = platform(libs.junit.jupiter.bom)
     testImplementation(junitBom)

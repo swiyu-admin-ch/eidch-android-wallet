@@ -14,7 +14,7 @@ adaptive = "1.2.0"
 android-gradle-plugin = "9.2.1"
 androidx-camera = "1.6.1"
 appcompat = "1.7.1"
-av-wrapper = "0.6.1"
+av-wrapper = "0.6.2"
 biometric = "1.1.0"
 coil = "2.7.0"
 compose-bom = "2026.05.01"
@@ -94,7 +94,7 @@ androidx-runner = { module = "androidx.test:runner", version.ref = "runner" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
 androidx-ui-automator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "ui-automator" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-av-wrapper = { module = "ch.admin.foitt.avwrapper:avwrapper", version.ref = "av-wrapper" }
+av-wrapper = { module = "ch.admin.swiyu.mobile:avwrapper", version.ref = "av-wrapper" }
 dcql = { module = "ch.admin.swiyu.mobile:dcql-android", version.ref = "swiyu-shared" }
 proximity = { module = "ch.admin.swiyu.mobile:proximity-android", version.ref = "swiyu-shared" }
 consistency = { module = "ch.admin.swiyu.mobile:consistency-android", version.ref = "swiyu-shared" }

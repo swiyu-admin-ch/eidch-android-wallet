@@ -5,6 +5,7 @@ import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.activityList.domain.model.toActivityRepositoryError
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityRepository
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorField
 import ch.admin.foitt.wallet.platform.database.data.dao.ActivityActorDisplayEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.ActivityClaimEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.CredentialActivityEntityDao
@@ -87,38 +88,23 @@ class ActivityRepositoryImpl @Inject constructor(
 
                 val messageDigest = MessageDigest.getInstance("SHA-256")
 
-                locales.forEach { locale ->
-                    // The blob and URI locale sets routinely differ, so an exact map lookup
-                    // would leave name-only locales without a logo.
-                    val imageData = getLocalizedDisplay(
-                        displays = actorDisplayData.imageData.orEmpty(),
-                        preferredLocaleString = locale,
-                    )?.value
-                        ?: getLocalizedDisplay(
-                            displays = actorDisplayData.image.orEmpty(),
-                            preferredLocaleString = locale,
-                        )?.value?.let { imageUri ->
-                            getImageDataFromUri(imageUri)
-                        }
-
-                    val imageHash = imageData?.let {
-                        val hash = messageDigest.digest(it).toHexString()
-                        val imageEntity = ImageEntity(
-                            hash = hash,
-                            image = it
-                        )
-                        imageDao().insert(imageEntity)
-                        hash
-                    }
-
+                if (locales.isEmpty()) {
                     val activityActorDisplay = ActivityActorDisplayEntity(
                         activityId = activityId,
-                        locale = locale,
-                        name = names[locale]?.value ?: actorFallbackName,
-                        imageHash = imageHash
+                        locale = actorDisplayData.preferredLanguage ?: "",
+                        name = actorFallbackName,
+                        imageHash = null
                     )
-
                     activityActorDisplayDao().insert(activityActorDisplay)
+                } else {
+                    saveActivityActorDisplayFromLocales(
+                        locales = locales,
+                        actorDisplayData = actorDisplayData,
+                        actorFallbackName = actorFallbackName,
+                        activityId = activityId,
+                        names = names,
+                        messageDigest = messageDigest
+                    )
                 }
 
                 activityId
@@ -127,6 +113,49 @@ class ActivityRepositoryImpl @Inject constructor(
             activityId
         }.mapError { throwable ->
             throwable.toActivityRepositoryError("error when saving activity list entry")
+        }
+    }
+
+    private suspend fun saveActivityActorDisplayFromLocales(
+        locales: Set<String>,
+        actorDisplayData: ActorDisplayData,
+        actorFallbackName: String,
+        activityId: Long,
+        names: Map<String, ActorField<String>>,
+        messageDigest: MessageDigest
+    ) {
+        locales.forEach { locale ->
+            // The blob and URI locale sets routinely differ, so an exact map lookup
+            // would leave name-only locales without a logo.
+            val imageData = getLocalizedDisplay(
+                displays = actorDisplayData.imageData.orEmpty(),
+                preferredLocaleString = locale,
+            )?.value
+                ?: getLocalizedDisplay(
+                    displays = actorDisplayData.image.orEmpty(),
+                    preferredLocaleString = locale,
+                )?.value?.let { imageUri ->
+                    getImageDataFromUri(imageUri)
+                }
+
+            val imageHash = imageData?.let {
+                val hash = messageDigest.digest(it).toHexString()
+                val imageEntity = ImageEntity(
+                    hash = hash,
+                    image = it
+                )
+                imageDao().insert(imageEntity)
+                hash
+            }
+
+            val activityActorDisplay = ActivityActorDisplayEntity(
+                activityId = activityId,
+                locale = locale,
+                name = names[locale]?.value ?: actorFallbackName,
+                imageHash = imageHash
+            )
+
+            activityActorDisplayDao().insert(activityActorDisplay)
         }
     }
 

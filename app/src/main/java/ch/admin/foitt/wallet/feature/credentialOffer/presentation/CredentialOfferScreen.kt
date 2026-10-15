@@ -46,6 +46,7 @@ import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiSt
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
+import ch.admin.foitt.wallet.platform.composables.ConfirmationBottomSheet
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
@@ -68,6 +69,7 @@ import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletTexts
 import ch.admin.foitt.wallet.theme.WalletTheme
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +84,7 @@ fun CredentialOfferScreen(
     var announcementAxMessage by rememberSaveable { mutableStateOf<String?>(message) }
 
     LaunchedEffect(Unit) {
-        delay(3000)
+        delay(3000.milliseconds)
         announcementAxMessage = null
     }
 
@@ -91,6 +93,7 @@ fun CredentialOfferScreen(
         viewModel.credentialOfferUiState.refreshData()
     }
     val credentialUiState = viewModel.credentialOfferUiState.stateFlow.collectAsStateWithLifecycle().value
+
     val badgeBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val badgeBottomSheet = viewModel.badgeBottomSheet.collectAsStateWithLifecycle().value
     if (badgeBottomSheet != null) {
@@ -98,6 +101,21 @@ fun CredentialOfferScreen(
             sheetState = badgeBottomSheetState,
             badgeBottomSheetUiState = badgeBottomSheet,
             onDismiss = viewModel::onDismissBadgeBottomSheet
+        )
+    }
+
+    val confirmationBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val showConfirmationBottomSheet = viewModel.showConfirmationBottomSheet.collectAsStateWithLifecycle().value
+    if (showConfirmationBottomSheet) {
+        ConfirmationBottomSheet(
+            sheetState = confirmationBottomSheetState,
+            title = R.string.tk_receive_credentialOffer_nonCompliantActorWarning_primary,
+            body = R.string.tk_receive_credentialOffer_nonCompliantActorWarning_secondary,
+            acceptButtonText = R.string.tk_receive_credentialOffer_confirmIssuance_button_primary,
+            declineButtonText = R.string.tk_receive_credentialOffer_confirmIssuance_button_secondary,
+            onAccept = viewModel::acceptCredential,
+            onDecline = viewModel::onDeclineCredential,
+            onDismiss = viewModel::onDismissConfirmationBottomSheet,
         )
     }
 

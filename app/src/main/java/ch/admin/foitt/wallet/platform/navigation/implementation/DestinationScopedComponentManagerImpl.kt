@@ -22,6 +22,9 @@ internal class DestinationScopedComponentManagerImpl @Inject constructor(
 ) : DestinationScopedComponentManager {
     private val scopedComponents: MutableMap<ComponentScope, DestinationScopedComponent> = mutableMapOf()
 
+    override fun isInScope(componentScope: ComponentScope): Boolean =
+        componentScope.contains(navManager.currentDestination)
+
     override fun <T> getEntryPoint(entryPointClass: Class<T>, componentScope: ComponentScope): T {
         val currentDestination = navManager.currentDestination
 

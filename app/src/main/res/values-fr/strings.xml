@@ -3,7 +3,22 @@
     <string name="biometricsPrompt_reason">Vous pouvez toujours vous connecter avec votre mot de passe si la biométrie ne fonctionne pas.</string>
     <string name="global_cancel">Annuler</string>
     <string name="login_biometricTitle">Se connecter à l\'application swiyu</string>
-    <plurals name="tk_changepassword_error1_android_note2">
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_inputError">
+        <item quantity="one">Le mot de passe est incorrect. Il vous reste %1$s tentative. (%2$s)</item>
+        <item quantity="many">Le mot de passe est incorrect. Il vous reste %1$s tentatives. (%2$s)</item>
+        <item quantity="other">Le mot de passe est incorrect. Il vous reste %s tentatives. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_remainingAttempts">
+        <item quantity="one">Le mot de passe est incorrect. Il vous reste %s tentative.</item>
+        <item quantity="many">Le mot de passe est incorrect. Il vous reste %s tentatives.</item>
+        <item quantity="other">Le mot de passe est incorrect. Il vous reste %s tentatives.</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_inputError">
+        <item quantity="one">Le mot de passe est incorrect. Il vous reste %1$s tentative. (%2$s)</item>
+        <item quantity="many">Le mot de passe est incorrect. Il vous reste %1$s tentatives. (%2$s)</item>
+        <item quantity="other">Le mot de passe est incorrect. Il vous reste %s tentatives. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_remainingAttempts">
         <item quantity="one">Le mot de passe est incorrect. Il vous reste %s tentative.</item>
         <item quantity="many">Le mot de passe est incorrect. Il vous reste %s tentatives.</item>
         <item quantity="other">Le mot de passe est incorrect. Il vous reste %s tentatives.</item>
@@ -297,8 +312,6 @@
     <string name="tk_badgeInformation_inBaseRegistry_secondary">Sur la base de ces informations, la Confédération n’est pas en mesure de vérifier s’il s’agit effectivement de %s.</string>
     <string name="tk_badgeInformation_furtherInformation_link_value">https://www.eid.admin.ch/fr/swiyu-informe-signale-et-alerte</string>
     <string name="tk_nonCompliance_reportExcessiveData_title">Signaler des excès de données</string>
-    <string name="tk_nonCompliance_report_info_title">Procédure recommandée</string>
-    <string name="tk_nonCompliance_report_info_body">À l’étape suivante, vous enregistrez votre signalement pour l’autorité compétente. Veuillez également préciser quelles données ont été demandées sans autorisation.</string>
     <string name="tk_nonCompliance_report_info_moreInformation_link_text">Afficher plus de conseils</string>
     <string name="tk_getEid_dataPrivacy_link_value">https://www.eid.admin.ch/fr/swiyu-privacy-f</string>
     <string name="tk_eidRequest_walletPairing_additionalDevice_sectionTitle">Appareils supplémentaires</string>
@@ -331,7 +344,6 @@
         <item quantity="many"/>
         <item quantity="other">%s appareils ajoutés</item>
     </plurals>
-    <string name="tk_nonCompliance_list_footer">Attention : Jusqu’au lancement officiel de swiyu, les signalements ne seront pas examinés et les vérificateurs ne seront donc pas sanctionnés en cas de comportement inapproprié.\nLes catégories ne sont pas encore définitives.</string>
     <string name="tk_nonCompliance_report_form_actor_footer">Vous signalez cette organisation</string>
     <string name="tk_nonCompliance_report_form_contact_footer">La saisie de votre adresse e-mail est facultative et sera utilisée uniquement pour communiquer au sujet de ce cas.</string>
     <string name="tk_nonCompliance_report_form_description_maxCharacter_footer">Veuillez écrire au maximum 500 caractères.</string>

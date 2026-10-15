@@ -11,6 +11,9 @@ import com.github.michaelbull.result.Result
 
 interface CredentialRefreshDataRepository {
     suspend fun getCredentialRefreshDataById(credentialId: Long): Result<VerifiableCredentialWithAuthentication, CredentialRefreshDataError>
+    suspend fun getAllCredentialRefreshData():
+        Result<List<VerifiableCredentialWithAuthentication>, CredentialRefreshDataError>
+
     suspend fun getAllBatchCredentialRefreshData():
         Result<List<VerifiableCredentialWithBatchDataAndAuthentication>, CredentialRefreshDataError>
 

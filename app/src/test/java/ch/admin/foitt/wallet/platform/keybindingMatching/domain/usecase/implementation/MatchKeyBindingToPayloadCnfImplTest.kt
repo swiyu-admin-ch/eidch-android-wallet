@@ -8,6 +8,7 @@ import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.openid4vc.domain.model.toCurve
 import ch.admin.foitt.openid4vc.domain.usecase.GetHardwareKeyPair
 import ch.admin.foitt.wallet.platform.keybindingMatching.domain.model.MatchKeyBindingToPayloadCnfError
+import ch.admin.foitt.wallet.platform.keybindingMatching.domain.usecase.MatchKeyBindingToPayloadCnf
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -22,6 +23,7 @@ import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.security.KeyFactory
@@ -38,7 +40,7 @@ class MatchKeyBindingToPayloadCnfImplTest {
 
     private val safeJson = SafeJsonTestInstance.safeJson
 
-    private lateinit var useCase: MatchKeyBindingToPayloadCnfImpl
+    private lateinit var useCase: MatchKeyBindingToPayloadCnf
 
     @BeforeEach
     fun setUp() {
@@ -51,31 +53,28 @@ class MatchKeyBindingToPayloadCnfImplTest {
 
     @Test
     fun `Returns matching KeyBinding for SOFTWARE binding when cnf jwk matches`() = runTest {
-        val swKeyPair = generateEcKeyPair(SigningAlgorithm.ES256)
+        val swKeyPair = generateEcKeyPair()
         val softwareKb = softwareKeyBinding(
             id = "sw1",
-            algorithm = SigningAlgorithm.ES256,
             publicKey = swKeyPair.public as ECPublicKey,
         )
 
-        val otherKeyPair = generateEcKeyPair(SigningAlgorithm.ES256)
+        val otherKeyPair = generateEcKeyPair()
         val otherKb = softwareKeyBinding(
             id = "sw2",
-            algorithm = SigningAlgorithm.ES256,
             publicKey = otherKeyPair.public as ECPublicKey,
         )
 
-        val cnfJwk = publicKeyToJwk(swKeyPair.public as ECPublicKey, SigningAlgorithm.ES256)
+        val cnfJwk = publicKeyToJwk(swKeyPair.public as ECPublicKey)
         val payload = buildJwtWithCnf(cnfJwk)
 
-        val result = useCase.invoke(listOf(null, otherKb, softwareKb), payload)
-        val matched = result.assertOk()
-        assert(matched == softwareKb)
+        val result = useCase(listOf(otherKb, softwareKb), payload).assertOk()
+        assertEquals(softwareKb, result)
     }
 
     @Test
     fun `Returns matching KeyBinding for HARDWARE binding when cnf jwk matches`() = runTest {
-        val hwKeyPair = generateEcKeyPair(SigningAlgorithm.ES256)
+        val hwKeyPair = generateEcKeyPair()
         val hardwareKb = KeyBinding(
             identifier = "hw1",
             algorithm = SigningAlgorithm.ES256,
@@ -84,49 +83,44 @@ class MatchKeyBindingToPayloadCnfImplTest {
 
         coEvery { mockGetHardwareKeyPair("hw1", any()) } returns Ok(hwKeyPair)
 
-        val cnfJwk = publicKeyToJwk(hwKeyPair.public as ECPublicKey, SigningAlgorithm.ES256)
+        val cnfJwk = publicKeyToJwk(hwKeyPair.public as ECPublicKey)
         val payload = buildJwtWithCnf(cnfJwk)
 
-        val result = useCase.invoke(listOf(hardwareKb), payload)
-        val matched = result.assertOk()
-        assert(matched == hardwareKb)
+        val result = useCase.invoke(listOf(hardwareKb), payload).assertOk()
+        assertEquals(hardwareKb, result)
     }
 
     @Test
     fun `Returns error when no matching key binding is available`() = runTest {
-        val keyPair = generateEcKeyPair(SigningAlgorithm.ES256)
+        val keyPair = generateEcKeyPair()
         val nonMatchingKb = softwareKeyBinding(
             id = "swX",
-            algorithm = SigningAlgorithm.ES256,
             publicKey = keyPair.public as ECPublicKey,
         )
 
-        val differentKeyPair = generateEcKeyPair(SigningAlgorithm.ES256)
-        val cnfJwk = publicKeyToJwk(differentKeyPair.public as ECPublicKey, SigningAlgorithm.ES256)
+        val differentKeyPair = generateEcKeyPair()
+        val cnfJwk = publicKeyToJwk(differentKeyPair.public as ECPublicKey)
         val payload = buildJwtWithCnf(cnfJwk)
 
-        val result = useCase.invoke(listOf(nonMatchingKb), payload)
-        result.assertErrorType(MatchKeyBindingToPayloadCnfError.Unexpected::class)
+        useCase(listOf(nonMatchingKb), payload).assertErrorType(MatchKeyBindingToPayloadCnfError.Unexpected::class)
     }
 
     @Test
     fun `Maps JSON parsing error to Unexpected when cnf jwk is invalid`() = runTest {
-        val swKeyPair = generateEcKeyPair(SigningAlgorithm.ES256)
+        val swKeyPair = generateEcKeyPair()
         val softwareKb = softwareKeyBinding(
             id = "swInvalid",
-            algorithm = SigningAlgorithm.ES256,
             publicKey = swKeyPair.public as ECPublicKey,
         )
 
         // Create a payload with malformed jwk (missing required fields)
         val payload = buildJwtWithRawCnf(mapOf("jwk" to emptyMap<String, Any>()))
 
-        val result = useCase.invoke(listOf(softwareKb), payload)
-        result.assertErrorType(MatchKeyBindingToPayloadCnfError.Unexpected::class)
+        useCase(listOf(softwareKb), payload).assertErrorType(MatchKeyBindingToPayloadCnfError.Unexpected::class)
     }
 
     // Helpers
-    private fun softwareKeyBinding(id: String, algorithm: SigningAlgorithm, publicKey: ECPublicKey): KeyBinding {
+    private fun softwareKeyBinding(id: String, algorithm: SigningAlgorithm = SigningAlgorithm.ES256, publicKey: ECPublicKey): KeyBinding {
         val factory = KeyFactory.getInstance("EC")
         val encoded = publicKey.encoded
         // Decode to ensure format is correct as expected by implementation
@@ -139,7 +133,7 @@ class MatchKeyBindingToPayloadCnfImplTest {
         )
     }
 
-    private fun generateEcKeyPair(algorithm: SigningAlgorithm): KeyPair {
+    private fun generateEcKeyPair(algorithm: SigningAlgorithm = SigningAlgorithm.ES256): KeyPair {
         val kpg = KeyPairGenerator.getInstance("EC")
         val curveName = when (algorithm) {
             SigningAlgorithm.ES256 -> "secp256r1"
@@ -149,7 +143,7 @@ class MatchKeyBindingToPayloadCnfImplTest {
         return kpg.generateKeyPair()
     }
 
-    private fun publicKeyToJwk(publicKey: ECPublicKey, algorithm: SigningAlgorithm): Jwk {
+    private fun publicKeyToJwk(publicKey: ECPublicKey, algorithm: SigningAlgorithm = SigningAlgorithm.ES256): Jwk {
         val ecKey = ECKey.Builder(algorithm.toCurve(), publicKey).build()
         return ecKey.toEcJwk(certificateChainBase64 = null)
     }

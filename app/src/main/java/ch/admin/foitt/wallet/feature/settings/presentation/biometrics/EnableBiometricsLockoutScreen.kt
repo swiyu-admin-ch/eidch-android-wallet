@@ -15,12 +15,14 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 @Composable
 fun EnableBiometricsLockoutScreen(viewModel: EnableBiometricsLockoutViewModel) {
     EnableBiometricsLockoutContent(
+        errorCode = viewModel.errorCode,
         onClose = viewModel::onClose,
     )
 }
 
 @Composable
 private fun EnableBiometricsLockoutContent(
+    errorCode: String,
     onClose: () -> Unit,
 ) = WalletLayouts.ScrollableColumnWithPicture(
     stickyStartContent = {
@@ -43,6 +45,7 @@ private fun EnableBiometricsLockoutContent(
             title = R.string.biometrics_lockout_title,
             description = R.string.biometrics_lockout_text,
             infoText = null,
+            errorCode = errorCode,
         )
     },
 )
@@ -52,6 +55,7 @@ private fun EnableBiometricsLockoutContent(
 private fun EnableBiometricsLockoutPreview() {
     WalletTheme {
         EnableBiometricsLockoutContent(
+            errorCode = "XY123-1234",
             onClose = {},
         )
     }

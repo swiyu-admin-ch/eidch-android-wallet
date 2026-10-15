@@ -3,6 +3,8 @@ package ch.admin.foitt.wallet.feature.onboarding.presentation
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.errorhandling.domain.model.ViewmodelPrefixes
+import ch.admin.foitt.errorhandling.domain.model.util.log
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.onboarding.domain.usecase.SaveOnboardingState
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricManagerResult
@@ -10,13 +12,12 @@ import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricProm
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.BiometricsStatus
 import ch.admin.foitt.wallet.platform.biometricPrompt.presentation.AndroidBiometricPrompt
 import ch.admin.foitt.wallet.platform.biometrics.domain.model.BiometricsError
-import ch.admin.foitt.wallet.platform.biometrics.domain.model.EnableBiometricsError
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.InitializeCipherWithBiometrics
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.SaveUseBiometricLogin
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
-import ch.admin.foitt.wallet.platform.passphrase.domain.model.InitializePassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.InitializePassphrase
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
@@ -82,7 +83,7 @@ class OnboardingRegisterBiometricsViewModel @AssistedInject constructor(
         }
     }
 
-    private suspend fun initializeBiometrics(activity: FragmentActivity, pin: String) {
+    private suspend fun initializeBiometrics(activity: FragmentActivity, passphrase: String) {
         Timber.d("Passphrase: Showing biometric dialog")
         val biometricPromptWrapper = AndroidBiometricPrompt(
             activity = activity,
@@ -91,32 +92,32 @@ class OnboardingRegisterBiometricsViewModel @AssistedInject constructor(
 
         initializeCipherWithBiometrics(
             promptWrapper = biometricPromptWrapper,
-        ).onErr { biometricsError: EnableBiometricsError ->
+        ).onErr { biometricsError ->
             when (biometricsError) {
-                BiometricsError.Locked -> {
-                    Timber.w("Biometrics registration: biometrics Locked")
-                    _screenState.value = OnboardingRegisterBiometricsScreenState.Lockout
+                is BiometricsError.Locked -> {
+                    biometricsError.log(ViewmodelPrefixes.ONBOARDING_REGISTER_BIOMETRICS)
+                    _screenState.value = OnboardingRegisterBiometricsScreenState.Lockout(biometricsError.errorOccurrence.errorCode.value)
                 }
 
-                is BiometricsError.Unexpected -> {
-                    Timber.e("Biometrics registration: Unexpected")
-                    _screenState.value = OnboardingRegisterBiometricsScreenState.Error
+                is BiometricsError.General -> {
+                    biometricsError.log(ViewmodelPrefixes.ONBOARDING_REGISTER_BIOMETRICS)
+                    _screenState.value = OnboardingRegisterBiometricsScreenState.Error(biometricsError.errorOccurrence.errorCode.value)
                 }
 
-                BiometricsError.Cancelled -> {}
+                is BiometricsError.Cancelled -> {}
             }
         }.onOk { initializedCipher: Cipher ->
-            initializeWithLoading(pin, initializedCipher)
+            initializeWithLoading(passphrase, initializedCipher)
         }
     }
 
-    private suspend fun initializeWithLoading(pin: String, initializedCipher: Cipher?) {
+    private suspend fun initializeWithLoading(passphrase: String, initializedCipher: Cipher?) {
         // start the setup animation
         _initializationInProgress.value = true
         setTopBarState(TopBarState.Empty)
 
         initializePassphrase(
-            pin = pin,
+            passphrase = passphrase,
             encryptionCipher = initializedCipher,
         ).andThen {
             initializedCipher?.let {
@@ -125,16 +126,19 @@ class OnboardingRegisterBiometricsViewModel @AssistedInject constructor(
             Ok(Unit)
         }.onOk {
             completeOnboarding()
-        }.onErr { error: InitializePassphraseError ->
-            Timber.e(t = error.throwable, message = "Biometrics registration: Initialization error")
+        }.onErr { error ->
+            error.log(ViewmodelPrefixes.ONBOARDING_REGISTER_BIOMETRICS)
             val destination = when (error) {
-                is InitializePassphraseError.DatabaseSetupFailed -> Destination.OnboardingFatalErrorScreen(
+                is PassphraseError.DatabaseSetupFailed -> Destination.OnboardingFatalErrorScreen(
                     primaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_primary,
                     secondaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_secondary,
+                    errorCode = error.errorOccurrence.errorCode.value,
                 )
-                is InitializePassphraseError.Unexpected -> Destination.OnboardingFatalErrorScreen(
+
+                is PassphraseError.General -> Destination.OnboardingFatalErrorScreen(
                     primaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_primary,
                     secondaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_secondary,
+                    errorCode = error.errorOccurrence.errorCode.value,
                 )
             }
             navManager.popUpToAndNavigate(
@@ -151,7 +155,7 @@ class OnboardingRegisterBiometricsViewModel @AssistedInject constructor(
     }
 
     private fun navigateToSuccess() {
-        navManager.navigateOutAndTo(DestinationGroup.Onboarding::class, Destination.OnboardingSuccessScreen)
+        navManager.navigateOutAndTo(DestinationGroup.ONBOARDING, Destination.OnboardingSuccessScreen)
     }
 
     private fun getScreenState(): OnboardingRegisterBiometricsScreenState = when (biometricsStatus()) {

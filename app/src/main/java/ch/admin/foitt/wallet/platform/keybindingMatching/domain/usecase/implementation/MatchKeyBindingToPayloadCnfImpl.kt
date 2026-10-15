@@ -31,10 +31,10 @@ class MatchKeyBindingToPayloadCnfImpl @Inject constructor(
     private val getHardwareKeyPair: GetHardwareKeyPair,
 ) : MatchKeyBindingToPayloadCnf {
     override suspend fun invoke(
-        keyBindings: List<KeyBinding?>,
+        keyBindings: List<KeyBinding>,
         payload: String,
     ): Result<KeyBinding, MatchKeyBindingToPayloadCnfError> = coroutineBinding {
-        val keyBindingJwkPairs = keyBindings.filterNotNull().mapNotNull { kb ->
+        val keyBindingJwkPairs = keyBindings.mapNotNull { kb ->
             kb.toJwk()?.let { jwk -> kb to jwk }
         }
 

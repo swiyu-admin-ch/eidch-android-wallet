@@ -1,8 +1,12 @@
 package ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.database.domain.model.CreateAppDatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.usecase.CreateAppDatabase
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.EncryptAndSavePassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.HashPassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.InitializePassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperPassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.toInitializePassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.PepperIvRepository
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.SaltRepository
@@ -15,7 +19,6 @@ import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import timber.log.Timber
 import javax.crypto.Cipher
 import javax.inject.Inject
 
@@ -30,41 +33,32 @@ class InitializePassphraseImpl @Inject constructor(
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : InitializePassphrase {
     override suspend fun invoke(
-        pin: String,
+        passphrase: String,
         encryptionCipher: Cipher?,
     ): Result<Unit, InitializePassphraseError> = withContext(ioDispatcher) {
         coroutineBinding {
-            val pinHash = hashPassphrase(
-                pin = pin,
+            val passphraseHash = hashPassphrase(
+                passphrase = passphrase,
                 initializeSalt = true,
-            ).mapError { error ->
-                error.toInitializePassphraseError()
-            }.bind()
+            ).mapError(HashPassphraseError::toInitializePassphraseError).bind()
 
-            val pinHashPeppered = pepperPassphrase(
-                passphrase = pinHash.hash,
+            val passphraseHashPeppered = pepperPassphrase(
+                passphrase = passphraseHash.hash,
                 initializePepper = true,
-            ).mapError { error ->
-                error.toInitializePassphraseError()
-            }.bind()
+            ).mapError(PepperPassphraseError::toInitializePassphraseError).bind()
 
             createAppDatabase(
-                passphrase = pinHashPeppered.hash,
-            ).mapError { error ->
-                error.toInitializePassphraseError()
-            }.bind()
+                passphrase = passphraseHashPeppered.hash,
+            ).mapError(CreateAppDatabaseError::toInitializePassphraseError).bind()
 
-            saltRepository.save(pinHash.salt)
-            pepperIvRepository.save(pinHashPeppered.initializationVector)
+            saltRepository.save(passphraseHash.salt)
+            pepperIvRepository.save(passphraseHashPeppered.initializationVector)
 
             if (encryptionCipher != null) {
-                Timber.d("Passphrase, CryptoObject present, encrypting passphrase")
                 encryptAndSavePassphrase(
-                    pinHashPeppered.hash,
-                    encryptionCipher,
-                ).mapError { error ->
-                    error.toInitializePassphraseError()
-                }.bind()
+                    passphrase = passphraseHashPeppered.hash,
+                    encryptionCipher = encryptionCipher,
+                ).mapError(EncryptAndSavePassphraseError::toInitializePassphraseError).bind()
             }
         }
     }

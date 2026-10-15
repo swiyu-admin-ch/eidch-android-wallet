@@ -78,6 +78,7 @@ internal class EIdWalletPairingQrCodeViewModel @AssistedInject constructor(
                     qrBitmap = responseValue.credentialOfferLink.generateQRBitmap()
                 )
             }
+
             else -> QrBoxUiState.Failure
         }
     }.toStateFlow(QrBoxUiState.Loading)
@@ -170,6 +171,7 @@ internal class EIdWalletPairingQrCodeViewModel @AssistedInject constructor(
             onBack()
             WalletPairingQrCodeUiState.Done
         }
+
         WalletPairingState.REJECTED -> {
             walletPairingEventRepository.setEvent(WalletPairingEvent.NONE)
             WalletPairingQrCodeUiState.PairingFailure
@@ -189,13 +191,14 @@ internal class EIdWalletPairingQrCodeViewModel @AssistedInject constructor(
             is EIdRequestError.Unexpected -> {
                 Timber.d("Pairing error: $error")
             }
+
             EIdRequestError.RequestInWrongState -> handlePairingWindowTimeout()
         }
         return WalletPairingQrCodeUiState.LoadingInvitationError
     }
 
     private fun handlePairingWindowTimeout() = navManager.navigateOutAndTo(
-        destinationGroup = DestinationGroup.EIdRequestVerification::class,
+        destinationGroup = DestinationGroup.EID_REQUEST_VERIFICATION,
         destination = Destination.EIdWalletPairingTimeoutScreen,
     )
 

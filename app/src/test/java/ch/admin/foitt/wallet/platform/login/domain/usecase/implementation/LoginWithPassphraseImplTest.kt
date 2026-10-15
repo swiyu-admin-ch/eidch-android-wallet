@@ -1,12 +1,11 @@
 package ch.admin.foitt.wallet.platform.login.domain.usecase.implementation
 
-import ch.admin.foitt.wallet.platform.crypto.domain.model.HashDataError
 import ch.admin.foitt.wallet.platform.crypto.domain.model.HashedData
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.usecase.OpenAppDatabase
 import ch.admin.foitt.wallet.platform.login.domain.model.LoginError
 import ch.admin.foitt.wallet.platform.login.domain.usecase.LoginWithPassphrase
-import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperPassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperedData
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.HashPassphrase
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.PepperPassphrase
@@ -74,37 +73,37 @@ class LoginWithPassphraseImplTest {
 
     @Test
     fun `LoginWithPassphrase maps errors from HashPassphrase`() = runTest {
-        coEvery { mockHashPassphrase(PASSPHRASE, false) } returns Err(HashDataError.Unexpected(Exception()))
+        coEvery { mockHashPassphrase(PASSPHRASE, false) } returns Err(PassphraseError.createGeneralError(Exception()))
 
-        useCase(PASSPHRASE).assertErrorType(LoginError.Unexpected::class)
+        useCase(PASSPHRASE).assertErrorType(LoginError.General::class)
     }
 
     @Test
     fun `LoginWithPassphrase maps errors from PepperPassphrase`() = runTest {
-        coEvery { mockPepperPassphrase(hashedDataHash, false) } returns Err(PepperPassphraseError.Unexpected(Exception()))
+        coEvery { mockPepperPassphrase(hashedDataHash, false) } returns Err(PassphraseError.createGeneralError(Exception()))
 
-        useCase(PASSPHRASE).assertErrorType(LoginError.Unexpected::class)
+        useCase(PASSPHRASE).assertErrorType(LoginError.General::class)
     }
 
     @Test
     fun `LoginWithPassphrase returns an error if the provided DB passphrase is wrong`() = runTest {
-        coEvery { mockOpenAppDatabase(pepperedDataHash) } returns Err(DatabaseError.WrongPassphrase(Exception()))
+        coEvery { mockOpenAppDatabase(pepperedDataHash) } returns Err(DatabaseError.createWrongPassphraseError(Exception()))
 
         useCase(PASSPHRASE).assertErrorType(LoginError.InvalidPassphrase::class)
     }
 
     @Test
     fun `LoginWithPassphrase returns an error if the DB is already open`() = runTest {
-        coEvery { mockOpenAppDatabase(pepperedDataHash) } returns Err(DatabaseError.AlreadyOpen)
+        coEvery { mockOpenAppDatabase(pepperedDataHash) } returns Err(DatabaseError.createAlreadyOpenError())
 
-        useCase(PASSPHRASE).assertErrorType(LoginError.Unexpected::class)
+        useCase(PASSPHRASE).assertErrorType(LoginError.General::class)
     }
 
     @Test
     fun `LoginWithPassphrase returns an error if the DB setup failed`() = runTest {
-        coEvery { mockOpenAppDatabase(pepperedDataHash) } returns Err(DatabaseError.SetupFailed(Exception()))
+        coEvery { mockOpenAppDatabase(pepperedDataHash) } returns Err(DatabaseError.createSetupFailedError(Exception()))
 
-        useCase(PASSPHRASE).assertErrorType(LoginError.Unexpected::class)
+        useCase(PASSPHRASE).assertErrorType(LoginError.General::class)
     }
 
     private fun setupDefaultMocks() {

@@ -3,9 +3,20 @@
     <string name="biometricsPrompt_reason">Puoi comunque accedere con la tua password, se la biometria non funziona</string>
     <string name="global_cancel">Annullare</string>
     <string name="login_biometricTitle">Accedere all\'app swiyu</string>
-    <plurals name="tk_changepassword_error1_android_note2">
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_inputError">
+        <item quantity="one">La password non è corretta. Ha ancora %1$s tentativo. (%2$s)</item>
+        <item quantity="other">La password non è corretta. Ha ancora %1%s tentativi. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_remainingAttempts">
         <item quantity="one">La password non è corretta. Ha ancora %s tentativo.</item>
-        <item quantity="many">La password non è corretta. Ha ancora %s tentativi.</item>
+        <item quantity="other">La password non è corretta. Ha ancora %s tentativi.</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_inputError">
+        <item quantity="one">La password non è corretta. Ha ancora %1$s tentativo. (%2$s)</item>
+        <item quantity="other">La password non è corretta. Ha ancora %1%s tentativi. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_remainingAttempts">
+        <item quantity="one">La password non è corretta. Ha ancora %s tentativo.</item>
         <item quantity="other">La password non è corretta. Ha ancora %s tentativi.</item>
     </plurals>
     <string name="tk_changepassword_step1_note1">Password attuale</string>
@@ -458,8 +469,6 @@
     <string name="tk_activity_presentationAccepted_title">Informazioni condivise</string>
     <string name="tk_badgeInformation_sensitiveClaimInfo_secondary">Sono stati richiesti dati sensibili. Annullare la transazione per non fornirli.</string>
     <string name="tk_nonCompliance_reportExcessiveData_title">Segnalare dati eccessivi</string>
-    <string name="tk_nonCompliance_report_info_title">Procedura consigliata</string>
-    <string name="tk_nonCompliance_report_info_body">Nel passo successivo, registra la Sua segnalazione per l’autorità competente. Indichi anche quali dati sono stati richiesti senza autorizzazione.</string>
     <string name="tk_nonCompliance_report_info_moreInformation_link_text">Mostrare più suggerimenti</string>
     <string name="tk_eidRequest_walletPairing_additionalDevice_sectionTitle">Dispositivi aggiuntivi</string>
     <string name="tk_eidRequest_walletPairing_additionalDevice_button_primary">Dispositivi aggiuntivi</string>
@@ -483,7 +492,6 @@
         <item quantity="many"/>
         <item quantity="other">%s dispositivi aggiunti</item>
     </plurals>
-    <string name="tk_nonCompliance_list_footer">Attenzione: Fino al lancio ufficiale di swiyu, le segnalazioni non verranno esaminate e i verificatori non saranno pertanto sanzionati per comportamenti scorretti.\nLe categorie non sono ancora definitive.</string>
     <string name="tk_nonCompliance_report_form_actor_footer">Sta segnalando questa organizzazione</string>
     <string name="tk_nonCompliance_report_form_contact_footer">L’indicazione del Suo indirizzo e-mail è facoltativa e sarà utilizzata esclusivamente per la comunicazione relativa a questo caso.</string>
     <string name="tk_nonCompliance_report_form_description_maxCharacter_footer">Scriva al massimo 500 caratteri.</string>

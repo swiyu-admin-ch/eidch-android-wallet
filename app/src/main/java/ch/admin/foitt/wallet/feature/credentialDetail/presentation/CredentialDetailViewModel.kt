@@ -49,18 +49,18 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @HiltViewModel(assistedFactory = CredentialDetailViewModel.Factory::class)
+@Suppress("TooManyFunctions")
 class CredentialDetailViewModel @AssistedInject constructor(
     getCredentialDetailFlow: GetCredentialDetailFlow,
     getCredentialIssuerDisplaysFlow: GetCredentialIssuerDisplaysFlow,
@@ -75,7 +75,7 @@ class CredentialDetailViewModel @AssistedInject constructor(
     private val deleteCredential: DeleteCredential,
     private val credentialEventRepository: CredentialEventRepository,
     private val hasExhaustedBatchCopies: HasExhaustedBatchCopies,
-    setTopBarState: SetTopBarState,
+    private val setTopBarState: SetTopBarState,
     @Assisted private val credentialId: Long
 ) : ScreenViewModel(setTopBarState) {
 
@@ -86,10 +86,12 @@ class CredentialDetailViewModel @AssistedInject constructor(
 
     override val topBarState: TopBarState
         get() {
-            val state = credentialDetailUiState.stateFlow.value
+            val topBarTitle = credentialDetailUiState.stateFlow.value.credential.title?.let { title ->
+                UiString.Dynamic(title)
+            }
 
             return TopBarState.Custom(
-                title = state.credential.title?.let { UiString.Dynamic(it) },
+                title = topBarTitle,
                 onUp = ::onBack,
                 topBarBackground = TopBarBackground.CLUSTER,
                 actions = listOf(
@@ -120,11 +122,12 @@ class CredentialDetailViewModel @AssistedInject constructor(
 
     val nonComplianceEnabled = environmentSetupRepository.nonComplianceEnabled
 
-    private val issuanceType = MutableStateFlow<IssuanceType?>(null)
+    private val issuanceType = flow {
+        emit(getCredentialIssuanceType(credentialId).get())
+    }.toStateFlow(null)
     private val allActivities = MutableStateFlow<List<ActivityWithActorDisplayData>>(emptyList())
     private val issuerDisplay = MutableStateFlow<IssuerDisplay?>(null)
 
-    private var updateUiJob: Job
     val credentialDetailUiState = refreshableStateFlow(CredentialDetailUiState.EMPTY) {
         combine(
             getCredentialDetailFlow(credentialId),
@@ -186,13 +189,13 @@ class CredentialDetailViewModel @AssistedInject constructor(
     }
 
     init {
-        updateUiJob = viewModelScope.launch {
+        viewModelScope.launch {
             updateCredentialStatus(credentialId)
-            issuanceType.value = getCredentialIssuanceType(credentialId).get()
-            credentialDetailUiState.stateFlow.collectLatest {
-                setTopBarState(topBarState)
-            }
         }
+    }
+
+    fun setTitle() {
+        setTopBarState(topBarState)
     }
 
     fun onBack() {
@@ -208,7 +211,6 @@ class CredentialDetailViewModel @AssistedInject constructor(
     }
 
     fun onDeleteCredential() {
-        updateUiJob.cancel()
         _visibleBottomSheet.value = VisibleBottomSheet.NONE
         viewModelScope.launch {
             deleteCredential(credentialId = credentialId)

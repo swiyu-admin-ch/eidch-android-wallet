@@ -16,7 +16,6 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetSignedMetadataDi
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.GetVerifiableCredentialParamsError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VerifyVcSdJwtSignatureError
-import ch.admin.foitt.wallet.platform.batch.domain.error.DeleteBundleItemsByAmountError
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError.IncompatibleDeviceKeyStorage
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError.IntegrityCheckFailed
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError.InvalidCredentialOffer
@@ -576,10 +575,6 @@ fun FetchCredentialError.toRefreshCredentialError(): RefreshCredentialError = wh
 
 fun CredentialRefreshDataError.toRefreshCredentialError(): RefreshCredentialError = when (this) {
     is CredentialRefreshDataError.Unexpected -> Unexpected(cause)
-}
-
-fun DeleteBundleItemsByAmountError.toFetchCredentialError(): FetchCredentialError = when (this) {
-    is DeleteBundleItemsByAmountError.Unexpected -> Unexpected(cause)
 }
 
 fun ValidateImageError.toGenerateMetadataDisplaysError(): GenerateMetadataDisplaysError = when (this) {

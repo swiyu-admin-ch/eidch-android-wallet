@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.architectureTests
 import androidx.compose.runtime.Composable
 import ch.admin.foitt.wallet.app.MainActivity
 import ch.admin.foitt.wallet.app.WalletApplication
+import ch.admin.foitt.wallet.platform.navigation.domain.model.AutoLogout
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
 import ch.admin.foitt.wallet.platform.pushNotification.data.WalletFirebaseMessagingService
@@ -22,6 +23,7 @@ import dagger.Module
 import dagger.assisted.AssistedFactory
 import dagger.multibindings.IntoSet
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -83,7 +85,7 @@ class GeneralCodingKonsistTest {
             .scopeFromProject()
             .classesAndObjects()
             .filter { it.hasParentOf<Destination>() }
-            .map {
+            .forEach {
                 it.assertTrue(
                     additionalMessage = "${it.fullyQualifiedName} is not referenced in any EntryProviderInstallerModule"
                 ) { destination ->
@@ -93,13 +95,51 @@ class GeneralCodingKonsistTest {
     }
 
     @Test
+    fun `Double-check Destinations that override autoLogoutEnabled`() {
+        // Current expected list of Destinations that override autoLogoutEnabled
+        val expected = setOf(
+            "AppVersionBlockedScreen",
+            "BiometricLoginScreen",
+            "LockScreen",
+            "LockoutScreen",
+            "OnboardingActivityScreen",
+            "OnboardingConfirmPassphraseFailureScreen",
+            "OnboardingConfirmPassphraseScreen",
+            "OnboardingFatalErrorScreen",
+            "OnboardingIntroScreen",
+            "OnboardingLocalDataScreen",
+            "OnboardingPassphraseExplanationScreen",
+            "OnboardingPresentScreen",
+            "OnboardingPrivacyPolicyScreen",
+            "OnboardingRegisterBiometricsScreen",
+            "OnboardingSetupPassphraseScreen",
+            "PassphraseLoginScreen",
+            "StartScreen",
+            "UnsecuredDeviceScreen"
+        )
+        val actual = Konsist
+            .scopeFromProject()
+            .classesAndObjects()
+            .filter { it.hasParentOf<Destination>() }
+            .filter { it.hasFunction { it.name == AutoLogout::canTriggerAutoLogout.name && it.hasOverrideModifier } }
+            .map { it.name }
+            .toSet()
+
+        val differences = (expected - actual) union (actual - expected)
+
+        Assertions.assertEquals(emptySet<String>(), differences) {
+            "Ensure Destination should override autoLogoutEnabled before updating the expected list in this test"
+        }
+    }
+
+    @Test
     fun `ViewModel_AssistedFactory must be used to create correct ViewModel`() {
         Konsist
             .scopeFromProject()
             .interfaces()
             .filter { it.hasAnnotationOf<AssistedFactory>() }
             .mapNotNull { it.fullyQualifiedName?.split(".")?.takeLast(2)?.joinToString(".") }
-            .map { assistedFactory: String ->
+            .forEach { assistedFactory: String ->
                 assertTrue(
                     completeEntryProviderCode.contains(assistedFactory),
                     "$assistedFactory not used to create entry in any EntryProviderInstallerModule. This will crash during runtime."

@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation
 
 import androidx.annotation.CheckResult
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.LoadAndDecryptPassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.PassphraseRepository
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.LoadAndDecryptPassphrase
 import com.github.michaelbull.result.Result
@@ -19,6 +20,6 @@ internal class LoadAndDecryptPassphraseImpl @Inject constructor(
         val plainTextBytes = decryptionCipher.doFinal(ciphertext)
         plainTextBytes
     }.mapError { throwable ->
-        LoadAndDecryptPassphraseError.Unexpected(throwable)
+        PassphraseError.createGeneralError(throwable)
     }
 }

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 class NonComplianceEventRepositoryImpl @Inject constructor() : NonComplianceEventRepository {
-    private val _event = MutableStateFlow(NonComplianceEvent.NONE)
+    private val _event = MutableStateFlow<NonComplianceEvent>(NonComplianceEvent.None)
     override val event = _event.asStateFlow()
 
     override fun setEvent(event: NonComplianceEvent) {
@@ -15,6 +15,6 @@ class NonComplianceEventRepositoryImpl @Inject constructor() : NonComplianceEven
     }
 
     override fun resetEvent() {
-        _event.value = NonComplianceEvent.NONE
+        _event.value = NonComplianceEvent.None
     }
 }

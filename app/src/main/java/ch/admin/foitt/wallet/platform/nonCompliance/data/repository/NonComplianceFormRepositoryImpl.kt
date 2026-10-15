@@ -15,6 +15,13 @@ class NonComplianceFormRepositoryImpl @Inject constructor() : NonComplianceFormR
         MutableStateFlow(NonComplianceInputFieldState.Initial)
     override val descriptionInputFieldState = _descriptionInputFieldState.asStateFlow()
 
+    private val _reportContext = MutableStateFlow(TextFieldValue(""))
+    override val reportContext = _reportContext.asStateFlow()
+
+    private val _contextInputFieldState: MutableStateFlow<NonComplianceInputFieldState> =
+        MutableStateFlow(NonComplianceInputFieldState.Initial)
+    override val contextInputFieldState = _contextInputFieldState.asStateFlow()
+
     private val _email = MutableStateFlow(TextFieldValue(""))
     override val email = _email.asStateFlow()
 
@@ -27,6 +34,11 @@ class NonComplianceFormRepositoryImpl @Inject constructor() : NonComplianceFormR
         _descriptionInputFieldState.value = NonComplianceInputFieldState.Edited
     }
 
+    override fun setReportContext(context: TextFieldValue) {
+        _reportContext.value = context
+        _contextInputFieldState.value = NonComplianceInputFieldState.Edited
+    }
+
     override fun setEmail(email: TextFieldValue) {
         _email.value = email
         _emailInputFieldState.value = NonComplianceInputFieldState.Edited
@@ -36,12 +48,17 @@ class NonComplianceFormRepositoryImpl @Inject constructor() : NonComplianceFormR
         _reportDescription.value = TextFieldValue("")
     }
 
+    override fun clearReportContext() {
+        _reportContext.value = TextFieldValue("")
+    }
+
     override fun clearEmail() {
         _email.value = TextFieldValue("")
     }
 
     override fun clearAll() {
         clearReportDescription()
+        clearReportContext()
         clearEmail()
     }
 }

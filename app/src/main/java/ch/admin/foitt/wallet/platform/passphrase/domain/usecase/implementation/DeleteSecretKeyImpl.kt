@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation
 
-import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.DeleteSecretKeyError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.DeleteSecretKeyError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseStorageKeyConfig
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.DeleteSecretKey
 import com.github.michaelbull.result.Result
@@ -17,6 +18,6 @@ class DeleteSecretKeyImpl @Inject constructor(
         keyStore.load(null)
         keyStore.deleteEntry(passphraseStorageKeyConfig.encryptionKeyAlias)
     }.mapError { throwable ->
-        DeleteSecretKeyError.Unexpected(throwable)
+        PassphraseError.createGeneralError(throwable)
     }
 }

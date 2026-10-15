@@ -1,7 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.usecase.jwt.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
-import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.jwt.JwtError
 import ch.admin.foitt.openid4vc.domain.model.jwt.VerifyJwtSignatureError
 import ch.admin.foitt.openid4vc.domain.model.jwt.toVerifyJwtSignatureError
@@ -11,6 +10,7 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.mapError
+import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSVerifier
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.Ed25519Verifier
@@ -22,12 +22,17 @@ import com.nimbusds.jose.util.Base64URL
 import javax.inject.Inject
 
 internal class VerifyJwtSignatureImpl @Inject constructor() : VerifyJwtSignature {
-    override fun invoke(jwt: Jwt, publicKey: Jwk): Result<Unit, VerifyJwtSignatureError> = binding {
+    override fun invoke(
+        header: JWSHeader,
+        signingInput: ByteArray,
+        signature: Base64URL,
+        publicKey: Jwk
+    ): Result<Unit, VerifyJwtSignatureError> = binding {
         val valid = runSuspendCatching {
             val verifier = createVerifier(publicKey)
-            jwt.signedJwt.verify(verifier)
+            verifier.verify(header, signingInput, signature)
         }.mapError { throwable ->
-            throwable.toVerifyJwtSignatureError("jwt signature validation failed")
+            throwable.toVerifyJwtSignatureError("jws signature validation failed")
         }.bind()
 
         if (!valid) {
@@ -51,6 +56,6 @@ internal class VerifyJwtSignatureImpl @Inject constructor() : VerifyJwtSignature
             ).build()
             Ed25519Verifier(key)
         }
-        else -> error("unsupported key type '${publicKey.kty}' for jwt signature verification")
+        else -> error("unsupported key type '${publicKey.kty}' for jws signature verification")
     }
 }

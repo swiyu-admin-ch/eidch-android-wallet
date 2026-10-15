@@ -102,6 +102,15 @@ class MetadataTest {
     }
 
     @Test
+    fun `credential_refresh_disabled defaults to false when the claim is absent`() = runTest {
+        mockkStatic(URLUtil::class)
+        every { URLUtil.isHttpsUrl(any()) } returns true
+        val result = json.safeDecodeStringTo<IssuerCredentialInfo>(createMetadata()).assertOk()
+
+        assertEquals(false, result.credentialConfigurations.first().credentialRefreshDisabled)
+    }
+
+    @Test
     fun `issuer metadata test with not valid https url returns error`() = runTest {
         mockkStatic(URLUtil::class)
         every { URLUtil.isHttpsUrl(any()) } returns false
@@ -114,9 +123,12 @@ class MetadataTest {
     fun createMetadata(
         signingAlgorithms: List<String> = listOf(SigningAlgorithm.ES256.stdName, SigningAlgorithm.ES512.stdName),
         credentialSigningAlgorithms: List<String> = listOf("Ed25519VerificationKey2020"),
+        credentialRefreshDisabled: Boolean? = null,
     ): String {
         val signingAlgorithmsString = signingAlgorithms.joinToString(separator = ",") { it }
         val credentialSigningAlgorithmsString = credentialSigningAlgorithms.joinToString(separator = ",") { it }
+        val credentialRefreshDisabledString =
+            credentialRefreshDisabled?.let { "\"credential_refresh_disabled\":$it," }.orEmpty()
 
         return """
             {
@@ -176,6 +188,7 @@ class MetadataTest {
                "credential_configurations_supported":{
                   "elfa-sdjwt":{
                      "format":"vc+sd-jwt",
+                     $credentialRefreshDisabledString
                      "cryptographic_binding_methods_supported":[
                         "jwk"
                      ],

@@ -1,13 +1,12 @@
 package ch.admin.foitt.wallet.platform.navigation.implementation
 
-import android.annotation.SuppressLint
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
-import io.ktor.util.reflect.instanceOf
 import timber.log.Timber
 import javax.inject.Inject
 import kotlin.reflect.KClass
@@ -16,158 +15,183 @@ class NavigationManagerImpl @Inject constructor() : NavigationManager {
     override val backstack: SnapshotStateList<Destination> = mutableStateListOf(Destination.StartScreen)
     override val backstackFlow = snapshotFlow { backstack.toList() }
     override val currentDestination: Destination
-        get() = backstack.last()
+        get() = backstack.lastOrNull() ?: rootDestination
 
     private val rootDestination: Destination = Destination.HomeScreen
 
     /**
-     * Pushes a new destination onto the top of the back‑stack.
+     * Pushes a new destination onto the top of the back stack.
      *
-     * - `[A, B] -> navigateTo(C) -> [A, B, C]`
-     *
-     * @param destination The destination to push.
+     * `[A, B] → navigateTo(C) → [A, B, C]`
      */
     override fun navigateTo(destination: Destination) {
-        // ["A","B"] -> navigateTo(C) -> ["A","B","C"]
         backstack.add(destination)
-        printBackStack("navigateTo($destination). Added to backstack: $destination")
+        logBackStack("navigateTo($destination)")
     }
 
     /**
      * Pops the top entry from the back stack.
+     * Returns `true` if an entry was popped, `false` if the stack was empty.
      *
-     * - `[A, B, C] -> popBackStack() -> [A, B]`
+     * `[A, B, C] → popBackStack() → [A, B]`
      */
-    override fun popBackStack() {
-        backstack.removeLastOrNull()?.also {
-            printBackStack("popBackstack()")
-        } ?: printBackStack("popBackstack(): backstack was empty, did not pop anything")
+    override fun popBackStack(): Boolean {
+        val popped = backstack.removeLastOrNull() != null
+        if (!popped) {
+            logBackStack("popBackStack(): backstack was empty")
+        } else {
+            logBackStack("popBackStack()")
+        }
+        return popped
     }
 
     /**
-     * Pops back to the specified destination.
+     * Pops back to the specified destination type.
      *
-     * - `[A, B(1), B(2), C] -> popBackstackTo(B, false) -> [A, B(1), B(2)]`
-     * - `[A, B(1), B(2), C] -> popBackstackTo(B, true) -> [A, B(1)]`
-     * - `[A, B, C] -> popBackstackTo(D, true) -> [A, B, C]`
+     * - `[A, B(1), B(2), C] → popBackStackTo(B, false) → [A, B(1), B(2)]`
+     * - `[A, B(1), B(2), C] → popBackStackTo(B, true)  → [A, B(1)]`
+     * - `[A, B, C] → popBackStackTo(D, true) → [A, B, C]`  (not found → no-op)
      *
-     * @param destination Remove all destinations back to a destination implementing this class.
-     * @param inclusive If true, [destination] itself is popped as well.
+     * @param destination The destination **type** to pop back to.
+     * @param inclusive If `true`, [destination] itself is also popped.
+     * @return `true` if the destination was found and the stack was modified.
      */
-    override fun <T : Destination> popBackStackTo(destination: KClass<out T>, inclusive: Boolean): Boolean {
-        Timber.d("Start popBackstackTo()")
+    override fun <T : Destination> popBackStackTo(
+        destination: KClass<out T>,
+        inclusive: Boolean,
+    ): Boolean = Snapshot.withMutableSnapshot {
         val idx = backstack.indexOfLast { it::class == destination }
         if (idx == -1) {
-            return false
+            logBackStack("popBackStackTo(${destination.java.simpleName}, inclusive=$inclusive): destination not in back stack")
+            return@withMutableSnapshot false
         }
 
-        val offset = if (inclusive) 0 else 1
-        backstack.removeRange(idx + offset, backstack.size)
-        return true
+        val cutIndex = if (inclusive) idx else idx + 1
+        if (cutIndex < backstack.size) {
+            backstack.removeRange(cutIndex, backstack.size)
+            logBackStack("popBackStackTo(${destination.java.simpleName}, inclusive=$inclusive)")
+            true
+        } else {
+            logBackStack("popBackStackTo(${destination.java.simpleName}, inclusive=$inclusive): already on top, no-op")
+            false
+        }
     }
 
-    // ALL OTHER HELPERS ARE JUST COMBINATIONS OF navigateTo, popBackstack and popBackstackTo
-
     /**
-     * Replace current destination with new destination
-     * - `[A, B, C] -> replaceCurrentWith(D) -> [A, B , E]`
+     * Replaces the current destination with [destination].
      *
-     * @param destination new [Destination]
+     * `[A, B, C] → replaceCurrentWith(D) → [A, B, D]`
      */
     override fun replaceCurrentWith(destination: Destination) {
-        if (backstack.isNotEmpty()) {
-            popUpToAndNavigate(backstack.last()::class, destination)
-            printBackStack("replaceCurrentWith($destination)")
-        } else {
-            navigateTo(destination)
+        Snapshot.withMutableSnapshot {
+            backstack.removeLastOrNull()
+            backstack.add(destination)
         }
+        logBackStack("replaceCurrentWith($destination)")
     }
 
     /**
-     * Pop the backstack if possible, replace with root otherwise
+     * Pops the back stack if more than one entry exists;
+     * otherwise replaces the single entry with the root destination.
      *
-     * - ```[A, B, C] -> popBackStackOrToRoot() -> [A, B]```
-     * - ```[A] -> popBackStackOrToRoot() -> ["ROOT"]```
+     * - `[A, B, C] → popBackStackOrToRoot() → [A, B]`
+     * - `[A]       → popBackStackOrToRoot() → [rootDestination]`
      */
     override fun popBackStackOrToRoot() {
         if (backstack.size > 1) {
             popBackStack()
-        } else {
+        } else if (backstack.firstOrNull() != rootDestination) {
             replaceCurrentWith(rootDestination)
         }
-        printBackStack("popBackStackOrToRoot()")
+        // else: stack is [rootDestination] — nothing to do.
+        logBackStack("popBackStackOrToRoot()")
     }
 
     /**
-     * Pop the backstack up to and including a certain destination, then navigate to the new destination.
+     * Pops the back stack up to and including [popToInclusive],
+     * then pushes [destination]. If [popToInclusive] is not found,
+     * simply pushes [destination] on top.
      *
-     * - `[A, B, C] -> popUpToAndNavigate(popUpToInclusive: B, destination: D) -> [A, D]`
-     * - `[A, B, C] -> popUpToAndNavigate(popUpToInclusive: X, destination: D) -> [A, B, C, D]`
-     *
-     * @param destination new [Destination]
-     * @param popToInclusive remove all destinations from the backstack until and including this destination
+     * - `[A, B, C] → popUpToAndNavigate(B, D) → [A, D]`
+     * - `[A, B, C] → popUpToAndNavigate(X, D) → [A, B, C, D]`  (X not found)
      */
-    override fun <T : Destination> popUpToAndNavigate(popToInclusive: KClass<out T>, destination: Destination) {
-        popBackStackTo(destination = popToInclusive, inclusive = true)
-        navigateTo(destination)
-        printBackStack("navigateToAndPopUpTo(destination=$destination, popToInclusive=$popToInclusive")
+    override fun <T : Destination> popUpToAndNavigate(
+        popToInclusive: KClass<out T>,
+        destination: Destination,
+    ) {
+        Snapshot.withMutableSnapshot {
+            val idx = backstack.indexOfLast { it::class == popToInclusive }
+            if (idx != -1) {
+                // Remove target (inclusive) and everything above it
+                backstack.removeRange(idx, backstack.size)
+            }
+
+            backstack.add(destination)
+            logBackStack("popUpToAndNavigate(${popToInclusive.java.simpleName}, destination=$destination)")
+        }
     }
 
     /**
-     * Pop backstack to [Destination.HomeScreen] if it's in the backstack.
-     * Otherwise [popUpAndNavigate] to [popUntil] before navigating to [Destination.HomeScreen]
+     * Navigates back to [Destination.HomeScreen].
      *
-     * @param popUntil The destination type to pop up to before navigating to the home screen.
+     * If `HomeScreen` is already on the stack, pops to it (non-inclusive).
+     * Otherwise, pops up to [popUntil] (inclusive) and pushes `HomeScreen`.
+     *
+     * @param popUntil The destination type to pop up to when HomeScreen is
+     *                 not already present on the stack.
      */
     override fun <T : Destination> navigateBackToHomeScreen(popUntil: KClass<out T>) {
         if (backstack.any { it is Destination.HomeScreen }) {
-            popBackStackTo(Destination.HomeScreen::class, false)
-            printBackStack("navigateBackToHome(popUntil=$popUntil)")
+            popBackStackTo(Destination.HomeScreen::class, inclusive = false)
         } else {
             popUpToAndNavigate(popUntil, Destination.HomeScreen)
-            printBackStack("navigateBackToHome(popUntil=$popUntil)")
         }
+        logBackStack("navigateBackToHomeScreen(popUntil=$popUntil)")
     }
 
     /**
-     * Navigates back to last screen in backstack not in [destinationGroup]
+     * Removes the trailing run of destinations belonging to [destinationGroup].
+     * If this empties the stack, restores [rootDestination].
      *
-     * - `[A:X, B, C:X, D:X] -> navigateOutOf(X::class) -> [A:X, B]`
-     *
-     * @param destinationGroup KClass of [DestinationGroup] to navigate out
+     * `[A:X, B, C:X, D:X] → navigateOutOf(X::class) → [A:X, B]`
      */
-    override fun <T : DestinationGroup> navigateOutOf(destinationGroup: KClass<T>) {
-        if (destinationGroup.qualifiedName?.endsWith("Screen") == true) {
-            error("$destinationGroup must be a scope, not a screen")
+    override fun navigateOutOf(destinationGroup: DestinationGroup) {
+        Snapshot.withMutableSnapshot {
+            val toRemove = backstack.takeLastWhile { destinationGroup in it.destinationGroups() }
+            backstack.removeAll(toRemove)
+            if (backstack.isEmpty()) {
+                backstack.add(rootDestination)
+            }
         }
-
-        val remove = backstack.takeLastWhile { it.instanceOf(destinationGroup) }
-        backstack.removeAll(remove)
+        logBackStack("navigateOutOf($destinationGroup)")
     }
 
     /**
-     * Navigates back to last screen in backstack not in [destinationGroup] and add new destination
+     * Navigates out of [destinationGroup] and pushes [destination],
+     * unless [destination] is already on top after the pop.
      *
-     * - `[A:X, B, C:X, D:X] -> navigateOutAndTo(X::class, E) -> [A:X, B, E]`
-     * - `[A:X, B, E, C:X, D:X] -> navigateOutAndTo(X::class, E) -> [A:X, B, E]`
-     *
-     * @param destinationGroup KClass of [DestinationGroup] to navigate out
-     * @param destination new [Destination]
+     * - `[A:X, B, C:X, D:X] → navigateOutAndTo(X, E) → [A:X, B, E]`
+     * - `[A:X, B, E, C:X, D:X] → navigateOutAndTo(X, E) → [A:X, B, E]`
      */
-    override fun <T : DestinationGroup> navigateOutAndTo(destinationGroup: KClass<T>, destination: Destination) {
-        navigateOutOf(destinationGroup)
-        val isDestinationAlreadyOnTop = backstack.lastOrNull()?.let { backstack.last()::class == destination::class } ?: false
-        if (!isDestinationAlreadyOnTop) {
-            navigateTo(destination)
+    override fun navigateOutAndTo(
+        destinationGroup: DestinationGroup,
+        destination: Destination
+    ) {
+        Snapshot.withMutableSnapshot {
+            navigateOutOf(destinationGroup)
+            val alreadyOnTop = backstack.lastOrNull()?.let { it::class == destination::class } ?: false
+            if (!alreadyOnTop) {
+                navigateTo(destination)
+            }
         }
+        logBackStack("navigateOutAndTo($destinationGroup, $destination)")
     }
 
-    @SuppressLint("RestrictedApi")
-    private fun printBackStack(action: String) {
+    private fun logBackStack(action: String) {
         Timber.d(
-            "NavManager::$action.\nCurrent backstack: ${backstack.joinToString(
-                " -> "
-            ) { it::class.qualifiedName?.split(".")?.last() ?: "Unknown" }}"
+            "NavManager::$action.\nCurrent backstack: ${
+                backstack.joinToString(" -> ") { it::class.java.simpleName ?: "Unknown" }
+            }"
         )
     }
 }

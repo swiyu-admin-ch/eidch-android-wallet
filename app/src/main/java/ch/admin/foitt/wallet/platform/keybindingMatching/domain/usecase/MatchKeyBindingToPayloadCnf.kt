@@ -6,7 +6,7 @@ import com.github.michaelbull.result.Result
 
 interface MatchKeyBindingToPayloadCnf {
     suspend operator fun invoke(
-        keyBindings: List<KeyBinding?>,
+        keyBindings: List<KeyBinding>,
         payload: String,
     ): Result<KeyBinding, MatchKeyBindingToPayloadCnfError>
 }

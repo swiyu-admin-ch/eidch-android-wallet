@@ -1,6 +1,9 @@
 package ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation
 
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.EncryptAndSavePassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.HashPassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperPassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.StorePassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.toStorePassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.EncryptAndSavePassphrase
@@ -23,31 +26,25 @@ class StorePassphraseImpl @Inject constructor(
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : StorePassphrase {
     override suspend fun invoke(
-        pin: String,
+        passphrase: String,
         encryptionCipher: Cipher,
     ): Result<Unit, StorePassphraseError> = withContext(ioDispatcher) {
         coroutineBinding {
-            val pinHash = hashPassphrase(
-                pin = pin,
+            val passphraseHash = hashPassphrase(
+                passphrase = passphrase,
                 initializeSalt = false,
-            ).mapError { error ->
-                error.toStorePassphraseError()
-            }.bind()
+            ).mapError(HashPassphraseError::toStorePassphraseError).bind()
 
-            val pinHashPeppered = pepperPassphrase(
-                passphrase = pinHash.hash,
+            val passphraseHashPeppered = pepperPassphrase(
+                passphrase = passphraseHash.hash,
                 initializePepper = false,
-            ).mapError { error ->
-                error.toStorePassphraseError()
-            }.bind()
+            ).mapError(PepperPassphraseError::toStorePassphraseError).bind()
 
             Timber.d("Passphrase, CryptoObject present, encrypting passphrase")
             encryptAndSavePassphrase(
-                pinHashPeppered.hash,
+                passphraseHashPeppered.hash,
                 encryptionCipher,
-            ).mapError { error ->
-                error.toStorePassphraseError()
-            }.bind()
+            ).mapError(EncryptAndSavePassphraseError::toStorePassphraseError).bind()
         }
     }
 }

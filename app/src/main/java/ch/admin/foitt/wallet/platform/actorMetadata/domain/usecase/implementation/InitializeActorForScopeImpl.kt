@@ -14,6 +14,8 @@ internal class InitializeActorForScopeImpl @Inject constructor(
         actorDisplayData: ActorDisplayData,
         componentScope: ComponentScope,
     ) {
+        if (!destinationScopedComponentManager.isInScope(componentScope)) return
+
         val actorRepository = destinationScopedComponentManager.getEntryPoint(
             entryPointClass = ActorRepositoryEntryPoint::class.java,
             componentScope = componentScope,

@@ -6,9 +6,9 @@ import ch.admin.foitt.wallet.feature.home.domain.usecase.DeleteEIdRequestCase
 import ch.admin.foitt.wallet.feature.home.domain.usecase.EIdRequestsPriorityOrdering
 import ch.admin.foitt.wallet.feature.home.domain.usecase.GetEIdRequestsFlow
 import ch.admin.foitt.wallet.feature.otp.domain.repository.OtpStateCompletionRepository
-import ch.admin.foitt.wallet.platform.batch.domain.usecase.RefreshBatchCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.repository.CredentialRefreshRepository
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshVerifiableCredentials
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCachedImages
@@ -16,7 +16,9 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PollS
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.UpdateAllSIdStatuses
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialEvent
+import ch.admin.foitt.wallet.platform.messageEvents.domain.model.NonComplianceEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialEventRepository
+import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.NonComplianceEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetCredentialsWithDetailsFlow
@@ -81,7 +83,7 @@ class HomeViewModelTest {
     private lateinit var refreshDeferredCredentials: RefreshDeferredCredentials
 
     @MockK(relaxed = true)
-    private lateinit var refreshBatchCredentials: RefreshBatchCredentials
+    private lateinit var refreshVerifiableCredentials: RefreshVerifiableCredentials
 
     @MockK(relaxed = true)
     private lateinit var credentialRefreshRepository: CredentialRefreshRepository
@@ -110,6 +112,9 @@ class HomeViewModelTest {
     @MockK(relaxed = true)
     private lateinit var setTopBarState: SetTopBarState
 
+    @MockK(relaxed = true)
+    private lateinit var nonComplianceEventRepository: NonComplianceEventRepository
+
     private lateinit var viewModel: HomeViewModel
 
     @BeforeEach
@@ -118,8 +123,8 @@ class HomeViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         every { credentialEventRepository.event } returns MutableStateFlow(CredentialEvent.NONE)
+        every { nonComplianceEventRepository.event } returns MutableStateFlow(NonComplianceEvent.None)
         every { environmentSetupRepository.eIdRequestEnabled } returns false
-        every { environmentSetupRepository.batchIssuanceEnabled } returns true
         every { credentialRefreshRepository.isRefreshDue() } returns true
 
         viewModel = HomeViewModel(
@@ -132,7 +137,7 @@ class HomeViewModelTest {
             updateAllCredentialStatuses = updateAllCredentialStatuses,
             updateAllSIdStatuses = updateAllSIdStatuses,
             refreshDeferredCredentials = refreshDeferredCredentials,
-            refreshBatchCredentials = refreshBatchCredentials,
+            refreshVerifiableCredentials = refreshVerifiableCredentials,
             credentialRefreshRepository = credentialRefreshRepository,
             deleteEIdRequestCase = deleteEIdRequestCase,
             environmentSetupRepository = environmentSetupRepository,
@@ -143,6 +148,7 @@ class HomeViewModelTest {
             pollSIdRequestAfterFileSubmit = pollSIdRequestAfterFileSubmit,
             setTopBarState = setTopBarState,
             updateCachedImages = updateCachedImages,
+            nonComplianceEventRepository = nonComplianceEventRepository
         )
     }
 
@@ -153,37 +159,26 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `onResume when refresh is due refreshes deferred, batch and credential statuses once and stamps the cooldown`() =
+    fun `onResume when refresh is due refreshes deferred, verifiable and credential statuses once and stamps the cooldown`() =
         runTest(testDispatcher) {
             viewModel.onResume()
             advanceUntilIdle()
 
             verify(exactly = 1) { credentialRefreshRepository.markRefreshed() }
             coVerify(exactly = 1) { refreshDeferredCredentials() }
-            coVerify(exactly = 1) { refreshBatchCredentials() }
+            coVerify(exactly = 1) { refreshVerifiableCredentials() }
             coVerify(exactly = 1) { updateAllCredentialStatuses() }
         }
 
     @Test
-    fun `onResume refreshes the batch credentials before updating the credential statuses`() = runTest(testDispatcher) {
+    fun `onResume refreshes the verifiable credentials before updating the credential statuses`() = runTest(testDispatcher) {
         viewModel.onResume()
         advanceUntilIdle()
 
         coVerifyOrder {
-            refreshBatchCredentials()
+            refreshVerifiableCredentials()
             updateAllCredentialStatuses()
         }
-    }
-
-    @Test
-    fun `onResume does not refresh the batch credentials when batch issuance is disabled`() = runTest(testDispatcher) {
-        every { environmentSetupRepository.batchIssuanceEnabled } returns false
-
-        viewModel.onResume()
-        advanceUntilIdle()
-
-        coVerify(exactly = 0) { refreshBatchCredentials() }
-        coVerify(exactly = 1) { updateAllCredentialStatuses() }
     }
 
     @Test
@@ -195,7 +190,7 @@ class HomeViewModelTest {
 
         verify(exactly = 0) { credentialRefreshRepository.markRefreshed() }
         coVerify(exactly = 0) { refreshDeferredCredentials() }
-        coVerify(exactly = 0) { refreshBatchCredentials() }
+        coVerify(exactly = 0) { refreshVerifiableCredentials() }
         coVerify(exactly = 0) { updateAllCredentialStatuses() }
     }
 
@@ -253,7 +248,7 @@ class HomeViewModelTest {
 
         verify(exactly = 1) { credentialRefreshRepository.markRefreshed() }
         coVerify(exactly = 1) { refreshDeferredCredentials() }
-        coVerify(exactly = 1) { refreshBatchCredentials() }
+        coVerify(exactly = 1) { refreshVerifiableCredentials() }
         coVerify(exactly = 1) { updateAllSIdStatuses() }
         coVerify(exactly = 1) { updateAllCredentialStatuses() }
     }

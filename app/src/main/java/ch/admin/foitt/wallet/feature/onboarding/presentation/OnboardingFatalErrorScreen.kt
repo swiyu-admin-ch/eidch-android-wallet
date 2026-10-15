@@ -29,6 +29,7 @@ fun OnboardingFatalErrorScreen(
     OnboardingFatalErrorScreenContent(
         primaryText = viewModel.primaryTextRes,
         secondaryText = viewModel.secondaryTextRes,
+        errorCode = viewModel.errorCode,
         onClose = currentActivity::finish,
     )
 }
@@ -37,6 +38,7 @@ fun OnboardingFatalErrorScreen(
 private fun OnboardingFatalErrorScreenContent(
     @StringRes primaryText: Int,
     @StringRes secondaryText: Int,
+    errorCode: String,
     onClose: () -> Unit,
 ) {
     WalletLayouts.ScrollableColumnWithPicture(
@@ -67,6 +69,10 @@ private fun OnboardingFatalErrorScreenContent(
         WalletTexts.BodyLarge(
             text = stringResource(secondaryText)
         )
+        Spacer(modifier = Modifier.height(Sizes.s06))
+        WalletTexts.BodySmall(
+            text = errorCode
+        )
     }
 }
 
@@ -77,6 +83,7 @@ private fun OnboardingFatalErrorPreview() {
         OnboardingFatalErrorScreenContent(
             primaryText = R.string.tk_onboarding_failure_passphraseInitialization_primary,
             secondaryText = R.string.tk_onboarding_failure_passphraseInitialization_secondary,
+            errorCode = "OBKS500-1234",
             onClose = {}
         )
     }

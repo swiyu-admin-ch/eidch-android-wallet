@@ -8,11 +8,17 @@ import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceTe
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.repository.NonComplianceFormRepository
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.repository.NonComplianceRepository
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.GetNonComplianceReportingData
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.SendIssuerNonComplianceReport
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.SendNonComplianceReport
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.SendVerifierNonComplianceReport
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.SubmitNonComplianceReport
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.ValidateEmail
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.ValidateTextLength
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.GetNonComplianceReportingDataImpl
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.SendIssuerNonComplianceReportImpl
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.SendNonComplianceReportImpl
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.SendVerifierNonComplianceReportImpl
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.SubmitNonComplianceReportImpl
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.ValidateEmailImpl
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementation.ValidateTextLengthImpl
 import dagger.Binds
@@ -50,6 +56,21 @@ internal interface NonComplianceBindingsModule {
     fun bindValidateEmail(
         useCase: ValidateEmailImpl
     ): ValidateEmail
+
+    @Binds
+    fun bindSendVerifierNonComplianceReport(
+        useCase: SendVerifierNonComplianceReportImpl
+    ): SendVerifierNonComplianceReport
+
+    @Binds
+    fun bindSendIssuerNonComplianceReport(
+        useCase: SendIssuerNonComplianceReportImpl
+    ): SendIssuerNonComplianceReport
+
+    @Binds
+    fun bindSubmitNonComplianceReport(
+        useCase: SubmitNonComplianceReportImpl
+    ): SubmitNonComplianceReport
 
     @Binds
     fun bindSendNonComplianceReport(

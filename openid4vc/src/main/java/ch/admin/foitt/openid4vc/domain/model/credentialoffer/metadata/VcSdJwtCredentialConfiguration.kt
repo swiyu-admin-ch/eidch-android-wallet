@@ -26,6 +26,8 @@ data class VcSdJwtCredentialConfiguration(
     override val proofTypesSupported: Map<ProofType, ProofTypeConfig> = emptyMap(),
     @SerialName("credential_metadata")
     override val credentialMetadata: CredentialMetadata? = null,
+    @SerialName("credential_refresh_disabled")
+    override val credentialRefreshDisabled: Boolean = false,
 
     @SerialName("vct")
     val vct: String,

@@ -3,7 +3,19 @@
     <string name="biometricsPrompt_reason">Vus pudais duvrar vinavant Voss pled-clav, sch\'i na gartegia betg cun ils biometrics.</string>
     <string name="global_cancel">Interrumper</string>
     <string name="login_biometricTitle">swiyu App s\'inscriver</string>
-    <plurals name="tk_changepassword_error1_android_note2">
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_inputError">
+        <item quantity="one">Il pled-clav è sbaglià. Vus avais anc %1$s emprova. (%2$s)</item>
+        <item quantity="other">Il pled-clav è sbaglià. Vus avais anc %1$s emprovas. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_remainingAttempts">
+        <item quantity="one">Il pled-clav è sbaglià. Vus avais anc %s emprova.</item>
+        <item quantity="other">Il pled-clav è sbaglià. Vus avais anc %s emprovas.</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_inputError">
+        <item quantity="one">Il pled-clav è sbaglià. Vus avais anc %1$s emprova. (%2$s)</item>
+        <item quantity="other">Il pled-clav è sbaglià. Vus avais anc %1$s emprovas. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_remainingAttempts">
         <item quantity="one">Il pled-clav è sbaglià. Vus avais anc %s emprova.</item>
         <item quantity="other">Il pled-clav è sbaglià. Vus avais anc %s emprovas.</item>
     </plurals>
@@ -453,8 +465,6 @@
     <string name="tk_activity_presentationAccepted_title">Infurmaziuns cundivididas</string>
     <string name="tk_badgeInformation_sensitiveClaimInfo_secondary">Datas sensitivas èn vegnidas dumandadas. Interrumpa la transacziun, sche Vus na vulais betg cundivider questas infurmaziuns.</string>
     <string name="tk_nonCompliance_reportExcessiveData_title">Rapportar datas memia numerusas</string>
-    <string name="tk_nonCompliance_report_info_title">Procedura recumandada</string>
-    <string name="tk_nonCompliance_report_info_body">En il pass proxim registreschan Vus Vossa communicaziun per l’autoritad responsabla. Inditges er tge datas che èn vegnidas dumandadas senza autorisaziun.</string>
     <string name="tk_nonCompliance_report_info_moreInformation_link_text">Mussar dapli cussegls</string>
     <string name="tk_eidRequest_walletPairing_additionalDevice_sectionTitle">Apparats supplementars</string>
     <string name="tk_eidRequest_walletPairing_additionalDevice_button_primary">Apparats supplementars</string>
@@ -477,7 +487,6 @@
         <item quantity="one">1 apparat agiuntà</item>
         <item quantity="other">%s apparats agiuntads</item>
     </plurals>
-    <string name="tk_nonCompliance_list_footer">Attenziun: Enfin al lantschament uffizial da swiyu na vegnan communicaziuns betg examinadas; perquai na vegnan verificaturs betg sancziunads per in cumportament incorrect.\nLas categorias n’èn anc betg definitivlas.</string>
     <string name="tk_nonCompliance_report_form_actor_footer">Vus annunziais questa organisaziun</string>
     <string name="tk_nonCompliance_report_form_description_maxCharacter_footer">Scriva per plaschair maximalmain 500 segns.</string>
     <string name="tk_nonCompliance_report_form_description_footer">Scriva per plaschair maximalmain 500 segns.</string>

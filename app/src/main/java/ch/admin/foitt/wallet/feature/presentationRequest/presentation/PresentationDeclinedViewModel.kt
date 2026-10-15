@@ -46,11 +46,16 @@ class PresentationDeclinedViewModel @AssistedInject constructor(
     environmentSetupRepository: EnvironmentSetupRepository,
     setTopBarState: SetTopBarState,
     @Assisted val redirectUri: String?,
-    @Assisted val credentialId: Long,
+    @Assisted("credentialId") val credentialId: Long,
+    @Assisted("activityId") val activityId: Long?,
 ) : ScreenViewModel(setTopBarState) {
     @AssistedFactory
     interface Factory {
-        fun create(redirectUri: String?, credentialId: Long): PresentationDeclinedViewModel
+        fun create(
+            @Assisted redirectUri: String?,
+            @Assisted("credentialId") credentialId: Long,
+            @Assisted("activityId") activityId: Long?,
+        ): PresentationDeclinedViewModel
     }
 
     override val topBarState = TopBarState.None
@@ -103,11 +108,13 @@ class PresentationDeclinedViewModel @AssistedInject constructor(
             getNonComplianceReportingData(
                 credentialId = credentialId,
                 actorDisplayData = verifierDisplayData.value,
-                activityType = ActivityType.PRESENTATION_DECLINED
+                activityType = ActivityType.PRESENTATION_DECLINED,
+                activityId = activityId,
             ).onOk { reportingData ->
                 navManager.navigateTo(
                     Destination.NonComplianceListScreen(
-                        reportingData = reportingData
+                        reportingData = reportingData,
+                        goBackToRoot = true,
                     )
                 )
             }.onErr { error ->

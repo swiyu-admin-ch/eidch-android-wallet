@@ -6,7 +6,7 @@ import javax.crypto.Cipher
 
 fun interface StorePassphrase {
     suspend operator fun invoke(
-        pin: String,
+        passphrase: String,
         encryptionCipher: Cipher,
     ): Result<Unit, StorePassphraseError>
 }

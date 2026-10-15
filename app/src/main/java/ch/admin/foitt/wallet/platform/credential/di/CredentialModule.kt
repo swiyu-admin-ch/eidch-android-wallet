@@ -18,6 +18,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleDeferredCr
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.MapToCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshCredential
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshVerifiableCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.ResolveClaimTemplate
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveCredentialFromDeferred
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.SaveVcSdJwtCredentials
@@ -39,6 +40,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.H
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.MapToCredentialDisplayDataImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.RefreshCredentialImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.RefreshDeferredCredentialsImpl
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.RefreshVerifiableCredentialsImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.ResolveClaimTemplateImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.SaveCredentialFromDeferredImpl
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.SaveVcSdJwtCredentialsImpl
@@ -92,9 +94,15 @@ internal interface CredentialModule {
     ): RefreshDeferredCredentials
 
     @Binds
+    @ActivityRetainedScoped
     fun bindRefreshCredentials(
         useCase: RefreshCredentialImpl
     ): RefreshCredential
+
+    @Binds
+    fun bindRefreshVerifiableCredentials(
+        useCase: RefreshVerifiableCredentialsImpl
+    ): RefreshVerifiableCredentials
 
     @Binds
     fun bindGetCredentialState(

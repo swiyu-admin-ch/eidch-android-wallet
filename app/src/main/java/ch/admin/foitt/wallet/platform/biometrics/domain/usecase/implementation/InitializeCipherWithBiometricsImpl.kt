@@ -4,9 +4,9 @@ import androidx.annotation.CheckResult
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricAuthenticationError
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.model.BiometricPromptWrapper
 import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.LaunchBiometricPrompt
-import ch.admin.foitt.wallet.platform.biometrics.domain.model.EnableBiometricsError
+import ch.admin.foitt.wallet.platform.biometrics.domain.model.InitializeCipherWithBiometricsError
 import ch.admin.foitt.wallet.platform.biometrics.domain.model.ResetBiometricsError
-import ch.admin.foitt.wallet.platform.biometrics.domain.model.toEnableBiometricsError
+import ch.admin.foitt.wallet.platform.biometrics.domain.model.toInitializeCipherWithBiometricsError
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.InitializeCipherWithBiometrics
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.ResetBiometrics
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.GetCipherForEncryptionError
@@ -27,15 +27,15 @@ class InitializeCipherWithBiometricsImpl @Inject constructor(
     @CheckResult
     override suspend fun invoke(
         promptWrapper: BiometricPromptWrapper,
-    ): Result<Cipher, EnableBiometricsError> = coroutineBinding {
+    ): Result<Cipher, InitializeCipherWithBiometricsError> = coroutineBinding {
         resetBiometrics().mapError(
-            ResetBiometricsError::toEnableBiometricsError
+            ResetBiometricsError::toInitializeCipherWithBiometricsError
         ).bind()
         val encryptionCipher: Cipher = getCipherForEncryption(
             keystoreKeyConfig = passphraseStorageKeyConfig,
             initializationVector = null,
         ).mapError(
-            GetCipherForEncryptionError::toEnableBiometricsError
+            GetCipherForEncryptionError::toInitializeCipherWithBiometricsError
         ).bind()
 
         // If biometric fails for any reason, we abort the process
@@ -43,7 +43,7 @@ class InitializeCipherWithBiometricsImpl @Inject constructor(
             cipher = encryptionCipher,
             promptWrapper = promptWrapper,
         ).mapError(
-            BiometricAuthenticationError::toEnableBiometricsError
+            BiometricAuthenticationError::toInitializeCipherWithBiometricsError
         ).bind()
     }
 }

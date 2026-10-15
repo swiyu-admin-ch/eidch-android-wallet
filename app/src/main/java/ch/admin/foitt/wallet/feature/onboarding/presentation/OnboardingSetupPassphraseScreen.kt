@@ -207,7 +207,7 @@ private fun OnboardingPassphraseScreenPreview() {
     WalletTheme {
         OnboardingPassphraseScreenContent(
             textFieldValue = TextFieldValue("abc123"),
-            passphraseInputFieldState = PassphraseInputFieldState.Error,
+            passphraseInputFieldState = PassphraseInputFieldState.Error("XY123-1234"),
             onTextFieldValueChange = {},
             isPassphraseValid = true,
             onCheckPassphrase = {},

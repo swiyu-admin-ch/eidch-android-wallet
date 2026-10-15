@@ -35,6 +35,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.credentialDetail.domain.model.IssuanceType
@@ -92,9 +93,16 @@ fun CredentialDetailScreen(
     val menuSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val deleteSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val credentialUiState = viewModel.credentialDetailUiState.stateFlow.collectAsStateWithLifecycle().value
+
     val uiMode = LocalConfiguration.current.uiMode
     LaunchedEffect(uiMode) {
         viewModel.credentialDetailUiState.refreshData()
+    }
+
+    LifecycleResumeEffect(credentialUiState.credential.title) {
+        viewModel.setTitle()
+        onPauseOrDispose {}
     }
 
     val visibleBottomSheet = viewModel.visibleBottomSheet.collectAsStateWithLifecycle().value

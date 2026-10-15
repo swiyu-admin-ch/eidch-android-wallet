@@ -1,54 +1,74 @@
 package ch.admin.foitt.wallet.platform.crypto.domain.usecase.implementation
 
 import ch.admin.foitt.wallet.platform.crypto.domain.model.HashConfiguration
+import ch.admin.foitt.wallet.platform.crypto.domain.usecase.HashDataWithSalt
+import ch.admin.foitt.wallet.platform.crypto.domain.usecase.implementation.mock.MockHashConfiguration.HASH_ALGORITHM
+import ch.admin.foitt.wallet.platform.crypto.domain.usecase.implementation.mock.MockHashConfiguration.HASH_ITERATIONS
+import ch.admin.foitt.wallet.platform.crypto.domain.usecase.implementation.mock.MockHashConfiguration.HASH_KEY_LENGTH
+import ch.admin.foitt.wallet.platform.crypto.domain.usecase.implementation.mock.MockHashConfiguration.SALT_LENGTH
 import ch.admin.foitt.wallet.util.assertErr
-import com.github.michaelbull.result.getOrThrow
+import ch.admin.foitt.wallet.util.assertOk
+import io.mockk.MockKAnnotations
 import io.mockk.every
-import io.mockk.spyk
-import io.mockk.verify
+import io.mockk.impl.annotations.MockK
+import io.mockk.unmockkAll
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 internal class HashDataWithRandomSaltImplTest {
 
+    @MockK
+    private lateinit var hashConfiguration: HashConfiguration
+
     private val testDispatcher = StandardTestDispatcher()
+
+    private lateinit var useCase: HashDataWithSalt
+
+    @BeforeEach
+    fun setUp() {
+        MockKAnnotations.init(this)
+
+        useCase = HashDataWithSaltImpl(
+            hashConfiguration = hashConfiguration,
+            ioDispatcher = testDispatcher,
+        )
+
+        every { hashConfiguration.hashAlgorithm } returns HASH_ALGORITHM
+        every { hashConfiguration.hashIterations } returns HASH_ITERATIONS
+        every { hashConfiguration.hashKeyLength } returns HASH_KEY_LENGTH
+        every { hashConfiguration.saltLength } returns SALT_LENGTH
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun `hashing with random salt should use default hash configuration`() = runTest(testDispatcher) {
-        val algo: HashConfiguration = spyk(HashConfiguration())
-        val data = "data"
+        val hashData = useCase(data = DATA, salt = null).assertOk()
 
-        val hashData = HashDataWithSaltImpl(algo, testDispatcher).invoke(data = data, salt = null).getOrThrow { it.throwable }
-
-        verify { algo.hashAlgorithm }
-        verify { algo.hashIterations }
-        verify { algo.hashKeyLength }
-        verify { algo.saltLength }
-        assertEquals(algo.saltLength, hashData.salt.size)
-        assertEquals(algo.hashKeyLength / 8, hashData.hash.size) // divided keyLength in bits by 8 to get bytes
+        assertEquals(SALT_LENGTH, hashData.salt.size)
+        assertEquals(HASH_KEY_LENGTH / 8, hashData.hash.size) // divided keyLength in bits by 8 to get bytes
         // divided keyLength in bits by 8 to get bytes; hex-string uses 2 bytes per position
-        assertEquals(algo.hashKeyLength / 8, hashData.hashHexString.length / 2)
+        assertEquals(HASH_KEY_LENGTH / 8, hashData.hashHexString.length / 2)
     }
 
     @Test
     fun `hashing with random salt should use given hash configuration`() = runTest(testDispatcher) {
-        val algo: HashConfiguration = spyk(HashConfiguration())
         val saltLength = 4
         val keyLength = 128
-        every { algo.saltLength } returns saltLength
-        every { algo.hashKeyLength } returns keyLength
-        val data = "data"
+        every { hashConfiguration.saltLength } returns saltLength
+        every { hashConfiguration.hashKeyLength } returns keyLength
 
-        val hashData = HashDataWithSaltImpl(algo, testDispatcher).invoke(data = data, salt = null).getOrThrow { it.throwable }
+        val hashData = useCase(data = DATA, salt = null).assertOk()
 
-        verify { algo.hashAlgorithm }
-        verify { algo.hashIterations }
-        verify { algo.hashKeyLength }
-        verify { algo.saltLength }
         assertEquals(saltLength, hashData.salt.size)
         assertEquals(keyLength / 8, hashData.hash.size) // divided keyLength in bits by 8 to get bytes
         // divided keyLength in bits by 8 to get bytes; hex-string uses 2 bytes per position
@@ -57,45 +77,29 @@ internal class HashDataWithRandomSaltImplTest {
 
     @Test
     fun `hashing with random salt should fail for unknown hash algorithm`() = runTest(testDispatcher) {
-        val algo: HashConfiguration = spyk(HashConfiguration())
-        every { algo.hashAlgorithm } returns "unknown"
-        val data = "data"
+        every { hashConfiguration.hashAlgorithm } returns "unknown"
 
-        val result = HashDataWithSaltImpl(algo, testDispatcher).invoke(data, salt = null)
-
-        result.assertErr()
+        useCase.invoke(DATA, salt = null).assertErr()
     }
 
     @Test
     fun `hashing with random salt should fail for zero salt size`() = runTest(testDispatcher) {
-        val algo: HashConfiguration = spyk(HashConfiguration())
-        every { algo.saltLength } returns 0
-        val data = "data"
+        every { hashConfiguration.saltLength } returns 0
 
-        val result = HashDataWithSaltImpl(algo, testDispatcher).invoke(data, salt = null)
-
-        result.assertErr()
+        useCase(DATA, salt = null).assertErr()
     }
 
     @Test
     fun `hashing with random salt should fail for zero hash key length`() = runTest(testDispatcher) {
-        val algo: HashConfiguration = spyk(HashConfiguration())
-        every { algo.hashKeyLength } returns 0
-        val data = "data"
+        every { hashConfiguration.hashKeyLength } returns 0
 
-        val result = HashDataWithSaltImpl(algo, testDispatcher).invoke(data, salt = null)
-
-        result.assertErr()
+        useCase(DATA, salt = null).assertErr()
     }
 
     @Test
     fun `hashing with random salt two times with same data should not generate same hash`() = runTest(testDispatcher) {
-        val algo: HashConfiguration = spyk(HashConfiguration())
-        val data = "data"
-        val useCase = HashDataWithSaltImpl(algo, testDispatcher)
-
-        val hashData = useCase.invoke(data, null).getOrThrow { it.throwable }
-        val hashData2 = useCase.invoke(data, null).getOrThrow { it.throwable }
+        val hashData = useCase(DATA, null).assertOk()
+        val hashData2 = useCase(DATA, null).assertOk()
 
         assertNotEquals(hashData, hashData2)
         assertFalse(hashData.hash.contentEquals(hashData2.hash))
@@ -104,18 +108,17 @@ internal class HashDataWithRandomSaltImplTest {
     }
 
     @Test
-    fun `hashing with random salt two times with different data should not generate same hash`() = runTest(
-        testDispatcher
-    ) {
-        val algo: HashConfiguration = spyk(HashConfiguration())
-        val useCase = HashDataWithSaltImpl(algo, testDispatcher)
-
-        val hashData = useCase.invoke("data", null).getOrThrow { it.throwable }
-        val hashData2 = useCase.invoke("anotherData", null).getOrThrow { it.throwable }
+    fun `hashing with random salt two times with different data should not generate same hash`() = runTest(testDispatcher) {
+        val hashData = useCase(DATA, null).assertOk()
+        val hashData2 = useCase("otherData", null).assertOk()
 
         assertNotEquals(hashData, hashData2)
         assertFalse(hashData.hash.contentEquals(hashData2.hash))
         assertNotEquals(hashData.hashHexString, hashData2.hashHexString)
         assertFalse(hashData.salt.contentEquals(hashData2.salt))
+    }
+
+    private companion object {
+        const val DATA = "data"
     }
 }

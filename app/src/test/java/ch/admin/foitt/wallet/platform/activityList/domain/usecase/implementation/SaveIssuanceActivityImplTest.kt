@@ -14,6 +14,7 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -55,11 +56,13 @@ class SaveIssuanceActivityImplTest {
         val actorDisplayData = mockk<ActorDisplayData>()
         val actorFallbackName = "fallback"
 
-        useCase(
+        val result = useCase(
             credentialId = credentialId,
             actorDisplayData = actorDisplayData,
             issuerFallbackName = actorFallbackName
         )
+
+        assertEquals(1L, result)
 
         coVerify {
             mockActivityRepository.saveActivity(
@@ -82,11 +85,13 @@ class SaveIssuanceActivityImplTest {
         val actorDisplayData = mockk<ActorDisplayData>()
         val actorFallbackName = "fallback"
 
-        useCase(
+        val result = useCase(
             credentialId = credentialId,
             actorDisplayData = actorDisplayData,
             issuerFallbackName = actorFallbackName
         )
+
+        assertEquals(null, result)
 
         coVerify(exactly = 0) {
             mockActivityRepository.saveActivity(

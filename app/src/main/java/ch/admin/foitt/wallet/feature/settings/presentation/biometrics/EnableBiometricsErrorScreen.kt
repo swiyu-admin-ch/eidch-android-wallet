@@ -10,17 +10,20 @@ import ch.admin.foitt.wallet.theme.WalletTheme
 @Composable
 fun EnableBiometricsErrorScreen(viewModel: EnableBiometricsErrorViewModel) {
     EnableBiometricsErrorContent(
+        errorCode = viewModel.errorCode,
         onClose = viewModel::onClose,
     )
 }
 
 @Composable
 private fun EnableBiometricsErrorContent(
+    errorCode: String,
     onClose: () -> Unit,
 ) = ErrorScreenContent(
     iconRes = R.drawable.wallet_ic_error_general,
     title = stringResource(R.string.tk_global_error_unexpected_title),
     body = stringResource(id = R.string.tk_global_error_unexpected_message),
+    errorCode = errorCode,
     primaryButton = stringResource(id = R.string.global_error_backToHome_button),
     onPrimaryClick = onClose,
 )
@@ -30,6 +33,7 @@ private fun EnableBiometricsErrorContent(
 private fun EnableBiometricsErrorPreview() {
     WalletTheme {
         EnableBiometricsErrorContent(
+            errorCode = "XY123-1234",
             onClose = {},
         )
     }

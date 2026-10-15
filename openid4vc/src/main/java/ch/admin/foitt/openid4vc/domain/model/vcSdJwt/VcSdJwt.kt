@@ -25,6 +25,8 @@ open class VcSdJwt(
             "VcSdJwt contains unregistered non-selectively disclosable claims"
         }
     }
+    val profileVersion: String? = signedJwt.header.getCustomParam(CLAIM_KEY_PROFILE_VERSION)?.toString()
+    val exp: Instant? = processedJson.jsonObject[JWTClaimNames.EXPIRATION_TIME]?.jsonPrimitive?.content?.toInstant()
 
     val kid: String = keyId ?: error("missing keyId claim")
     val vct = processedJson.jsonObject[CLAIM_KEY_VCT]?.jsonPrimitive?.content ?: error("missing vct claim")
@@ -71,6 +73,8 @@ open class VcSdJwt(
         private const val CLAIM_KEY_VCT_METADATA_URI_INTEGRITY = "vct_metadata_uri#integrity"
         private const val CLAIM_KEY_STATUS = "status"
         private const val CLAIM_KEY_BUSINESS_EXPIRY_DATE = "expiry_date"
+
+        private const val CLAIM_KEY_PROFILE_VERSION = "profile_version"
 
         // See https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-15.html#section-3.2.2.2
         val NON_SELECTIVELY_DISCLOSABLE_CLAIMS = setOf(

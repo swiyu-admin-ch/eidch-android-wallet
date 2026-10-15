@@ -312,11 +312,12 @@ private fun AuxiliaryContent(
     isLoading: Boolean,
     onClosePassphraseError: () -> Unit,
 ) {
-    if (passphraseInputFieldState == PassphraseInputFieldState.Error && showPassphraseErrorToast && !isLoading) {
+    if (passphraseInputFieldState is PassphraseInputFieldState.Error && showPassphraseErrorToast && !isLoading) {
         PassphraseValidationErrorToastFixed(
             modifier = Modifier
                 .padding(start = Sizes.s08, end = Sizes.s08, bottom = Sizes.s06),
             text = R.string.tk_login_passwordfailed_notification,
+            errorCode = passphraseInputFieldState.errorCode,
             onIconEnd = onClosePassphraseError,
         )
     }
@@ -369,7 +370,7 @@ private fun PassphraseLoginScreenPreview() {
     WalletTheme {
         PassphraseLoginScreenContent(
             textFieldValue = TextFieldValue("abc123"),
-            passphraseInputFieldState = PassphraseInputFieldState.Error,
+            passphraseInputFieldState = PassphraseInputFieldState.Error("XY123-1234"),
             attemptsLeft = 4,
             showSupportText = true,
             showPassphraseErrorToast = true,

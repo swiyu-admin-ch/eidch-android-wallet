@@ -77,7 +77,19 @@
     <string name="tk_badgeInformation_notInSystem_secondary">The Confederation possesses no information about their trustworthiness.</string>
     <string name="tk_badgeInformation_notLegitimateIssuer_primary">%s is not a legitimate issuer of this credential.</string>
     <string name="tk_badgeInformation_notLegitimateVerifier_primary">%s is not a legitimate verifier of this credential.</string>
-    <plurals name="tk_changepassword_error1_android_note2">
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_inputError">
+        <item quantity="one">The password is incorrect. You have %1$s attempt remaining. (%2$s)</item>
+        <item quantity="other">The password is incorrect. You have %1$s attempts remaining. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_remainingAttempts">
+        <item quantity="one">The password is incorrect. You have %s attempt remaining.</item>
+        <item quantity="other">The password is incorrect. You have %s attempts remaining.</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_inputError">
+        <item quantity="one">The password is incorrect. You have %1$s attempt remaining. (%2$s)</item>
+        <item quantity="other">The password is incorrect. You have %1$s attempts remaining. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_remainingAttempts">
         <item quantity="one">The password is incorrect. You have %s attempt remaining.</item>
         <item quantity="other">The password is incorrect. You have %s attempts remaining.</item>
     </plurals>
@@ -373,7 +385,6 @@
     <string name="tk_global_changepassword">Change password</string>
     <string name="tk_global_close">Done</string>
     <string name="tk_global_close_alt">Close</string>
-    <string name="tk_global_close_redirect">Done, redirect to: %s</string>
     <string name="tk_global_closewarning_alt">Close warning</string>
     <string name="tk_global_continue">Next</string>
     <string name="tk_global_continue_button">Continue</string>
@@ -439,8 +450,35 @@
     <string name="tk_menu_language_android_selected_language">Selected language</string>
     <string name="tk_nonCompliance_list_excessiveData_body">During a data request, more information about me was requested than necessary.</string>
     <string name="tk_nonCompliance_list_excessiveData_title">Excessive data request</string>
+    <string name="nonCompliance_report_form_context_title">Context (optional)</string>
+    <string name="nonCompliance_report_form_context_maxCharacter_footer">Please write at most 500 characters</string>
+    <string name="nonCompliance_report_form_context_placeholder">Please describe the incident as precisely as possible…</string>
+    <string name="nonCompliance_report_form_context_footer">Please write at least 20 characters</string>
+    <string name="nonCompliance_reportType_falseIdentity_title">False identity</string>
+    <string name="nonCompliance_reportType_falseIdentityIssuer_body">The issuer is not who they claim to be.</string>
+    <string name="nonCompliance_reportType_falseIdentityVerifier_body">The verifier is not who they claim to be.</string>
+    <string name="nonCompliance_reportType_dubiousCredentialIssuance_title">Dubious credential issuance</string>
+    <string name="nonCompliance_reportType_dubiousCredentialIssuance_body">The credential was issued to me without a proper check of my identity.</string>
+    <string name="nonCompliance_reportType_illegalContentOrPurpose_title">Illegal content or purpose</string>
+    <string name="nonCompliance_reportType_illegalContentOrPurpose_body">The credential contains illegal content or was issued for an illegal purpose.</string>
+    <string name="nonCompliance_reportType_sensitiveDataNotDeclared_title">Undeclared sensitive data</string>
+    <string name="nonCompliance_reportType_sensitiveDataNotDeclared_body">The credential contains sensitive data that was not declared.</string>
+    <string name="nonCompliance_reportType_verificationNotRegistered_title">Verification not registered</string>
+    <string name="nonCompliance_reportType_verificationNotRegistered_body">The verifier is not registered in the trust register.</string>
+    <string name="nonCompliance_reportType_other_title">Other</string>
+    <string name="nonCompliance_reportType_other_body">I would like to report another case.</string>
+    <string name="nonCompliance_reportForm_reference_cellTitle">Reference (optional)</string>
+    <string name="nonCompliance_reportForm_reference_cellBody">Provide a URL, location, product name, or other reference related to the reported issue.</string>
+    <string name="nonCompliance_reportForm_sensitiveDataWarning_body">The associated credential and its metadata will be attached automatically…</string>
+    <string name="nonCompliance_reportForm_send_button">Send report</string>
+    <string name="nonCompliance_reportIntro_title">Report a compliance concern</string>
+    <string name="nonCompliance_reportIntro_body">Help us investigate a potential compliance issue…</string>
+    <string name="nonCompliance_reportIntro_privacyStatement_linkText">Privacy Statement</string>
+    <string name="nonCompliance_reportIntro_privacyStatement_linkValue">https://www.eid.admin.ch/en/swiyu-privacy-e</string>
+    <string name="credential_reportIssuer_button">Report Issuer</string>
+    <string name="receive_declineOffer_declineAndReport_button">Decline and report</string>
+    <string name="present_result_declined_report_button">Report this request</string>
     <string name="tk_nonCompliance_list_title">What would you like to report?</string>
-    <string name="tk_nonCompliance_list_footer">Attention: Until the official launch of swiyu, reports will not be reviewed, and verifiers will therefore not be sanctioned for misconduct.\nThe categories are not final yet.</string>
     <string name="tk_nonCompliance_reportExcessiveData_title">Report excessive data</string>
     <string name="tk_nonCompliance_report_form_actor_footer">You are reporting this organization</string>
     <string name="tk_nonCompliance_report_form_contact_footer">Providing your email address is optional and it will only be used to communicate about the case.</string>
@@ -455,11 +493,9 @@
     <string name="tk_nonCompliance_report_form_email_error">Please enter a valid email address.</string>
     <string name="tk_nonCompliance_report_form_reportSection_title">Report</string>
     <string name="tk_nonCompliance_report_form_send_button">Send</string>
-    <string name="tk_nonCompliance_report_info_body">In the next step, record your report for the responsible authority. Please also specify which data was requested without authorization.</string>
     <string name="tk_nonCompliance_report_info_moreInformation_link_value">https://www.eid.admin.ch/en/swiyu-privacy-e</string>
     <string name="tk_nonCompliance_report_info_moreInformation_link_text">Show more tips</string>
     <string name="tk_nonCompliance_report_info_footer">Your personal data will remain anonymous, and only the essential information will be transmitted for analysis.</string>
-    <string name="tk_nonCompliance_report_info_title">Recommended procedure</string>
     <string name="tk_onboarding_analytics_button_primary">Allow</string>
     <string name="tk_onboarding_analytics_button_secondary">Do not allow</string>
     <string name="tk_onboarding_analytics_primary">Contribute anonymously to improving the app</string>
@@ -523,16 +559,16 @@
     <string name="tk_present_error_invalidTransactionData_secondary">Transaction_data is not supported</string>
     <string name="tk_present_error_unauthorizedVerification_secondary">verifier is not legit to request a VC with a protected claim (aka AHV) - missing/invalid pvaTS</string>
     <string name="tk_present_error_unverifiedVerifier_secondary">Invalid/missing identity trust statement, verifier could not be verified</string>
+    <string name="tk_present_redirect_information_body">Return to %s to continue.</string>
+    <string name="tk_present_redirect_information_button">Continue to %s</string>
     <string name="tk_present_result_canceledVerification_primary">Verification cancelled</string>
     <string name="tk_present_result_canceledVerification_secondary">No data was transmitted.</string>
     <string name="tk_present_result_declined_primary">Data was not transmitted</string>
-    <string name="tk_present_result_declined_redirect_primary">Data was not transmitted\n\n Continue to return to %s</string>
     <string name="tk_present_result_error_button_retry">Try again</string>
     <string name="tk_present_result_error_primary">Oops, something went wrong!</string>
     <string name="tk_present_result_error_secondary">Please try again</string>
     <string name="tk_present_result_data_transmitted_title">Data successfully transmitted</string>
     <string name="tk_present_result_data_transmitted_body">Your data has been sent to the verifier and is being checked.</string>
-    <string name="tk_present_result_data_transmitted_redirect_body">Your data has been sent to the verifier and is being checked.\n\nContinue to return to %s</string>
     <string name="tk_present_review_button_accept">Allow</string>
     <string name="tk_present_review_button_decline">Decline</string>
     <string name="tk_present_review_confirmPresentation_button_primary">Share data</string>
@@ -567,6 +603,8 @@
     <string name="tk_receive_credentialOffer_confirmIssuance_secondary">This issuer is not part of the swiyu ecosystem. The trustworthiness can not be ensured. Would you like to proceed?</string>
     <string name="tk_receive_credentialOffer_headerSection_secondary">Would like to issue the following credential:</string>
     <string name="tk_receive_credentialOffer_hiddenGoToDetails">Go to details</string>
+    <string name="tk_receive_credentialOffer_nonCompliantActorWarning_primary">This profile has been reported</string>
+    <string name="tk_receive_credentialOffer_nonCompliantActorWarning_secondary">Do you want to add the credential to your wallet anyway.</string>
     <string name="tk_receive_declineOffer_primary">Decline credential?</string>
     <string name="tk_receive_declineOffer_primaryButton">Decline credential</string>
     <string name="tk_receive_declineOffer_ternaryButton">Decline credential and Report</string>

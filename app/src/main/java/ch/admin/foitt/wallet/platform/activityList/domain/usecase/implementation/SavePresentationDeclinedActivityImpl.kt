@@ -5,6 +5,7 @@ import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityRep
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityStateRepository
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.SavePresentationDeclinedActivity
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
+import com.github.michaelbull.result.getOr
 import javax.inject.Inject
 
 class SavePresentationDeclinedActivityImpl @Inject constructor(
@@ -18,8 +19,8 @@ class SavePresentationDeclinedActivityImpl @Inject constructor(
         verifierFallbackName: String,
         claimIds: List<Long>,
         nonComplianceData: String?,
-    ) {
-        if (activityStateRepository.areActivitiesEnabled()) {
+    ): Long? {
+        return if (activityStateRepository.areActivitiesEnabled()) {
             activityRepository.saveActivity(
                 activityType = ActivityType.PRESENTATION_DECLINED,
                 credentialId = credentialId,
@@ -27,7 +28,9 @@ class SavePresentationDeclinedActivityImpl @Inject constructor(
                 actorFallbackName = verifierFallbackName,
                 claimIds = claimIds,
                 nonComplianceData = nonComplianceData,
-            )
+            ).getOr(null)
+        } else {
+            null
         }
     }
 }

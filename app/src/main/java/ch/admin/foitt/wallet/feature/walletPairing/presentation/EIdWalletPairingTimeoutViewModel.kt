@@ -18,5 +18,5 @@ internal class EIdWalletPairingTimeoutViewModel @Inject constructor(
         onClose = ::onClose,
     )
 
-    fun onClose() = navManager.navigateOutOf(DestinationGroup.EIdRequestVerification::class)
+    fun onClose() = navManager.navigateOutOf(DestinationGroup.EID_REQUEST_VERIFICATION)
 }

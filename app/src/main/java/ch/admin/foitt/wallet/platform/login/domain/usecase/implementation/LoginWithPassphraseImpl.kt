@@ -1,12 +1,12 @@
 package ch.admin.foitt.wallet.platform.login.domain.usecase.implementation
 
 import androidx.annotation.CheckResult
-import ch.admin.foitt.wallet.platform.crypto.domain.model.HashDataError
 import ch.admin.foitt.wallet.platform.database.domain.model.OpenDatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.usecase.OpenAppDatabase
 import ch.admin.foitt.wallet.platform.login.domain.model.LoginWithPassphraseError
 import ch.admin.foitt.wallet.platform.login.domain.model.toLoginWithPassphraseError
 import ch.admin.foitt.wallet.platform.login.domain.usecase.LoginWithPassphrase
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.HashPassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperPassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.HashPassphrase
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.PepperPassphrase
@@ -27,31 +27,25 @@ class LoginWithPassphraseImpl @Inject constructor(
 
     @CheckResult
     override suspend fun invoke(passphrase: String): Result<Unit, LoginWithPassphraseError> = coroutineBinding {
-        val pinHash = hashPassphrase(
-            pin = passphrase,
+        val passphraseHash = hashPassphrase(
+            passphrase = passphrase,
             initializeSalt = false
-        ).mapError(
-            HashDataError::toLoginWithPassphraseError
-        ).bind()
+        ).mapError(HashPassphraseError::toLoginWithPassphraseError).bind()
 
-        val pepperedPinHash = pepperPassphrase(
-            passphrase = pinHash.hash,
+        val pepperedPassphraseHash = pepperPassphrase(
+            passphrase = passphraseHash.hash,
             initializePepper = false,
-        ).mapError(
-            PepperPassphraseError::toLoginWithPassphraseError
-        ).bind()
+        ).mapError(PepperPassphraseError::toLoginWithPassphraseError).bind()
 
         // touching the keyboard does apparently not count as a user interaction on some devices (f. e. samsung galaxy a53)
         // -> trigger it manually
         userInteraction()
 
         openAppDatabase(
-            passphrase = pepperedPinHash.hash
+            passphrase = pepperedPassphraseHash.hash
         ).onErr {
             Timber.d("AppDatabase login failed")
-        }.mapError(
-            OpenDatabaseError::toLoginWithPassphraseError
-        ).bind()
+        }.mapError(OpenDatabaseError::toLoginWithPassphraseError).bind()
 
         Timber.d("Pin Authentication succeeded")
     }

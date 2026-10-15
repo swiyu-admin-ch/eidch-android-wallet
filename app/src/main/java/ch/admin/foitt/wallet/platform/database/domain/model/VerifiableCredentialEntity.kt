@@ -29,5 +29,6 @@ data class VerifiableCredentialEntity(
     val validUntil: Long?,
     val createdAt: Long = Instant.now().epochSecond,
     val refreshedAt: Long? = null,
+    val lastRefreshAttemptAt: Long? = null,
     val nextPresentableBundleItemId: Long,
 )

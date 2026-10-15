@@ -6,10 +6,10 @@ import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcement
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcementError
-import ch.admin.foitt.wallet.platform.versionEnforcement.domain.repository.VersionEnforcementRepository
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetAppVersion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetDeviceModel
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetOSVersion
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetVersionEnforcement
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
@@ -39,7 +39,7 @@ class FetchAppVersionInfoImplTest {
     private lateinit var mockGetDeviceModel: GetDeviceModel
 
     @MockK
-    private lateinit var mockVersionEnforcementRepository: VersionEnforcementRepository
+    private lateinit var mockGetVersionEnforcement: GetVersionEnforcement
 
     @MockK
     private lateinit var mockGetLocalizedDisplay: GetLocalizedDisplay
@@ -51,8 +51,8 @@ class FetchAppVersionInfoImplTest {
         MockKAnnotations.init(this)
 
         useCase = FetchAppVersionInfoImpl(
+            getVersionEnforcement = mockGetVersionEnforcement,
             getAppVersion = mockGetAppVersion,
-            versionEnforcementRepository = mockVersionEnforcementRepository,
             getLocalizedDisplay = mockGetLocalizedDisplay,
             getOsVersion = mockGetOSVersion,
             getDeviceModel = mockGetDeviceModel,
@@ -70,7 +70,7 @@ class FetchAppVersionInfoImplTest {
     fun `Fetching app version info where OS version is too low returns blocked`() = runTest {
         every { mockGetOSVersion() } returns "14"
 
-        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(
+        coEvery { mockGetVersionEnforcement() } returns Ok(
             defaultVersionEnforcement
         )
 
@@ -83,7 +83,7 @@ class FetchAppVersionInfoImplTest {
 
     @Test
     fun `Fetching app version info where device is blacklisted returns blocked`() = runTest {
-        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(
+        coEvery { mockGetVersionEnforcement() } returns Ok(
             defaultVersionEnforcement.copy(deviceBlacklist = listOf(DEVICE_MODEL))
         )
 
@@ -120,7 +120,7 @@ class FetchAppVersionInfoImplTest {
             version = forcedVersion
         )
 
-        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(
+        coEvery { mockGetVersionEnforcement() } returns Ok(
             defaultVersionEnforcement.copy(versions = listOf(suggestedVersion))
         )
 
@@ -164,7 +164,7 @@ class FetchAppVersionInfoImplTest {
 
     @Test
     fun `Fetching app version info where no info is available returns valid`() = runTest {
-        coEvery { mockVersionEnforcementRepository.fetchVersionEnforcement() } returns Ok(null)
+        coEvery { mockGetVersionEnforcement() } returns Ok(null)
 
         val info = useCase()
 
@@ -174,7 +174,7 @@ class FetchAppVersionInfoImplTest {
     @Test
     fun `Fetching app version info where repository has an error returns unknown`() = runTest {
         coEvery {
-            mockVersionEnforcementRepository.fetchVersionEnforcement()
+            mockGetVersionEnforcement()
         } returns Err(VersionEnforcementError.Unexpected(null))
 
         val info = useCase()
@@ -190,7 +190,7 @@ class FetchAppVersionInfoImplTest {
         every { mockGetLocalizedDisplay.invoke<VersionEnforcement.Display>(any()) } returns display
 
         coEvery {
-            mockVersionEnforcementRepository.fetchVersionEnforcement()
+            mockGetVersionEnforcement()
         } returns Ok(defaultVersionEnforcement)
     }
 
@@ -213,7 +213,7 @@ class FetchAppVersionInfoImplTest {
         } ?: defaultVersionEnforcement.versions
 
         coEvery {
-            mockVersionEnforcementRepository.fetchVersionEnforcement()
+            mockGetVersionEnforcement()
         } returns Ok(defaultVersionEnforcement.copy(versions = versions))
     }
 

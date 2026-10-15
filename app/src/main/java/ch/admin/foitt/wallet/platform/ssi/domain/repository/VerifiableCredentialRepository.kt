@@ -17,4 +17,9 @@ interface VerifiableCredentialRepository {
         credentialId: Long,
         nextPresentableBundleItemId: Long
     ): Result<Int, VerifiableCredentialRepositoryError>
+
+    suspend fun updateLastRefreshAttemptAtByCredentialId(
+        credentialId: Long,
+        lastRefreshAttemptAt: Long
+    ): Result<Int, VerifiableCredentialRepositoryError>
 }

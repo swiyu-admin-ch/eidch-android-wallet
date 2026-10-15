@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import ch.admin.foitt.openid4vc.domain.model.DeferredCredential
 import ch.admin.foitt.openid4vc.domain.model.GenerateDPoPKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.VerifiableCredentialParams
+import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyCredential
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedBatchCredential
 import ch.admin.foitt.openid4vc.domain.model.anycredential.AnyVerifiedCredential
+import ch.admin.foitt.openid4vc.domain.model.anycredential.Validity
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.AnyCredentialConfiguration
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.BatchCredentialIssuance
@@ -16,7 +18,9 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.ProofTypeC
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.RawAndParsedIssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.BindingKeyPair
+import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryption
+import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.VcSdJwtCredential
 import ch.admin.foitt.openid4vc.domain.usecase.FetchCredentialByConfig
 import ch.admin.foitt.openid4vc.domain.usecase.FetchRawAndParsedIssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.usecase.GetSignedMetadataDid
@@ -24,16 +28,22 @@ import ch.admin.foitt.openid4vc.domain.usecase.GetVerifiableCredentialParams
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.model.FetchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.EvaluateBatchSize
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredentialsByCredentialId
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetCredentialConfig
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleBatchCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.HandleCredentialResult
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshCredential
+import ch.admin.foitt.wallet.platform.credentialRefresh.domain.model.CredentialRefreshDataError
 import ch.admin.foitt.wallet.platform.credentialRefresh.domain.model.GetBindingKeyPairError
 import ch.admin.foitt.wallet.platform.credentialRefresh.domain.repository.CredentialRefreshDataRepository
 import ch.admin.foitt.wallet.platform.credentialRefresh.domain.usecase.GetBindingKeyPair
+import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthenticationWithDpopBinding
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialWithAuthentication
+import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.holderBinding.domain.model.HolderBindingError
 import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.GenerateDPoPKeyPair
 import ch.admin.foitt.wallet.platform.holderBinding.domain.usecase.GenerateProofKeyPairs
@@ -41,10 +51,14 @@ import ch.admin.foitt.wallet.platform.payloadEncryption.domain.model.PayloadEncr
 import ch.admin.foitt.wallet.platform.payloadEncryption.domain.usecase.GetPayloadEncryption
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.BundleItemRepository
+import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteBundleItems
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteKeyStoreEntry
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV2TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustRegistryError
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ProcessIdentityTrustStatement
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.SwissProfile
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetSwissProfileStatus
 import ch.admin.foitt.wallet.util.assertErr
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -53,14 +67,19 @@ import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.net.URL
+import java.time.Instant
 
 @SuppressLint("CheckResult")
 class RefreshCredentialImplTest {
@@ -113,6 +132,12 @@ class RefreshCredentialImplTest {
     @MockK
     private lateinit var mockGenerateDPoPKeyPair: GenerateDPoPKeyPair
 
+    @MockK(relaxed = true)
+    private lateinit var mockDeleteKeyStoreEntry: DeleteKeyStoreEntry
+
+    @MockK(relaxed = true)
+    private lateinit var mockVerifiableCredentialRepository: VerifiableCredentialRepository
+
     //endregion
     //region mock values
     private val credentialId = 1L
@@ -121,6 +146,9 @@ class RefreshCredentialImplTest {
     private val credentialIssuerEndpoint = URL("https://issuer.example/credential")
 
     private val nonceEndpoint = URL("https://issuer.example/nonce")
+
+    private val proofKeyId = "proof-key-id"
+    private val dpopKeyId = "dpop-key-id"
 
     @MockK
     private lateinit var mockTrustStatementJwt: Jwt
@@ -145,6 +173,9 @@ class RefreshCredentialImplTest {
     private lateinit var mockCredentialEntity: Credential
 
     @MockK
+    private lateinit var mockVerifiableCredentialEntity: VerifiableCredentialEntity
+
+    @MockK
     private lateinit var mockAnyVerifiedCredential: AnyVerifiedCredential
 
     @MockK
@@ -154,9 +185,23 @@ class RefreshCredentialImplTest {
     private lateinit var mockAnyDeferredCredential: DeferredCredential
 
     @MockK
+    private lateinit var mockGetAllAnyCredentialsByCredentialId: GetAllAnyCredentialsByCredentialId
+
+    @MockK
+    private lateinit var mockGetSwissProfileStatus: GetSwissProfileStatus
+
+    @MockK
+    private lateinit var mockVcSdJwtCredential: VcSdJwtCredential
+
+    @MockK
+    private lateinit var mockCurrentAnyCredential: AnyCredential
+
+    @MockK
     private lateinit var mockAnyCredentialConfiguration: AnyCredentialConfiguration
     private val refreshToken = "refreshToken"
     private val selectedConfigurationId = "selectedConfigurationId"
+    private val newProfileVersion = "swiss-profile-vc:2.0.0"
+    private val currentProfileVersion = "swiss-profile-vc:1.0.0"
 
     @MockK
     private lateinit var mockVerifiableCredentialParams: VerifiableCredentialParams
@@ -205,6 +250,10 @@ class RefreshCredentialImplTest {
             handleBatchCredentialResult = mockHandleBatchCredentialResult,
             deleteBundleItems = mockDeleteBundleItems,
             generateDPoPKeyPair = mockGenerateDPoPKeyPair,
+            deleteKeyStoreEntry = mockDeleteKeyStoreEntry,
+            verifiableCredentialRepository = mockVerifiableCredentialRepository,
+            getAllAnyCredentialsByCredentialId = mockGetAllAnyCredentialsByCredentialId,
+            getSwissProfileStatus = mockGetSwissProfileStatus,
         )
 
         setupDefaultMocks()
@@ -262,8 +311,6 @@ class RefreshCredentialImplTest {
                 dpopKeyPair = mockBindingKeyPair,
             )
 
-            mockBundleItemRepository.getAllByCredentialId(credentialId)
-
             mockHandleCredentialResult(
                 credentialId = credentialId,
                 issuerUrl = credentialIssuer,
@@ -275,6 +322,10 @@ class RefreshCredentialImplTest {
         }
         coVerify(exactly = 0) {
             mockEvaluateBatchSize(issuerInfo)
+        }
+
+        coVerify(exactly = 1) {
+            mockBundleItemRepository.getAllByCredentialId(credentialId)
         }
     }
 
@@ -337,21 +388,192 @@ class RefreshCredentialImplTest {
     }
 
     @Test
-    fun `A refresh without authentication data fails`() = runTest {
+    fun `A refresh without authentication data is skipped`() = runTest {
         coEvery {
             mockCredentialWithAuthenticationEntity.authentication
         } returns null
 
-        useCase(credentialId = credentialId).assertErr()
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        }
     }
 
     @Test
-    fun `A refresh without refresh token fails`() = runTest {
+    fun `A refresh without a refresh token is skipped`() = runTest {
         coEvery {
             mockCredentialWithAuthenticationAndDpopBinding.refreshToken
         } returns null
 
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `A refresh of an unaccepted credential is skipped`() = runTest {
+        coEvery {
+            mockVerifiableCredentialEntity.progressionState
+        } returns VerifiableProgressionState.UNACCEPTED
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `A refresh of a revoked credential is a skipped`() = runTest {
+        val revokedItem = mockk<BundleItemEntity> {
+            every { status } returns CredentialStatus.REVOKED
+        }
+        coEvery {
+            mockBundleItemRepository.getAllByCredentialId(credentialId)
+        } returns Ok(listOf(revokedItem))
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `Generated hardware keys are cleaned up when fetching the credential fails`() = runTest {
+        coEvery {
+            mockGenerateProofKeyPairs(any(), any(), credentialIssuerDid)
+        } returns Ok(listOf(bindingKeyPair(proofKeyId)))
+        coEvery { mockGetBindingKeyPair(any()) } returns Ok(null)
+        coEvery { mockGenerateDPoPKeyPair(any(), credentialIssuerDid) } returns Ok(bindingKeyPair(dpopKeyId))
+        coEvery {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        } returns Err(CredentialOfferError.Unexpected(Exception("exception")))
+
         useCase(credentialId = credentialId).assertErr()
+
+        coVerify(exactly = 1) {
+            mockDeleteKeyStoreEntry(proofKeyId)
+            mockDeleteKeyStoreEntry(dpopKeyId)
+        }
+    }
+
+    @Test
+    fun `Generated hardware keys are cleaned up when the refreshed credential is discarded`() = runTest {
+        coEvery {
+            mockGenerateProofKeyPairs(any(), any(), credentialIssuerDid)
+        } returns Ok(listOf(bindingKeyPair(proofKeyId)))
+        coEvery { mockGetBindingKeyPair(any()) } returns Ok(null)
+        coEvery { mockGenerateDPoPKeyPair(any(), credentialIssuerDid) } returns Ok(bindingKeyPair(dpopKeyId))
+        coEvery { mockGetSwissProfileStatus(newProfileVersion) } returns SwissProfile.Status.END_OF_LIFE
+        coEvery { mockGetSwissProfileStatus(currentProfileVersion) } returns SwissProfile.Status.CURRENT
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 1) {
+            mockDeleteKeyStoreEntry(proofKeyId)
+            mockDeleteKeyStoreEntry(dpopKeyId)
+        }
+    }
+
+    @Test
+    fun `Generated software keys are not deleted from the key store on failure`() = runTest {
+        coEvery {
+            mockGenerateProofKeyPairs(any(), any(), credentialIssuerDid)
+        } returns Ok(listOf(bindingKeyPair(proofKeyId, KeyBindingType.SOFTWARE)))
+        coEvery { mockGetBindingKeyPair(any()) } returns Ok(null)
+        coEvery {
+            mockGenerateDPoPKeyPair(any(), credentialIssuerDid)
+        } returns Ok(bindingKeyPair(dpopKeyId, KeyBindingType.SOFTWARE))
+        coEvery {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        } returns Err(CredentialOfferError.Unexpected(Exception("fetch failed")))
+
+        useCase(credentialId = credentialId).assertErr()
+
+        coVerify(exactly = 0) { mockDeleteKeyStoreEntry(any()) }
+    }
+
+    @Test
+    fun `Pre-existing dpop binding key is not deleted on failure`() = runTest {
+        coEvery {
+            mockGenerateProofKeyPairs(any(), any(), credentialIssuerDid)
+        } returns Ok(listOf(bindingKeyPair(proofKeyId)))
+        coEvery { mockGetBindingKeyPair(any()) } returns Ok(bindingKeyPair(dpopKeyId))
+        coEvery {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        } returns Err(CredentialOfferError.Unexpected(Exception("fetch failed")))
+
+        useCase(credentialId = credentialId).assertErr()
+
+        coVerify(exactly = 1) { mockDeleteKeyStoreEntry(proofKeyId) }
+        coVerify(exactly = 0) {
+            mockDeleteKeyStoreEntry(dpopKeyId)
+            mockGenerateDPoPKeyPair(any(), credentialIssuerDid)
+        }
+    }
+
+    @Test
+    fun `Keys are not deleted when a failure happens after the credential was saved`() = runTest {
+        coEvery {
+            mockGenerateProofKeyPairs(any(), any(), credentialIssuerDid)
+        } returns Ok(listOf(bindingKeyPair(proofKeyId)))
+        coEvery {
+            mockDeleteBundleItems(any())
+        } returns Err(SsiError.Unexpected(IllegalStateException("db error")))
+
+        useCase(credentialId = credentialId).assertErr()
+
+        coVerify(exactly = 0) { mockDeleteKeyStoreEntry(any()) }
+    }
+
+    @Test
+    fun `A refresh started while another one is in flight is skipped`() = runTest {
+        val firstCallStarted = CompletableDeferred<Unit>()
+        val releaseFirstCall = CompletableDeferred<Unit>()
+        coEvery { mockCredentialRefreshDataRepository.getCredentialRefreshDataById(any()) } coAnswers {
+            firstCallStarted.complete(Unit)
+            releaseFirstCall.await()
+            Ok(mockCredentialWithAuthenticationEntity)
+        }
+
+        val firstCall = async { useCase(credentialId = credentialId) }
+        firstCallStarted.await()
+
+        useCase(credentialId = credentialId).assertOk()
+        releaseFirstCall.complete(Unit)
+        firstCall.await().assertOk()
+
+        coVerify(exactly = 1) {
+            mockCredentialRefreshDataRepository.getCredentialRefreshDataById(any())
+        }
+    }
+
+    @Test
+    fun `A refresh can run again once the previous one completed`() = runTest {
+        useCase(credentialId = credentialId).assertOk()
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 2) {
+            mockCredentialRefreshDataRepository.getCredentialRefreshDataById(any())
+        }
+    }
+
+    @Test
+    fun `A failing refresh releases the lock for the next one`() = runTest {
+        coEvery {
+            mockCredentialRefreshDataRepository.getCredentialRefreshDataById(any())
+        } returns Err(CredentialRefreshDataError.Unexpected(IllegalStateException("exception")))
+
+        useCase(credentialId = credentialId).assertErr()
+        useCase(credentialId = credentialId).assertErr()
+
+        coVerify(exactly = 2) {
+            mockCredentialRefreshDataRepository.getCredentialRefreshDataById(any())
+        }
     }
 
     @Test
@@ -576,6 +798,130 @@ class RefreshCredentialImplTest {
         }
     }
 
+    @Test
+    fun `Records the renewal attempt on a successful refresh`() = runTest {
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 1) {
+            mockVerifiableCredentialRepository.updateLastRefreshAttemptAtByCredentialId(credentialId, any())
+        }
+    }
+
+    @Test
+    fun `Records the renewal attempt on a failed refresh`() = runTest {
+        coEvery {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+        } returns Err(CredentialOfferError.Unexpected(Exception("fetch failed")))
+
+        useCase(credentialId = credentialId).assertErr()
+
+        coVerify(exactly = 1) {
+            mockVerifiableCredentialRepository.updateLastRefreshAttemptAtByCredentialId(credentialId, any())
+        }
+    }
+
+    @Test
+    fun `Does not record a renewal attempt when the credential cannot be refreshed`() = runTest {
+        coEvery { mockVerifiableCredentialEntity.progressionState } returns VerifiableProgressionState.UNACCEPTED
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockVerifiableCredentialRepository.updateLastRefreshAttemptAtByCredentialId(any(), any())
+        }
+    }
+
+    @Test
+    fun `Does not fetch a new credential or record a renewal attempt when refresh is disabled for the credential configuration`() = runTest {
+        every { mockAnyCredentialConfiguration.credentialRefreshDisabled } returns true
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockFetchCredentialByConfig(any(), any(), any(), any())
+            mockVerifiableCredentialRepository.updateLastRefreshAttemptAtByCredentialId(any(), any())
+        }
+    }
+
+    @Test
+    fun `A refresh keeps the new credential when its profile status is newer than the current one`() = runTest {
+        coEvery { mockGetSwissProfileStatus(newProfileVersion) } returns SwissProfile.Status.DEPRECATED
+        coEvery { mockGetSwissProfileStatus(currentProfileVersion) } returns SwissProfile.Status.END_OF_LIFE
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 1) {
+            mockHandleCredentialResult(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `A refresh discards the new credential when its profile status is older than the current one`() = runTest {
+        coEvery { mockGetSwissProfileStatus(newProfileVersion) } returns SwissProfile.Status.END_OF_LIFE
+        coEvery { mockGetSwissProfileStatus(currentProfileVersion) } returns SwissProfile.Status.CURRENT
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockHandleCredentialResult(any(), any(), any(), any(), any(), any())
+            mockDeleteBundleItems(any())
+        }
+    }
+
+    @Test
+    fun `A refresh keeps the new credential when the current profile status is unknown`() = runTest {
+        coEvery { mockGetSwissProfileStatus(currentProfileVersion) } returns null
+        coEvery { mockGetSwissProfileStatus(newProfileVersion) } returns SwissProfile.Status.END_OF_LIFE
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 1) {
+            mockHandleCredentialResult(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `A refresh discards the new credential when its profile status is unknown`() = runTest {
+        coEvery { mockGetSwissProfileStatus(newProfileVersion) } returns null
+        coEvery { mockGetSwissProfileStatus(currentProfileVersion) } returns SwissProfile.Status.CURRENT
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockHandleCredentialResult(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `A refresh discards the new credential when it is expired`() = runTest {
+        every { mockVcSdJwtCredential.validity } returns Validity.Expired(Instant.now())
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 0) {
+            mockHandleCredentialResult(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `A discarded refresh still records the renewal attempt`() = runTest {
+        every { mockVcSdJwtCredential.validity } returns Validity.Expired(Instant.now())
+
+        useCase(credentialId = credentialId).assertOk()
+
+        coVerify(exactly = 1) {
+            mockVerifiableCredentialRepository.updateLastRefreshAttemptAtByCredentialId(credentialId, any())
+        }
+    }
+
+    private fun bindingKeyPair(id: String, type: KeyBindingType = KeyBindingType.HARDWARE): BindingKeyPair =
+        mockk {
+            every { keyPair } returns mockk {
+                every { bindingType } returns type
+                every { keyId } returns id
+            }
+        }
+
     private fun setupDefaultMocks() {
         issuerInfo = IssuerCredentialInfo(
             credentialEndpoint = credentialIssuerEndpoint,
@@ -619,6 +965,18 @@ class RefreshCredentialImplTest {
         } returns mockCredentialEntity
 
         coEvery {
+            mockCredentialWithAuthenticationEntity.verifiableCredential
+        } returns mockVerifiableCredentialEntity
+
+        coEvery {
+            mockVerifiableCredentialEntity.progressionState
+        } returns VerifiableProgressionState.ACCEPTED
+
+        coEvery {
+            mockCredentialEntity.id
+        } returns credentialId
+
+        coEvery {
             mockCredentialEntity.selectedConfigurationId
         } returns selectedConfigurationId
 
@@ -651,6 +1009,8 @@ class RefreshCredentialImplTest {
             )
         } returns Ok(mockAnyCredentialConfiguration)
 
+        every { mockAnyCredentialConfiguration.credentialRefreshDisabled } returns false
+
         coEvery { mockDeleteBundleItems(any()) } returns Ok(0)
         coEvery { mockGetSignedMetadataDid(any()) } returns Ok(credentialIssuerDid)
         coEvery { mockGenerateProofKeyPairs(any(), any(), credentialIssuerDid) } returns Ok(listOf())
@@ -672,5 +1032,13 @@ class RefreshCredentialImplTest {
         coEvery {
             mockBundleItemRepository.getAllByCredentialId(credentialId)
         } returns Ok(listOf())
+
+        every { mockAnyVerifiedCredential.vcSdJwtCredential } returns mockVcSdJwtCredential
+        every { mockAnyVerifiedBatchCredential.vcSdJwtCredentials } returns listOf(mockVcSdJwtCredential)
+        every { mockVcSdJwtCredential.validity } returns Validity.Valid
+        every { mockVcSdJwtCredential.profileVersion } returns newProfileVersion
+        every { mockCurrentAnyCredential.profileVersion } returns currentProfileVersion
+        coEvery { mockGetAllAnyCredentialsByCredentialId(any()) } returns Ok(listOf(mockCurrentAnyCredential))
+        coEvery { mockGetSwissProfileStatus(any()) } returns SwissProfile.Status.CURRENT
     }
 }

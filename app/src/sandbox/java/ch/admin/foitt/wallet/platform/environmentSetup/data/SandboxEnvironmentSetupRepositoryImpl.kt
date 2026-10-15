@@ -109,5 +109,7 @@ class SandboxEnvironmentSetupRepositoryImpl @Inject constructor() : EnvironmentS
 
     override val isVersionEnforcementEnabled: Boolean = false
 
+    override val versionEnforcementTrustedDids: List<String> = emptyList()
+
     override val terminateOnInvalidIdTSEnabled: Boolean = true
 }

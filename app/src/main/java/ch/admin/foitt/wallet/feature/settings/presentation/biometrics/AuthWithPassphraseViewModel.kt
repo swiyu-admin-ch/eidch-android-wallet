@@ -2,7 +2,10 @@ package ch.admin.foitt.wallet.feature.settings.presentation.biometrics
 
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.errorhandling.domain.model.ViewmodelPrefixes
+import ch.admin.foitt.errorhandling.domain.model.util.log
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.platform.authenticateWithPassphrase.domain.model.AuthWithPassphraseError
 import ch.admin.foitt.wallet.platform.authenticateWithPassphrase.domain.model.AuthenticateWithPassphraseError
 import ch.admin.foitt.wallet.platform.authenticateWithPassphrase.domain.usecase.AuthenticateWithPassphrase
 import ch.admin.foitt.wallet.platform.biometrics.domain.usecase.ResetBiometrics
@@ -26,7 +29,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @HiltViewModel(assistedFactory = AuthWithPassphraseViewModel.Factory::class)
 class AuthWithPassphraseViewModel @AssistedInject constructor(
@@ -96,7 +98,7 @@ class AuthWithPassphraseViewModel @AssistedInject constructor(
 
         if (enableBiometrics) {
             navManager.replaceCurrentWith(
-                Destination.EnableBiometricsScreen(pin = textFieldValue.value.text)
+                Destination.EnableBiometricsScreen(passphrase = textFieldValue.value.text)
             )
         } else {
             resetBiometrics()
@@ -106,10 +108,10 @@ class AuthWithPassphraseViewModel @AssistedInject constructor(
 
     private fun handlePassphraseFailure(error: AuthenticateWithPassphraseError) {
         increaseFailedLoginAttemptsCounter()
-        if (error is AuthenticateWithPassphraseError.Unexpected) {
-            Timber.e(error.cause, "Authentication with pin for biometrics failed")
+        if (error is AuthWithPassphraseError.General) {
+            error.log(ViewmodelPrefixes.AUTH_WITH_PASSPHRASE)
         }
-        _passphraseInputFieldState.value = PassphraseInputFieldState.Error
+        _passphraseInputFieldState.value = PassphraseInputFieldState.Error(error.errorOccurrence.errorCode.value)
         _initialSupportText.value = false
         checkRemainingAttempts()
     }

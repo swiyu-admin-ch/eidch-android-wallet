@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.crypto.domain.model
 
 import ch.admin.foitt.wallet.platform.crypto.domain.usecase.implementation.HashDataWithSaltImpl
-import com.github.michaelbull.result.getOrThrow
+import ch.admin.foitt.wallet.util.assertOk
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,8 +27,8 @@ internal class HashedDataTest {
         val hashWithSaltUseCase = HashDataWithSaltImpl(algo, testDispatcher)
         val data = "data"
 
-        val hashData = hashWithSaltUseCase.invoke(data = data, salt = null).getOrThrow { it.throwable }
-        val hashData2 = hashWithSaltUseCase.invoke(data = data, salt = hashData.salt).getOrThrow { it.throwable }
+        val hashData = hashWithSaltUseCase(data = data, salt = null).assertOk()
+        val hashData2 = hashWithSaltUseCase(data = data, salt = hashData.salt).assertOk()
         assertEquals(hashData, hashData2)
         assertTrue(hashData.salt.contentEquals(hashData2.salt))
         assertTrue(hashData.hash.contentEquals(hashData2.hash))

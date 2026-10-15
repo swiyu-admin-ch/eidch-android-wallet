@@ -13,6 +13,7 @@ class OnboardingFatalErrorViewModel @AssistedInject constructor(
     setTopBarState: SetTopBarState,
     @Assisted("primaryTextRes") val primaryTextRes: Int,
     @Assisted("secondaryTextRes") val secondaryTextRes: Int,
+    @Assisted("errorCode") val errorCode: String,
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState: TopBarState = TopBarState.Empty
 
@@ -21,6 +22,7 @@ class OnboardingFatalErrorViewModel @AssistedInject constructor(
         fun create(
             @Assisted("primaryTextRes") primaryTextRes: Int,
             @Assisted("secondaryTextRes") secondaryTextRes: Int,
+            @Assisted("errorCode") errorCode: String,
         ): OnboardingFatalErrorViewModel
     }
 }

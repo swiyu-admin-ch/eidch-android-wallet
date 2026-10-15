@@ -128,6 +128,7 @@ object EntryProviderInstallerModule {
                         factory.create(
                             primaryTextRes = navKey.primaryTextRes,
                             secondaryTextRes = navKey.secondaryTextRes,
+                            errorCode = navKey.errorCode,
                         )
                     }
                 )

@@ -113,7 +113,7 @@ fun CredentialActionFeedbackCardSuccess(
     issuer: ActorUiState,
     contentTextFirstParagraphText: String? = null,
     contentTextSecondParagraphText: String? = null,
-    @StringRes contentTextThirdParagraphText: Int? = null,
+    contentTextThirdParagraphText: String? = null,
     iconAlwaysVisible: Boolean = false,
     @DrawableRes contentIcon: Int? = null,
     backgroundColor: Color = WalletTheme.colorScheme.tertiary,
@@ -152,7 +152,7 @@ fun CredentialActionFeedbackCard(
     issuer: ActorUiState,
     contentTextFirstParagraphText: String? = null,
     contentTextSecondParagraphText: String? = null,
-    @StringRes contentTextThirdParagraphText: Int? = null,
+    contentTextThirdParagraphText: String? = null,
     iconAlwaysVisible: Boolean = false,
     @DrawableRes contentIcon: Int? = null,
     backgroundColor: Color = WalletTheme.colorScheme.primary,
@@ -249,7 +249,7 @@ private fun Sheet(
     iconAlwaysVisible: Boolean,
     contentTextFirstParagraph: String?,
     contentTextSecondParagraph: String?,
-    @StringRes contentTextThirdParagraph: Int?,
+    contentTextThirdParagraph: String?,
     @DrawableRes contentIcon: Int?,
     backgroundColor: Color,
     textColor: Color,
@@ -297,7 +297,7 @@ private fun Sheet(
             )
         }
         if (contentTextSecondParagraph != null) {
-            Spacer(modifier = Modifier.height(Sizes.s01))
+            Spacer(modifier = Modifier.height(Sizes.s02))
             WalletTexts.BodyLarge(
                 text = contentTextSecondParagraph,
                 color = secondaryTextColor,
@@ -305,8 +305,9 @@ private fun Sheet(
             )
         }
         if (contentTextThirdParagraph != null) {
-            WalletTexts.BodySmall(
-                text = stringResource(id = contentTextThirdParagraph),
+            Spacer(modifier = Modifier.height(Sizes.s02))
+            WalletTexts.BodyLarge(
+                text = contentTextThirdParagraph,
                 color = secondaryTextColor,
             )
         }
@@ -392,7 +393,7 @@ private fun CredentialActionFeedbackCardPreview() {
             ),
             contentTextFirstParagraphText = stringResource(R.string.tk_receive_declineOffer_primary),
             contentTextSecondParagraphText = stringResource(R.string.tk_receive_declineOffer_secondary),
-            contentTextThirdParagraphText = R.string.tk_getBetaId_error_smallbody,
+            contentTextThirdParagraphText = stringResource(R.string.tk_getBetaId_error_smallbody),
             contentIcon = R.drawable.wallet_ic_circular_questionmark,
             iconAlwaysVisible = true,
             onSecondaryButton = {},

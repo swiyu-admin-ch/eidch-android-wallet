@@ -1,7 +1,8 @@
 package ch.admin.foitt.wallet.platform.crypto.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.crypto.domain.model.CryptoError
 import ch.admin.foitt.wallet.platform.crypto.domain.model.HashConfiguration
-import ch.admin.foitt.wallet.platform.crypto.domain.model.HashDataError
+import ch.admin.foitt.wallet.platform.crypto.domain.model.HashDataWithSaltError
 import ch.admin.foitt.wallet.platform.crypto.domain.model.HashedData
 import ch.admin.foitt.wallet.platform.crypto.domain.usecase.HashDataWithSalt
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
@@ -22,7 +23,7 @@ class HashDataWithSaltImpl @Inject constructor(
     override suspend fun invoke(
         data: String,
         salt: ByteArray?,
-    ): Result<HashedData, HashDataError> = withContext(ioDispatcher) {
+    ): Result<HashedData, HashDataWithSaltError> = withContext(ioDispatcher) {
         return@withContext runSuspendCatching {
             val currentSalt = salt ?: generateSalt(hashConfiguration.saltLength)
 
@@ -38,7 +39,7 @@ class HashDataWithSaltImpl @Inject constructor(
 
             HashedData(hash, currentSalt)
         }.mapError { throwable ->
-            HashDataError.Unexpected(throwable)
+            CryptoError.createGeneralError(throwable)
         }
     }
 

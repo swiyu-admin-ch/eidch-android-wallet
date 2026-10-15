@@ -5,6 +5,7 @@ import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityRep
 import ch.admin.foitt.wallet.platform.activityList.domain.repository.ActivityStateRepository
 import ch.admin.foitt.wallet.platform.activityList.domain.usecase.SaveIssuanceActivity
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
+import com.github.michaelbull.result.getOr
 import javax.inject.Inject
 
 class SaveIssuanceActivityImpl @Inject constructor(
@@ -15,15 +16,17 @@ class SaveIssuanceActivityImpl @Inject constructor(
         credentialId: Long,
         actorDisplayData: ActorDisplayData,
         issuerFallbackName: String,
-    ) {
-        if (activityStateRepository.areActivitiesEnabled()) {
+    ): Long? {
+        return if (activityStateRepository.areActivitiesEnabled()) {
             activityRepository.saveActivity(
                 activityType = ActivityType.ISSUANCE,
                 credentialId = credentialId,
                 actorDisplayData = actorDisplayData,
                 actorFallbackName = issuerFallbackName,
                 nonComplianceData = null,
-            )
+            ).getOr(null)
+        } else {
+            null
         }
     }
 }

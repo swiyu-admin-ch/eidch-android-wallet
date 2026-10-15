@@ -9,5 +9,5 @@ interface SavePresentationAcceptedActivity {
         verifierFallbackName: String,
         claimIds: List<Long>,
         nonComplianceData: String?,
-    )
+    ): Long?
 }

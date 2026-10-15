@@ -12,11 +12,16 @@ data class NonComplianceFormUiState(
     val descriptionMaxInputLength: Int,
     val isDescriptionValid: NonComplianceTextLengthValidationState,
     val descriptionInputFieldState: NonComplianceInputFieldState,
+    val context: TextFieldValue,
+    val contextInputFieldState: NonComplianceInputFieldState,
+    val isContextValid: NonComplianceTextLengthValidationState,
+    val contextMaxInputLength: Int,
     val email: TextFieldValue,
     val isEmailValid: NonComplianceEmailValidationState,
     val emailInputFieldState: NonComplianceInputFieldState,
 ) {
-    fun isFormValid() = isDescriptionValid is NonComplianceValidationState.Valid && isEmailValid is NonComplianceValidationState.Valid
+    fun isFormValid() = isDescriptionValid is NonComplianceValidationState.Valid && isEmailValid is NonComplianceValidationState.Valid &&
+        (isContextValid is NonComplianceValidationState.Valid || context.text.isEmpty())
 
     companion object {
         val EMPTY = NonComplianceFormUiState(
@@ -24,6 +29,10 @@ data class NonComplianceFormUiState(
             isDescriptionValid = NonComplianceValidationState.TooShort,
             descriptionMaxInputLength = NonComplianceTextInputConstraints().maxLength,
             descriptionInputFieldState = NonComplianceInputFieldState.Initial,
+            context = TextFieldValue(""),
+            contextInputFieldState = NonComplianceInputFieldState.Initial,
+            isContextValid = NonComplianceValidationState.TooShort,
+            contextMaxInputLength = NonComplianceTextInputConstraints().maxLength,
             email = TextFieldValue(""),
             isEmailValid = NonComplianceValidationState.Valid,
             emailInputFieldState = NonComplianceInputFieldState.Initial,

@@ -145,8 +145,9 @@ internal class EIdWalletPairingViewModel @AssistedInject constructor(
         EIdRequestError.InvalidDeferredCredentialOffer,
         EIdRequestError.InvalidClientAttestation,
         is EIdRequestError.Unexpected -> WalletPairingUiState.Unexpected
+
         EIdRequestError.RequestInWrongState -> {
-            navManager.navigateOutAndTo(DestinationGroup.EIdRequestVerification::class, Destination.EIdWalletPairingTimeoutScreen)
+            navManager.navigateOutAndTo(DestinationGroup.EID_REQUEST_VERIFICATION, Destination.EIdWalletPairingTimeoutScreen)
             WalletPairingUiState.Initial
         }
     }

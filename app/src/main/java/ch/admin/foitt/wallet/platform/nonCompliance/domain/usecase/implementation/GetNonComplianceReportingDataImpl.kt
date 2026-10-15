@@ -27,6 +27,7 @@ class GetNonComplianceReportingDataImpl @Inject constructor(
         credentialId: Long,
         actorDisplayData: ActorDisplayData,
         activityType: ActivityType,
+        activityId: Long?,
     ): Result<NonComplianceReportingData, GetNonComplianceReportingDataError> = coroutineBinding {
         val rawData = rawCredentialDataRepository.getByCredentialId(credentialId)
             .mapError { NonComplianceError.Unexpected(IllegalStateException("rawOIDMetadata must not be null")) }
@@ -47,13 +48,13 @@ class GetNonComplianceReportingDataImpl @Inject constructor(
 
         NonComplianceReportingData(
             actorDisplayData = ActorMetadataDisplayData(
-                activityId = null,
+                activityId = activityId,
                 localizedActorName = localizedName,
                 actorImageData = iconBytes
             ),
             rawData = rawData,
             issuerDid = issuerDid,
-            activityType = activityType
+            activityType = activityType,
         )
     }
 }

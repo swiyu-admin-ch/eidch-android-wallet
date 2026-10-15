@@ -10,6 +10,7 @@ interface GetNonComplianceReportingData {
     suspend operator fun invoke(
         credentialId: Long,
         actorDisplayData: ActorDisplayData,
-        activityType: ActivityType
+        activityType: ActivityType,
+        activityId: Long? = null,
     ): Result<NonComplianceReportingData, GetNonComplianceReportingDataError>
 }

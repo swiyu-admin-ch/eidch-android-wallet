@@ -3,6 +3,8 @@ package ch.admin.foitt.wallet.feature.login.presentation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.errorhandling.domain.model.ViewmodelPrefixes
+import ch.admin.foitt.errorhandling.domain.model.util.log
 import ch.admin.foitt.wallet.platform.deeplink.domain.usecase.HandleDeeplink
 import ch.admin.foitt.wallet.platform.login.domain.Constants.MAX_LOGIN_ATTEMPTS
 import ch.admin.foitt.wallet.platform.login.domain.model.CanUseBiometricsForLoginResult
@@ -122,9 +124,9 @@ class PassphraseLoginViewModel @AssistedInject constructor(
                             checkForLockout()
                         }
 
-                        else -> Timber.e(error.toString(), "Login with PIN failed")
+                        else -> error.log(ViewmodelPrefixes.PASSPHRASE_LOGIN)
                     }
-                    PassphraseInputFieldState.Error
+                    PassphraseInputFieldState.Error(error.errorOccurrence.errorCode.value)
                 }
             )
             continueWithLogin()

@@ -22,4 +22,6 @@ interface DestinationsComponentBuilder {
 
 interface DestinationScopedComponentManager {
     fun <T> getEntryPoint(entryPointClass: Class<T>, componentScope: ComponentScope): T
+
+    fun isInScope(componentScope: ComponentScope): Boolean
 }

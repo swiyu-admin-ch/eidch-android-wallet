@@ -49,17 +49,16 @@ private fun PresentationSuccessContent(
     CredentialActionFeedbackCardSuccess(
         issuer = verifierUiState,
         contentTextFirstParagraphText = stringResource(R.string.tk_present_result_data_transmitted_title),
-        contentTextSecondParagraphText = if (redirectUri == null) {
-            stringResource(R.string.tk_present_result_data_transmitted_body)
-        } else {
-            stringResource(R.string.tk_present_result_data_transmitted_redirect_body, verifierName(verifierUiState))
+        contentTextSecondParagraphText = stringResource(R.string.tk_present_result_data_transmitted_body),
+        contentTextThirdParagraphText = redirectUri?.let {
+            stringResource(R.string.tk_present_redirect_information_body, verifierName(verifierUiState))
         },
         iconAlwaysVisible = true,
         contentIcon = R.drawable.wallet_ic_transmit,
         primaryButtonText = if (redirectUri == null) {
             stringResource(R.string.tk_global_close)
         } else {
-            stringResource(R.string.tk_global_close_redirect, verifierName(verifierUiState))
+            stringResource(R.string.tk_present_redirect_information_button, verifierName(verifierUiState))
         },
         onPrimaryButton = onClose,
         onActorNameTap = onActorNameTap,

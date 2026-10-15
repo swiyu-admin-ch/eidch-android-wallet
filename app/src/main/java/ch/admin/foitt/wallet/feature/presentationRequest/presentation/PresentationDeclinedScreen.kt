@@ -54,17 +54,16 @@ private fun PresentationDeclinedContent(
 ) {
     CredentialActionFeedbackCard(
         issuer = uiState.verifierUiState,
-        contentTextFirstParagraphText = if (redirectUri == null) {
-            stringResource(R.string.tk_present_result_declined_primary)
-        } else {
-            stringResource(R.string.tk_present_result_declined_redirect_primary, verifierName(uiState.verifierUiState))
+        contentTextFirstParagraphText = stringResource(R.string.tk_present_result_declined_primary),
+        contentTextSecondParagraphText = redirectUri?.let {
+            stringResource(R.string.tk_present_redirect_information_body, verifierName(uiState.verifierUiState))
         },
         iconAlwaysVisible = true,
         contentIcon = R.drawable.wallet_ic_circular_cross,
         primaryButtonText = if (redirectUri == null) {
             stringResource(R.string.tk_global_close)
         } else {
-            stringResource(R.string.tk_global_close_redirect, verifierName(uiState.verifierUiState))
+            stringResource(R.string.tk_present_redirect_information_button, verifierName(uiState.verifierUiState))
         },
         onPrimaryButton = onBack,
         ternaryButtonText = if (uiState.canReport) R.string.tk_nonCompliance_report_form_reportSection_title else null,

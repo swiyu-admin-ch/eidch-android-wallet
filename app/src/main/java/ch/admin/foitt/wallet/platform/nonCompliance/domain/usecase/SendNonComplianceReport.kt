@@ -6,9 +6,10 @@ import com.github.michaelbull.result.Result
 
 interface SendNonComplianceReport {
     suspend operator fun invoke(
-        activityId: Long,
+        activityId: Long?,
         reportReason: NonComplianceReportReason,
-        description: String,
+        description: String?,
+        context: String?,
         email: String?,
     ): Result<Unit, SendNonComplianceReportError>
 }

@@ -10,11 +10,11 @@ import ch.admin.foitt.wallet.feature.home.domain.usecase.GetEIdRequestsFlow
 import ch.admin.foitt.wallet.feature.home.presentation.model.HomeContainerState
 import ch.admin.foitt.wallet.feature.home.presentation.model.HomeScreenState
 import ch.admin.foitt.wallet.feature.otp.domain.repository.OtpStateCompletionRepository
-import ch.admin.foitt.wallet.platform.batch.domain.usecase.RefreshBatchCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.repository.CredentialRefreshRepository
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
+import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshVerifiableCredentials
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialComparator
@@ -29,7 +29,9 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.Updat
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialEvent
+import ch.admin.foitt.wallet.platform.messageEvents.domain.model.NonComplianceEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialEventRepository
+import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.NonComplianceEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
@@ -70,12 +72,13 @@ class HomeViewModel @Inject constructor(
     private val updateCachedImages: UpdateCachedImages,
     private val updateAllSIdStatuses: UpdateAllSIdStatuses,
     private val refreshDeferredCredentials: RefreshDeferredCredentials,
-    private val refreshBatchCredentials: RefreshBatchCredentials,
+    private val refreshVerifiableCredentials: RefreshVerifiableCredentials,
     private val credentialRefreshRepository: CredentialRefreshRepository,
     private val deleteEIdRequestCase: DeleteEIdRequestCase,
     private val environmentSetupRepository: EnvironmentSetupRepository,
     private val navManager: NavigationManager,
     private val credentialEventRepository: CredentialEventRepository,
+    private val nonComplianceEventRepository: NonComplianceEventRepository,
     private val otpStateCompletionRepository: OtpStateCompletionRepository,
     private val eIdRequestsPriorityOrdering: EIdRequestsPriorityOrdering,
     private val pollSIdRequestAfterFileSubmit: PollSIdRequestAfterFileSubmit,
@@ -166,6 +169,19 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            nonComplianceEventRepository.event.collect { event ->
+                _eventMessage.value = when (event) {
+                    NonComplianceEvent.ReportSentHome -> R.string.tk_activity_activityList_nonCompliance_reportSent_title
+                    NonComplianceEvent.ReportSent,
+                    NonComplianceEvent.None -> null
+                }
+                if (eventMessage.value != null) {
+                    delay(TOAST_DISPLAY_TIME_MILLIS.milliseconds)
+                    nonComplianceEventRepository.resetEvent()
+                }
+            }
+        }
     }
 
     private suspend fun mapToUiState(
@@ -251,7 +267,7 @@ class HomeViewModel @Inject constructor(
         credentialRefreshRepository.markRefreshed()
         viewModelScope.launch {
             refreshDeferredCredentials()
-            tryRefreshBatchCredentials()
+            refreshVerifiableCredentials()
             updateAllSIdStatuses()
             updateAllCredentialStatuses()
         }.trackCompletion(_isRefreshing)
@@ -263,7 +279,7 @@ class HomeViewModel @Inject constructor(
         credentialRefreshRepository.markRefreshed()
         statusRefreshJob = viewModelScope.launch {
             refreshDeferredCredentials()
-            tryRefreshBatchCredentials()
+            refreshVerifiableCredentials()
             updateAllCredentialStatuses()
         }.apply {
             invokeOnCompletion {
@@ -291,12 +307,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // Refreshes the batch credentials running low on copies. Skips itself when one is already running.
-    private suspend fun tryRefreshBatchCredentials() {
-        if (!environmentSetupRepository.batchIssuanceEnabled) return
-        refreshBatchCredentials()
-    }
-
     private fun onRefreshSIdStatuses() {
         if (!isRefreshing.value) {
             viewModelScope.launch {
@@ -322,6 +332,7 @@ class HomeViewModel @Inject constructor(
     fun onCloseToast() {
         _eventMessage.value = null
         credentialEventRepository.resetEvent()
+        nonComplianceEventRepository.resetEvent()
     }
 
     fun onEidNotificationAction(caseId: String, status: SIdRequestDisplayStatus) {

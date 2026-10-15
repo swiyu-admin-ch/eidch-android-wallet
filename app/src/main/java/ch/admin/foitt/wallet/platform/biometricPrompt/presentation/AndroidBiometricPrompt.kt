@@ -31,7 +31,7 @@ internal class AndroidBiometricPrompt(
             BiometricPromptType.Setup -> createPromptInfoForEncryption()
             BiometricPromptType.Login -> createPromptInfoForDecryption()
         }.mapError { throwable ->
-            BiometricAuthenticationError.Unexpected(throwable)
+            BiometricAuthenticationError.createGeneralError(throwable)
         }.bind()
 
         showPrompt(cipher, promptInfo)
@@ -73,23 +73,20 @@ internal class AndroidBiometricPrompt(
     }
 
     private fun handlePromptError(
-        biometricError: BiometricPromptError
-    ) = when (biometricError.errorCode) {
+        error: BiometricPromptError
+    ) = when (error.errorCode) {
         BiometricPrompt.ERROR_USER_CANCELED,
         BiometricPrompt.ERROR_CANCELED,
         BiometricPrompt.ERROR_NEGATIVE_BUTTON,
         BiometricPrompt.ERROR_TIMEOUT -> {
-            Timber.d("Authentication cancelled: ${biometricError.errorCode}, ${biometricError.message}")
-            BiometricAuthenticationError.PromptCancelled
+            BiometricAuthenticationError.createPromptCancelledError("Prompt cancelled: ${error.errorCode}, ${error.message}")
         }
         BiometricPrompt.ERROR_LOCKOUT,
         BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
-            Timber.w("Authentication lockout: ${biometricError.errorCode}, ${biometricError.message}")
-            BiometricAuthenticationError.PromptLocked
+            BiometricAuthenticationError.createPromptLockedError("Prompt locked: ${error.errorCode}, ${error.message}")
         }
         else -> {
-            Timber.e("Authentication failure: ${biometricError.errorCode}, ${biometricError.message}")
-            BiometricAuthenticationError.PromptFailure(Exception(biometricError.message))
+            BiometricAuthenticationError.createPromptFailureError("Prompt failure: ${error.errorCode}, ${error.message}")
         }
     }
 

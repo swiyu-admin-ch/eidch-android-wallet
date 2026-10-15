@@ -5,19 +5,15 @@ import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.GetOrCreateS
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.implementation.GetCipherForDecryptionImpl
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.implementation.GetCipherForEncryptionImpl
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.CiphertextWrapper
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.repository.PassphraseRepository
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.EncryptAndSavePassphrase
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.LoadAndDecryptPassphrase
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation.EncryptAndSavePassphraseImpl
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation.LoadAndDecryptPassphraseImpl
-import ch.admin.foitt.wallet.util.assertErr
+import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Ok
-import com.github.michaelbull.result.get
-import com.github.michaelbull.result.getError
-import com.github.michaelbull.result.getOrElse
-import com.github.michaelbull.result.getOrThrow
-import com.github.michaelbull.result.unwrapError
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
@@ -27,9 +23,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
@@ -85,52 +82,41 @@ class EncryptDecryptPassphraseTest {
         unmockkAll()
     }
 
-    @Test
-    fun `A passphrase is encrypted and decrypted successfully`() = runTest {
-        val passphrases: List<String> = listOf(
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
             "",
             "KodGmxyJBHR&mZx3jpa_¶j3SZT@n^oaxUyVgT4QhEYPPqGcazdh9ndNgXW2!AbW2igRW6XEakUnzpZW",
             "0",
             "-1",
             " ",
             "!@#%^&*()_+-=[]{}|;':\",./<>?~`$¶",
-        )
+        ]
+    )
+    fun `A passphrase is encrypted and decrypted successfully`(passphrase: String) = runTest {
+        initializeCiphers()
 
-        for (passphrase in passphrases) {
-            initializeCiphers()
-            val encryptionResult = encryptionUseCase(
-                passphrase = passphrase.toByteArray(Charsets.UTF_8),
-                encryptionCipher = currentEncryptionCipher
-            )
+        encryptionUseCase(
+            passphrase = passphrase.toByteArray(Charsets.UTF_8),
+            encryptionCipher = currentEncryptionCipher
+        ).assertOk()
 
-            assertNotNull(
-                encryptionResult.get(),
-                "passphrase encryption failed:\n" + "passphrase $passphrase,\n" + encryptionResult.getOrElse {
-                    it.throwable.localizedMessage
-                }
-            )
+        val decryptionResult = decryptionUseCase(
+            decryptionCipher = currentDecryptionCipher
+        ).assertOk()
 
-            val decryptionResult = decryptionUseCase(
-                decryptionCipher = currentDecryptionCipher
-            )
-            decryptionResult.assertOk()
-
-            assertEquals(passphrase, String(decryptionResult.getOrThrow { it.throwable }))
-        }
+        assertEquals(passphrase, String(decryptionResult))
     }
 
     @Test
     fun `A encryption exception returns a failure`() = runTest {
         val exception = Exception("CipherError")
         coEvery { mockCipher.doFinal(any()) } throws exception
-        val encryptionResult = encryptionUseCase(
-            passphrase = "passphrase".toByteArray(Charsets.UTF_8),
-            encryptionCipher = mockCipher
-        )
 
-        assertNotNull(encryptionResult.getError())
-        val error = encryptionResult.unwrapError()
-        assertEquals(exception, error.throwable)
+        encryptionUseCase(
+            passphrase = "passphrase".toByteArray(Charsets.UTF_8),
+            encryptionCipher = mockCipher,
+        ).assertErrorType(PassphraseError.General::class)
     }
 
     @Test
@@ -138,13 +124,9 @@ class EncryptDecryptPassphraseTest {
         val exception = Exception("CipherError")
         coEvery { mockCipher.doFinal(any()) } throws exception
 
-        val decryptionResult = decryptionUseCase(
+        decryptionUseCase(
             decryptionCipher = mockCipher
-        )
-
-        decryptionResult.assertErr()
-        val error = decryptionResult.unwrapError()
-        assertEquals(exception, error.throwable)
+        ).assertErrorType(PassphraseError.General::class)
     }
 
     private fun initializeCiphers() {
@@ -156,14 +138,16 @@ class EncryptDecryptPassphraseTest {
             mockGetOrCreateSecretKey,
         )
 
-        currentEncryptionCipher = getCipherForEncryptionImpl(
-            keystoreKeyConfig = mockPassConfig, initializationVector = null
-        ).getOrThrow { Exception("Get cipher for encryption error") }
+        currentEncryptionCipher = runBlocking {
+            getCipherForEncryptionImpl(
+                keystoreKeyConfig = mockPassConfig, initializationVector = null
+            ).assertOk()
+        }
         testPassphraseRepository.currentIv = currentEncryptionCipher.iv
         currentDecryptionCipher = runBlocking {
             getCipherForDecryptionImpl(
                 keystoreKeyConfig = mockPassConfig, initializationVector = testPassphraseRepository.currentIv
-            ).getOrThrow { Exception("Get cipher for decryption error") }
+            ).assertOk()
         }
     }
 

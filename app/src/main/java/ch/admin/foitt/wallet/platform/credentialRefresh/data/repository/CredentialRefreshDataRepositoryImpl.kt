@@ -40,6 +40,15 @@ class CredentialRefreshDataRepositoryImpl @Inject constructor(
         CredentialRefreshDataError.Unexpected(throwable)
     }
 
+    override suspend fun getAllCredentialRefreshData() = runSuspendCatching {
+        withContext(ioDispatcher) {
+            credentialRefreshDataDao().getAll()
+        }
+    }.mapError { throwable ->
+        Timber.e(t = throwable, message = "Failed to get credentials refresh data")
+        CredentialRefreshDataError.Unexpected(throwable)
+    }
+
     override suspend fun getAllBatchCredentialRefreshData() = runSuspendCatching {
         withContext(ioDispatcher) {
             batchCredentialRefreshDataDao().getAll()

@@ -132,6 +132,7 @@ fun PresentationRequestScreen(viewModel: PresentationRequestViewModel) {
         isSubmitting = viewModel.isSubmitting.collectAsStateWithLifecycle().value,
         submissionProgress = viewModel.proximitySubmissionProgress.collectAsStateWithLifecycle().value,
         showDelayReason = viewModel.showDelayReason.collectAsStateWithLifecycle().value,
+        isVerifierDataLoaded = viewModel.isVerifierDataLoaded.collectAsStateWithLifecycle().value,
         onSubmit = viewModel::onAccept,
         onDecline = viewModel::onDecline,
         onActorNameTap = viewModel::onActorNameTap,
@@ -148,6 +149,7 @@ private fun PresentationRequestContent(
     isSubmitting: Boolean,
     submissionProgress: Double?,
     showDelayReason: Boolean,
+    isVerifierDataLoaded: Boolean,
     onSubmit: () -> Unit,
     onDecline: () -> Unit,
     onActorNameTap: () -> Unit,
@@ -182,6 +184,7 @@ private fun PresentationRequestContent(
                 verifierUiState = verifierUiState,
                 presentationRequestUiState = presentationRequestUiState,
                 modifier = modifier,
+                isVerifierDataLoaded = isVerifierDataLoaded,
                 onSubmit = onSubmit,
                 onDecline = onDecline,
                 onActorNameTap = onActorNameTap,
@@ -286,6 +289,7 @@ private fun ContentList(
     verifierUiState: ActorUiState,
     presentationRequestUiState: PresentationRequestUiState,
     modifier: Modifier,
+    isVerifierDataLoaded: Boolean,
     onActorNameTap: () -> Unit,
     onReportedActorInfo: () -> Unit,
     onBadge: (BadgeType) -> Unit,
@@ -345,6 +349,7 @@ private fun ContentList(
         Buttons(
             onDecline = onDecline,
             onAccept = onSubmit,
+            isButtonsEnabled = isVerifierDataLoaded,
             onHeightMeasured = { buttonsHeight = it },
             modifier = Modifier
                 .fillMaxWidth(maxWidth)
@@ -395,6 +400,7 @@ private fun LoadingIndicator(
 private fun Buttons(
     onDecline: () -> Unit,
     onAccept: () -> Unit,
+    isButtonsEnabled: Boolean,
     onHeightMeasured: (Dp) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -410,6 +416,7 @@ private fun Buttons(
                         text = stringResource(id = R.string.tk_present_review_button_accept),
                         startIcon = painterResource(id = R.drawable.wallet_ic_checkmark),
                         onClick = onAccept,
+                        enabled = isButtonsEnabled,
                     )
                 },
                 {
@@ -418,6 +425,7 @@ private fun Buttons(
                         text = stringResource(id = R.string.tk_present_review_button_decline),
                         startIcon = painterResource(id = R.drawable.wallet_ic_cross),
                         onClick = onDecline,
+                        enabled = isButtonsEnabled,
                     )
                 }
             ),
@@ -440,6 +448,7 @@ private fun PresentationRequestScreenPreview() {
                 actorComplianceState = ActorComplianceState.REPORTED,
                 nonComplianceReason = "report reason",
             ),
+            isVerifierDataLoaded = true,
             presentationRequestUiState = PresentationRequestUiState(
                 credentialCardState = CredentialMocks.cardState01,
                 requestedClaims = CredentialMocks.clusterList,

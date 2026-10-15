@@ -62,15 +62,25 @@ object EntryProviderInstallerModule {
             }
         }
 
-        entry<Destination.EnableBiometricsErrorScreen> {
-            val viewModel = hiltViewModel<EnableBiometricsErrorViewModel>()
+        entry<Destination.EnableBiometricsErrorScreen> { navKey ->
+            val viewModel = hiltViewModel<EnableBiometricsErrorViewModel, EnableBiometricsErrorViewModel.Factory>(
+                creationCallback = { factory ->
+                    factory.create(
+                        errorCode = navKey.errorCode,
+                    )
+                }
+            )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 EnableBiometricsErrorScreen(viewModel = viewModel)
             }
         }
 
-        entry<Destination.EnableBiometricsLockoutScreen> {
-            val viewModel = hiltViewModel<EnableBiometricsLockoutViewModel>()
+        entry<Destination.EnableBiometricsLockoutScreen> { navKey ->
+            val viewModel = hiltViewModel<EnableBiometricsLockoutViewModel, EnableBiometricsLockoutViewModel.Factory>(
+                creationCallback = { factory ->
+                    factory.create(navKey.errorCode)
+                }
+            )
             SyncedScaffoldScreen(viewModel = viewModel) {
                 EnableBiometricsLockoutScreen(viewModel = viewModel)
             }
@@ -80,7 +90,7 @@ object EntryProviderInstallerModule {
             val viewModel =
                 hiltViewModel<EnableBiometricsViewModel, EnableBiometricsViewModel.Factory>(
                     creationCallback = { factory ->
-                        factory.create(pin = navKey.pin)
+                        factory.create(passphrase = navKey.passphrase)
                     }
                 )
             SyncedScaffoldScreen(viewModel = viewModel) {

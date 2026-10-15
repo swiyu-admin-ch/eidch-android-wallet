@@ -143,6 +143,36 @@ class SaveVcSdJwtCredentialsImplTest {
     }
 
     @Test
+    fun `A credential without key binding correctly calls the repo`() = runTest {
+        coEvery { mockVcSdJwtCredential.keyBinding } returns null
+
+        useCase(
+            vcSdJwtCredentials = listOf(mockVcSdJwtCredential),
+            issuerUrl = ISSUER_URL,
+            rawAndParsedCredentialInfo = rawAndParsedIssuerCredentialInfo,
+            identityTrustStatement = mockIdentityTrustStatement,
+            credentialConfig = credentialConfig,
+        ).assertOk()
+
+        coVerify {
+            mockCredentialOfferRepository.saveCredentialOffer(
+                keyBindings = null,
+                payloads = any(),
+                format = any(),
+                selectedConfigurationId = any(),
+                validFrom = any(),
+                validUntil = any(),
+                issuer = any(),
+                issuerDisplays = any(),
+                credentialDisplays = any(),
+                clusters = any(),
+                rawCredentialData = any(),
+                issuerUrl = any(),
+            )
+        }
+    }
+
+    @Test
     fun `Saving credential maps errors from fetching the vc metadata`() = runTest {
         coEvery { mockFetchVcMetadataByFormat(any()) } returns Err(OcaError.InvalidOca)
 

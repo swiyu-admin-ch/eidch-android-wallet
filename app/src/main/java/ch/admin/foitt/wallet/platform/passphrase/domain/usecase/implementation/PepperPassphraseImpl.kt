@@ -1,6 +1,8 @@
 package ch.admin.foitt.wallet.platform.passphrase.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.GetCipherForEncryptionError
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.GetCipherForEncryption
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphrasePepperKeyConfig
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperPassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.model.PepperedData
@@ -30,16 +32,14 @@ internal class PepperPassphraseImpl @Inject constructor(
             }
 
             val pepperCipher = getCipherForEncryption(
-                passphrasePepperKeyConfig,
+                keystoreKeyConfig = passphrasePepperKeyConfig,
                 initializationVector = pepperInitializationVector,
-            ).mapError { error ->
-                error.toPepperPassphraseError()
-            }.bind()
+            ).mapError(GetCipherForEncryptionError::toPepperPassphraseError).bind()
 
             val passphraseBytes: ByteArray = runSuspendCatching {
                 pepperCipher.doFinal(passphrase)
             }.mapError { throwable ->
-                PepperPassphraseError.Unexpected(throwable)
+                PassphraseError.createGeneralError(throwable)
             }.bind()
 
             PepperedData(passphraseBytes, pepperCipher.iv)

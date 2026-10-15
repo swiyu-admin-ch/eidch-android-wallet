@@ -7,17 +7,17 @@ import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.AppVersion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcement
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.VersionEnforcement.Display
-import ch.admin.foitt.wallet.platform.versionEnforcement.domain.repository.VersionEnforcementRepository
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.FetchAppVersionInfo
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetAppVersion
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetDeviceModel
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetOSVersion
+import ch.admin.foitt.wallet.platform.versionEnforcement.domain.usecase.GetVersionEnforcement
 import com.github.michaelbull.result.mapBoth
 import java.time.LocalDate
 import javax.inject.Inject
 
 internal class FetchAppVersionInfoImpl @Inject constructor(
-    private val versionEnforcementRepository: VersionEnforcementRepository,
+    private val getVersionEnforcement: GetVersionEnforcement,
     private val getAppVersion: GetAppVersion,
     private val getLocalizedDisplay: GetLocalizedDisplay,
     private val getDeviceModel: GetDeviceModel,
@@ -29,7 +29,7 @@ internal class FetchAppVersionInfoImpl @Inject constructor(
 
     @CheckResult
     override suspend fun invoke(): AppVersionInfo =
-        versionEnforcementRepository.fetchVersionEnforcement()
+        getVersionEnforcement()
             .mapBoth(
                 success = ::checkEnforcement,
                 failure = { AppVersionInfo.Unknown }

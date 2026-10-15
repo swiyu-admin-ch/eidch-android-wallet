@@ -93,8 +93,7 @@ class BiometricLoginViewModel @Inject constructor(
             loginWithBiometrics(biometricPromptWrapper)
                 .onOk {
                     resetLockout()
-                    val info =
-                        appVersionInfo.value // if it is available now, perfect, otherwise it acts like a time-out
+                    val info = appVersionInfo.value // if it is available now, perfect, otherwise it acts like a time-out
                     if (info is AppVersionInfo.Blocked) {
                         navigateToAppVersionBlocked(info.title, info.text, info.playStoreUrl, info.type)
                     } else {
@@ -102,10 +101,8 @@ class BiometricLoginViewModel @Inject constructor(
                     }
                 }.onErr { loginError ->
                     when (loginError) {
-                        LoginError.Cancelled -> {}
-                        LoginError.BiometricsLocked -> navigateToLoginWithPassphrase(
-                            biometricsLocked = true
-                        )
+                        is LoginError.Cancelled -> {}
+                        is LoginError.BiometricsLocked -> navigateToLoginWithPassphrase(biometricsLocked = true)
 
                         else -> navigateToLoginWithPassphrase()
                     }

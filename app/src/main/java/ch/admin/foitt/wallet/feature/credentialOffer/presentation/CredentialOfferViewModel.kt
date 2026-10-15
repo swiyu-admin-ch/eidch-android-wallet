@@ -24,13 +24,18 @@ import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.Credential
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
+import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.refreshableStateFlow
 import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
+import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
+import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteCredential
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.utils.openLink
 import com.github.michaelbull.result.annotation.UnsafeResultValueAccess
 import com.github.michaelbull.result.onErr
+import com.github.michaelbull.result.onOk
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -41,6 +46,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @HiltViewModel(assistedFactory = CredentialOfferViewModel.Factory::class)
 class CredentialOfferViewModel @AssistedInject constructor(
@@ -56,6 +62,7 @@ class CredentialOfferViewModel @AssistedInject constructor(
     private val saveIssuanceActivity: SaveIssuanceActivity,
     private val acceptCredential: AcceptCredential,
     private val fetchAndCacheIssuerDisplayData: FetchAndCacheIssuerDisplayData,
+    private val deleteCredential: DeleteCredential,
     @Assisted private val credentialId: Long,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
@@ -68,6 +75,9 @@ class CredentialOfferViewModel @AssistedInject constructor(
 
     private val _badgeBottomSheetUiState: MutableStateFlow<BadgeBottomSheetUiState?> = MutableStateFlow(null)
     val badgeBottomSheet = _badgeBottomSheetUiState.asStateFlow()
+
+    private val _showConfirmationBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val showConfirmationBottomSheet = _showConfirmationBottomSheet.asStateFlow()
 
     private val actorDisplayData = getActorForScope(ComponentScope.CredentialIssuer)
 
@@ -116,7 +126,10 @@ class CredentialOfferViewModel @AssistedInject constructor(
         }
     }
 
-    fun onAcceptClicked() = acceptCredential()
+    fun onAcceptClicked() = when (actorDisplayData.value.actorComplianceState) {
+        ActorComplianceState.REPORTED -> _showConfirmationBottomSheet.value = true
+        else -> acceptCredential()
+    }
 
     fun acceptCredential() = viewModelScope.launch {
         acceptCredential(credentialId).onErr {
@@ -141,8 +154,24 @@ class CredentialOfferViewModel @AssistedInject constructor(
         )
     }
 
+    fun onDeclineCredential() = viewModelScope.launch {
+        deleteCredential(credentialId = credentialId)
+            .onErr { error ->
+                when (error) {
+                    is SsiError.Unexpected -> Timber.e(error.cause)
+                }
+            }.onOk {
+                credentialEventRepository.setEvent(CredentialEvent.DECLINED)
+            }
+        navManager.navigateOutAndTo(DestinationGroup.CREDENTIAL_OFFER, Destination.HomeScreen)
+    }
+
     fun onDismissBadgeBottomSheet() {
         _badgeBottomSheetUiState.value = null
+    }
+
+    fun onDismissConfirmationBottomSheet() {
+        _showConfirmationBottomSheet.value = false
     }
 
     fun onActorNameTap() {

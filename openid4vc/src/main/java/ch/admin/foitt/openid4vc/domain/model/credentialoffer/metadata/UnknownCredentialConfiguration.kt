@@ -26,4 +26,6 @@ data class UnknownCredentialConfiguration(
         mapOf(ProofType.UNKNOWN to ProofTypeConfig(proofSigningAlgValuesSupported = emptyList())),
     @SerialName("credential_metadata")
     override val credentialMetadata: CredentialMetadata? = null,
+    @SerialName("credential_refresh_disabled")
+    override val credentialRefreshDisabled: Boolean = false,
 ) : AnyCredentialConfiguration()

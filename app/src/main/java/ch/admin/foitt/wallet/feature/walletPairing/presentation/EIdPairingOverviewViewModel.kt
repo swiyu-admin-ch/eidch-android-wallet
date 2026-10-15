@@ -103,6 +103,7 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
                 _dateAdded.value = dateTime
                 PairingMainWalletUiState.MainWalletAdded
             }
+
             else -> PairingMainWalletUiState.Initial
         }
     }.toStateFlow(PairingMainWalletUiState.Initial)
@@ -115,6 +116,7 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
                 handlePairingWindowTimeout()
                 PairingOtherWalletUiState.Open
             }
+
             fetchSIdStatusValue.targetWallets?.limitReached == true -> PairingOtherWalletUiState.LimitReached
             else -> PairingOtherWalletUiState.Open
         }
@@ -214,7 +216,7 @@ internal class EIdPairingOverviewViewModel @AssistedInject constructor(
     }
 
     private fun handlePairingWindowTimeout() = navManager.navigateOutAndTo(
-        destinationGroup = DestinationGroup.EIdRequestVerification::class,
+        destinationGroup = DestinationGroup.EID_REQUEST_VERIFICATION,
         destination = Destination.EIdWalletPairingTimeoutScreen,
     )
 

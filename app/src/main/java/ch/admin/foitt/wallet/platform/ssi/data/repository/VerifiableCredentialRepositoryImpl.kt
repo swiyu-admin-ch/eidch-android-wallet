@@ -69,6 +69,21 @@ class VerifiableCredentialRepositoryImpl @Inject constructor(
         SsiError.Unexpected(throwable)
     }
 
+    override suspend fun updateLastRefreshAttemptAtByCredentialId(
+        credentialId: Long,
+        lastRefreshAttemptAt: Long
+    ): Result<Int, VerifiableCredentialRepositoryError> = runSuspendCatching {
+        withContext(ioDispatcher) {
+            verifiableCredentialDao().updateLastRefreshAttemptAtByCredentialId(
+                credentialId = credentialId,
+                lastRefreshAttemptAt = lastRefreshAttemptAt
+            )
+        }
+    }.mapError { throwable ->
+        Timber.e(throwable)
+        SsiError.Unexpected(throwable)
+    }
+
     private suspend fun verifiableCredentialDao(): VerifiableCredentialDao = suspendUntilNonNull {
         verifiableCredentialDaoFlow.value
     }

@@ -1,8 +1,7 @@
 package ch.admin.foitt.wallet.platform.passphrase
 
 import android.annotation.SuppressLint
-import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.GetCipherForEncryptionError
-import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.GetOrCreateSecretKeyError
+import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.KeystoreError
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.KeystoreKeyConfig
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.GetCipherForEncryption
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.GetOrCreateSecretKey
@@ -19,10 +18,10 @@ import io.mockk.just
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkAll
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.security.KeyStoreException
 import java.security.NoSuchAlgorithmException
 import java.security.spec.AlgorithmParameterSpec
 import javax.crypto.Cipher
@@ -42,7 +41,7 @@ class GetCipherForEncryptionTest {
     @MockK
     private lateinit var mockPassConfig: KeystoreKeyConfig
 
-    private lateinit var testedUseCase: GetCipherForEncryption
+    private lateinit var useCase: GetCipherForEncryption
 
     @BeforeEach
     fun setup() {
@@ -62,7 +61,7 @@ class GetCipherForEncryptionTest {
         coEvery { mockPassConfig.gcmAuthTagLength } returns 128
         coEvery { mockPassConfig.randomizedEncryptionRequired } returns false
 
-        testedUseCase = GetCipherForEncryptionImpl(
+        useCase = GetCipherForEncryptionImpl(
             getOrCreateSecretKey = mockGetOrCreateSecretKey,
         )
     }
@@ -74,13 +73,11 @@ class GetCipherForEncryptionTest {
 
     @SuppressLint("CheckResult")
     @Test
-    fun `Getting an initialized Cipher with existing IV follow specific steps`() {
-        val cipherResult = testedUseCase(
+    fun `Getting an initialized Cipher with existing IV follow specific steps`() = runTest {
+        useCase(
             keystoreKeyConfig = mockPassConfig,
             initializationVector = byteArrayOf(0, 1),
-        )
-
-        cipherResult.assertOk()
+        ).assertOk()
 
         coVerify(exactly = 1) {
             mockGetOrCreateSecretKey(any())
@@ -90,15 +87,13 @@ class GetCipherForEncryptionTest {
 
     @SuppressLint("CheckResult")
     @Test
-    fun `Getting an initialized Cipher without existing IV follow specific steps`() {
+    fun `Getting an initialized Cipher without existing IV follow specific steps`() = runTest {
         coEvery { mockPassConfig.randomizedEncryptionRequired } returns true
 
-        val cipherResult = testedUseCase(
+        useCase(
             keystoreKeyConfig = mockPassConfig,
             initializationVector = null,
-        )
-
-        cipherResult.assertOk()
+        ).assertOk()
 
         coVerify(exactly = 1) {
             mockGetOrCreateSecretKey(any())
@@ -107,38 +102,34 @@ class GetCipherForEncryptionTest {
     }
 
     @Test
-    fun `Getting an initialized Cipher with existing IV but randomizedEncryptionRequired should fail`() {
+    fun `Getting an initialized Cipher with existing IV but randomizedEncryptionRequired should fail`() = runTest {
         coEvery { mockPassConfig.randomizedEncryptionRequired } returns true
 
-        val cipherResult = testedUseCase(
+        useCase(
             keystoreKeyConfig = mockPassConfig,
             initializationVector = byteArrayOf(0, 1),
-        )
-
-        cipherResult.assertErrorType(GetCipherForEncryptionError.Unexpected::class)
+        ).assertErrorType(KeystoreError.General::class)
     }
 
     @Test
-    fun `A Cipher exception returns a failure`() {
+    fun `A Cipher exception returns a failure`() = runTest {
         val exception = NoSuchAlgorithmException("Algo exception")
         coEvery { Cipher.getInstance(any()) } throws exception
-        val cipherResult = testedUseCase(
+
+        useCase(
             keystoreKeyConfig = mockPassConfig,
             initializationVector = byteArrayOf(0, 1),
-        )
-
-        cipherResult.assertErrorType(GetCipherForEncryptionError.Unexpected::class)
+        ).assertErrorType(KeystoreError.General::class)
     }
 
     @Test
-    fun `A SecretKey exception returns a failure`() {
-        val keyError = GetOrCreateSecretKeyError.Unexpected(KeyStoreException("SecretKey exception"))
+    fun `A SecretKey exception returns a failure`() = runTest {
+        val keyError = KeystoreError.createGeneralError()
         coEvery { mockGetOrCreateSecretKey(any()) } returns Err(keyError)
-        val cipherResult = testedUseCase(
+
+        useCase(
             keystoreKeyConfig = mockPassConfig,
             initializationVector = byteArrayOf(0, 1),
-        )
-
-        cipherResult.assertErrorType(GetCipherForEncryptionError.Unexpected::class)
+        ).assertErrorType(KeystoreError.General::class)
     }
 }

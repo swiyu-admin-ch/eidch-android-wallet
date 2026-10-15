@@ -100,9 +100,12 @@ class PresentationRequestViewModel @AssistedInject constructor(
     override val topBarState: TopBarState = TopBarState.None
 
     private val verifierDisplayData = getActorForScope(ComponentScope.Verifier)
-    val verifierUiState = verifierDisplayData.map { verifierDisplayData ->
+    val verifierUiState = verifierDisplayData.map { displayData ->
+        if (!displayData.name.isNullOrEmpty()) {
+            _isVerifierDataLoaded.value = true
+        }
         getActorUiState(
-            actorDisplayData = verifierDisplayData,
+            actorDisplayData = displayData,
         )
     }.toStateFlow(ActorUiState.EMPTY, 0)
 
@@ -167,6 +170,9 @@ class PresentationRequestViewModel @AssistedInject constructor(
 
     private val _showDelayReason = MutableStateFlow(false)
     val showDelayReason = _showDelayReason.asStateFlow()
+
+    private val _isVerifierDataLoaded = MutableStateFlow(false)
+    val isVerifierDataLoaded = _isVerifierDataLoaded.asStateFlow()
 
     private val credentialCardStatus: CredentialDisplayStatus
         get() = presentationRequestUiState.stateFlow.value.credentialCardState.status ?: CredentialDisplayStatus.Unknown
@@ -295,7 +301,7 @@ class PresentationRequestViewModel @AssistedInject constructor(
 
     fun onDecline() {
         ioDispatcherScope.launch {
-            savePresentationDeclinedActivity(
+            val activityId = savePresentationDeclinedActivity(
                 credentialId = compatibleCredential.credentialId,
                 actorDisplayData = verifierDisplayData.value,
                 verifierFallbackName = appContext.getString(R.string.presentation_verifier_name_unknown),
@@ -312,7 +318,8 @@ class PresentationRequestViewModel @AssistedInject constructor(
                 navManager.replaceCurrentWith(
                     destination = Destination.PresentationDeclinedScreen(
                         redirectUri = authorizationResponseResponse.redirectUri,
-                        credentialId = compatibleCredential.credentialId
+                        credentialId = compatibleCredential.credentialId,
+                        activityId = activityId,
                     )
                 )
             }.onErr { error ->
@@ -320,7 +327,8 @@ class PresentationRequestViewModel @AssistedInject constructor(
                 navManager.replaceCurrentWith(
                     destination = Destination.PresentationDeclinedScreen(
                         redirectUri = null,
-                        credentialId = compatibleCredential.credentialId
+                        credentialId = compatibleCredential.credentialId,
+                        activityId = activityId,
                     )
                 )
             }

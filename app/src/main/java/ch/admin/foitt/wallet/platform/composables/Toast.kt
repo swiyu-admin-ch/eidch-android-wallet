@@ -61,6 +61,7 @@ fun PassphraseValidationErrorToastFixed(
     shouldRequestFocus: Boolean = false,
     useLiveRegion: Boolean = false,
     @StringRes text: Int = R.string.tk_global_warning_alt,
+    errorCode: String,
     @StringRes iconEndContentDescription: Int? = R.string.tk_global_closewarning_alt,
     onIconEnd: () -> Unit,
 ) = Toast(
@@ -72,6 +73,7 @@ fun PassphraseValidationErrorToastFixed(
     iconStartColor = WalletTheme.colorScheme.onLightErrorFixed,
     text = text,
     textColor = WalletTheme.colorScheme.onLightErrorFixed,
+    errorCode = errorCode,
     iconEnd = R.drawable.wallet_ic_cross,
     iconEndColor = WalletTheme.colorScheme.onLightErrorFixed,
     iconEndContentDescription = iconEndContentDescription,
@@ -111,6 +113,7 @@ fun Toast(
     headlineColor: Color = WalletTheme.colorScheme.onSurface,
     @StringRes text: Int? = null,
     textColor: Color = WalletTheme.colorScheme.onSurfaceVariant,
+    errorCode: String? = null,
     @DrawableRes iconStart: Int? = null,
     iconStartColor: Color = WalletTheme.colorScheme.onSurfaceVariant,
     @DrawableRes iconEnd: Int? = null,
@@ -119,7 +122,7 @@ fun Toast(
     onIconEnd: () -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
-    val displayText = text?.let { stringResource(id = it) } ?: ""
+    val displayText = text?.let { stringResource(id = it) + (errorCode?.let { " ($it)" } ?: "") } ?: ""
     val headlineText = headline?.let { stringResource(id = it) }
 
     Surface(

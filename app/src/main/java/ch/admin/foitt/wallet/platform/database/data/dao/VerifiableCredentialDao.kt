@@ -42,4 +42,7 @@ interface VerifiableCredentialDao {
     """
     )
     fun updateNextBundleIdByCredentialId(credentialId: Long, nextPresentableBundleItemId: Long): Int
+
+    @Query("UPDATE VerifiableCredentialEntity SET lastRefreshAttemptAt = :lastRefreshAttemptAt WHERE credentialId = :credentialId")
+    fun updateLastRefreshAttemptAtByCredentialId(credentialId: Long, lastRefreshAttemptAt: Long): Int
 }

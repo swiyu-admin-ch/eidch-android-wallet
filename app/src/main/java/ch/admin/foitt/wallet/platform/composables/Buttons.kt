@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.dropUnlessResumed
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.composables.presentation.spaceBarKeyClickable
 import ch.admin.foitt.wallet.platform.preview.WalletComponentPreview
@@ -309,12 +310,14 @@ private fun BaseButton(
     activeText: String? = text,
     hasBorder: Boolean = false
 ) {
+    val safeOnClick = dropUnlessResumed { onClick.invoke() }
+
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
         Button(
-            onClick = onClick,
+            onClick = safeOnClick,
             modifier = modifier
                 .defaultMinSize(minHeight = if (isSmall) Sizes.s09 else Sizes.s12)
-                .spaceBarKeyClickable(onClick),
+                .spaceBarKeyClickable(safeOnClick),
             shape = WalletTheme.shapes.extraLarge,
             colors = colors,
             enabled = enabled,

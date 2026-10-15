@@ -10,7 +10,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.usecase.OpenAppDatabase
 import ch.admin.foitt.wallet.platform.login.domain.model.LoginError
 import ch.admin.foitt.wallet.platform.login.domain.usecase.LoginWithBiometrics
-import ch.admin.foitt.wallet.platform.passphrase.domain.model.LoadAndDecryptPassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.LoadAndDecryptPassphrase
 import ch.admin.foitt.wallet.platform.userInteraction.domain.usecase.UserInteraction
 import ch.admin.foitt.wallet.util.assertErrorType
@@ -94,7 +94,7 @@ class LoginWithBiometricsImplTest {
 
     @Test
     fun `LoginWithBiometrics returns an error when biometrics changed`() = runTest {
-        coEvery { mockGetBiometricsCipher() } returns Err(BiometricsError.InvalidatedKey)
+        coEvery { mockGetBiometricsCipher() } returns Err(BiometricsError.createInvalidatedKeyError())
         useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.BiometricsChanged::class)
 
         coVerify(exactly = 1) {
@@ -106,7 +106,7 @@ class LoginWithBiometricsImplTest {
     fun `LoginWithBiometrics returns an error when the biometrics prompt was cancelled by the user`() = runTest {
         coEvery {
             mockLaunchBiometricPrompt(mockBiometricPromptWrapper, mockCipher)
-        } returns Err(BiometricAuthenticationError.PromptCancelled)
+        } returns Err(BiometricAuthenticationError.createPromptCancelledError())
 
         useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.Cancelled::class)
 
@@ -119,7 +119,7 @@ class LoginWithBiometricsImplTest {
     fun `LoginWithBiometrics returns an error when biometrics are locked on the device`() = runTest {
         coEvery {
             mockLaunchBiometricPrompt(mockBiometricPromptWrapper, mockCipher)
-        } returns Err(BiometricAuthenticationError.PromptLocked)
+        } returns Err(BiometricAuthenticationError.createPromptLockedError())
 
         useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.BiometricsLocked::class)
 
@@ -132,7 +132,7 @@ class LoginWithBiometricsImplTest {
     fun `LoginWithBiometrics returns an error when the passphrase for the DB is wrong`() = runTest {
         coEvery {
             mockOpenAppDatabase(mockDecryptedPassphrase)
-        } returns Err(DatabaseError.WrongPassphrase(Exception()))
+        } returns Err(DatabaseError.createWrongPassphraseError(Exception()))
 
         useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.InvalidPassphrase::class)
 
@@ -143,9 +143,9 @@ class LoginWithBiometricsImplTest {
 
     @Test
     fun `LoginWithBiometrics maps errors from getBiometricsCipher`() = runTest {
-        coEvery { mockGetBiometricsCipher() } returns Err(BiometricsError.Unexpected(Exception()))
+        coEvery { mockGetBiometricsCipher() } returns Err(BiometricsError.createGeneralError())
 
-        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.Unexpected::class)
+        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.General::class)
 
         coVerify(exactly = 1) {
             mockResetBiometrics()
@@ -156,9 +156,9 @@ class LoginWithBiometricsImplTest {
     fun `LoginWithBiometrics maps errors from launchBiometricPrompt`() = runTest {
         coEvery {
             mockLaunchBiometricPrompt(mockBiometricPromptWrapper, mockCipher)
-        } returns Err(BiometricAuthenticationError.Unexpected(Exception()))
+        } returns Err(BiometricAuthenticationError.createGeneralError(Exception()))
 
-        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.Unexpected::class)
+        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.General::class)
 
         coVerify(exactly = 1) {
             mockResetBiometrics()
@@ -169,9 +169,9 @@ class LoginWithBiometricsImplTest {
     fun `LoginWithBiometrics maps errors from loadAndDecryptPassphrase`() = runTest {
         coEvery {
             mockLoadAndDecryptPassphrase(mockInitializedDecryptionCipher)
-        } returns Err(LoadAndDecryptPassphraseError.Unexpected(Exception()))
+        } returns Err(PassphraseError.createGeneralError(Exception()))
 
-        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.Unexpected::class)
+        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.General::class)
 
         coVerify(exactly = 1) {
             mockResetBiometrics()
@@ -182,9 +182,9 @@ class LoginWithBiometricsImplTest {
     fun `LoginWithBiometrics returns an error if the DB setup failed`() = runTest {
         coEvery {
             mockOpenAppDatabase(mockDecryptedPassphrase)
-        } returns Err(DatabaseError.SetupFailed(Exception()))
+        } returns Err(DatabaseError.createSetupFailedError(Exception()))
 
-        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.Unexpected::class)
+        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.General::class)
 
         coVerify(exactly = 1) {
             mockResetBiometrics()
@@ -195,9 +195,9 @@ class LoginWithBiometricsImplTest {
     fun `LoginWithBiometrics returns an error if the DB is already open`() = runTest {
         coEvery {
             mockOpenAppDatabase(mockDecryptedPassphrase)
-        } returns Err(DatabaseError.AlreadyOpen)
+        } returns Err(DatabaseError.createAlreadyOpenError())
 
-        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.Unexpected::class)
+        useCase(mockBiometricPromptWrapper).assertErrorType(LoginError.General::class)
 
         coVerify(exactly = 1) {
             mockResetBiometrics()

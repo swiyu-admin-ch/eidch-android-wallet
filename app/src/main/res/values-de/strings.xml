@@ -29,7 +29,19 @@
     <string name="qrScanner_flash_light_button_on">Licht ausschalten</string>
     <string name="qrScanner_title">QR-Code scannen</string>
     <string name="qrScanner_toast_close_button">Hinweis schliessen</string>
-    <plurals name="tk_changepassword_error1_android_note2">
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_inputError">
+        <item quantity="one">Das Passwort ist falsch. Sie haben noch %1$s Versuch. (%2$s)</item>
+        <item quantity="other">Das Passwort ist falsch. Sie haben noch %1$s Versuche. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_confirmPassword_remainingAttempts">
+        <item quantity="one">Das Passwort ist falsch. Sie haben noch %s Versuch.</item>
+        <item quantity="other">Das Passwort ist falsch. Sie haben noch %s Versuche.</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_inputError">
+        <item quantity="one">Das Passwort ist falsch. Sie haben noch %1$s Versuch. (%2$s)</item>
+        <item quantity="other">Das Passwort ist falsch. Sie haben noch %1$s Versuche. (%2$s)</item>
+    </plurals>
+    <plurals name="tk_settings_securityPrivacy_currentPassword_remainingAttempts">
         <item quantity="one">Das Passwort ist falsch. Sie haben noch %s Versuch.</item>
         <item quantity="other">Das Passwort ist falsch. Sie haben noch %s Versuche.</item>
     </plurals>
@@ -420,8 +432,6 @@
     <string name="tk_badgeInformation_inBaseRegistry_secondary">Ob es sich tatsächlich um %s handelt, kann der Bund auf Grundlage dieser Angaben nicht prüfen.</string>
     <string name="tk_badgeInformation_furtherInformation_link_value">https://www.eid.admin.ch/de/swiyu-informiert-signalisiert-und-alarmiert</string>
     <string name="tk_nonCompliance_reportExcessiveData_title">Übermässige Daten melden</string>
-    <string name="tk_nonCompliance_report_info_title">Empfohlene Vorgehensweise</string>
-    <string name="tk_nonCompliance_report_info_body">Im nächsten Schritt erfassen Sie Ihre Meldung für die zuständige Stelle. Bitte geben Sie auch an, welche Daten ohne Berechtigung angefordert wurden.</string>
     <string name="tk_nonCompliance_report_info_moreInformation_link_text">Mehr Hinweise anzeigen</string>
     <string name="tk_eidRequest_walletPairing_additionalDevice_sectionTitle">Weitere Geräte</string>
     <string name="tk_eidRequest_walletPairing_additionalDevice_button_primary">Mehrere Geräte</string>
@@ -446,7 +456,6 @@
         <item quantity="one">%s Gerät hinzugefügt</item>
         <item quantity="other">%s Geräte hinzugefügt</item>
     </plurals>
-    <string name="tk_nonCompliance_list_footer">Achtung: Bis zum offiziellen Start von swiyu werden Meldungen nicht geprüft; Prüfstellen werden daher nicht wegen Fehlverhaltens sanktioniert.\nDie Kategorien sind noch nicht endgültig festgelegt.</string>
     <string name="tk_nonCompliance_report_form_actor_footer">Sie melden diese Organisation</string>
     <string name="tk_nonCompliance_report_form_contact_footer">Die Angabe Ihrer E-Mail-Adresse ist freiwillig und wird ausschliesslich für die Kommunikation zu diesem Fall verwendet.</string>
     <string name="tk_nonCompliance_report_form_description_maxCharacter_footer">Bitte schreiben Sie höchstens 500 Zeichen.</string>

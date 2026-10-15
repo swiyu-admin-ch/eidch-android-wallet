@@ -7,5 +7,5 @@ interface SaveIssuanceActivity {
         credentialId: Long,
         actorDisplayData: ActorDisplayData,
         issuerFallbackName: String,
-    )
+    ): Long?
 }

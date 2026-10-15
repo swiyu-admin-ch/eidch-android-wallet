@@ -147,6 +147,7 @@ private fun CompactContent(
                     enableBiometrics = enableBiometrics,
                     initialSupportText = initialSupportText,
                     remainingAuthAttempts = remainingAuthAttempts,
+                    passphraseInputFieldState = passphraseInputFieldState,
                 )
             }
         },
@@ -189,6 +190,7 @@ private fun LargeContent(
                         enableBiometrics = enableBiometrics,
                         initialSupportText = initialSupportText,
                         remainingAuthAttempts = remainingAuthAttempts,
+                        passphraseInputFieldState = passphraseInputFieldState,
                     )
                 }
             },
@@ -210,7 +212,7 @@ private fun Label(
     passphraseInputFieldState: PassphraseInputFieldState,
 ) = WalletTexts.BodyLarge(
     text = stringResource(R.string.tk_changepassword_step1_note1),
-    color = if (passphraseInputFieldState == PassphraseInputFieldState.Error) {
+    color = if (passphraseInputFieldState is PassphraseInputFieldState.Error) {
         WalletTheme.colorScheme.error
     } else {
         WalletTheme.colorScheme.onSurfaceVariant
@@ -222,6 +224,7 @@ private fun SupportingText(
     enableBiometrics: Boolean,
     initialSupportText: Boolean,
     remainingAuthAttempts: Int,
+    passphraseInputFieldState: PassphraseInputFieldState,
 ) = WalletTexts.BodySmall(
     text = if (initialSupportText) {
         if (enableBiometrics) {
@@ -230,9 +233,39 @@ private fun SupportingText(
             stringResource(R.string.tk_menu_deactivatingBiometrics_android_note)
         }
     } else {
-        pluralStringResource(R.plurals.tk_changepassword_error1_android_note2, remainingAuthAttempts, remainingAuthAttempts)
+        errorMessage(remainingAuthAttempts, passphraseInputFieldState)
     },
     color = if (initialSupportText) WalletTheme.colorScheme.onSurfaceVariant else WalletTheme.colorScheme.error
+)
+
+@Composable
+private fun errorMessage(
+    attemptsLeft: Int,
+    passphraseInputFieldState: PassphraseInputFieldState,
+) = when (passphraseInputFieldState) {
+    is PassphraseInputFieldState.Typing,
+    is PassphraseInputFieldState.Success -> remainingAttemptsText(attemptsLeft)
+    is PassphraseInputFieldState.Error -> errorMessageText(attemptsLeft, passphraseInputFieldState.errorCode)
+}
+
+@Composable
+private fun remainingAttemptsText(
+    attemptsLeft: Int,
+): String = pluralStringResource(
+    id = R.plurals.tk_settings_securityPrivacy_currentPassword_remainingAttempts,
+    count = attemptsLeft,
+    attemptsLeft,
+)
+
+@Composable
+private fun errorMessageText(
+    attemptsLeft: Int,
+    errorCode: String,
+): String = pluralStringResource(
+    id = R.plurals.tk_settings_securityPrivacy_currentPassword_inputError,
+    count = attemptsLeft,
+    attemptsLeft,
+    errorCode
 )
 
 @Composable
@@ -253,7 +286,7 @@ private fun AuthWithPassphraseScreenPreview() {
         AuthWithPassphraseScreenContent(
             enableBiometrics = true,
             textFieldValue = TextFieldValue("abc123"),
-            passphraseInputFieldState = PassphraseInputFieldState.Error,
+            passphraseInputFieldState = PassphraseInputFieldState.Error("XY123-1234"),
             isPassphraseValid = true,
             initialSupportText = false,
             remainingAuthAttempts = 4,

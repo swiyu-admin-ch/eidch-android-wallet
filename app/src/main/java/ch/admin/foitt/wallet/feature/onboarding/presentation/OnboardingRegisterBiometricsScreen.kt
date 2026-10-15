@@ -138,8 +138,8 @@ private fun BiometricsImage(screenState: OnboardingRegisterBiometricsScreenState
     OnboardingRegisterBiometricsScreenState.Available -> BiometricsAvailableImage()
     OnboardingRegisterBiometricsScreenState.DisabledForApp,
     OnboardingRegisterBiometricsScreenState.DisabledOnDevice,
-    OnboardingRegisterBiometricsScreenState.Error,
-    OnboardingRegisterBiometricsScreenState.Lockout -> BiometricsUnavailableImage()
+    is OnboardingRegisterBiometricsScreenState.Error,
+    is OnboardingRegisterBiometricsScreenState.Lockout -> BiometricsUnavailableImage()
 }
 
 @Composable
@@ -152,11 +152,18 @@ private fun BiometricsBodyContent(screenState: OnboardingRegisterBiometricsScree
             infoText = R.string.tk_onboarding_biometricsPermission_tertiary,
         )
 
-        OnboardingRegisterBiometricsScreenState.Lockout,
-        OnboardingRegisterBiometricsScreenState.Error -> BiometricsContent(
+        is OnboardingRegisterBiometricsScreenState.Lockout -> BiometricsContent(
             title = R.string.tk_onboarding_biometricsPermission_primary,
             description = R.string.tk_onboarding_biometricsPermissionLater_secondary,
             infoText = null,
+            errorCode = screenState.errorCode
+        )
+
+        is OnboardingRegisterBiometricsScreenState.Error -> BiometricsContent(
+            title = R.string.tk_onboarding_biometricsPermission_primary,
+            description = R.string.tk_onboarding_biometricsPermissionLater_secondary,
+            infoText = null,
+            errorCode = screenState.errorCode
         )
 
         OnboardingRegisterBiometricsScreenState.DisabledOnDevice -> BiometricsContent(
@@ -263,8 +270,8 @@ private fun BiometricsButtons(
             )
         }
 
-        OnboardingRegisterBiometricsScreenState.Error,
-        OnboardingRegisterBiometricsScreenState.Lockout -> {
+        is OnboardingRegisterBiometricsScreenState.Error,
+        is OnboardingRegisterBiometricsScreenState.Lockout -> {
             AdaptiveBottomButtonBar(
                 buttons = listOf(
                     {
@@ -285,8 +292,8 @@ private class RegisterBiometricsPreviewParams : PreviewParameterProvider<Onboard
     override val values = sequenceOf(
         OnboardingRegisterBiometricsScreenState.Available,
         OnboardingRegisterBiometricsScreenState.DisabledOnDevice,
-        OnboardingRegisterBiometricsScreenState.Lockout,
-        OnboardingRegisterBiometricsScreenState.Error,
+        OnboardingRegisterBiometricsScreenState.Lockout("XY123-1234"),
+        OnboardingRegisterBiometricsScreenState.Error("XY123-1234"),
         OnboardingRegisterBiometricsScreenState.Initial,
     )
 }

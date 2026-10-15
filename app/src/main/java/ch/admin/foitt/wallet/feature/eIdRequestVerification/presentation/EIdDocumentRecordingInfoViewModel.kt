@@ -49,6 +49,6 @@ internal class EIdDocumentRecordingInfoViewModel @AssistedInject constructor(
     private fun onBack() = navManager.popBackStack()
 
     private fun onClose() {
-        navManager.navigateOutOf(DestinationGroup.EIdRequestVerification::class)
+        navManager.navigateOutOf(DestinationGroup.EID_REQUEST_VERIFICATION)
     }
 }

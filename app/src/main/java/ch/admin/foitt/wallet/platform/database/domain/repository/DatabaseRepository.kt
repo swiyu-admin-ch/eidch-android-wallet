@@ -2,7 +2,7 @@ package ch.admin.foitt.wallet.platform.database.domain.repository
 
 import androidx.annotation.CheckResult
 import ch.admin.foitt.wallet.platform.database.domain.model.ChangeDatabasePassphraseError
-import ch.admin.foitt.wallet.platform.database.domain.model.CreateDatabaseError
+import ch.admin.foitt.wallet.platform.database.domain.model.CreateAppDatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseState
 import ch.admin.foitt.wallet.platform.database.domain.model.OpenDatabaseError
 import com.github.michaelbull.result.Result
@@ -12,7 +12,7 @@ interface DatabaseRepository {
     val databaseState: StateFlow<DatabaseState>
 
     @CheckResult
-    suspend fun createDatabase(passphrase: ByteArray): Result<Unit, CreateDatabaseError>
+    suspend fun createDatabase(passphrase: ByteArray): Result<Unit, CreateAppDatabaseError>
 
     suspend fun close()
 

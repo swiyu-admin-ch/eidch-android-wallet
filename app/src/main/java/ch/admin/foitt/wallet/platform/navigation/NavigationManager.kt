@@ -17,7 +17,7 @@ interface NavigationManager {
         destination: Destination,
     )
 
-    fun popBackStack()
+    fun popBackStack(): Boolean
 
     fun <T : Destination> popBackStackTo(
         destination: KClass<out T>,
@@ -31,6 +31,6 @@ interface NavigationManager {
 
     fun popBackStackOrToRoot()
 
-    fun <T : DestinationGroup> navigateOutOf(destinationGroup: KClass<T>)
-    fun <T : DestinationGroup> navigateOutAndTo(destinationGroup: KClass<T>, destination: Destination)
+    fun navigateOutOf(destinationGroup: DestinationGroup)
+    fun navigateOutAndTo(destinationGroup: DestinationGroup, destination: Destination)
 }

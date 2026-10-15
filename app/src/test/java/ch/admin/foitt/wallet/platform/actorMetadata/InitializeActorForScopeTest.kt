@@ -9,7 +9,9 @@ import ch.admin.foitt.wallet.platform.navigation.DestinationScopedComponentManag
 import ch.admin.foitt.wallet.platform.navigation.domain.model.ComponentScope
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.coVerifyOrder
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.just
 import io.mockk.runs
@@ -39,6 +41,10 @@ class InitializeActorForScopeTest {
             destinationScopedComponentManager = mockDestinationScopedComponentManager,
         )
 
+        every {
+            mockDestinationScopedComponentManager.isInScope(any())
+        } returns true
+
         coEvery {
             mockDestinationScopedComponentManager.getEntryPoint(ActorRepositoryEntryPoint::class.java, componentScope = any())
         } returns mockActorRepositoryEntryPoint
@@ -55,6 +61,23 @@ class InitializeActorForScopeTest {
     @AfterEach
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun `InitializeActorForScope does set actor when the scope is already gone`(): Unit = runTest {
+        every {
+            mockDestinationScopedComponentManager.isInScope(any())
+        } returns false
+
+        useCase.invoke(
+            actorDisplayData = mockActorDisplayData01,
+            componentScope = ComponentScope.CredentialIssuer,
+        )
+
+        coVerify(exactly = 0) {
+            mockDestinationScopedComponentManager.getEntryPoint(ActorRepositoryEntryPoint::class.java, any())
+            mockActorRepository.setActor(any())
+        }
     }
 
     @Test

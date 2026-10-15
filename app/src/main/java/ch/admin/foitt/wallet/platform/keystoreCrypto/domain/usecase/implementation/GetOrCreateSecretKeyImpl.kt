@@ -6,6 +6,7 @@ import android.security.keystore.KeyGenParameterSpec
 import androidx.annotation.CheckResult
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.GetOrCreateSecretKeyError
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.KeystoreKeyConfig
+import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.model.toGetOrCreateSecretKeyError
 import ch.admin.foitt.wallet.platform.keystoreCrypto.domain.usecase.GetOrCreateSecretKey
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.runSuspendCatching
@@ -44,7 +45,7 @@ internal class GetOrCreateSecretKeyImpl @Inject constructor(
 
         secretKey
     }.mapError { throwable ->
-        GetOrCreateSecretKeyError.Unexpected(throwable)
+        throwable.toGetOrCreateSecretKeyError()
     }
 
     private fun createSecretKey(

@@ -98,6 +98,7 @@ sealed class AnyCredentialConfiguration {
     abstract val credentialSigningAlgValuesSupported: List<SignatureAlgorithm>
     abstract val proofTypesSupported: Map<ProofType, ProofTypeConfig>
     abstract val credentialMetadata: CredentialMetadata?
+    abstract val credentialRefreshDisabled: Boolean
 }
 
 @Serializable

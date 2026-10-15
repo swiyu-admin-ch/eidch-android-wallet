@@ -11,7 +11,6 @@ import ch.admin.foitt.wallet.platform.di.IoDispatcherScope
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.NavigationAction
-import ch.admin.foitt.wallet.platform.navigation.domain.model.canTriggerAutoLogout
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi

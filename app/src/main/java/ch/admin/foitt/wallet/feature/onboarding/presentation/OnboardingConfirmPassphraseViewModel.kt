@@ -2,6 +2,9 @@ package ch.admin.foitt.wallet.feature.onboarding.presentation
 
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.errorhandling.domain.model.ErrorCodes
+import ch.admin.foitt.errorhandling.domain.model.ViewmodelPrefixes
+import ch.admin.foitt.errorhandling.domain.model.util.log
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.onboarding.domain.Constants.MAX_CONFIRMATION_ATTEMPTS
 import ch.admin.foitt.wallet.feature.onboarding.domain.usecase.SaveOnboardingState
@@ -10,7 +13,7 @@ import ch.admin.foitt.wallet.platform.biometricPrompt.domain.usecase.BiometricsS
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.navigation.domain.model.DestinationGroup
-import ch.admin.foitt.wallet.platform.passphrase.domain.model.InitializePassphraseError
+import ch.admin.foitt.wallet.platform.passphrase.domain.model.PassphraseError
 import ch.admin.foitt.wallet.platform.passphrase.domain.usecase.InitializePassphrase
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseInputFieldState
 import ch.admin.foitt.wallet.platform.passphraseInput.domain.model.PassphraseValidationState
@@ -28,7 +31,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @HiltViewModel(assistedFactory = OnboardingConfirmPassphraseViewModel.Factory::class)
 class OnboardingConfirmPassphraseViewModel @AssistedInject constructor(
@@ -111,17 +113,19 @@ class OnboardingConfirmPassphraseViewModel @AssistedInject constructor(
                 handlePassphraseSuccess(passphrase)
             },
             failure = { error ->
-                Timber.e(t = error.throwable, message = "Passphrase registration: Initialization error")
-                _passphraseInputFieldState.value = PassphraseInputFieldState.Error
+                error.log(ViewmodelPrefixes.ONBOARDING_CONFIRM_PASSPHRASE)
+                _passphraseInputFieldState.value = PassphraseInputFieldState.Error(error.errorOccurrence.errorCode.value)
                 val destination = when (error) {
-                    is InitializePassphraseError.DatabaseSetupFailed -> Destination.OnboardingFatalErrorScreen(
+                    is PassphraseError.DatabaseSetupFailed -> Destination.OnboardingFatalErrorScreen(
                         primaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_primary,
                         secondaryTextRes = R.string.tk_onboarding_failure_databaseInitialization_secondary,
+                        errorCode = error.errorOccurrence.errorCode.value,
                     )
 
-                    is InitializePassphraseError.Unexpected -> Destination.OnboardingFatalErrorScreen(
+                    is PassphraseError.General -> Destination.OnboardingFatalErrorScreen(
                         primaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_primary,
                         secondaryTextRes = R.string.tk_onboarding_failure_passphraseInitialization_secondary,
+                        errorCode = error.errorOccurrence.errorCode.value,
                     )
                 }
                 navManager.popUpToAndNavigate(
@@ -136,7 +140,7 @@ class OnboardingConfirmPassphraseViewModel @AssistedInject constructor(
         if (isBiometricAuthenticationAvailable) {
             navigateToBiometrics(passphrase)
         } else {
-            navManager.navigateOutAndTo(DestinationGroup.Onboarding::class, Destination.OnboardingSuccessScreen)
+            navManager.navigateOutAndTo(DestinationGroup.ONBOARDING, Destination.OnboardingSuccessScreen)
         }
     }
 
@@ -148,7 +152,7 @@ class OnboardingConfirmPassphraseViewModel @AssistedInject constructor(
 
     private fun onInvalidPassphrase() {
         decreaseRemainingAttempts()
-        _passphraseInputFieldState.value = PassphraseInputFieldState.Error
+        _passphraseInputFieldState.value = PassphraseInputFieldState.Error(ErrorCodes.Database.wrongPassphraseError().value)
         _showPassphraseErrorToast.value = true
         checkRemainingConfirmationAttempts()
     }

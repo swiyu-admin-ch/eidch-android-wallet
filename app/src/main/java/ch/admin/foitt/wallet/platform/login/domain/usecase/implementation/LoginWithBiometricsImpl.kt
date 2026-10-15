@@ -56,9 +56,7 @@ class LoginWithBiometricsImpl @Inject constructor(
                 passphrase = decryptedPassphrase
             ).onErr {
                 Timber.d("AppDatabase login failed")
-            }.mapError(
-                OpenDatabaseError::toLoginWithBiometricsError
-            ).bind()
+            }.mapError(OpenDatabaseError::toLoginWithBiometricsError).bind()
 
             Timber.d("Biometric Authentication succeeded")
         }
@@ -67,30 +65,27 @@ class LoginWithBiometricsImpl @Inject constructor(
         // -> trigger it manually
         userInteraction()
 
-        return result
-            .onErr { loginWithBiometricsError ->
-                onLoginFailure(loginWithBiometricsError)
-            }
+        return result.onErr { loginWithBiometricsError ->
+            onLoginFailure(loginWithBiometricsError)
+        }
     }
 
     private suspend fun onLoginFailure(loginError: LoginWithBiometricsError) {
         when (loginError) {
-            LoginError.InvalidPassphrase -> {
+            is LoginError.InvalidPassphrase -> {
                 resetBiometrics()
-                Timber.w(message = "Passphrase was deemed invalid while login with biometrics")
             }
-            LoginError.BiometricsChanged -> {
+
+            is LoginError.BiometricsChanged -> {
                 resetBiometrics()
-                Timber.w(message = "Biometrics changed, please re-enable them in the settings")
             }
-            is LoginError.Unexpected -> {
+
+            is LoginError.General -> {
                 resetBiometrics()
-                Timber.e(loginError.cause)
             }
-            LoginError.Cancelled -> {}
-            LoginError.BiometricsLocked -> {
-                Timber.d(message = "Biometrics locked out")
-            }
+
+            is LoginError.Cancelled -> {}
+            is LoginError.BiometricsLocked -> {}
         }
     }
 }

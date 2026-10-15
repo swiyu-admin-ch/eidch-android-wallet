@@ -85,7 +85,7 @@ class DeclineCredentialOfferViewModel @AssistedInject constructor(
             getNonComplianceReportingData(
                 credentialId = credentialId,
                 actorDisplayData = issuerDisplayData.value,
-                activityType = ActivityType.ISSUANCE
+                activityType = ActivityType.ISSUANCE,
             ).onOk { reportingData ->
                 deleteCredential(credentialId)
                     .onErr { error ->
@@ -96,9 +96,10 @@ class DeclineCredentialOfferViewModel @AssistedInject constructor(
                     .onOk {
                         credentialEventRepository.setEvent(CredentialEvent.DECLINED)
                         navManager.navigateOutAndTo(
-                            destinationGroup = DestinationGroup.CredentialOffer::class,
+                            destinationGroup = DestinationGroup.CREDENTIAL_OFFER,
                             destination = Destination.NonComplianceListScreen(
-                                reportingData = reportingData
+                                reportingData = reportingData,
+                                goBackToRoot = true,
                             ),
                         )
                     }
@@ -118,7 +119,7 @@ class DeclineCredentialOfferViewModel @AssistedInject constructor(
                 }.onOk {
                     credentialEventRepository.setEvent(CredentialEvent.DECLINED)
                 }
-            navManager.navigateOutAndTo(DestinationGroup.CredentialOffer::class, Destination.HomeScreen)
+            navManager.navigateOutAndTo(DestinationGroup.CREDENTIAL_OFFER, Destination.HomeScreen)
         }
     }
 

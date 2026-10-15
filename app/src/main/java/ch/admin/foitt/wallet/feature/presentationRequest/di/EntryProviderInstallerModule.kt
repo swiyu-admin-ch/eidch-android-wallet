@@ -53,7 +53,8 @@ object EntryProviderInstallerModule {
                 creationCallback = { factory ->
                     factory.create(
                         redirectUri = navKey.redirectUri,
-                        credentialId = navKey.credentialId
+                        credentialId = navKey.credentialId,
+                        activityId = navKey.activityId
                     )
                 }
             )
